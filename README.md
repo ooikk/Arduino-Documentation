@@ -68,4 +68,4 @@ Step 3: Example Code Snippet<br>
      https://www.lcdwiki.com/Main_Page#top<br>
    TFT_eSPI Docs: Official documentation on Read the Docs.<br>
      https://doc-tft-espi.readthedocs.io/
-  
+
