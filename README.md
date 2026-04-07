@@ -9,18 +9,19 @@ The MSP4020 / MSP4021 is a 4.0-inch TFT display using the ST7796S driver and XPT
 
 1. Wiring Connection (ESP32 to MSP4020/4021).<br>
    The display and touch controller share the same SPI bus (MOSI, MISO, SCK) but use different Chip Select (CS) pins.<br>
-   ```Module Pin        Function              ESP32 Pin (Typical VSPI)   Notes```<br>
-   ```VCC               Power                 5V or 3.3V                 Depends on jumper setting```<br>
-   ```GND               Ground                GND```<br>
-   ```LCD_CS            Display Chip Select   GPIO 5```<br>
-   ```LCD_RST           Reset                 GPIO 4```<br>
-   ```LCD_RS/DC         Data/Command          GPIO 2                     Also labeled DC or RS```<br>
-   ```SDI (MOSI)        Data In               GPIO 23```<br>
-   ```SCK               SPI Clock             GPIO 18```<br>
-   ```SDO (MISO)        Data Out              GPIO 19                    Required for touch read```<br>
-   ```LED               Backlight             3.3V or GPIO               Can use PWM for brightness```<br>
-   ```T_CS              Touch Chip Select     GPIO 21                    Separate from LCD_CS```<br>
-   ```T_IRQ             Touch Interrupt       GPIO 22                    Optional```<br>
+   ```
+   Module Pin        Function              ESP32 Pin (Typical VSPI)   Notes
+   VCC               Power                 5V or 3.3V                 Depends on jumper setting
+   GND               Ground                GND
+   LCD_CS            Display Chip Select   GPIO 5
+   LCD_RST           Reset                 GPIO 4
+   LCD_RS/DC         Data/Command          GPIO 2                     Also labeled DC or RS
+   SDI (MOSI)        Data In               GPIO 23
+   SCK               SPI Clock             GPIO 18
+   SDO (MISO)        Data Out              GPIO 19                    Required for touch read
+   LED               Backlight             3.3V or GPIO               Can use PWM for brightness
+   T_CS              Touch Chip Select     GPIO 21                    Separate from LCD_CS
+   T_IRQ             Touch Interrupt       GPIO 22                    Optional
 
 4. Software Setup (Arduino IDE)<br>
 Step 1: Install Libraries<br>
@@ -47,21 +48,22 @@ TFT_eSPI requires you to edit a header file inside the library folder to match y
     5. Set Frequency: #define SPI_FREQUENCY 27000000 (Max stability for ST7796S).<br>
 
 Step 3: Example Code Snippet<br>
-```   #include <SPI.h>```<br>
-```   #include <TFT_eSPI.h> // Hardware-specific library```<br>
-```   TFT_eSPI tft = TFT_eSPI(); // Invoke library```<br>
-```   void setup() {```<br>
-```     tft.init();```<br>
-```     tft.setRotation(1); // Landscape```<br>
-```     tft.fillScreen(TFT_BLACK);```<br>
-```     tft.setTextColor(TFT_WHITE);```<br>
-```     tft.setTextSize(2);```<br>
-```     tft.setCursor(20, 20);```<br>
-```     tft.println("ESP32 + ST7796S Ready!");```<br>
-```   }```<br>
-```   void loop() {```<br>
-```     // Your code here```<br>
-```   }```<br>
+```   #include <SPI.h>
+   #include <TFT_eSPI.h> // Hardware-specific library
+   TFT_eSPI tft = TFT_eSPI(); // Invoke library
+   void setup() {
+     tft.init();
+     tft.setRotation(1); // Landscape
+     tft.fillScreen(TFT_BLACK);
+     tft.setTextColor(TFT_WHITE);
+     tft.setTextSize(2);
+     tft.setCursor(20, 20);
+     tft.println("ESP32 + ST7796S Ready!");
+   }
+   void loop() {
+     // Your code here
+   }
+```
 
 3. Documentation Resources<br>
    LCD Wiki: Search for "MSP4020" at lcdwiki.com for the full user manual and schematic.<br>
