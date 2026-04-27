@@ -15,7 +15,14 @@ RST	                GPIO 5                  LOW signal to put the module in powe
 3.3V                3.3V                    Power supply (2.5-3.3V)
 ```
 Add 10uF across 3.3V and GND for clean signal <br>
+
+# Classic
 Import library: MFRC522, 1.4.12 by Github Community
+sample code: RFID
+
+# Version 2
+Import library: RFID_MFRC522v2. 2.0.6 by Github Community
+sample code: RFID_v2
 
 # Reference:
 https://www.oceanlabz.in/esp32-s3-rfid-with-arduino-ide/ <br>
