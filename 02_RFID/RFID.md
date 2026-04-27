@@ -30,7 +30,7 @@ sample code: RFID_v2
 <img width="758" height="283" alt="image" src="https://github.com/user-attachments/assets/10ecf676-9f54-4fcf-b768-fd5af6d7aad5" />
 
 Based on the dump provided above, we can look at the Sector Trailers to identify the keys.<br>
-In a MIFARE Classic 1K card, the last block of every sector (Block 3, 7, 11, etc.) is the Sector Trailer. It is formatted as:<br>
+In a MIFARE Classic 1K card, the last block of every sector (Block 3, 7, 11,...55, 59, 63) is the Sector Trailer. It is formatted as:<br>
 [Key A (6 bytes)] [Access Bits (4 bytes)] [Key B (6 bytes)]
 
 1. Breaking down the Sector Trailer (Block 3, 7, or 11)<br>
