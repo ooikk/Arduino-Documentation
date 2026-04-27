@@ -71,3 +71,5 @@ Step 3: Example Code Snippet<br>
    TFT_eSPI Docs: Official documentation on Read the Docs.<br>
      https://doc-tft-espi.readthedocs.io/
 
+4. ESP32-S3 Pins Assignment
+<img width="1056" height="720" alt="ESP32-S3-Pins" src="https://github.com/user-attachments/assets/6069c03d-e222-4af0-b8f0-81319b4cd989" />
