@@ -52,9 +52,9 @@ To Read: You should try authenticating with Key A (00 00 00 00 00 00).<br>
 To Write: You should try authenticating with Key B (FF FF FF FF FF FF).<br>
 
 4. Important Observation: Block 0
-In your dump, Block 0 (the Manufacturer Block) contains:<br>
+In the dump, Block 0 (the Manufacturer Block) contains:<br>
 2E 69 29 07 69 08 04 00 62 63 64 65 66 67 68 69<br>
-The first 4 bytes (2E 69 29 07) are your card's UID. If you ever need to identify this specific card in your code, those are the numbers to look for.<br>
+The first 4 bytes (2E 69 29 07) are the card's UID. If you ever need to identify this specific card in your code, those are the numbers to look for.<br>
 
 In MIFARE Classic cards, whether you use Key A or Key B depends on the Access Bits stored in the Sector Trailer. <br>
 In the above card's dump, the Access Bits were FF 07 80 69. This is the "factory default" configuration, and here is why it leads to using Key B for both:
