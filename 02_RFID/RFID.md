@@ -59,17 +59,17 @@ The first 4 bytes (2E 69 29 07) are the card's UID. If you ever need to identify
 In MIFARE Classic cards, whether you use Key A or Key B depends on the Access Bits stored in the Sector Trailer. <br>
 In the above card's dump, the Access Bits were FF 07 80 69. This is the "factory default" configuration, and here is why it leads to using Key B for both:
 
-1. The Role of Access BitsEvery sector has its own "rulebook" (the 4 bytes in the middle of the Sector Trailer). These bits define:<br>
+1. The Role of Access Bits. Every sector has its own "rulebook" (the 4 bytes in the middle of the Sector Trailer). These bits define:<br>
 - Which key can Read data.
 - Which key can Write data.
 - Which key can Change the keys themselves.
-2. Your Card's ConfigurationWith your current settings (FF 07 80 69), the card follows these rules:
+2. Your Card's Configuration. With your current settings (FF 07 80 69), the card follows these rules:
 - **Key A**: Is marked as "Internal/Protected." It can often be used for reading, but the card is configured to hide it (which is why it showed up as 00 in your dump).
 - **Key B**: Is marked as the "Master" for that sector. It has been given permission to both Read and Write to all data blocks in that sector.
 3. Why use the same key?
   It simplifies the workflow. Instead of needing to manage two different keys (one for the "Reader" device and one for the "Writer" device), you can use Key B as a single password that grants full access.
 
-4. Can they be different?Yes. In a professional system (like a canteen payment card), the configuration is usually different:
+4. Can they be different? Yes. In a professional system (like a canteen payment card), the configuration is usually different:
 - **Key A (Read Only)**: Given to the "Balance Checker" machine so it can see how much money you have, but cannot change it.
 - **Key B (Read/Write)**: Given only to the "Top-up" machine so it can add money to the card.
 
