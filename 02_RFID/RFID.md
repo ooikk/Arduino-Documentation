@@ -54,9 +54,7 @@ Why the Safety Measures are Critical<br>
 On standard MIFARE Classic 1K cards, this block is Read-Only. It contains the UID and the manufacturer's ID. Attempting to write here will usually return an error from the card, but it's best practice to block it in code.<br>
 2. Block 3 of every Sector (The Sector Trailer)<br>
 This is the most dangerous block to write to. It doesn't store data; it stores:<br>
-Key A (6 bytes)<br>
-Access Bits (4 bytes)<br>
-Key B (6 bytes)<br>
+Key A (6 bytes) | Access Bits (4 bytes) | Key B (6 bytes)<br>
 If you write "Hello World" to Block 3, you overwrite the keys with random text. Since you won't know the "new key," you will be permanently locked out of that sector.<br>
 Technical Tips for your S3 Setup<br>
 Buffer Size: The MIFARE_Write function requires exactly 16 bytes. If your string is shorter, the compiler might fill the rest with zeros, but it's safer to define a byte buffer[16] manually.<br>
