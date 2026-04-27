@@ -13,7 +13,7 @@ int R, G, B;
 void setup() {
   Serial.begin(115200);
   pixels.begin();            // INITIALIZE NeoPixel strip object
-  pixels.setBrightness(10);  // Set LED brightness, max 255
+  pixels.setBrightness(128);  // Set LED brightness, max 255
 }
 
 void loop() {
