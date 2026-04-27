@@ -46,6 +46,10 @@ These bits tell the card that Key A is used for reading and Key B is used for wr
 The "Authentication Key" isn't a third key; it simply refers to whichever key (A or B) you choose to use to prove to the card that you have permission to access that sector.<br>
 To Read: You should try authenticating with Key A (00 00 00 00 00 00).<br>
 To Write: You should try authenticating with Key B (FF FF FF FF FF FF).<br>
+4. Important Observation: Block 0
+In your dump, Block 0 (the Manufacturer Block) contains:<br>
+2E 69 29 07 69 08 04 00 62 63 64 65 66 67 68 69<br>
+The first 4 bytes (2E 69 29 07) are your card's UID. If you ever need to identify this specific card in your code, those are the numbers to look for.<br>
 
 # Writing to the card
 Writing to a MIFARE Classic card is more complex than reading because you must authenticate with the correct key (usually 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF for new cards) before the card will allow a write operation.<br>
