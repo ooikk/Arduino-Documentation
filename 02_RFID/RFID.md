@@ -24,6 +24,29 @@ sample code: RFID
 Import library: RFID_MFRC522v2. 2.0.6 by Github Community
 sample code: RFID_v2
 
+# Card information
+<img width="740" height="279" alt="image" src="https://github.com/user-attachments/assets/670741b6-34a5-43d3-a93e-7b217c09fb74" />
+
+Based on the dump provided above, we can look at the Sector Trailers to identify the keys.<br>
+In a MIFARE Classic 1K card, the last block of every sector (Block 3, 7, 11, etc.) is the Sector Trailer. It is formatted as:<br>
+[Key A (6 bytes)] [Access Bits (4 bytes)] [Key B (6 bytes)]<br><br>
+
+1. Breaking down the Sector Trailer (Block 3, 7, or 11)<br>
+Looking at the dump data for Block 3, 7, and 11, the data is:<br>
+00 00 00 00 00 00 FF 07 80 69 FF FF FF FF FF FF<br>
+2. Identifying the Keys<br>
+From that data string, we can extract the following:<br>
+Key A: 00 00 00 00 00 00<br>
+Note: In many dumps, if Key A is private, the reader will show it as zeros or hide it. However, if this is a custom card you've worked with, it’s possible the key was literally set to all zeros.<br>
+Key B: FF FF FF FF FF FF<br>
+This is the "Factory Default" key. It is fully visible at the end of the block.<br>
+Access Bits: FF 07 80 69<br>
+These bits tell the card that Key A is used for reading and Key B is used for writing/changing the keys.<br>
+3. Which is the "Authentication Key"?<br>
+The "Authentication Key" isn't a third key; it simply refers to whichever key (A or B) you choose to use to prove to the card that you have permission to access that sector.<br>
+To Read: You should try authenticating with Key A (00 00 00 00 00 00).<br>
+To Write: You should try authenticating with Key B (FF FF FF FF FF FF).<br>
+
 # Writing to the card
 Writing to a MIFARE Classic card is more complex than reading because you must authenticate with the correct key (usually 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF for new cards) before the card will allow a write operation.<br>
 Why the Safety Measures are Critical<br>
