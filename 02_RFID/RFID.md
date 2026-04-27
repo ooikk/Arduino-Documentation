@@ -18,3 +18,4 @@ Add 10uF across 3.3V and GND for clean signal
 
 # Reference:
 https://www.oceanlabz.in/esp32-s3-rfid-with-arduino-ide/
+https://randomnerdtutorials.com/esp32-mfrc522-rfid-reader-arduino/#rfid-reader-writer-intro
