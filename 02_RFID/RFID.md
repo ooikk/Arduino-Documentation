@@ -63,8 +63,8 @@ In the above card's dump, the Access Bits were FF 07 80 69. This is the "factory
 - Which key can Read data.
 - Which key can Write data.
 - Which key can Change the keys themselves.
-2. Your Card's Configuration. With your current settings (FF 07 80 69), the card follows these rules:
-- **Key A**: Is marked as "Internal/Protected." It can often be used for reading, but the card is configured to hide it (which is why it showed up as 00 in your dump).
+2. The Card's Configuration. With the current settings (FF 07 80 69), the card follows these rules:
+- **Key A**: Is marked as "Internal/Protected." It can often be used for reading, but the card is configured to hide it (which is why it showed up as 00 in the dump).
 - **Key B**: Is marked as the "Master" for that sector. It has been given permission to both Read and Write to all data blocks in that sector.
 3. Why use the same key?
   It simplifies the workflow. Instead of needing to manage two different keys (one for the "Reader" device and one for the "Writer" device), you can use Key B as a single password that grants full access.
@@ -73,11 +73,11 @@ In the above card's dump, the Access Bits were FF 07 80 69. This is the "factory
 - **Key A (Read Only)**: Given to the "Balance Checker" machine so it can see how much money you have, but cannot change it.
 - **Key B (Read/Write)**: Given only to the "Top-up" machine so it can add money to the card.
 
-Summary of your Card
+Summary of the Card
 ```
-Task       Allowed Key     Why?
-Read Data  Key A or Key B  Access bits allow both.
-Write Data Key B Only      Access bits restrict writing to the "Higher" key (Key B).
+Task         Allowed Key       Why?
+Read Data    Key A or Key B    Access bits allow both.
+Write Data   Key B Only        Access bits restrict writing to the "Higher" key (Key B).
 ````
 # Reading from the card
 **The 18-Byte Buffer**: Even though a block is only 16 bytes, the MIFARE_Read function requires an 18-byte buffer to accommodate the two extra bytes used for the Cyclic Redundancy Check (CRC)
@@ -96,7 +96,7 @@ On standard MIFARE Classic 1K cards, this block is Read-Only. It contains the UI
 This is the most dangerous block to write to. It doesn't store data; it stores:<br>
 Key A (6 bytes) | Access Bits (4 bytes) | Key B (6 bytes)<br>
 If you write "Hello World" to Block 3, you overwrite the keys with random text. Since you won't know the "new key," you will be permanently locked out of that sector.<br>
-Technical Tips for your S3 Setup<br>
+Technical Tips for the S3 Setup<br>
 Buffer Size: The MIFARE_Write function requires exactly 16 bytes. If your string is shorter, the compiler might fill the rest with zeros, but it's safer to define a byte buffer[16] manually.<br>
 Authentication: Remember that you must authenticate per sector. If you want to write to Sector 1 and then Sector 2, you have to call PCD_Authenticate again for the new sector.<br>
 Timeout: If you still get the "Timeout" error during the authentication step, try lowering the SPI frequency to 1000000 (1MHz).<br>
