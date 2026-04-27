@@ -79,6 +79,14 @@ Task       Allowed Key     Why?
 Read Data  Key A or Key B  Access bits allow both.
 Write Data Key B Only      Access bits restrict writing to the "Higher" key (Key B).
 ````
+# Reading from the card
+**The 18-Byte Buffer**: Even though a block is only 16 bytes, the MIFARE_Read function requires an 18-byte buffer to accommodate the two extra bytes used for the Cyclic Redundancy Check (CRC)
+
+**Absolute Block Calculation**: The card sees memory as a flat list of blocks (0 to 63). Since each sector has 4 blocks, the formula is always:
+- (Sector * 4) + Block
+
+**Authentication Command**: Used PICC_CMD_MF_AUTH_KEY_B because the card image showed Key B was active and accessible. If you ever use a card where Key B is "hidden," you would switch this back to PICC_CMD_MF_AUTH_KEY_A.
+
 # Writing to the card
 Writing to a MIFARE Classic card is more complex than reading because you must authenticate with the correct key (usually 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF for new cards) before the card will allow a write operation.<br>
 Why the Safety Measures are Critical<br>
