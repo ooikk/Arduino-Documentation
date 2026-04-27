@@ -25,15 +25,18 @@ Import library: RFID_MFRC522v2. 2.0.6 by Github Community
 sample code: RFID_v2
 
 # Card information
-<img width="740" height="279" alt="image" src="https://github.com/user-attachments/assets/670741b6-34a5-43d3-a93e-7b217c09fb74" />
+<img width="806" height="384" alt="image" src="https://github.com/user-attachments/assets/0b785230-987c-4df8-a9fa-d2a86216a89e" />
+:
+<img width="758" height="283" alt="image" src="https://github.com/user-attachments/assets/10ecf676-9f54-4fcf-b768-fd5af6d7aad5" />
 
 Based on the dump provided above, we can look at the Sector Trailers to identify the keys.<br>
 In a MIFARE Classic 1K card, the last block of every sector (Block 3, 7, 11, etc.) is the Sector Trailer. It is formatted as:<br>
-[Key A (6 bytes)] [Access Bits (4 bytes)] [Key B (6 bytes)]<br><br>
+[Key A (6 bytes)] [Access Bits (4 bytes)] [Key B (6 bytes)]
 
 1. Breaking down the Sector Trailer (Block 3, 7, or 11)<br>
 Looking at the dump data for Block 3, 7, and 11, the data is:<br>
 00 00 00 00 00 00 FF 07 80 69 FF FF FF FF FF FF<br>
+
 2. Identifying the Keys<br>
 From that data string, we can extract the following:<br>
 Key A: 00 00 00 00 00 00<br>
@@ -42,15 +45,40 @@ Key B: FF FF FF FF FF FF<br>
 This is the "Factory Default" key. It is fully visible at the end of the block.<br>
 Access Bits: FF 07 80 69<br>
 These bits tell the card that Key A is used for reading and Key B is used for writing/changing the keys.<br>
+
 3. Which is the "Authentication Key"?<br>
 The "Authentication Key" isn't a third key; it simply refers to whichever key (A or B) you choose to use to prove to the card that you have permission to access that sector.<br>
 To Read: You should try authenticating with Key A (00 00 00 00 00 00).<br>
 To Write: You should try authenticating with Key B (FF FF FF FF FF FF).<br>
+
 4. Important Observation: Block 0
 In your dump, Block 0 (the Manufacturer Block) contains:<br>
 2E 69 29 07 69 08 04 00 62 63 64 65 66 67 68 69<br>
 The first 4 bytes (2E 69 29 07) are your card's UID. If you ever need to identify this specific card in your code, those are the numbers to look for.<br>
 
+In MIFARE Classic cards, whether you use Key A or Key B depends on the Access Bits stored in the Sector Trailer. <br>
+In the above card's dump, the Access Bits were FF 07 80 69. This is the "factory default" configuration, and here is why it leads to using Key B for both:
+
+1. The Role of Access BitsEvery sector has its own "rulebook" (the 4 bytes in the middle of the Sector Trailer). These bits define:<br>
+- Which key can Read data.
+- Which key can Write data.
+- Which key can Change the keys themselves.
+2. Your Card's ConfigurationWith your current settings (FF 07 80 69), the card follows these rules:
+- **Key A**: Is marked as "Internal/Protected." It can often be used for reading, but the card is configured to hide it (which is why it showed up as 00 in your dump).
+- **Key B**: Is marked as the "Master" for that sector. It has been given permission to both Read and Write to all data blocks in that sector.
+3. Why use the same key?
+  It simplifies the workflow. Instead of needing to manage two different keys (one for the "Reader" device and one for the "Writer" device), you can use Key B as a single password that grants full access.
+
+4. Can they be different?Yes. In a professional system (like a canteen payment card), the configuration is usually different:
+- **Key A (Read Only)**: Given to the "Balance Checker" machine so it can see how much money you have, but cannot change it.
+- **Key B (Read/Write)**: Given only to the "Top-up" machine so it can add money to the card.
+
+Summary of your Card
+```
+Task       Allowed Key     Why?
+Read Data  Key A or Key B  Access bits allow both.
+Write Data Key B Only      Access bits restrict writing to the "Higher" key (Key B).
+````
 # Writing to the card
 Writing to a MIFARE Classic card is more complex than reading because you must authenticate with the correct key (usually 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF for new cards) before the card will allow a write operation.<br>
 Why the Safety Measures are Critical<br>
