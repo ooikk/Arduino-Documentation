@@ -14,7 +14,8 @@ GND	                GND
 RST	                GPIO 5                  LOW signal to put the module in power-down mode; send a HIGH signal to reset the module
 3.3V                3.3V                    Power supply (2.5-3.3V)
 ```
-Add 10uF across 3.3V and GND for clean signal
+Add 10uF across 3.3V and GND for clean signal <br>
+Import library: MFRC522, 1.4.12 by Github Community
 
 # Reference:
 https://www.oceanlabz.in/esp32-s3-rfid-with-arduino-ide/ <br>
