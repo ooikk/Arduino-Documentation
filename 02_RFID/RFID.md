@@ -17,5 +17,5 @@ RST	                GPIO 5                  LOW signal to put the module in powe
 Add 10uF across 3.3V and GND for clean signal
 
 # Reference:
-https://www.oceanlabz.in/esp32-s3-rfid-with-arduino-ide/
+https://www.oceanlabz.in/esp32-s3-rfid-with-arduino-ide/ <br>
 https://randomnerdtutorials.com/esp32-mfrc522-rfid-reader-arduino/#rfid-reader-writer-intro
