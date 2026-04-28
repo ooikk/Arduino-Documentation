@@ -166,95 +166,128 @@ Here’s how I2C communication between two ESP32 boards works:
 
 <img width="1006" height="545" alt="image" src="https://github.com/user-attachments/assets/6a64a712-342f-4e68-88e3-ea2e65add45c" />
 
-ESP32 I2C Slave – Arduino Code
+**Master Code**
+
+The Master initiates all communication. It "pushes" data to the slave and "pulls" data when needed.
 ```
-/*********
-  Rui Santos & Sara Santos - Random Nerd Tutorials
-  Complete project details at https://RandomNerdTutorials.com/esp32-i2c-master-slave-arduino/
-  ESP32 I2C Slave example: https://github.com/espressif/arduino-esp32/blob/master/libraries/Wire/examples/WireSlave/WireSlave.ino
-*********/
+#include <Wire.h>
+#define I2C_SDA 8
+#define I2C_SCL 9
+#define SLAVE_ADDR 0x08
 
-#include "Wire.h"
-
-#define I2C_DEV_ADDR 0x55
-
-uint32_t i = 0;
-
-void onRequest() {
-  Wire.print(i++);
-  Wire.print(" Packets.");
-  Serial.println("onRequest");
-  Serial.println();
+void setup() {
+  Serial.begin(115200);
+  // Initialize I2C as Master
+  Wire.begin(I2C_SDA, I2C_SCL); 
+  Serial.println("I2C Master Initialized");
 }
 
-void onReceive(int len) {
-  Serial.printf("onReceive[%d]: ", len);
+void loop() {
+  // Example 1: Send Data
+  byte dataToSend[] = {0x10, 0x20, 0x30, 0x40};
+  sendDataToSlave(dataToSend, sizeof(dataToSend));
+  
+  delay(2000);
+
+  // Example 2: Receive Data
+  int requestLen = 4;
+  byte* received = receiveDataFromSlave(requestLen);
+  
+  if (received != nullptr) {
+    Serial.print("Master Received: ");
+    for (int i = 0; i < requestLen; i++) {
+      Serial.print(received[i], HEX);
+      Serial.print(" ");
+    }
+    Serial.println();
+  }
+  
+  delay(2000);
+}
+
+// Function to send a byte array to Slave
+void sendDataToSlave(byte data[], int length) {
+  Wire.beginTransmission(SLAVE_ADDR);
+  Wire.write(data, length);
+  byte status = Wire.endTransmission();
+  
+  if (status == 0) Serial.println("Send Success");
+  else Serial.println("Send Failed");
+}
+
+// Function to return data received from Slave
+byte* receiveDataFromSlave(int length) {
+  static byte buffer[32]; // Buffer to hold incoming bytes
+  Wire.requestFrom(SLAVE_ADDR, length);
+  
+  int i = 0;
+  while (Wire.available() && i < length) {
+    buffer[i] = Wire.read();
+    i++;
+  }
+  
+  return (i > 0) ? buffer : nullptr;
+}
+
+```
+**Slave Code**
+
+The Slave is passive. It waits for the Master to trigger either the onReceive event (receiving data) or the onRequest event (sending data).
+```
+#include <Wire.h>
+
+#define I2C_SDA 8
+#define I2C_SCL 9
+#define SLAVE_ADDR 0x08
+
+byte responseData[] = {0xAA, 0xBB, 0xCC, 0xDD}; // Data to send when Master asks
+
+void setup() {
+  Serial.begin(115200);
+  // Initialize I2C as Slave
+  Wire.begin(SLAVE_ADDR, I2C_SDA, I2C_SCL);
+  
+  // Register callback functions
+  Wire.onReceive(receiveEvent);
+  Wire.onRequest(requestEvent);
+  
+  Serial.println("I2C Slave Ready");
+}
+
+void loop() {
+  delay(100); // Slave loop remains empty or handles local tasks
+}
+
+// Called when Master sends data to Slave
+void receiveEvent(int howMany) {
+  Serial.print("Slave Received: ");
   while (Wire.available()) {
-    Serial.write(Wire.read());
+    byte b = Wire.read();
+    Serial.print(b, HEX);
+    Serial.print(" ");
   }
   Serial.println();
 }
 
-void setup() {
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  Wire.onReceive(onReceive);
-  Wire.onRequest(onRequest);
-  Wire.begin((uint8_t)I2C_DEV_ADDR);
-
-/*#if CONFIG_IDF_TARGET_ESP32
-  char message[64];
-  snprintf(message, 64, "%lu Packets.", i++);
-  Wire.slaveWrite((uint8_t *)message, strlen(message));
-  Serial.print('Printing config %lu', i);
-#endif*/
-}
-
-void loop() {
-  
+// Called when Master requests data from Slave
+void requestEvent() {
+  // Master determines how many bytes it wants; Slave sends its buffer
+  Wire.write(responseData, sizeof(responseData));
+  Serial.println("Slave sent data to Master");
 }
 ```
+**Key Technical Considerations**
 
-ESP32 I2C Master – Arduino Code
-```
-/*********
-  Rui Santos & Sara Santos - Random Nerd Tutorials
-  Complete project details at https://RandomNerdTutorials.com/esp32-i2c-master-slave-arduino/
-  ESP32 I2C Master Example: https://github.com/espressif/arduino-esp32/blob/master/libraries/Wire/examples/WireMaster/WireMaster.ino
-*********/
+Buffer Sizes: The standard Wire library has a buffer limit (usually 32 bytes). If you need to send larger data arrays, you must break them into chunks.
 
-#include "Wire.h"
+Clock Stretching: ESP32-S3 supports clock stretching. If your Slave is busy processing when the Master requests data, the Slave will hold the SCL line low to tell the Master to wait.
 
-#define I2C_DEV_ADDR 0x55
+Static Buffers: In the Master code, the buffer is declared as static. This ensures the pointer returned to the loop() remains valid after the function scope ends.
 
-uint32_t i = 0;
-
-void setup() {
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  Wire.begin();
-}
-
-void loop() {
-  delay(5000);
-
-  // Write message to the slave
-  Wire.beginTransmission(I2C_DEV_ADDR);
-  Wire.printf("Hello World! %lu", i++);
-  uint8_t error = Wire.endTransmission(true);
-  Serial.printf("endTransmission: %u\n", error);
-
-  // Read 16 bytes from the slave
-  uint8_t bytesReceived = Wire.requestFrom(I2C_DEV_ADDR, 16);
-  
-  Serial.printf("requestFrom: %u\n", bytesReceived);
-  if ((bool)bytesReceived) {  //If received more than zero bytes
-    uint8_t temp[bytesReceived];
-    Wire.readBytes(temp, bytesReceived);
-    log_print_buf(temp, bytesReceived);
-  }
-}
-```
+Error Handling: Wire.endTransmission() returns a status code.
+- 0: Success.
+- 2: Address NACK (Slave not found/wrong address).
+- 4: Other error (usually electrical noise or missing pull-ups).
 
 ## Reference:
 
