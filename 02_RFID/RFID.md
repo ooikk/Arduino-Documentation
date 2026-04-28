@@ -7,7 +7,7 @@
 MFRC522 RFID Reader	ESP32-S3 Pin            Description
 SDA	                GPIO 10/ FSPICS0        SPI signal input, I2C data line, or UART data input
 SCK	                GPIO 12/ FSPICLK        SPI clock
-MOSI                GPIO 11/ FSPID          SPI data input
+MOSI                GPIO 11/ FSPID          SPI output data 
 MISO                GPIO 13/ FSPIQ          SPI master-in-slave-out, I2C serial clock, or UART serial output
 IRQ                 Don’t connect           Interrupt pin; signals the microcontroller when an RFID tag is nearby
 GND	                GND	
