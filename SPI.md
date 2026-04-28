@@ -173,8 +173,7 @@ void spiCommand(SPIClass *spi, byte data) {
   digitalWrite(spi->pinSS(), HIGH);  //pull ss high to signify end of data transfer
   spi->endTransaction();
 }
-```
-## I2C Communication Between Two ESP32
+
 
 ## Reference: 
 https://randomnerdtutorials.com/esp32-spi-communication-arduino/
