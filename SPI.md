@@ -89,7 +89,7 @@ Here is the example of the final code.
  *
  * created 30/04/2018 by Alistair Symonds
  */
-#include <Arduino.h>
+// #include <Arduino.h>
 #include <SPI.h>
 
 // Define ALTERNATE_PINS to use non-standard GPIO pins for SPI bus
@@ -105,15 +105,15 @@ Here is the example of the final code.
 #define HSPI_SCLK 25
 #define HSPI_SS   32
 #else
-#define VSPI_MISO MISO
-#define VSPI_MOSI MOSI
-#define VSPI_SCLK SCK
-#define VSPI_SS   SS
+#define HSPI_MISO MISO   // 13
+#define HSPI_MOSI MOSI   // 11
+#define HSPI_SCLK SCK    // 12
+#define HSPI_SS   SS     // 10
 
-#define HSPI_MISO 12
-#define HSPI_MOSI 13
-#define HSPI_SCLK 14
-#define HSPI_SS   15
+#define VSPI_MISO 37
+#define VSPI_MOSI 35
+#define VSPI_SCLK 36
+#define VSPI_SS   39
 #endif
 
 #if !defined(CONFIG_IDF_TARGET_ESP32)
@@ -135,7 +135,7 @@ void setup() {
 
 #ifndef ALTERNATE_PINS
   //initialize vspi with default pins
-  //SCLK = 18, MISO = 19, MOSI = 23, SS = 5
+  //SCLK = 36, MISO = 37, MOSI = 35, SS = 39
   vspi->begin();
 #else
   //alternatively route through GPIO pins of your choice
@@ -144,7 +144,7 @@ void setup() {
 
 #ifndef ALTERNATE_PINS
   //initialize hspi with default pins
-  //SCLK = 14, MISO = 12, MOSI = 13, SS = 15
+  //SCLK = 12, MISO = 13, MOSI = 11, SS = 10
   hspi->begin();
 #else
   //alternatively route through GPIO pins
