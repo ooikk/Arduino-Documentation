@@ -6,7 +6,7 @@ I²C means **I**nter **I**ntegrated **C**ircuit (it’s pronounced I-squared-C),
 - multiple slaves to one master: for example, your ESP32 reads from a BME280 sensor using I2C and writes the sensor readings in an I2C OLED display.
 - multiple masters controlling the same slave: for example, two ESP32 boards writing data to the same I2C OLED display.
 
-<img width="1008" height="595" alt="image" src="https://github.com/user-attachments/assets/36fe91e4-1227-4a22-9cd1-9e8760c9d596" />
+<img src="https://github.com/user-attachments/assets/36fe91e4-1227-4a22-9cd1-9e8760c9d596" alt="image" style="width: 75%; height: auto;" />
 
 The ESP32 supports I2C communication through its two I2C bus interfaces that can serve as I2C master or slave, depending on the user’s configuration. Accordingly to the ESP32 datasheet, the I2C interfaces of the ESP32 supports:
 - Standard mode (100 Kbit/s) 
@@ -46,7 +46,7 @@ When we have multiple devices with different addresses, it is trivial how to set
 
 Example: The OLED and the BME280 have different addresses, we can use the same SDA and SCL lines without any problem. The OLED display address is 0x3C and the BME280 address is 0x76.
 
-<img width="476" height="564" alt="image" src="https://github.com/user-attachments/assets/5d620f55-70f3-4ae4-a035-6ea24f924a64" />
+<img src="https://github.com/user-attachments/assets/5d620f55-70f3-4ae4-a035-6ea24f924a64"  alt="image" style="width: 50%; height: auto;"/>
 
 ```
 if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
@@ -61,7 +61,6 @@ if (!status) {
 }
 ```
 
-
 ## Multiple I2C Buses
 The ESP32-S3 actually has two independent I2C peripherals (Wire and Wire1). This is very useful if you have two devices with the same address or if you want to run one sensor at 100kHz and another at 400kHz.
 ```
@@ -73,7 +72,9 @@ void setup() {
   I2C_two.begin(10, 11, 100000);      // Second bus on GPIO 10 and 11
 }
 ```
+
 Example, one of the sensors uses the default pins, and the other uses GPIO 10 and GPIO 11.
+
 ```
 /*
   Rui Santos
@@ -151,9 +152,11 @@ void loop() {
   delay(5000);
 }
 ```
+
 ## I2C Communication Between Two ESP32
 Start by connecting the two ESP32 boards with each other. Use the default I2C pins for the boards you’re using. Don’t forget to connect the GND pins together.
-<img width="1014" height="786" alt="image" src="https://github.com/user-attachments/assets/07cc6405-8b46-46d3-892d-2fd3403ded62" />
+
+<img src="https://github.com/user-attachments/assets/07cc6405-8b46-46d3-892d-2fd3403ded62"  alt="image" style="width: 50%; height: auto;"/>
 
 ```
 I2C Signal     ESP32 Master	 ESP32 Slave
@@ -164,11 +167,12 @@ Gnd            Gnd           Gnd
 
 Here’s how I2C communication between two ESP32 boards works:
 
-<img width="1006" height="545" alt="image" src="https://github.com/user-attachments/assets/6a64a712-342f-4e68-88e3-ea2e65add45c" />
+<img src="https://github.com/user-attachments/assets/6a64a712-342f-4e68-88e3-ea2e65add45c" alt="image" style="width: 75%; height: auto;"/>
 
 **Master Code**
 
 The Master initiates all communication. It "pushes" data to the slave and "pulls" data when needed.
+
 ```
 #include <Wire.h>
 #define I2C_SDA 8
@@ -233,6 +237,7 @@ byte* receiveDataFromSlave(int length) {
 **Slave Code**
 
 The Slave is passive. It waits for the Master to trigger either the onReceive event (receiving data) or the onRequest event (sending data).
+
 ```
 #include <Wire.h>
 
@@ -276,6 +281,7 @@ void requestEvent() {
   Serial.println("Slave sent data to Master");
 }
 ```
+
 **Key Technical Considerations**
 
 Buffer Sizes: The standard Wire library has a buffer limit (usually 32 bytes). If you need to send larger data arrays, you must break them into chunks.
