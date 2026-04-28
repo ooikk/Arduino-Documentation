@@ -151,7 +151,110 @@ void loop() {
   delay(5000);
 }
 ```
+## I2C Communication Between Two ESP32
+Start by connecting the two ESP32 boards with each other. Use the default I2C pins for the boards you’re using. Don’t forget to connect the GND pins together.
+<img width="1014" height="786" alt="image" src="https://github.com/user-attachments/assets/07cc6405-8b46-46d3-892d-2fd3403ded62" />
 
+```
+I2C Signal     ESP32 Master	 ESP32 Slave
+SDA (Data)     GPIO 8        GPIO 8        
+SCL (Clock)    GPIO 9        GPIO 9
+Gnd            Gnd           Gnd
+```
+
+Here’s how I2C communication between two ESP32 boards works:
+
+<img width="1006" height="545" alt="image" src="https://github.com/user-attachments/assets/6a64a712-342f-4e68-88e3-ea2e65add45c" />
+
+ESP32 I2C Slave – Arduino Code
+```
+/*********
+  Rui Santos & Sara Santos - Random Nerd Tutorials
+  Complete project details at https://RandomNerdTutorials.com/esp32-i2c-master-slave-arduino/
+  ESP32 I2C Slave example: https://github.com/espressif/arduino-esp32/blob/master/libraries/Wire/examples/WireSlave/WireSlave.ino
+*********/
+
+#include "Wire.h"
+
+#define I2C_DEV_ADDR 0x55
+
+uint32_t i = 0;
+
+void onRequest() {
+  Wire.print(i++);
+  Wire.print(" Packets.");
+  Serial.println("onRequest");
+  Serial.println();
+}
+
+void onReceive(int len) {
+  Serial.printf("onReceive[%d]: ", len);
+  while (Wire.available()) {
+    Serial.write(Wire.read());
+  }
+  Serial.println();
+}
+
+void setup() {
+  Serial.begin(115200);
+  Serial.setDebugOutput(true);
+  Wire.onReceive(onReceive);
+  Wire.onRequest(onRequest);
+  Wire.begin((uint8_t)I2C_DEV_ADDR);
+
+/*#if CONFIG_IDF_TARGET_ESP32
+  char message[64];
+  snprintf(message, 64, "%lu Packets.", i++);
+  Wire.slaveWrite((uint8_t *)message, strlen(message));
+  Serial.print('Printing config %lu', i);
+#endif*/
+}
+
+void loop() {
+  
+}
+```
+
+ESP32 I2C Master – Arduino Code
+```
+/*********
+  Rui Santos & Sara Santos - Random Nerd Tutorials
+  Complete project details at https://RandomNerdTutorials.com/esp32-i2c-master-slave-arduino/
+  ESP32 I2C Master Example: https://github.com/espressif/arduino-esp32/blob/master/libraries/Wire/examples/WireMaster/WireMaster.ino
+*********/
+
+#include "Wire.h"
+
+#define I2C_DEV_ADDR 0x55
+
+uint32_t i = 0;
+
+void setup() {
+  Serial.begin(115200);
+  Serial.setDebugOutput(true);
+  Wire.begin();
+}
+
+void loop() {
+  delay(5000);
+
+  // Write message to the slave
+  Wire.beginTransmission(I2C_DEV_ADDR);
+  Wire.printf("Hello World! %lu", i++);
+  uint8_t error = Wire.endTransmission(true);
+  Serial.printf("endTransmission: %u\n", error);
+
+  // Read 16 bytes from the slave
+  uint8_t bytesReceived = Wire.requestFrom(I2C_DEV_ADDR, 16);
+  
+  Serial.printf("requestFrom: %u\n", bytesReceived);
+  if ((bool)bytesReceived) {  //If received more than zero bytes
+    uint8_t temp[bytesReceived];
+    Wire.readBytes(temp, bytesReceived);
+    log_print_buf(temp, bytesReceived);
+  }
+}
+```
 
 ## Reference:
 
