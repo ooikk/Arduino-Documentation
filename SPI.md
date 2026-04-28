@@ -7,14 +7,14 @@ For SPI communication you need four lines:<br>
 - SCK: Serial Clock
 - CS /SS: Chip Select (used to select the device when multiple peripherals are used on the same SPI bus)<br>
 
-<img width="903" height="254" alt="image" src="https://github.com/user-attachments/assets/85e4fd23-24cf-46db-b761-6496f441d13e" />
+<img src="https://github.com/user-attachments/assets/85e4fd23-24cf-46db-b761-6496f441d13e"  alt="image" style="width: 75%; height: auto;" />
 
 ## ESP32-S3 Default SPI Pins
 The ESP32 integrates 4 SPI peripherals: SPI0, SPI1, SPI2 (commonly referred to as HSPI), and SPI3 (commonly referred to as VSPI).
 
 SP0 and SP1 are used internally to communicate with the built-in flash memory. You can use HSPI and VSPI to communicate with other devices. HSPI and VSPI have independent bus signals, and each bus can drive up to three SPI slaves.
 
-<img width="1007" height="190" alt="image" src="https://github.com/user-attachments/assets/4f10774c-3865-447d-8831-a3d207e15680" />
+<img src="https://github.com/user-attachments/assets/4f10774c-3865-447d-8831-a3d207e15680"  alt="image" style="width: 75%; height: auto;"/>
 
 You can use the following code to find the default SPI pins:
 
@@ -39,8 +39,8 @@ void loop() {
 ```
 ## Multiple SPI Devices (same bus, different CS pin)
 
-<img width="904" height="495" alt="image" src="https://github.com/user-attachments/assets/3f7e2736-9b78-4ce8-a4e4-a5a075e19e4b" />
-
+<img src="https://github.com/user-attachments/assets/3f7e2736-9b78-4ce8-a4e4-a5a075e19e4b" alt="image" style="width: 75%; height: auto;" />
+ 
 To select the device use:
 ```
 digitalWrite(CS_1, HIGH); // disable CS pin from peripheral 1
@@ -48,7 +48,7 @@ digitalWrite(CS_2, LOW);  // enable CS pin to read from peripheral 2
 ```
 ## ESP32 Using Two SPI Bus Interfaces (Use HSPI and VSPI simultaneously)
 
-<img width="897" height="497" alt="image" src="https://github.com/user-attachments/assets/f62d5fa5-74cc-4047-ad84-9c1de4100111" />
+<img alt="image" style="width: 75%; height: auto;"  src="https://github.com/user-attachments/assets/f62d5fa5-74cc-4047-ad84-9c1de4100111" />
 
 To use HSPI and VSPI simultaneously, you just need to:
 ```
