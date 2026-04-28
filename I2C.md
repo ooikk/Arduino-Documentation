@@ -73,7 +73,7 @@ void setup() {
   I2C_two.begin(10, 11, 100000);      // Second bus on GPIO 10 and 11
 }
 ```
-Example complete code:
+Example, one of the sensors uses the default pins, and the other uses GPIO 32 and GPIO 33.
 ```
 /*
   Rui Santos
