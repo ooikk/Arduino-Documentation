@@ -174,6 +174,8 @@ void spiCommand(SPIClass *spi, byte data) {
   spi->endTransaction();
 }
 ```
+## I2C Communication Between Two ESP32
+
 ## Reference: 
 https://randomnerdtutorials.com/esp32-spi-communication-arduino/
 
