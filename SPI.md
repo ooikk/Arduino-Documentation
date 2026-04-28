@@ -174,7 +174,6 @@ void spiCommand(SPIClass *spi, byte data) {
   spi->endTransaction();
 }
 ```
-Reference: 
-
+## Reference: 
 https://randomnerdtutorials.com/esp32-spi-communication-arduino/
 
