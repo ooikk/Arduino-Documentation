@@ -1,6 +1,19 @@
 # Arduino-Documentation
 Store all link related to Arduino
 
+# Install and Setup Arduino IDE
+1. Get the latest Arduino IDE here: https://www.arduino.cc/en/software/
+2. Open IDE, go to: **File > Preferences**, under **Settings > Additional Boards Manager URLs**. Add this:
+   https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+3. Go to the “Board manager” tab, on the left-hand side of the screen. Type “esp32” in the search bar.
+   Install **esp32 (by Espressif Systems)**
+4. Go to **Tools > Board** and select **ESP32S3 Dev Module**
+5. Connect the ESP32S3 Dev Module to your computer using a USB cable. Then, go to **Tools > Port** and select the COM port that the ESP32S3 Dev Module is connected to.
+6. If you have trouble to connect to computer, identify the driver for your ESP32S3:<br>
+   (a) CH343P Driver (Used by your new ESP32-S3 board), click the link for CH343SER.EXE: https://www.wch-ic.com/downloads/CH343SER_EXE.html<br>
+   (b) CP2102 Driver (Used by older/standard ESP32 boards), click the link for "CP210x Universal Windows Driver": https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads<br>
+
+
 # 10 ESP32 Pro Features: Take your Projects to the Next Level!
 https://www.youtube.com/watch?v=_HzG5FjH_6g
 
