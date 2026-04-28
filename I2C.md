@@ -73,7 +73,7 @@ void setup() {
   I2C_two.begin(10, 11, 100000);      // Second bus on GPIO 10 and 11
 }
 ```
-Example, one of the sensors uses the default pins, and the other uses GPIO 32 and GPIO 33.
+Example, one of the sensors uses the default pins, and the other uses GPIO 10 and GPIO 11.
 ```
 /*
   Rui Santos
@@ -90,8 +90,8 @@ Example, one of the sensors uses the default pins, and the other uses GPIO 32 an
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 
-#define SDA_2 33
-#define SCL_2 32
+#define SDA_2 11
+#define SCL_2 10
 
 Adafruit_BME280 bme1;
 Adafruit_BME280 bme2;
