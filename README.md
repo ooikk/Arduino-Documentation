@@ -86,3 +86,6 @@ Step 3: Example Code Snippet<br>
 
 4. ESP32-S3 Pins Assignment
 <img width="1056" height="720" alt="ESP32-S3-Pins" src="https://github.com/user-attachments/assets/6069c03d-e222-4af0-b8f0-81319b4cd989" />
+
+<img width="1149" height="800" alt="image" src="https://github.com/user-attachments/assets/ff95dae1-60c7-4860-8398-d2eef7d9ca09" />
+
