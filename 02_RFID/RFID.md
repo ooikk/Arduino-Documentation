@@ -5,10 +5,10 @@
 # Pins assignment
 ```
 MFRC522 RFID Reader	ESP32-S3 Pin            Description
-SDA	                GPIO 10/ FSPICS0        SPI signal input, I2C data line, or UART data input
+SDA	                GPIO 10/ FSPICS0        SPI CS
 SCK	                GPIO 12/ FSPICLK        SPI clock
-MOSI                GPIO 11/ FSPID          SPI output data 
-MISO                GPIO 13/ FSPIQ          SPI master-in-slave-out, I2C serial clock, or UART serial output
+MOSI                GPIO 11/ FSPID          SPI Data Out: master-out-slave-in
+MISO                GPIO 13/ FSPIQ          SPI Data In: master-in-slave-out
 IRQ                 Don’t connect           Interrupt pin; signals the microcontroller when an RFID tag is nearby
 GND	                GND	
 RST	                GPIO 5                  LOW signal to put the module in power-down mode; send a HIGH signal to reset the module
