@@ -15,6 +15,14 @@ The ESP32 supports I2C communication through its two I2C bus interfaces that can
 - 7-bit/10-bit addressing mode 
 - Dual addressing mode. Users can program command registers to control I²C interfaces, so that they have more flexibility
 
+```
+Mode          Frequency          Status with ESP32-S3
+Standard      100 kHz            Very stable, long wires okay.
+Fast Mode     400 kHz            Standard for most sensors.
+Fast Mode+    1 MHz              High performance.
+Ultra Fast    5 MHz              Ultra-high speed; requires very short wires.
+```
+
 ## Connecting I2C Devices with ESP32
 I2C communication protocol uses two wires to share information. One is used for the clock signal (SCL) and the other is used to send and receive data (SDA). The SDA and SCL lines are active low, so they should be pulled up with resistors. Typical values are 4.7k Ohm for 5V devices and 2.4k Ohm for 3.3V devices.
 ```
