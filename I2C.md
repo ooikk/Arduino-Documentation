@@ -191,11 +191,24 @@ The Master initiates all communication. It "pushes" data to the slave and "pulls
 #define I2C_SDA 8
 #define I2C_SCL 9
 #define SLAVE_ADDR 0x08
+#define I2C_FREQ 5000000 // 5MHz standard speed
 
 void setup() {
   Serial.begin(115200);
   // Initialize I2C as Master
-  Wire.begin(I2C_SDA, I2C_SCL); 
+  Wire.begin(I2C_SDA, I2C_SCL, I2C_FREQ); 
+
+  Serial.println("Initializing I2C Pins...");
+  // On ESP32-S3, it's safer to set the pins first, then the address
+  bool success = Wire.begin(I2C_SDA, I2C_SCL, I2C_FREQ); 
+  
+  if (success) {
+    Serial.println("I2C Hardware Initialized.");
+  } else {
+    Serial.println("I2C Hardware Initialization FAILED.");
+    return;
+  }
+
   Serial.println("I2C Master Initialized");
 }
 
@@ -246,6 +259,7 @@ byte* receiveDataFromSlave(int length) {
   return (i > 0) ? buffer : nullptr;
 }
 
+
 ```
 **Slave Code**
 
@@ -271,6 +285,7 @@ void setup() {
     Serial.println("I2C Hardware Initialized.");
   } else {
     Serial.println("I2C Hardware Initialization FAILED.");
+    return;
   }
 
   Wire.onReceive(receiveEvent);
