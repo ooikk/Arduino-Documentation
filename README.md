@@ -96,4 +96,31 @@ TFT_eSPI requires you to edit a header file inside the library folder to match y
    TFT_eSPI Docs: Official documentation on Read the Docs.<br>
      https://doc-tft-espi.readthedocs.io/
 
+# Circuit Simulators
 
+Tinkercad: 
+https://www.tinkercad.com/
+
+CRUMB:
+https://www.crumbsim.com/
+
+Falstad:
+https://www.falstad.com/circuit/
+
+Qucs:
+https://qucs.sourceforge.net/
+
+EveryCircuit:
+https://everycircuit.com/
+
+CircuitLab:
+https://www.circuitlab.com/
+
+LTspice:
+https://www.analog.com/en/resources/d...
+
+TINA-TI
+https://www.ti.com/tool/TINA-TI
+
+Proteus:
+https://www.labcenter.com/
