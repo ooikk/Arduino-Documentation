@@ -2,6 +2,7 @@
 
 https://wokwi.com/
 
+Add 2 ESP32-S3, modify the **diagram.json** file
 ```
 {
   "version": 1,
@@ -28,3 +29,4 @@ https://wokwi.com/
   "dependencies": {}
 }
 ```
+<img width="512" height="571" alt="image" src="https://github.com/user-attachments/assets/beb88851-3f20-42c2-8e62-b27a43275d98" />
