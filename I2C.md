@@ -55,7 +55,7 @@ When we have multiple devices with different addresses, it is trivial how to set
 Example: The OLED and the BME280 have different addresses, we can use the same SDA and SCL lines without any problem. The OLED display address is 0x3C and the BME280 address is 0x76.
 
 
-<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/fc9a4ca5-b842-49b9-9ef5-f846f9de4ce4" />
+<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/963cf283-f44c-4629-90f7-6306649d322f" />
 
 
 ```
@@ -166,8 +166,8 @@ void loop() {
 ## I2C Communication Between Two ESP32
 Start by connecting the two ESP32 boards with each other. Use the default I2C pins for the boards you’re using. Don’t forget to connect the GND pins together.
 
-<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/5c8cc83d-06ab-40f4-b48f-9c548c3ba804" />
 
+<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/3758ad53-f2c3-4404-a8bd-57f993075ca7" />
   
 ```
 I2C Signal     ESP32 Master	 ESP32 Slave
@@ -179,6 +179,7 @@ Gnd            Gnd           Gnd
 Here’s how I2C communication between two ESP32 boards works:
 
 <img src="https://github.com/user-attachments/assets/6a64a712-342f-4e68-88e3-ea2e65add45c" alt="image" style="width: 75%; height: auto;"/>
+
 
 
 
