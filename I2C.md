@@ -253,23 +253,30 @@ The Slave is passive. It waits for the Master to trigger either the onReceive ev
 
 ```
 #include <Wire.h>
-
 #define I2C_SDA 8
 #define I2C_SCL 9
 #define SLAVE_ADDR 0x08
+#define I2C_FREQ 5000000 // 5MHz standard speed
 
 byte responseData[] = {0xAA, 0xBB, 0xCC, 0xDD}; // Data to send when Master asks
 
 void setup() {
   Serial.begin(115200);
   // Initialize I2C as Slave
-  Wire.begin(SLAVE_ADDR, I2C_SDA, I2C_SCL);
+  Serial.println("Initializing I2C Pins...");
+  // On ESP32-S3, it's safer to set the pins first, then the address
+  bool success = Wire.begin(SLAVE_ADDR, I2C_SDA, I2C_SCL, I2C_FREQ); 
   
-  // Register callback functions
+  if (success) {
+    Serial.println("I2C Hardware Initialized.");
+  } else {
+    Serial.println("I2C Hardware Initialization FAILED.");
+  }
+
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
   
-  Serial.println("I2C Slave Ready");
+  Serial.println("I2C Slave Ready and Listening.");
 }
 
 void loop() {
@@ -293,6 +300,7 @@ void requestEvent() {
   Wire.write(responseData, sizeof(responseData));
   Serial.println("Slave sent data to Master");
 }
+
 ```
 
 **Key Technical Considerations**
