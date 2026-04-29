@@ -156,7 +156,7 @@ void loop() {
 ## I2C Communication Between Two ESP32
 Start by connecting the two ESP32 boards with each other. Use the default I2C pins for the boards you’re using. Don’t forget to connect the GND pins together.
 
-<img src="https://github.com/user-attachments/assets/07cc6405-8b46-46d3-892d-2fd3403ded62"  alt="image" style="width: 50%; height: auto;"/>
+<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/1df29de9-abf8-4dbd-ab89-4ca45489589a" />
 
 ```
 I2C Signal     ESP32 Master	 ESP32 Slave
