@@ -13,6 +13,18 @@ Store all link related to Arduino
    (a) CH343P Driver (Used by your new ESP32-S3 board), click the link for CH343SER.EXE: https://www.wch-ic.com/downloads/CH343SER_EXE.html<br>
    (b) CP2102 Driver (Used by older/standard ESP32 boards), click the link for "CP210x Universal Windows Driver": https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads<br>
 
+# ESP32-S3 Pins Assignment
+<img width="1056" height="720" alt="ESP32-S3-Pins" src="https://github.com/user-attachments/assets/6069c03d-e222-4af0-b8f0-81319b4cd989" />
+<br><br>
+<img width="1149" height="800" alt="image" src="https://github.com/user-attachments/assets/ff95dae1-60c7-4860-8398-d2eef7d9ca09" />
+
+# Resistor Color Band
+
+<img width="635" height="682" alt="image" src="https://github.com/user-attachments/assets/fa5e2931-75d9-4af8-9c2f-e70d87138844" />
+
+**Resistor Calculator**
+
+https://www.calculator.net/resistor-calculator.html
 
 # 10 ESP32 Pro Features: Take your Projects to the Next Level!
 https://www.youtube.com/watch?v=_HzG5FjH_6g
@@ -20,7 +32,7 @@ https://www.youtube.com/watch?v=_HzG5FjH_6g
 # ST7796S 4" SPI TFT touch screen  display
 The MSP4020 / MSP4021 is a 4.0-inch TFT display using the ST7796S driver and XPT2046 touch controller. To set it up with an ESP32, you will primarily use the TFT_eSPI library for the display and the XPT2046_Touchscreen library for touch functionality.
 
-1. Wiring Connection (ESP32 to MSP4020/4021).<br>
+## 1. Wiring Connection (ESP32 to MSP4020/4021).<br>
    The display and touch controller share the same SPI bus (MOSI, MISO, SCK) but use different Chip Select (CS) pins.<br>
    ```
    Module Pin        Function              ESP32 Pin (Typical VSPI)   Notes
@@ -35,13 +47,13 @@ The MSP4020 / MSP4021 is a 4.0-inch TFT display using the ST7796S driver and XPT
    LED               Backlight             3.3V or GPIO               Can use PWM for brightness
    T_CS              Touch Chip Select     GPIO 21                    Separate from LCD_CS
    T_IRQ             Touch Interrupt       GPIO 22                    Optional
-
-4. Software Setup (Arduino IDE)<br>
-Step 1: Install Libraries<br>
+```
+## 2. Software Setup (Arduino IDE)
+**Step 1: Install Libraries**<br>
   - Open Library Manager and install TFT_eSPI by Bodmer.<br>
   - Install XPT2046_Touchscreen by Paul Stoffregen.<br>
 
-Step 2: Configure TFT_eSPI<br>
+**Step 2: Configure TFT_eSPI**<br>
 TFT_eSPI requires you to edit a header file inside the library folder to match your hardware.<br>
   - Navigate to your Arduino libraries folder: Documents/Arduino/libraries/TFT_eSPI/.<br>
   - Open User_Setup.h and make the following changes:<br>
@@ -60,8 +72,9 @@ TFT_eSPI requires you to edit a header file inside the library folder to match y
         #define TOUCH_CS 21<br>
     5. Set Frequency: #define SPI_FREQUENCY 27000000 (Max stability for ST7796S).<br>
 
-Step 3: Example Code Snippet<br>
-```   #include <SPI.h>
+**Step 3: Example Code Snippet**<br>
+```
+   #include <SPI.h>
    #include <TFT_eSPI.h> // Hardware-specific library
    TFT_eSPI tft = TFT_eSPI(); // Invoke library
    void setup() {
@@ -77,15 +90,10 @@ Step 3: Example Code Snippet<br>
      // Your code here
    }
 ```
-
-3. Documentation Resources<br>
+## 3. Documentation Resources<br>
    LCD Wiki: Search for "MSP4020" at lcdwiki.com for the full user manual and schematic.<br>
      https://www.lcdwiki.com/Main_Page#top<br>
    TFT_eSPI Docs: Official documentation on Read the Docs.<br>
      https://doc-tft-espi.readthedocs.io/
 
-4. ESP32-S3 Pins Assignment
-<img width="1056" height="720" alt="ESP32-S3-Pins" src="https://github.com/user-attachments/assets/6069c03d-e222-4af0-b8f0-81319b4cd989" />
-
-<img width="1149" height="800" alt="image" src="https://github.com/user-attachments/assets/ff95dae1-60c7-4860-8398-d2eef7d9ca09" />
 
