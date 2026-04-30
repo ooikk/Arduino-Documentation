@@ -213,3 +213,7 @@ void spiCommand(SPIClass *spi, byte data) {
 https://randomnerdtutorials.com/esp32-spi-communication-arduino/
 
 https://www.circuitbasics.com/basics-of-the-spi-communication-protocol/
+
+https://www.oceanlabz.in/lesson-10-spi-comunication/
+
+https://www.luisllamas.es/en/esp32-spi/
