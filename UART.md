@@ -254,3 +254,7 @@ void loop() {
 https://randomnerdtutorials.com/esp32-uart-communication-serial-arduino/
 
 https://www.circuitbasics.com/basics-uart-communication/
+
+https://www.oceanlabz.in/lesson-06-serial-communication/
+
+https://www.luisllamas.es/en/esp32-uart/
