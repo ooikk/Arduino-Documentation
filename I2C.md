@@ -415,3 +415,7 @@ Error Handling: Wire.endTransmission() returns a status code.
 https://randomnerdtutorials.com/esp32-i2c-communication-arduino-ide/
 
 https://www.circuitbasics.com/basics-of-the-i2c-communication-protocol/
+
+https://www.oceanlabz.in/lesson-07-i2c/
+
+https://www.luisllamas.es/en/esp32-i2c/
