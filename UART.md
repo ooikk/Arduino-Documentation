@@ -4,7 +4,7 @@
 
 UART (Universal Asynchronous Receiver-Transmitter) is a widely used, 2-wire (Tx/Rx) asynchronous serial communication protocol that transfers data between devices without a shared clock signal. It converts parallel data from a CPU into serial form for transmission and back to parallel at the receiving end. Both devices must be configured to the same speed (baud rate), with data framed by start/stop bits. Unlike SPI or I2C, which are synchronous, UART is asynchronous, meaning it does not use a clock signal to synchronize the data transmission between devices.
 
-<img width="746" height="286" alt="image" src="https://github.com/user-attachments/assets/c9456370-4bc9-4fe2-aec5-404b62bd8983" />
+<img alt="image" style="width: 75%; height: auto;" src="https://github.com/user-attachments/assets/c9456370-4bc9-4fe2-aec5-404b62bd8983" />
 
 
 **Key Aspects of UART Protocol**
