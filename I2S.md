@@ -6,6 +6,8 @@ I2S (Inter-IC Sound) is a synchronous serial bus protocol designed by Philips Se
 
 <img width="678" height="419" alt="image" src="https://github.com/user-attachments/assets/2201eca3-069b-4cbd-ad99-185a0ee54233" />
 
+<img width="741" height="220" alt="image" src="https://github.com/user-attachments/assets/04f9a3d0-800c-47cf-a63b-0a69deec06c1" />
+
 
 ## Key Features of I2S Protocol:
 **Three-Wire Interface:**
