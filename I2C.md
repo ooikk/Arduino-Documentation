@@ -23,6 +23,31 @@ Fast Mode+    1 MHz              High performance.
 Ultra Fast    5 MHz              Ultra-high speed; requires very short wires.
 ```
 
+## Overview
+
+The I2C (Inter-Integrated Circuit) protocol is a synchronous, multi-master/multi-slave, two-wire serial bus used for short-distance communication between microcontrollers and peripherals. It uses only two lines—Serial Data (SDA) and Serial Clock (SCL)—to manage communication, typically supporting speeds of 100 kbps, 400 kbps, and up to 5 Mbps. 
+
+## Key Features of I2C Protocol:
+- **Two-Wire Interface:** SDA (data) and SCL (clock) lines, requiring pull-up resistors.
+- **Addressing:** Each slave device has a unique address, allowing up to 1008 nodes on the same bus.
+- **Master/Slave Relationship:** A master device initiates communication and controls the clock, while slave devices respond to address matching.
+- **Data Validity:** Data on the SDA line must remain stable during the high period of the clock.
+- **Acknowledgement (ACK/NACK):** Each byte sent is followed by an acknowledgement bit from the receiver.
+- **Common Applications:** Interfacing sensors, displays, and EEPROM with microcontrollers. 
+
+## How I2C Communication Works:
+- **Start Condition:** The master pulls the SDA line low while SCL is high.
+- **Address Frame:** The master sends the 7-bit or 10-bit address of the target slave, along with a Read/Write bit.
+- **ACK/NACK Bit:** The slave with the matching address pulls the SDA line low to signal acknowledgement.
+- **Data Transfer:** Data is transferred in 8-bit bytes, with each byte acknowledged.
+- **Stop Condition:** The master releases the lines to signal the end of the communication. 
+
+<img alt="image" style="width: 75%; height: auto;" src="https://github.com/user-attachments/assets/569360c1-eb5a-40a0-a0f3-5d4f3ce48f9b" />
+
+
+I2C is valued for its simplicity and efficiency in connecting multiple devices with minimal wiring. However, it is a half-duplex, relatively slower protocol compared to SPI. 
+
+
 ## Connecting I2C Devices with ESP32
 I2C communication protocol uses two wires to share information. One is used for the clock signal (SCL) and the other is used to send and receive data (SDA). The SDA and SCL lines are active low, so they should be pulled up with resistors. Typical values are 4.7k Ohm for 5V devices and 2.4k Ohm for 3.3V devices.
 ```
@@ -335,3 +360,5 @@ Error Handling: Wire.endTransmission() returns a status code.
 ## Reference:
 
 https://randomnerdtutorials.com/esp32-i2c-communication-arduino-ide/
+
+https://www.circuitbasics.com/basics-of-the-i2c-communication-protocol/
