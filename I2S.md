@@ -16,7 +16,9 @@ I2S (Inter-IC Sound) is a synchronous serial bus protocol designed by Philips Se
 - **Serial Data (SD):** Transmits PCM audio data, typically MSB first.
 
 **Controller/Target Architecture:** The component providing the clock signals (BCLK/WS) acts as the controller (formerly master), while the receiving component acts as the target (formerly slave).
+
 **Audio Focus:** I2S is designed specifically for stereo audio. It supports PCM data and is commonly used in, for example, this DigiKey tutorial to demonstrate audio communication.
+
 **Timing:** Data is clocked on the leading edge of the clock signal, with the WS line changing one clock period before the MSB of a new word, as shown in the NXP specification. 
 
 ## Common I2S Applications & Variants:
