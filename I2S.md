@@ -87,9 +87,9 @@ MCLK                 CLK                     Master Clock: Optional; only needed
 
 Since you must define these in your code, here are common pin mappings used in popular ESP32-S3 projects:  
 ```
-Device Example          BCLK      WS (LRCK)      DATA (SD)
-Generic Microphone      GPIO 47   GPIO 10        GPIO 21 (Input)
-MAX98357A Amplifier     GPIO 2    GPIO 1         GPIO 38 (Output)
+Device Example          BCLK      WS (LRCK)      DATA/ DIN
+Generic Microphone      GPIO 4    GPIO 5         GPIO 1 (Input)
+MAX98357A Amplifier     GPIO 4    GPIO 5         GPIO 1 (Output)
 LilyGo T7-S3            GPIO 4    GPIO 5         GPIO 1
 ```
 
