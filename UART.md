@@ -170,6 +170,7 @@ https://docs.arduino.cc/language-reference/en/functions/communication/serial/beg
 ## ESP32 Serial Communication Between ESP
 If you want to communicate with another ESP32, it is not much different. You basically initialize a serial communication on the desired GPIOs and then use the functions to read and send data via serial.
 ```
+Wire connection bewteen ESP
 ESP32 #1 (Sender)    ESP32 #2 (Receiver)
 TXD1 (GPIO 17)       RXD1 (GPIO 18)
 RXD1 (GPIO 18)       TXD1 (GPIO 17)
@@ -226,8 +227,8 @@ void loop() {
 *********/
 
 // Define TX and RX pins for UART (change if needed)
-#define TXD1 18
-#define RXD1 17
+#define TXD1 17   // User has to swap the Tx/Rx connection, the code remain Tx for pin 17
+#define RXD1 18   // User has to swap the Tx/Rx connection, the code remain Rx for pin 18
 
 // Use Serial1 for UART communication
 HardwareSerial mySerial(1);
