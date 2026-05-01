@@ -126,7 +126,7 @@ LRC                 GPIO 5           Word Select (Left/Right Clock)
 BCLK                GPIO 4           Bit Clock
 DIN                 GPIO 6           Data Input
 GAIN                GND              Sets gain to 9dB (Leave open for 12dB)
-SD                  NC / 3.3V        Shutdown (High = On)
+SD                  NC / 3.3V        Mode/Enable: Leave disconnected for Mono; Jump to 3.3V to force "ON"; Jump to Gnd to shutdown
 VIN                 5V               Power (Use a stable source for 3W)
 GND                 GND              Shared Ground
 ```
