@@ -124,8 +124,8 @@ The MAX98357A works best with a 5V supply to achieve that full 3W output. If you
 MAX98357A Pin       ESP32-S3 Pin     Note
 LRC                 GPIO 5           Word Select (Left/Right Clock)
 BCLK                GPIO 4           Bit Clock
-DIN                 GPIO 6           Data Input
-GAIN                GND              Sets gain to 9dB (Leave open for 12dB)
+DIN                 GPIO 1           Data Input
+GAIN                GND              Sets gain to 9dB (Leave open for 12dB. See comment below.
 SD                  NC / 3.3V        Mode/Enable: Leave disconnected for Mono; Jump to 3.3V to force "ON"; Jump to Gnd to shutdown
 VIN                 5V               Power (Use a stable source for 3W)
 GND                 GND              Shared Ground
@@ -140,15 +140,20 @@ Library Requirement: In the Library Manager, search for and install "ESP32-audio
 ```
 #include "Audio.h"
 
-// Define I2S Pins
+// Updated I2S Pins for ESP32-S3
 #define I2S_LRC       5
 #define I2S_BCLK      4
-#define I2S_DOUT      6
+#define I2S_DOUT      1   // Changed from 6 to avoid Flash Memory pins
+#define AMP_SD_PIN    7   // Optional: Connect to SD pin for software control
 
 Audio audio;
 
 void setup() {
     Serial.begin(115200);
+
+    // Optional: If you connected SD to GPIO 7, wake up the amp
+    // pinMode(AMP_SD_PIN, OUTPUT);
+    // digitalWrite(AMP_SD_PIN, HIGH); 
 
     // Initialize I2S for the MAX98357A
     audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
@@ -165,8 +170,7 @@ void setup() {
     while (WiFi.status() != WL_CONNECTED) delay(500);
     audio.connecttohost("http://stream.radioparadise.com/mp3-128");
     */
-    
-    Serial.println("Audio Initialized");
+    Serial.println("Audio Initialized on Pins: BCLK:4, LRC:5, DOUT:1");
 }
 
 void loop() {
