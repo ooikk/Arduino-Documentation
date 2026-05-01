@@ -93,6 +93,28 @@ MAX98357A Amplifier     GPIO 2    GPIO 1         GPIO 38 (Output)
 LilyGo T7-S3            GPIO 4    GPIO 5         GPIO 1
 ```
 
+**3. Implementation in Arduino**
+
+If you are using the ESP32-I2S library or the native driver/i2s.h, you define the pins during initialization like this:
+```
+#include "driver/i2s.h"
+
+#define I2S_BCLK 4
+#define I2S_LRCK 5
+#define I2S_SDAT 1
+
+void setup() {
+  i2s_pin_config_t pin_config = {
+    .bck_io_num = I2S_BCLK,
+    .ws_io_num = I2S_LRCK,
+    .data_out_num = I2S_SDAT, // Use I2S_PIN_NO_CHANGE if input only
+    .data_in_num = I2S_PIN_NO_CHANGE
+  };
+  i2s_set_pin(I2S_NUM_0, &pin_config);
+}
+```
+
+
 ## Reference
 
 https://www.luisllamas.es/en/esp32-i2s/
