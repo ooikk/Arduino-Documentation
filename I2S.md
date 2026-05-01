@@ -121,14 +121,14 @@ To drive a MAX98357A with your ESP32-S3, you are moving into the world of digita
 
 The MAX98357A works best with a 5V supply to achieve that full 3W output. If you use 3.3V, the volume will be significantly lower.
 ```
-MAX98357A Pin       ESP32-S3 Pin     Note
-LRC                 GPIO 5           Word Select (Left/Right Clock)
-BCLK                GPIO 4           Bit Clock
-DIN                 GPIO 1           Data Input
-GAIN                GND              Sets gain to 9dB (Leave open for 12dB. See comment below.
-SD                  NC / 3.3V        Mode/Enable: Leave disconnected for Mono; Jump to 3.3V to force "ON"; Jump to Gnd to shutdown
-VIN                 5V               Power (Use a stable source for 3W)
-GND                 GND              Shared Ground
+MAX98357A Pin   ESP32-S3 Pin     Note
+LRC             GPIO 5           Word Select (Left/Right Clock)
+BCLK            GPIO 4           Bit Clock
+DIN             GPIO 1           Data Input
+GAIN            GND              Sets gain to 9dB (Leave open for 12dB. See comment below.
+SD              NC / 3.3V        Mode/Enable: Leave disconnected for Mono; Jump to 3.3V to force "ON"; Jump to Gnd to shutdown
+VIN             5V               Power (Use a stable source for 3W)
+GND             GND              Shared Ground
 ```
 
 **Sample Code (Arduino IDE)**
