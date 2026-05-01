@@ -174,6 +174,25 @@ void loop() {
 }
 ```
 
+**Key Technical Notes**
+
+**1. Power Supply for 3W**
+
+A 3W speaker can pull roughly 600mA to 800mA at peak volume. If you are powering your ESP32-S3 via a standard computer USB port, you might experience "brownouts" or distorted sound because the port can't provide enough current. For a 3W speaker, a dedicated 5V/2A power supply is recommended.
+
+**2. The "Gain" Pin**
+
+The MAX98357A has a configurable gain. By default (if the pin is not connected), it is 12dB.
+- GND: 9dB
+- Pull-up (3.3V): 3dB
+- Via 100k resistor to GND: 15dB
+
+If your speaker is "clipping" (sounding crunchy at high volume), lower the gain by grounding the Gain pin.
+
+**3. Mono vs. Stereo**
+
+The MAX98357A is a Mono amplifier. It automatically averages the Left and Right I2S channels into one signal. If you want Stereo, you would need two MAX98357A chips—one with the SD pin pulled to GND via a resistor and the other to 3.3V (refer to the datasheet for specific resistor values to assign Left/Right).
+
 ## Reference
 
 https://www.luisllamas.es/en/esp32-i2s/
