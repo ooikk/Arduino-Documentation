@@ -67,6 +67,31 @@ I2S systems require clear "Master" and "Slave" roles, determined by which device
 
 **Advantage:** Centralized timing control, ideal for complex audio systems with multiple devices (e.g., digital mixers) to reduce timing interference.
 
+## Connecting to EPS32 S3
+The ESP32-S3 uses a GPIO Matrix, meaning there are no fixed hardware pins for I2S. You can assign the I2S signals to almost any available GPIO pin in your code.  
+
+The ESP32-S3 contains two independent I2S peripherals (I2S0 and I2S1).
+
+
+**1. Standard I2S Signal Pins.** 
+
+To set up an I2S connection (e.g., for a microphone or speaker), you typically need to define these three main lines:  
+```
+Signal Name          Common Label            Description
+BCLK                 SCK / BCK               Bit Clock: Synchronizes every bit of data.
+WS                   LRCK / FS               Word Select: Indicates Left or Right audio channel.
+DIN / DOUT           SD / DATA               Data In/Out: The actual digital audio stream.
+MCLK                 CLK                     Master Clock: Optional; only needed for some high-end DACs.
+```
+**2. Example Pin Configurations**
+
+Since you must define these in your code, here are common pin mappings used in popular ESP32-S3 projects:  
+```
+Device Example          BCLK      WS (LRCK)      DATA (SD)
+Generic Microphone      GPIO 47   GPIO 10        GPIO 21 (Input)
+MAX98357A Amplifier     GPIO 2    GPIO 1         GPIO 38 (Output)
+LilyGo T7-S3            GPIO 4    GPIO 5         GPIO 1
+```
 
 ## Reference
 
