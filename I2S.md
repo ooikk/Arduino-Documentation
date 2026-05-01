@@ -113,7 +113,66 @@ void setup() {
   i2s_set_pin(I2S_NUM_0, &pin_config);
 }
 ```
+**4. Connecting ESP32S3 to MAX98357A and 3W speaker**
 
+To drive a MAX98357A with your ESP32-S3, you are moving into the world of digital audio. This specific chip is an I2S Class-D amplifier, meaning it takes the digital signal directly from the ESP32 and pumps it into your 3W speaker without needing a separate DAC.
+
+**Hardware Wiring**
+
+The MAX98357A works best with a 5V supply to achieve that full 3W output. If you use 3.3V, the volume will be significantly lower.
+```
+MAX98357A Pin       ESP32-S3 Pin     Note
+LRC                 GPIO 5           Word Select (Left/Right Clock)
+BCLK                GPIO 4           Bit Clock
+DIN                 GPIO 6           Data Input
+GAIN                GND              Sets gain to 9dB (Leave open for 12dB)
+SD                  NC / 3.3V        Shutdown (High = On)
+VIN                 5V               Power (Use a stable source for 3W)
+GND                 GND              Shared Ground
+```
+
+**Sample Code (Arduino IDE)**
+
+This example uses the popular ESP32-audioI2S library, which is the most robust way to handle everything from simple tones to MP3s and Web Radio.
+
+Library Requirement: In the Library Manager, search for and install "ESP32-audioI2S" by Wolle (Schreibfaul1).
+
+```
+#include "Audio.h"
+
+// Define I2S Pins
+#define I2S_LRC       5
+#define I2S_BCLK      4
+#define I2S_DOUT      6
+
+Audio audio;
+
+void setup() {
+    Serial.begin(115200);
+
+    // Initialize I2S for the MAX98357A
+    audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
+    
+    // Set volume (0 to 21)
+    audio.setVolume(12); 
+
+    // Option 1: Play a beep/tone to test
+    // audio.playTone(1000, 1000); // 1kHz for 1sec
+
+    // Option 2: Connect to WiFi and play a stream
+    /*
+    WiFi.begin("Your_SSID", "Your_Password");
+    while (WiFi.status() != WL_CONNECTED) delay(500);
+    audio.connecttohost("http://stream.radioparadise.com/mp3-128");
+    */
+    
+    Serial.println("Audio Initialized");
+}
+
+void loop() {
+    audio.loop(); // Required to keep the audio buffer filled
+}
+```
 
 ## Reference
 
