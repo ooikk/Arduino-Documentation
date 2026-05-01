@@ -12,7 +12,7 @@ I2S (Inter-IC Sound) is a synchronous serial bus protocol designed by Philips Se
 ## Key Features of I2S Protocol:
 **Three-Wire Interface:**
 - **Bit Clock (BCLK/SCK):** Synchronizes each bit of data. The protocol does not specify a maximum data rate. The clock runs continuously.<br>
-  Number of Channels × Sampling Frequency × Data Bit Width <br>
+  SCK Frequency = Number of Channels × Sampling Frequency × Data Bit Width <br>
   Example: For stereo audio with a 44.1 kHz sampling rate (CD standard) and 16-bit width:<br>
   SCK Frequency = 2 × 44.1 kHz × 16 = 1.4112 MHz<br>
 
