@@ -230,7 +230,7 @@ void loop() {
 #define RXD1 17
 
 // Use Serial1 for UART communication
-HardwareSerial mySerial(2);
+HardwareSerial mySerial(1);
 
 void setup() {
   Serial.begin(115200);
