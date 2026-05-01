@@ -26,6 +26,7 @@ While most pins are available, you should generally avoid these pins to prevent 
 <br><br>
 <img width="1149" height="800" alt="image" src="https://github.com/user-attachments/assets/ff95dae1-60c7-4860-8398-d2eef7d9ca09" />
 
+<br>
 https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 
 # Resistor Color Band
