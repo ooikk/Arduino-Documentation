@@ -14,7 +14,8 @@ I2S (Inter-IC Sound) is a synchronous serial bus protocol designed by Philips Se
   **SDOUT:* Serial output pin of transmitters (e.g., ADC, DSP).<br>
   **SDIN:* Serial input pin of receivers (e.g., DAC, MCU).<br>
 
-<img width="678" height="419" alt="image" src="https://github.com/user-attachments/assets/2201eca3-069b-4cbd-ad99-185a0ee54233" />
+<img width="586" height="214" alt="image" src="https://github.com/user-attachments/assets/23fb797f-96e4-444a-8c95-630219285356" />
+
 <br>
 <img width="741" height="220" alt="image" src="https://github.com/user-attachments/assets/04f9a3d0-800c-47cf-a63b-0a69deec06c1" />
 <br>
@@ -40,7 +41,9 @@ I2S systems require clear "Master" and "Slave" roles, determined by which device
 
 **1. Transmitter as Master, Receiver as Slave**
 
-<img width="520" height="115" alt="image" src="https://github.com/user-attachments/assets/255f7514-68f3-40f2-b0ab-8dcfe8a51839" />
+
+<img width="480" height="143" alt="image" src="https://github.com/user-attachments/assets/c7090346-d45f-4e17-974f-e3ba96766e5c" />
+
 
 **Scenario:** ADC (audio capture end) acts as Master, generating SCK and LRCK; DAC (audio output end) acts as Slave, receiving data based on timing.
 
@@ -48,7 +51,8 @@ I2S systems require clear "Master" and "Slave" roles, determined by which device
 
 **2. Receiver as Master, Transmitter as Slave**
 
-<img width="508" height="123" alt="image" src="https://github.com/user-attachments/assets/8814994e-3568-475a-b6c6-889325854dec" />
+<img width="481" height="143" alt="image" src="https://github.com/user-attachments/assets/12523f30-278d-4dcc-96c6-083c781fd0e5" />
+
 
 **Scenario:** DAC (e.g., decoding chip in Hi-Fi players) acts as Master, generating timing signals; DSP (sound processing chip) acts as Slave, sending processed data in sync.
 
@@ -56,7 +60,8 @@ I2S systems require clear "Master" and "Slave" roles, determined by which device
 
 **3. Both Transmitter and Receiver as Slaves**
 
-<img width="526" height="223" alt="image" src="https://github.com/user-attachments/assets/99985ae4-63ea-4117-9e3e-1eccd948087c" />
+<img width="492" height="239" alt="image" src="https://github.com/user-attachments/assets/3f01a11a-49e5-4168-a8e4-1ed74e11edfd" />
+
 
 **Scenario:** An independent "clock generation module" (e.g., dedicated crystal oscillator, FPGA) acts as Master, providing SCK and LRCK. Both ADC (transmitter) and DAC (receiver) operate as Slaves, enabling coordinated data transmission.
 
@@ -74,3 +79,5 @@ https://www.allaboutcircuits.com/technical-articles/introduction-to-the-i2s-inte
 https://www.elprocus.com/i2s-protocol/
 
 https://www.cdebyte.com/news/1247
+
+https://web.archive.org/web/20070102004400/http://www.nxp.com/acrobat_download/various/I2SBUS.pdf
