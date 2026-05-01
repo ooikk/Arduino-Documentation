@@ -18,9 +18,8 @@ Store all link related to Arduino
 ## Pins to Avoid
 
 While most pins are available, you should generally avoid these pins to prevent system crashes or interference: <br>  
-**GPIO 43 & 44:** Reserved for UART0 (Serial Debugging). <br>
-**GPIO 19 & 20:** Used for the Native USB port.  <br>
-**GPIO 6 to 11:** Usually connected to the internal SPI Flash memory. <br>
+**GPIO 43 & 44:** Reserved for UART0 (Serial Debugging). GPIO 43 is U0TXD and GPIO 44 is U0RXD. <br>
+**GPIO 19 & 20:** Used for the Native USB port. GPIO 19 (USB_D-) and GPIO 20 (USB_D+).  <br>
 **GPIO 0, 3, 45, 46:** Strapping pins used for boot modes; using them can prevent the board from starting properly. <br>
 
 <img width="1056" height="720" alt="ESP32-S3-Pins" src="https://github.com/user-attachments/assets/6069c03d-e222-4af0-b8f0-81319b4cd989" />
