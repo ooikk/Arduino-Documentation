@@ -14,9 +14,20 @@ Store all link related to Arduino
    (b) CP2102 Driver (Used by older/standard ESP32 boards), click the link for "CP210x Universal Windows Driver": https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads<br>
 
 # ESP32-S3 Pins Assignment
+
+## Pins to Avoid
+
+While most pins are available, you should generally avoid these pins to prevent system crashes or interference: <br>  
+**GPIO 43 & 44:** Reserved for UART0 (Serial Debugging). <br>
+**GPIO 19 & 20:** Used for the Native USB port.  <br>
+**GPIO 6 to 11:** Usually connected to the internal SPI Flash memory. <br>
+**GPIO 0, 3, 45, 46:** Strapping pins used for boot modes; using them can prevent the board from starting properly. <br>
+
 <img width="1056" height="720" alt="ESP32-S3-Pins" src="https://github.com/user-attachments/assets/6069c03d-e222-4af0-b8f0-81319b4cd989" />
 <br><br>
 <img width="1149" height="800" alt="image" src="https://github.com/user-attachments/assets/ff95dae1-60c7-4860-8398-d2eef7d9ca09" />
+
+
 
 # Resistor Color Band
 
