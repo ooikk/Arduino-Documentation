@@ -176,7 +176,8 @@ TXD1 (GPIO 17)       RXD1 (GPIO 18)
 RXD1 (GPIO 18)       TXD1 (GPIO 17)
 GND                  GND
 ```
-<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/7d9178e6-603d-4629-a423-0bb5e7d7bc0b" />
+
+<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/e8ce7894-2877-4c79-aeed-0817990f31b6" />
 
 
 **Sender Code**
