@@ -5,11 +5,13 @@ The advantage of using an I2C LCD is that the wiring is really simple. You just 
 Additionally, it comes with a built-in potentiometer you can use to adjust the contrast between the background and the characters on the LCD. 
 
 
-<img width="702" height="710" alt="image" src="https://github.com/user-attachments/assets/b0b46067-8f01-401b-a87a-c077a97138b9" />
+<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/b0b46067-8f01-401b-a87a-c077a97138b9" />
 <br>
-Adjust the contrast:
 
-<img width="842" height="331" alt="image" src="https://github.com/user-attachments/assets/32d7bda1-d868-4a08-b158-d78e17443d39" />
+**Adjust the contrast:**
+<br>
+
+<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/32d7bda1-d868-4a08-b158-d78e17443d39" />
 
 
 ## Connect to LCD
@@ -21,6 +23,84 @@ VCC              VIN (2.5V to 6V)
 SDA              GPIO 8
 SCL              GPIO 9
 ```
+
+<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/af19d5a4-3f3a-4a48-9033-d0d5df3f50e8" />
+
+## Display Static Text on the LCD
+
+There are several libraries that work with the I2C LCD.
+
+Import library: LiquidCrystal_I2C 2.0.0 by Martin Kubovcik, Frank de Brabander
+
+Frequent used functions
+```
+// Defines the I2C address, number of rows, number of columns
+LiquidCrystal_I2C(uint8_t lcd_Addr,uint8_t lcd_cols,uint8_t lcd_rows);
+
+// Clears the lcd display and places cursor at the top left corner
+clear();
+
+// initiates and start the lcd
+init();
+
+// Display backlight
+noBacklight();                   // Turns off 
+backlight();                     // Turns on the display backlight
+setBacklight(uint8_t new_val);   // alias for backlight() and nobacklight()
+
+// Prints out and characters or text on the lcd display
+print();
+printstr(const char[]);
+printLeft();
+printRight();
+
+// writes a character to whichever position in the LCD
+write(); 
+
+// Cursor operations
+noCursor();                     // Hides the LCD cursor
+cursor();                       // Creates a blinking block cursor
+setCursor(uint8_t, uint8_t);    // Sets a new message on a new cursor
+
+// Display
+noDisplay();                    // Turns off
+display(); 	                    // Turns on 
+
+// Scroll control
+autoscroll();                  // Set the display to auto scroll to the left each time a letter is added
+noAutoscroll();                // Stops auto scrolling
+scrollDisplayLeft();           // Sets the scroll display orientation towards the left
+scrollDisplayRight();          // Sets the scroll display orientation towards the right
+
+// Characters display direction
+leftToRight();
+rightToLeft();
+shiftIncrement();
+shiftDecrement();
+
+// Display to blink/ no blink
+noBlink();
+blink();
+
+// This function is needed to create custom character in the program
+createChar(uint8_t, uint8_t[]);  // uint8_t: location 0 to 7
+
+// Example: Creates the custom character for smiley face:
+byte smiley[] = {
+B00000,
+B10001,
+B00000,
+B00000,
+B10001,
+B01110,
+B00000,
+B00000,
+};
+createChar(0,smiley);      // location 0
+
+write(0);                  // write custom character stored from location 0
+```
+
 
 ## Character Codes and Character Patterns (ROM Code: A00)
 
