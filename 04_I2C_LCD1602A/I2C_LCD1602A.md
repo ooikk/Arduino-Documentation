@@ -26,7 +26,7 @@ SCL              GPIO 9
 
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/af19d5a4-3f3a-4a48-9033-d0d5df3f50e8" />
 
-## Display Static Text on the LCD
+## Program the LCD
 
 There are several libraries that work with the I2C LCD.
 
