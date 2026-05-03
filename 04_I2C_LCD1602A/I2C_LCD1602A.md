@@ -18,7 +18,7 @@ SDA              GPIO 8
 SCL              GPIO 9
 ```
 
-# Character Codes and Character Patterns (ROM Code: A00)
+## Character Codes and Character Patterns (ROM Code: A00)
 
 
 <img width="705" height="873" alt="image" src="https://github.com/user-attachments/assets/de78a54b-a890-4319-9ca3-36a3fb443f6e" />
@@ -26,7 +26,7 @@ SCL              GPIO 9
 <img width="698" height="861" alt="image" src="https://github.com/user-attachments/assets/904ddb6c-3d7e-4ad1-a57b-35879ecd3d60" />
 
 
-# Reference
+## Reference
 
 https://docs.arduino.cc/learn/electronics/lcd-displays/
 
