@@ -11,7 +11,7 @@ Additionally, it comes with a built-in potentiometer you can use to adjust the c
 **Adjust the contrast:**
 <br>
 
-<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/32d7bda1-d868-4a08-b158-d78e17443d39" />
+<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/7cdc463a-4890-4948-add1-5b92a697ad7a" />
 
 
 ## Connect to LCD
