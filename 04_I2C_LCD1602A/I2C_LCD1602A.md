@@ -26,11 +26,76 @@ SCL              GPIO 9
 
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/af19d5a4-3f3a-4a48-9033-d0d5df3f50e8" />
 
-## Functions to program the LCD
+## Library for LCD
 
 There are several libraries that work with the I2C LCD.
 
-Import library: LiquidCrystal_I2C 1.1.2 by Frank de Brabander
+### 1.0 LiquidCrystal_I2C by Frank de Brabander
+
+This is the "standard" library most tutorials use. While it may still trigger the AVR warning on some versions, it is confirmed to work with ESP32.  
+
+Search for "LiquidCrystal I2C" in the Library Manager.
+
+Choose the one maintained by Marco Schwartz or Frank de Brabande
+
+Import library: **LiquidCrystal_I2C** 1.1.2 by Frank de Brabander
+
+
+### 2.0 Recommended Library: hd44780 by Bill Perry
+
+The most robust and highly recommended alternative for the ESP32-S3 is the hd44780 library by Bill Perry.  
+
+Import library: **hd44780** 1.3.2 by Bill Perry
+
+- **Why it's better:** It is designed to be architecture-agnostic, meaning it will compile on the ESP32-S3 without any architecture warnings.  
+- **Auto-Detection:** It can automatically detect the I2C address (e.g., 0x27 or 0x3F) and the pin mappings between the backpack and the LCD, which saves significant troubleshooting time.
+- **Performance:** It is faster and more compliant with modern Arduino standards than older LiquidCrystal_I2C forks.
+
+**To use this libary:**
+
+**1.0 The Replacement Headers**
+  
+  Replace:
+```
+#include <LiquidCrystal_I2C.h>
+```
+  with these three lines:
+```
+#include <Wire.h>
+#include <hd44780.h>                       // Main hd44780 header
+#include <hd44780ioClass/hd44780_I2Cexp.h> // I2C expander I/O class header
+```
+**2.0 Update the Object Declaration**
+
+You also need to change how you define your lcd object. The hd44780 library is smarter—it can usually auto-detect your I2C address and pin mappings, so you don't have to hardcode 0x27 or 0x3F.
+
+Old Way:
+
+```
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+```
+
+New Way (The "Auto-Config" Way):
+
+```
+hd44780_I2Cexp lcd;
+```
+
+**3.0 Comparison of setup()**
+
+The initialization function name changes slightly as well. While LiquidCrystal_I2C often used lcd.init(), hd44780 uses the more standard lcd.begin().
+
+```
+Feature        Old (LiquidCrystal_I2C)               New (hd44780)
+Object         LiquidCrystal_I2C lcd(0x27, 16, 2);   hd44780_I2Cexp lcd;
+Setup          lcd.init();                           lcd.begin(16, 2);
+Backlight      lcd.backlight();                      lcd.backlight(); (Same)
+```
+
+The hd44780 library is written to be "architecture-neutral." Unlike the library in LiquidCrystal_I2C) that strictly claimed to be for avr, hd44780 tells the Arduino IDE that it works on any architecture (*), which includes the ESP32-S3. No more annoying yellow warning text! </LiquidCrystal_I2C.h>
+
+
+## Functions to program the LCD
 
 Frequent used functions
 ```
