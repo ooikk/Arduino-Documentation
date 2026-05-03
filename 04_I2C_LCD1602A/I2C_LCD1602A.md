@@ -30,7 +30,7 @@ SCL              GPIO 9
 
 There are several libraries that work with the I2C LCD.
 
-Import library: LiquidCrystal_I2C 2.0.0 by Martin Kubovcik, Frank de Brabander
+Import library: LiquidCrystal_I2C 1.1.2 by Frank de Brabander
 
 Frequent used functions
 ```
