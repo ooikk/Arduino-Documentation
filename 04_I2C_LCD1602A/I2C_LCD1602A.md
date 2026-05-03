@@ -13,13 +13,14 @@ Additionally, it comes with a built-in potentiometer you can use to adjust the c
 
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/7cdc463a-4890-4948-add1-5b92a697ad7a" />
 
+User may add a 330 ohm series resistor in between the Backlight Jumper pins to reduce the backlight. Ensure it's power by at least 5V.
 
 ## Connect to LCD
 
 ```
 I2C LCD          ESP32 S3
 GND              GND
-VCC              VIN (2.5V to 6V)
+VCC              VIN (2.5V to 6V)  // It's recommended connect to >5V to ensure enough contrast.
 SDA              GPIO 8
 SCL              GPIO 9
 ```
