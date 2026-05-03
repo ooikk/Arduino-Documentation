@@ -69,8 +69,8 @@ display(); 	                    // Turns on
 // Scroll control
 autoscroll();                  // Set the display to auto scroll to the left each time a letter is added
 noAutoscroll();                // Stops auto scrolling
-scrollDisplayLeft();           // Sets the scroll display orientation towards the left
-scrollDisplayRight();          // Sets the scroll display orientation towards the right
+scrollDisplayLeft();           // Sets the scroll display orientation one position towards the left
+scrollDisplayRight();          // Sets the scroll display orientation one position towards the right
 
 // Characters display direction
 leftToRight();
@@ -209,7 +209,6 @@ https://maxpromer.github.io/LCD-Character-Creator/
 
 
 ```
-#include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 
 // Set the LCD address to 0x27 in PCF8574 by NXP and Set to 0x3F in PCF8574A by Ti
@@ -227,13 +226,18 @@ byte customChar[] = {
 };
 
 void setup() {
-  lcd.begin();
+  // initialize LCD
+  lcd.init();
+  lcd.clear();
+  // turn on LCD backlight                      
+  lcd.backlight();
   lcd.createChar(0, customChar);
-  lcd.home();
-  lcd.write(0);
 }
 
-void loop() { }
+void loop() { 
+  lcd.setCursor(0,3);
+  lcd.write(0);
+}
 
 ```
 
