@@ -15,6 +15,16 @@ Additionally, it comes with a built-in potentiometer you can use to adjust the c
 
 User may add a series resistor (>1k ohm) in between the Backlight Jumper pins to reduce the backlight. Ensure it's power by at least 5V.
 
+**2 rows by 16 columns** <br>
+<img width="885" height="217" alt="image" src="https://github.com/user-attachments/assets/df52c290-c214-40c2-bc45-af422046cb6e" />
+
+
+**8-row dots by 5 column dots** <br>
+
+<img width="138" height="202" alt="image" src="https://github.com/user-attachments/assets/4507eb39-1b6d-4856-8a0d-54a852ad6f9a" />
+
+
+
 ## Connect to LCD
 
 ```
@@ -33,25 +43,35 @@ There are several libraries that work with the I2C LCD.
 
 ### 1.0 LiquidCrystal_I2C by Frank de Brabander
 
-This is the "standard" library most tutorials use. While it may still trigger the AVR warning on some versions, it is confirmed to work with ESP32.  
+This is the "standard" library most tutorials use. While it may still trigger the AVR warning on some versions, it is confirmed to work with ESP32.<br>
+```
+WARNING: library LiquidCrystal_I2C-1.1.2 claims to run on (avr) architecture(s) and may be incompatible with your current board which runs on (ESP32) architecture(s).
+```
+**How to Silence the Warning (Optional)**
 
-Search for "LiquidCrystal I2C" in the Library Manager.
+If you prefer to keep using your current library, you can manually stop the warning:
+- Navigate to your Arduino libraries folder (usually Documents/Arduino/libraries/LiquidCrystal_I2C).
+- Open the library.properties file with a text editor.  
+- Find the line architectures=avr.
+- Change it to architectures=* or architectures=avr,esp32.  
+- Save the file and restart the Arduino IDE. The warning will disappear.
 
-Choose the one maintained by Marco Schwartz or Frank de Brabande
-
-Import library: **LiquidCrystal_I2C** 1.1.2 by Frank de Brabander 
-
-https://github.com/johnrickman/LiquidCrystal_I2C
+**To install the library:**
+- Search for "LiquidCrystal I2C" in the Library Manager.
+- Choose the one maintained by Marco Schwartz or Frank de Brabande
+- Import library: **LiquidCrystal_I2C** 1.1.2 by Frank de Brabander 
+- https://github.com/johnrickman/LiquidCrystal_I2C
 
 
 ### 2.0 Recommended Library: hd44780 by Bill Perry
 
 The most robust and highly recommended alternative for the ESP32-S3 is the hd44780 library by Bill Perry.  
 
-Import library: **hd44780** 1.3.2 by Bill Perry
+**To install the library:**
+- Import library: **hd44780** 1.3.2 by Bill Perry
+- https://github.com/duinoWitchery/hd44780
 
-https://github.com/duinoWitchery/hd44780
-
+**Why it's a recommended Library:** <br>
 - **Why it's better:** It is designed to be architecture-agnostic, meaning it will compile on the ESP32-S3 without any architecture warnings.  
 - **Auto-Detection:** It can automatically detect the I2C address (e.g., 0x27 or 0x3F) and the pin mappings between the backpack and the LCD, which saves significant troubleshooting time.
 - **Performance:** It is faster and more compliant with modern Arduino standards than older LiquidCrystal_I2C forks.
@@ -313,9 +333,9 @@ void loop() {
 
 ## Character Codes and Character Patterns (ROM Code: A00)
 
-
-<img width="705" height="873" alt="image" src="https://github.com/user-attachments/assets/de78a54b-a890-4319-9ca3-36a3fb443f6e" />
+<img width="512" height="864" alt="image" src="https://github.com/user-attachments/assets/9ffb9230-d2d5-459d-b8c7-0e7f68089267" />
 <br>
+
 <img width="698" height="861" alt="image" src="https://github.com/user-attachments/assets/904ddb6c-3d7e-4ad1-a57b-35879ecd3d60" />
 
 
@@ -328,3 +348,7 @@ https://randomnerdtutorials.com/esp32-esp8266-i2c-lcd-arduino-ide/
 https://www.luisllamas.es/en/arduino-lcd-i2c/
 
 https://easyelecmodule.com/how-to-use-the-lcd1602a/
+
+- https://easyelecmodule.com/wp-content/uploads/CN0295D-other-related-document.pdf
+- https://easyelecmodule.com/wp-content/uploads/eone-1602a1-1.pdf
+- https://easyelecmodule.com/wp-content/uploads/PCF8574-2.pdf
