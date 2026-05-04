@@ -15,6 +15,13 @@ Additionally, it comes with a built-in potentiometer you can use to adjust the c
 
 User may add a series resistor (>1k ohm) in between the Backlight Jumper pins to reduce the backlight. Ensure it's power by at least 5V.
 
+https://www.edn.com/arduino-i2c-lcd-backpack-introductory-tutorial/
+
+**I2C-to-LCD piggy-back board**
+
+<img alt="image" style="width: 75%; height: auto;"   src="https://github.com/user-attachments/assets/ea1fd770-d6b1-4c40-819a-699da7de073b" />
+
+
 **2 rows by 16 columns** <br>
 <img width="885" height="217" alt="image" src="https://github.com/user-attachments/assets/df52c290-c214-40c2-bc45-af422046cb6e" />
 
