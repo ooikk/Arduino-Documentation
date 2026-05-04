@@ -1,7 +1,7 @@
 
 
 // use hd44780 library by Bill Perry, comment off to use standard LiquidCrystal_I2C library by Frank de Brabander
-// #define HD44780
+#define HD44780
 
 
 #ifdef HD44780
@@ -15,12 +15,14 @@ hd44780_I2Cexp lcd;                         // it can usually auto-detect your I
 // set the LCD number of columns and rows
 int lcdColumns = 16;
 int lcdRows = 2;
-int Loop = 0;
+
 
 // set LCD address, number of columns and rows
 // if you don't know your display address, run an I2C scanner sketch
 LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
 #endif
+
+int Loop = 0;
 
 /*****************
 Scrolling text
