@@ -182,8 +182,8 @@ void setup() {
   lcd.init();
 #endif
   // turn on LCD backlight
-  //lcd.backlight();
-  lcd.noBacklight();
+  lcd.backlight();
+  //lcd.noBacklight();
   lcd.createChar(0, AmongUs);
   lcd.createChar(1, heart);
   lcd.createChar(2, smiley);
@@ -233,7 +233,7 @@ void loop() {
   // print static message
   lcd.print(messageStatic);
   // print scrolling message
-  scrollText(1, messageToScroll, 250, lcdColumns);
+  scrollText(1, messageToScroll, 200, lcdColumns);
 
   /**************
    Hardware Scrolling (Scrolls the whole screen)
@@ -243,9 +243,9 @@ void loop() {
   lcd.clear();
   lcd.print("Hardware Scrolling Text! To the right");
   lcd.setCursor(0, 1);
-  lcd.print("Second row message, right");
+  lcd.print("Second row message 1 2 3 4 5 6 7");
   delay(500);
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < 32; i++) {
     lcd.scrollDisplayRight();  // Moves everything one step right
     delay(500);
   }
@@ -255,19 +255,29 @@ void loop() {
   lcd.clear();
   lcd.print("Hardware Scrolling Text! To the left");
   lcd.setCursor(0, 1);
-  lcd.print("Second row message, left");
+  lcd.print("Second row message A B C D E F G");
   delay(500);
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < 32; i++) {
     lcd.scrollDisplayLeft();  // Moves everything one step left
     delay(500);
   }
+  delay(1000);
+  lcd.setCursor(0, 0);
+  lcd.clear();
+  lcd.print("Test scrollingDisplayLeft long message H I J K L M N O P Q W X Y Z");
+  delay(500);
+  for (int i = 0; i < 32; i++) {
+    lcd.scrollDisplayLeft();
+    delay(500);  // Controlling the speed of the scroll
+  }
+  delay(1000);
 
   /**************************
   Display autoscroll
   ***************************/
   lcd.clear();
   lcd.setCursor(15, 0);
-  lcd.print("Auto scroll on");
+  lcd.print("autoscroll on");
   lcd.setCursor(15, 1);  // Start at the very end of the top line
   lcd.autoscroll();      // Turn on the "pushing" effect
 
@@ -283,13 +293,13 @@ void loop() {
   ***************************/
 
   // Move everything 16 steps to the left
-
+  /*
   lcd.clear();
   lcd.setCursor(0, 0);
   //lcd.print("Test Scrolling display");
   lcd.setCursor(0, 0);  // Start at the very end of the top line
   // Every row has storage for 40 characters
-  lcd.print("Test Scrolling display to the left than right, second column");
+  lcd.print("Test scrollingDisplayLeft and Right, 1 2 3 4 5 6 7 8 9 0 A B C D");
   for (int i = 0; i < 32; i++) {
     lcd.scrollDisplayLeft();
     delay(500);  // Controlling the speed of the scroll
@@ -301,6 +311,7 @@ void loop() {
     delay(500);
   }
   delay(2000);
+*/
 
   /**************************
   leftToRight & rightToLeft
@@ -316,6 +327,7 @@ void loop() {
   lcd.rightToLeft();
   lcd.print("ABCDEF");  // Displays "ABCDEF" backwards at the end of Row 1
   delay(5000);
+  lcd.leftToRight();
 
   /**************************
   Display Custom Characters
@@ -327,7 +339,7 @@ void loop() {
   for (int i = 0; i < 8; i++) {
     lcd.write(i);  // Prints 0, 1, 2... 7 in a solid block
   }
-  delay(10000);
+  delay(5000);
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Internal Character");
@@ -348,5 +360,4 @@ void loop() {
   lcd.noDisplay();
   delay(2000);
   lcd.display();
-
 }
