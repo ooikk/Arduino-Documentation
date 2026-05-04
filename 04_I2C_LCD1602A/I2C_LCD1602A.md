@@ -150,6 +150,8 @@ New Way (The "Auto-Config" Way):
 hd44780_I2Cexp lcd;
 ```
 
+Check the github link above to discover new capabilities in hd44780
+
 **3.0 Comparison of setup()**
 
 The initialization function name changes slightly as well. While LiquidCrystal_I2C often used lcd.init(), hd44780 uses the more standard lcd.begin().
