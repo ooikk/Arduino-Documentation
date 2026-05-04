@@ -89,7 +89,7 @@ There are several libraries that work with the I2C LCD.
 
 This is the "standard" library most tutorials use. While it may still trigger the AVR warning on some versions, it is confirmed to work with ESP32.<br>
 ```
-WARNING: library LiquidCrystal_I2C-1.1.2 claims to run on (avr) architecture(s) and may be incompatible with your current board which runs on (ESP32) architecture(s).
+WARNING: library LiquidCrystal I2C claims to run on avr architecture(s) and may be incompatible with your current board which runs on esp32 architecture(s).
 ```
 **How to Silence the Warning (Optional)**
 
