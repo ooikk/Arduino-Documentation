@@ -233,11 +233,15 @@ autoscroll();                  // The display is active. When you print "A", the
 noAutoscroll();                // (Default): The cursor is active. When you print "A", the 'A' appears at the cursor, and the
                                // cursor jumps one step to the right.
 
-scrollDisplayLeft();           // Manually shift the whole screen left
-scrollDisplayRight();          // Manually shift the whole screen rightt
+// To understand these functions, you have to look at how the LCD controller (the HD44780 chip) handles memory. A standard 1602 LCD
+// has 16 visible columns, but it actually has enough internal memory (DDRAM) to store 40 characters per line.
+// Think of the physical 16x2 screen as a viewing window that sits over a much wider 40x2 strip of memory.
+scrollDisplayLeft();           // Shifts the "window" one position to the right across the memory, which makes the text on your
+                               // screen look like it is moving left.
+scrollDisplayRight();          // Shifts the "window" one position to the left, making the text appear to move right.
 
 // Characters display direction
-leftToRight();                 // Move the cursor right after printing
+leftToRight();                 // Default: Move the cursor right after printing
 rightToLeft();                 // Move the cursor left after printing
 
 // This function is needed to create custom character in the program
