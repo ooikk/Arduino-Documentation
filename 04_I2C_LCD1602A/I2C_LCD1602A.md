@@ -39,7 +39,9 @@ Search for "LiquidCrystal I2C" in the Library Manager.
 
 Choose the one maintained by Marco Schwartz or Frank de Brabande
 
-Import library: **LiquidCrystal_I2C** 1.1.2 by Frank de Brabander
+Import library: **LiquidCrystal_I2C** 1.1.2 by Frank de Brabander 
+
+https://github.com/johnrickman/LiquidCrystal_I2C
 
 
 ### 2.0 Recommended Library: hd44780 by Bill Perry
@@ -47,6 +49,8 @@ Import library: **LiquidCrystal_I2C** 1.1.2 by Frank de Brabander
 The most robust and highly recommended alternative for the ESP32-S3 is the hd44780 library by Bill Perry.  
 
 Import library: **hd44780** 1.3.2 by Bill Perry
+
+https://github.com/duinoWitchery/hd44780
 
 - **Why it's better:** It is designed to be architecture-agnostic, meaning it will compile on the ESP32-S3 without any architecture warnings.  
 - **Auto-Detection:** It can automatically detect the I2C address (e.g., 0x27 or 0x3F) and the pin mappings between the backpack and the LCD, which saves significant troubleshooting time.
@@ -322,3 +326,5 @@ https://docs.arduino.cc/learn/electronics/lcd-displays/
 https://randomnerdtutorials.com/esp32-esp8266-i2c-lcd-arduino-ide/
 
 https://www.luisllamas.es/en/arduino-lcd-i2c/
+
+https://easyelecmodule.com/how-to-use-the-lcd1602a/
