@@ -182,7 +182,8 @@ void setup() {
   lcd.init();
 #endif
   // turn on LCD backlight
-  lcd.backlight();
+  //lcd.backlight();
+  lcd.noBacklight();
   lcd.createChar(0, AmongUs);
   lcd.createChar(1, heart);
   lcd.createChar(2, smiley);
@@ -200,19 +201,26 @@ void loop() {
     Static text
   ***************/
 
-  while (Loop < 5) {
+  Loop = 0;
+  while (Loop < 1) {
     // set cursor to first column, first row
+    lcd.clear();
     lcd.setCursor(0, 0);
     // print message
+    lcd.cursor();
+    lcd.blink();
     lcd.print("Hello, World!");
-    delay(1000);
+    delay(2000);
     // clears the display to print new message
     lcd.clear();
     // set cursor to first column, second row
     lcd.setCursor(0, 1);
+    lcd.noBlink();
+    lcd.noCursor();
     lcd.print("Hello, World!");
-    delay(1000);
-    lcd.clear();
+
+    delay(2000);
+
     Loop++;
   }
 
@@ -227,6 +235,88 @@ void loop() {
   // print scrolling message
   scrollText(1, messageToScroll, 250, lcdColumns);
 
+  /**************
+   Hardware Scrolling (Scrolls the whole screen)
+   The LCD hardware has a built-in command to shift everything currently visible. This moves both Line 0 and Line 1 at the same time.
+  ***************/
+  lcd.setCursor(0, 0);
+  lcd.clear();
+  lcd.print("Hardware Scrolling Text! To the right");
+  lcd.setCursor(0, 1);
+  lcd.print("Second row message, right");
+  delay(500);
+  for (int i = 0; i < 16; i++) {
+    lcd.scrollDisplayRight();  // Moves everything one step right
+    delay(500);
+  }
+  delay(1000);
+
+  lcd.setCursor(0, 0);
+  lcd.clear();
+  lcd.print("Hardware Scrolling Text! To the left");
+  lcd.setCursor(0, 1);
+  lcd.print("Second row message, left");
+  delay(500);
+  for (int i = 0; i < 16; i++) {
+    lcd.scrollDisplayLeft();  // Moves everything one step left
+    delay(500);
+  }
+
+  /**************************
+  Display autoscroll
+  ***************************/
+  lcd.clear();
+  lcd.setCursor(15, 0);
+  lcd.print("Auto scroll on");
+  lcd.setCursor(15, 1);  // Start at the very end of the top line
+  lcd.autoscroll();      // Turn on the "pushing" effect
+
+  for (int i = 0; i < 16; i++) {
+    lcd.print(i);  // Each number stays at Col 15, but pushes the others left
+    delay(500);    // Wait so you can see the movement
+  }
+  lcd.noAutoscroll();
+  delay(1000);
+
+  /**************************
+  scrollDisplay
+  ***************************/
+
+  // Move everything 16 steps to the left
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  //lcd.print("Test Scrolling display");
+  lcd.setCursor(0, 0);  // Start at the very end of the top line
+  // Every row has storage for 40 characters
+  lcd.print("Test Scrolling display to the left than right, second column");
+  for (int i = 0; i < 32; i++) {
+    lcd.scrollDisplayLeft();
+    delay(500);  // Controlling the speed of the scroll
+  }
+  delay(2000);
+  // Move everything 16 steps back to the right
+  for (int i = 0; i < 32; i++) {
+    lcd.scrollDisplayRight();
+    delay(500);
+  }
+  delay(2000);
+
+  /**************************
+  leftToRight & rightToLeft
+  ***************************/
+  // Standard printing
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.leftToRight();
+  lcd.print("ABCDEF");  // Displays "ABCDEF" at the start of Row 0
+
+  // Reverse printing
+  lcd.setCursor(15, 1);  // Move to the far right of Row 1
+  lcd.rightToLeft();
+  lcd.print("ABCDEF");  // Displays "ABCDEF" backwards at the end of Row 1
+  delay(5000);
+
   /**************************
   Display Custom Characters
   ***************************/
@@ -239,12 +329,24 @@ void loop() {
   }
   delay(10000);
   lcd.clear();
-  lcd.setCursor(5, 0);
-  lcd.print("Custom Character");
+  lcd.setCursor(0, 0);
+  lcd.print("Internal Character");
   lcd.setCursor(8, 1);  // Go to middle of second line
   for (int i = 0; i < 8; i++) {
-    lcd.write(i);  // Prints 0, 1, 2... 7 in a solid block
+    lcd.write(i + 176);  // Prints 8, 9, 10... 15 in a solid block
   }
-  delay(10000);
-  Loop = 0;
+  delay(5000);
+
+  /**************************
+  Display on/ off
+  ***************************/
+  lcd.clear();
+  lcd.home();
+  lcd.display();
+  lcd.print("Display On/Off");
+  delay(2000);
+  lcd.noDisplay();
+  delay(2000);
+  lcd.display();
+
 }
