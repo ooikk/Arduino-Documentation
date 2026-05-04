@@ -76,7 +76,9 @@ SDA              GPIO 8
 SCL              GPIO 9
 ```
 
-<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/af19d5a4-3f3a-4a48-9033-d0d5df3f50e8" />
+
+<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/75a726ff-287c-40fa-894c-ef5fa2304fa2" />
+
 
 ## Library for LCD
 
