@@ -8,12 +8,13 @@ Additionally, it comes with a built-in potentiometer you can use to adjust the c
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/b0b46067-8f01-401b-a87a-c077a97138b9" />
 <br>
 
-**Adjust the contrast:**
+**Adjust the contrast and backlight:**
 <br>
 
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/7cdc463a-4890-4948-add1-5b92a697ad7a" />
 
-User may add a series resistor (>1k ohm) in between the Backlight Jumper pins to reduce the backlight. Ensure it's power by at least 5V.
+User may add a series resistor (>1k ohm) in between the Backlight Jumper pins to reduce the backlight. Or removed jumper to disable backlight.
+*Ensure it's power by at least 5V.*
 
 https://www.edn.com/arduino-i2c-lcd-backpack-introductory-tutorial/
 
