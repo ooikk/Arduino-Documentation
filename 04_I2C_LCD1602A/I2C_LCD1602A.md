@@ -210,10 +210,7 @@ and displays an 'A'.
 Return Value: It returns the number of bytes successfully written (usually 1).
 Example:
 lcd.write(0); // Displays the Custom Character stored at index 0.
-lcd.write(65); // Displays the letter 'A'.
-
-ASCII Code
-https://www.ascii-code.com/
+lcd.write(65); // Displays the letter 'A'. See Character Codes and Character Patterns (ROM Code: A00) below
 **/
 
 // Cursor operations
