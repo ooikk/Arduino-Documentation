@@ -89,7 +89,8 @@ There are several libraries that work with the I2C LCD.
 
 This is the "standard" library most tutorials use. While it may still trigger the AVR warning on some versions, it is confirmed to work with ESP32.<br>
 ```
-WARNING: library LiquidCrystal I2C claims to run on avr architecture(s) and may be incompatible with your current board which runs on esp32 architecture(s).
+WARNING: library LiquidCrystal I2C claims to run on avr architecture(s) and may be incompatible with your current board
+which runs on esp32 architecture(s).
 ```
 **How to Silence the Warning (Optional)**
 
@@ -177,21 +178,40 @@ LiquidCrystal_I2C(uint8_t lcd_Addr,uint8_t lcd_cols,uint8_t lcd_rows);
 clear();
 
 // initiates and start the lcd
-init();
+init();                          // LiquidCrystal_I2
+begin(16, 2);                    // for hd44780
 
 // Display backlight
 noBacklight();                   // Turns off 
 backlight();                     // Turns on the display backlight
-setBacklight(uint8_t new_val);   // alias for backlight() and nobacklight()
 
 // Prints out and characters or text on the lcd display
 print();
-printstr(const char[]);
-printLeft();
-printRight();
+/**
+The print() function is a higher-level command. It translates data into a human-readable format (ASCII strings)
+before sending it to the LCD.
+Primary Use: Displaying variables, sensor readings, and text strings.
+Behavior: If you send the number 65, the library realizes you want to see the number "65". It converts the
+integer into two separate characters—'6' and '5'—and sends them sequentially.
+Base Control: It allows you to specify formats, such as lcd.print(255, HEX); which would display "FF".
+Example:
+lcd.print(0); // Displays the digit '0'.
+lcd.print(65); // Displays the digits '6' and '5'.
+**/
 
 // writes a character to whichever position in the LCD
-write(); 
+write();
+/**
+lcd.write() — The "Raw" Messenger
+The write() function sends binary data (raw bytes) directly to the device without any translation.
+Primary Use: Displaying custom characters (0–7) or specific ASCII symbols.
+Behavior: If you send the number 65, the LCD looks at its internal ASCII table, finds character #65,
+and displays an 'A'.
+Return Value: It returns the number of bytes successfully written (usually 1).
+Example:
+lcd.write(0); // Displays the Custom Character stored at index 0.
+lcd.write(65); // Displays the letter 'A'.
+**/
 
 // Cursor operations
 noCursor();                     // Hides the LCD cursor
@@ -205,14 +225,13 @@ display(); 	                    // Turns on
 // Scroll control
 autoscroll();                  // Set the display to auto scroll to the left each time a letter is added
 noAutoscroll();                // Stops auto scrolling
-scrollDisplayLeft();           // Sets the scroll display orientation one position towards the left
-scrollDisplayRight();          // Sets the scroll display orientation one position towards the right
+scrollDisplayLeft();           // Manually shift the whole screen left
+scrollDisplayRight();          // Manually shift the whole screen rightt
 
 // Characters display direction
-leftToRight();
-rightToLeft();
-shiftIncrement();
-shiftDecrement();
+leftToRight();                 // Move the cursor right after printing
+rightToLeft();                 // Move the cursor left after printing
+
 
 // Display to blink/ no blink
 noBlink();
