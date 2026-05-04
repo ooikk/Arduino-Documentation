@@ -185,6 +185,10 @@ begin(16, 2);                    // for hd44780
 noBacklight();                   // Turns off 
 backlight();                     // Turns on the display backlight
 
+// Display
+noDisplay();                    // Turns off, backlight still ON
+display(); 	                    // Turns on
+
 // Prints out and characters or text on the lcd display
 print();
 /**
@@ -204,8 +208,8 @@ write();
 /**
 lcd.write() — The "Raw" Messenger
 The write() function sends binary data (raw bytes) directly to the device without any translation.
-Primary Use: Displaying custom characters (0–7) or specific ASCII symbols.
-Behavior: If you send the number 65, the LCD looks at its internal ASCII table, finds character #65,
+Primary Use: Displaying custom characters (0–7) or specific symbols.
+Behavior: If you send the number 65, the LCD looks at its internal table, finds character #65,
 and displays an 'A'.
 Return Value: It returns the number of bytes successfully written (usually 1).
 Example:
@@ -218,9 +222,9 @@ noCursor();                     // Hides the LCD cursor
 cursor();                       // Creates a blinking block cursor
 setCursor(uint8_t, uint8_t);    // Sets a new message on a new cursor
 
-// Display
-noDisplay();                    // Turns off
-display(); 	                    // Turns on 
+// Cursor to blink/ no blink
+noBlink();
+blink();
 
 // Scroll control
 autoscroll();                  // Set the display to auto scroll to the left each time a letter is added
@@ -231,11 +235,6 @@ scrollDisplayRight();          // Manually shift the whole screen rightt
 // Characters display direction
 leftToRight();                 // Move the cursor right after printing
 rightToLeft();                 // Move the cursor left after printing
-
-
-// Display to blink/ no blink
-noBlink();
-blink();
 
 // This function is needed to create custom character in the program
 createChar(uint8_t, uint8_t[]);  // uint8_t: location 0 to 7
