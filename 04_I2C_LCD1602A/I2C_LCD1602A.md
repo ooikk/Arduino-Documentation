@@ -227,8 +227,12 @@ noBlink();
 blink();
 
 // Scroll control
-autoscroll();                  // Set the display to auto scroll to the left each time a letter is added
-noAutoscroll();                // Stops auto scrolling
+autoscroll();                  // The display is active. When you print "A", the 'A' appears at the fixed cursor position, and
+                               // the rest of the text on the screen shifts one space to the left to "push" the existing text out
+                               // of the way.
+noAutoscroll();                // (Default): The cursor is active. When you print "A", the 'A' appears at the cursor, and the
+                               // cursor jumps one step to the right.
+
 scrollDisplayLeft();           // Manually shift the whole screen left
 scrollDisplayRight();          // Manually shift the whole screen rightt
 
