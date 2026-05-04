@@ -23,6 +23,22 @@ https://www.edn.com/arduino-i2c-lcd-backpack-introductory-tutorial/
 
 https://www.handsontec.com/dataspecs/I2C_LCD_Interface.pdf
 
+**Changing the I2C Address on an LCD Backpack**
+
+The table below shows the full range of possible addresses. A value of 1 means the pad is left open, while 0 means the pad is shorted.
+
+```
+A0   A1   A2   Address
+0    0    0    0x20
+0    0    1    0x21
+0    1    0    0x22
+0    1    1    0x23
+1    0    0    0x24
+1    0    1    0x25
+1    1    0    0x26
+1    1    1    0x27
+```
+
 **2 rows by 16 columns** <br>
 <img width="885" height="217" alt="image" src="https://github.com/user-attachments/assets/df52c290-c214-40c2-bc45-af422046cb6e" />
 
@@ -360,3 +376,5 @@ https://easyelecmodule.com/how-to-use-the-lcd1602a/
 - https://easyelecmodule.com/wp-content/uploads/CN0295D-other-related-document.pdf
 - https://easyelecmodule.com/wp-content/uploads/eone-1602a1-1.pdf
 - https://easyelecmodule.com/wp-content/uploads/PCF8574-2.pdf
+
+https://zaitronics.com.au/blogs/guides/how-to-use-16x2-lcd-parallel-i2c?
