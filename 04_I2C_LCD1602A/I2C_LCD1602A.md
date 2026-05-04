@@ -21,6 +21,7 @@ https://www.edn.com/arduino-i2c-lcd-backpack-introductory-tutorial/
 
 <img alt="image" style="width: 75%; height: auto;"   src="https://github.com/user-attachments/assets/ea1fd770-d6b1-4c40-819a-699da7de073b" />
 
+https://www.handsontec.com/dataspecs/I2C_LCD_Interface.pdf
 
 **2 rows by 16 columns** <br>
 <img width="885" height="217" alt="image" src="https://github.com/user-attachments/assets/df52c290-c214-40c2-bc45-af422046cb6e" />
