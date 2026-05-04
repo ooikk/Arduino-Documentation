@@ -47,7 +47,24 @@ A0   A1   A2   Address
 
 <img width="138" height="202" alt="image" src="https://github.com/user-attachments/assets/4507eb39-1b6d-4856-8a0d-54a852ad6f9a" />
 
+**16x2 LCD Command Codes**
 
+This table is a quick reference for the most commonly used 16x2 LCD commands. These commands apply to displays based on the HD44780 controller and are useful when controlling the screen, cursor behaviour, and text position in Arduino and other microcontroller projects.
+
+```
+Command     (Hex)   Name        Description
+0x01        Clear display       Clears all text and moves the cursor to the home position
+0x02        Return home         Moves the cursor to the top left without clearing the display
+0x04        Entry mode set      Cursor moves left after writing a character
+0x06        Entry mode set      Cursor moves right after writing a character
+0x0C        Display on          Turns the display on with cursor and blink disabled
+0x0E        Display on cursor   Turns the display on with the cursor visible
+0x0F        Display on blink    Turns the display on with cursor blinking
+0x10        Cursor move         Moves the cursor one position to the left
+0x14        Cursor move         Moves the cursor one position to the right
+0x80 + col  Set cursor line 1   Moves the cursor to a specific column on the first line
+0xC0 + col  Set cursor line 2   Moves the cursor to a specific column on the second line
+```
 
 ## Connect to LCD
 
