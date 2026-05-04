@@ -361,7 +361,7 @@ void loop(){
 
 ## Display Custom Characters
 
-In a 16×2 LCD there are 32 blocks where you can display characters. Each block is made out of 5×8 tiny pixels. You can display custom characters by defining the state of each tiny pixel. For that, you can create a byte variable to hold  the state of each pixel.
+In a 16×2 LCD there are 32 blocks where you can display characters. Each block is made out of 5×8 tiny pixels. You can display custom characters by defining the state of each tiny pixel. For that, you can create a byte variable to hold  the state of each pixel. In total you can store 8 custom characters from address 0 to 8, see Character Codes and Character Patterns (ROM Code: A00). Use write() to display the custom character.
 
 To create your custom character, you can go here to generate the byte variable for your character. 
 
