@@ -241,7 +241,7 @@ scrollDisplayLeft();           // Shifts the "window" one position to the right 
 scrollDisplayRight();          // Shifts the "window" one position to the left, making the text appear to move right.
 
 // Characters display direction
-leftToRight();                 // Default: Move the cursor right after printing
+leftToRight();                 // (Default): Move the cursor right after printing
 rightToLeft();                 // Move the cursor left after printing
 
 // This function is needed to create custom character in the program
