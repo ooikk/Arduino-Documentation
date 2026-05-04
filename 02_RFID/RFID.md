@@ -17,12 +17,17 @@ RST	                GPIO 5                  LOW signal to put the module in powe
 Add 10uF across 3.3V and GND for clean signal <br>
 
 # Classic
-Import library: MFRC522, 1.4.12 by Github Community
+Import library: MFRC522, 1.4.12 by Github Community <br>
 sample code: RFID
 
+https://github.com/miguelbalboa/rfid
+
 # Version 2
-Import library: RFID_MFRC522v2. 2.0.6 by Github Community
+Import library: RFID_MFRC522v2. 2.0.6 by Github Community <br>
 sample code: RFID_v2
+
+https://github.com/OSSLibraries/Arduino_MFRC522v2
+
 
 # Card information
 <img width="806" height="384" alt="image" src="https://github.com/user-attachments/assets/0b785230-987c-4df8-a9fa-d2a86216a89e" />
