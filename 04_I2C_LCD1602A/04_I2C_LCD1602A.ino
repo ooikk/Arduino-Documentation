@@ -289,31 +289,6 @@ void loop() {
   delay(1000);
 
   /**************************
-  scrollDisplay
-  ***************************/
-
-  // Move everything 16 steps to the left
-  /*
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  //lcd.print("Test Scrolling display");
-  lcd.setCursor(0, 0);  // Start at the very end of the top line
-  // Every row has storage for 40 characters
-  lcd.print("Test scrollingDisplayLeft and Right, 1 2 3 4 5 6 7 8 9 0 A B C D");
-  for (int i = 0; i < 32; i++) {
-    lcd.scrollDisplayLeft();
-    delay(500);  // Controlling the speed of the scroll
-  }
-  delay(2000);
-  // Move everything 16 steps back to the right
-  for (int i = 0; i < 32; i++) {
-    lcd.scrollDisplayRight();
-    delay(500);
-  }
-  delay(2000);
-*/
-
-  /**************************
   leftToRight & rightToLeft
   ***************************/
   // Standard printing
