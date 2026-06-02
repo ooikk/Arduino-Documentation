@@ -86,7 +86,7 @@ jump action.
 
 ```
 ## Moving Track
-For the playing scene, defined custom characters. Use arrayTrack[16] for characters to be displayed on LCD screen.
+For the playing scene, defined custom characters. Use arrayTrack[16] for characters to be displayed on LCD screen. For the running track, only baseChar and wallChar to be displayed.
 
 ```
 byte clearChar[] = {
