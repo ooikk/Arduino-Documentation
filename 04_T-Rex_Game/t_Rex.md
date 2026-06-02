@@ -163,7 +163,7 @@ byte arrayTrack[16] = { BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, WALLCH
 
 ```
 
-Next step is to have a function to display the scrolling track, it will update at each "timeInterval". It will record the characters a Wall or normal track at t_Rex position.
+Next step is to have a function to display the scrolling track, it will update at each "timeInterval". It will record the characters a Wall or Base t_Rex position.
 
 ```
 void writeTrack() {
