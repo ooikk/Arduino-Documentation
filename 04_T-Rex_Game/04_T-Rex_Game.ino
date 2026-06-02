@@ -62,14 +62,14 @@ byte wallChar[] = {
 const int WALLCHAR = 2;
 
 byte rexChar[] = {
+  B00110,
+  B00111,
+  B00111,
   B01110,
-  B01110,
-  B10101,
-  B01110,
-  B00100,
-  B00100,
+  B11111,
+  B11110,
   B01010,
-  B10001
+  B01001
 };
 
 const int REXCHAR = 3;
