@@ -27,7 +27,7 @@ chrome://dino
 
 Fun Fact: The game is theoretically endless. The developers capped the maximum playtime at approximately 17 million years—a playful reference to how long the T-Rex was alive on Earth before extinction.
 
-<img width="991" height="285" alt="image" src="https://github.com/user-attachments/assets/f703984a-98c2-4fa8-af7e-9a35bc16a68d" />
+<img alt="image" style="width: 75%; height: auto;"  src="https://github.com/user-attachments/assets/f703984a-98c2-4fa8-af7e-9a35bc16a68d" />
 
 
 # The hardware setup
