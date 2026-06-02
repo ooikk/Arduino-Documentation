@@ -53,3 +53,9 @@ const int togglePin = 4;     // switch to trigger jump action
 
 <img alt="image" style="width: 75%; height: auto;" src="https://github.com/user-attachments/assets/4f50c7ff-d5d9-4342-916f-aa5fc1925757" />
 
+# The Game
+
+## Toggle switch
+
+To prevent abnormal action if someone press the switch for very long, the action only start with "Press" and "Released" sequence.
+
