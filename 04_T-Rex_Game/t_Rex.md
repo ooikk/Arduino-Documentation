@@ -32,11 +32,24 @@ Fun Fact: The game is theoretically endless. The developers capped the maximum p
 
 # The hardware setup
 
-Follow the link for LCD1602A setup
+Follow the link for LCD1602A setup:
+
+```
+I2C LCD          ESP32 S3
+GND              GND
+VCC              VIN (2.5V to 6V)  // It's recommended connect to >5V to ensure enough contrast.
+SDA              GPIO 8
+SCL              GPIO 9
+```
 
 https://github.com/ooikk/Arduino-Documentation/blob/main/04_I2C_LCD1602A/I2C_LCD1602A.md
 
 Below final circuit with push button switch.
 
-<img width="1064" height="530" alt="image" src="https://github.com/user-attachments/assets/4f50c7ff-d5d9-4342-916f-aa5fc1925757" />
+```
+// Toggle switch connects to GPIO 4 of ESP32
+const int togglePin = 4;     // switch to trigger jump action
+```
+
+<img alt="image" style="width: 75%; height: auto;" src="https://github.com/user-attachments/assets/4f50c7ff-d5d9-4342-916f-aa5fc1925757" />
 
