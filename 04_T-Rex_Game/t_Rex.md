@@ -71,7 +71,7 @@ This code will wait until user Press and Release. Use in none playing mode.
     }
 ```
 
-Under Play mode, need to release CPU for other tasks. Use a flag to **switchStateCur** to indicate switch state. Once confirm Press and Release, start the
+Under Play mode, need to release CPU for other tasks. Use a flag **switchStateCur** to indicate switch state. Once confirm Press and Release, start the
 jump action.
 
 ```
@@ -84,4 +84,128 @@ jump action.
       actionJump = HIGH;      // trigger jump action
     }
 
+```
+
+For the playing scene, defined custom characters. Use arrayTrack[16] for character to be display on LCD screen.
+
+```
+byte clearChar[] = {
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+  B00000
+};
+const int CLEARCHAR = 0;
+
+byte baseChar[] = {
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+  B00000,
+  B11111
+};
+
+const int BASECHAR = 1;
+
+byte wallChar[] = {
+  B00100,
+  B01110,
+  B01110,
+  B01110,
+  B01110,
+  B01110,
+  B01110,
+  B11111
+};
+const int WALLCHAR = 2;
+
+byte rexChar[] = {
+  B00110,
+  B00111,
+  B00111,
+  B01110,
+  B11111,
+  B11110,
+  B01010,
+  B01001
+};
+const int REXCHAR = 3;
+
+byte hitChar[] = {
+  B10101,
+  B01110,
+  B01110,
+  B11111,
+  B01110,
+  B01110,
+  B01010,
+  B10001
+};
+const int HITCHAR = 4;
+
+byte arrayTrack[16] = { BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, WALLCHAR, BASECHAR, WALLCHAR,
+                        BASECHAR, BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, BASECHAR, WALLCHAR };
+
+
+  // Store special character at LCD's memory 0 to 4
+  lcd.createChar(0, clearChar);
+  lcd.createChar(1, baseChar);
+  lcd.createChar(2, wallChar);
+  lcd.createChar(3, rexChar);
+  lcd.createChar(4, hitChar);
+
+```
+
+Next step is to have a function to display the scrolling track, it will update at each "timeInterval". It will record the characters a Wall or normal track at t_Rex position.
+
+```
+void writeTrack() {
+  int tempInd = 0;
+  // move at fix interval
+  if ((millis() - timePrevious) > timeInterval) {
+    timePrevious = millis();
+    lcd.setCursor(0, 1);  // Go to start of second line
+    for (int i = 0; i < 16; i++) {
+      tempInd = (i + scrollTrackIndex) % 16;    // find the mod 16
+      if (i == t_RexPos) {                      // keep a copy of Char at t_Rex position for hit checking
+        t_RexPosChar = arrayTrack[tempInd];     // keep a copy of status at T-Rex position: wall or space
+        if (t_RexPosChar == WALLCHAR) Score++;  // gain 1 point each time passing a wall
+      }
+      lcd.write(arrayTrack[tempInd]);  // update the track
+    }
+    scrollTrackIndex++;  // prepare for next, shift left
+  }
+}
+```
+If an "actionJump" is initiated, it will update the t_Rex to jump from lcd.setCursor(t_RexPos, 1) to lcd.setCursor(t_RexPos, 0). 
+t_Rex only come down after "jumptimeInterval".
+
+```
+void jumpWall() {
+  if (actionJump == HIGH) {      // Action to jump
+    actionJump = LOW;            // Set to low for next command
+    lcd.setCursor(t_RexPos, 0);  // jump
+    lcd.write(REXCHAR);
+    t_RexStatus = HIGH;  // Update t_Rex position
+
+    lcd.setCursor(t_RexPos, 1);
+    lcd.write(BASECHAR);
+    jumptimePrevious = millis();  // keep time it jumps
+
+  } else if ((millis() - jumptimePrevious) > jumptimeInterval) {  // check if time to drop down
+    lcd.setCursor(t_RexPos, 0);                                   // yes, clear the jump position
+    lcd.write(CLEARCHAR);
+
+    lcd.setCursor(t_RexPos, 1);  // down
+    lcd.write(REXCHAR);
+    t_RexStatus = LOW;  // update t_Rex position
+  }
+}
 ```
