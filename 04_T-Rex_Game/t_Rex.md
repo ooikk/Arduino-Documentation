@@ -59,3 +59,29 @@ const int togglePin = 4;     // switch to trigger jump action
 
 To prevent abnormal action if someone press the switch for very long, the action only start with "Press" and "Released" sequence.
 
+This code will wait until user Press and Release. Use in none playing mode.
+```
+    // Wait user to continue
+    switchState = digitalRead(togglePin);
+    while (switchState == HIGH) {
+      switchState = digitalRead(togglePin);
+    }
+    while (switchState == LOW) {
+      switchState = digitalRead(togglePin);
+    }
+```
+
+Under Play mode, need to release CPU for other tasks. Use a flag to **switchStateCur** to indicate switch state. Once confirm Press and Release, start the
+jump action.
+
+```
+    switchState = digitalRead(togglePin);
+    if (switchState == LOW) {
+      switchStateCur = LOW;
+    }
+    if ((switchStateCur == LOW) && (switchState == HIGH)) {
+      switchStateCur = HIGH;  // confirm user press and release switch
+      actionJump = HIGH;      // trigger jump action
+    }
+
+```
