@@ -55,7 +55,7 @@ const int togglePin = 4;     // switch to trigger jump action
 
 # The Game
 
-## Toggle switch
+## Toggle Switch
 
 To prevent abnormal action if someone press the switch for very long, the action only start with "Press" and "Released" sequence.
 
@@ -85,7 +85,7 @@ jump action.
     }
 
 ```
-
+## Moving Track
 For the playing scene, defined custom characters. Use arrayTrack[16] for character to be display on LCD screen.
 
 ```
@@ -184,6 +184,9 @@ void writeTrack() {
   }
 }
 ```
+
+## t_Rex
+
 If an "actionJump" is initiated, it will update the t_Rex to jump from lcd.setCursor(t_RexPos, 1) to lcd.setCursor(t_RexPos, 0). 
 t_Rex only come down after "jumptimeInterval".
 
@@ -206,6 +209,61 @@ void jumpWall() {
     lcd.setCursor(t_RexPos, 1);  // down
     lcd.write(REXCHAR);
     t_RexStatus = LOW;  // update t_Rex position
+  }
+}
+```
+## Checking the hit
+
+Only check if t_Rex is at the track (non-jump state), got hit if the track character at t_RexPos is a "WALL". If Hit, minus Score and numLife.
+```
+  // check whether t_Rex hitting the Wall
+  if ((t_RexStatus == LOW) && (t_RexPosChar == WALLCHAR)) {
+    numLife--;                   // Hiting the wall, minus one life
+    Score--;                     // minus one point as it was added in writeTrack
+    lcd.setCursor(t_RexPos, 1);  //
+    lcd.write(HITCHAR);          // show hit character
+    lcd.setCursor(t_RexPos, 1);  // ensure blinking on HITChar
+    lcd.blink();
+    delay(3000);
+    lcd.noBlink();
+    // Serial.println("Got HIT");
+  }
+```
+
+## Scoreboard
+Update the Score and numLife on LCD row 0. Check for Game over if numLife = 0, and wait to start new game.
+```
+void updateScoreboard() {
+
+  // Print the game score and life
+  lcd.setCursor(5, 0);
+  lcd.print("S:");
+  lcd.print(Score);
+
+  //lcd.setCursor(15, 0);
+  lcd.print(" L:");
+  lcd.print(numLife, DEC);
+
+  // check if any more Life to continue
+  if (numLife == 0) {
+    lcd.setCursor(0, 0);
+    lcd.print("   Game Over!   ");
+
+    lcd.setCursor(0, 1);
+    lcd.print("Press Sw 2 start");
+
+    // Wait user to continue
+    switchState = digitalRead(togglePin);
+    while (switchState == HIGH) {
+      switchState = digitalRead(togglePin);
+    }
+    while (switchState == LOW) {
+      switchState = digitalRead(togglePin);
+    }
+    // Clear the status and continue new game
+    Score = 0;
+    numLife = NUMLIFE;
+    lcd.clear();
   }
 }
 ```
