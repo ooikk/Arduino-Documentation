@@ -243,6 +243,8 @@ Only check if t_Rex is at the track (non-jump state), got hit if the track chara
     delay(3000);
     lcd.noBlink();
     // Serial.println("Got HIT");
+    actionJump = LOW;       // initiate a jump action after switch is pressed and released
+    switchStateCur = HIGH;  // current switch status for checking switch pressed and released function
   }
 ```
 
