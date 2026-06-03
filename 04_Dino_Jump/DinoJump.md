@@ -1,5 +1,7 @@
 # Dino Jump
 
+By QWEN 3.7 Plus
+
 ## 1-Button Dino Jump game on a 16x2 I2C LCD.
 
 Even with just two rows of text, we can create a surprisingly fun and addictive game by using characters to represent the player, the ground, and the obstacles.
@@ -18,3 +20,5 @@ to 150ms. If you want to make it insanely hard, change 150 to 80.
 **2. Custom Characters (Level Up):** If you want to get fancy, you can replace the 'A', '^', and 'M' with custom pixel art using lcd.createChar(). For example, you can draw a tiny 5x8 pixel dinosaur and a 5x8 pixel cactus.
 
 **3. Add Sound:** Wire a small passive buzzer to GPIO 15 and GND. Add tone(15, 800, 100); inside the handleButtonPress() function when jumping, and a lower tone tone(15, 200, 500); in the GAMEOVER state for instant audio feedback!
+
+
