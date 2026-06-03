@@ -111,6 +111,10 @@ void resetGame() {
   numLife = NUMLIFE;
   timePrevious = 0;
   jumptimePrevious = 0;
+
+  actionJump = LOW;       // initiate a jump action after switch is pressed and released
+  switchStateCur = HIGH;  // current switch status for checking switch pressed and released function
+
   // Draw the T-Rex exactly ONCE for the start of the game
   lcd.clear();
   // lcd.setCursor(t_RexPos, 1);
@@ -138,7 +142,7 @@ void writeTrack() {
 
     // Generate random WALL position
     arrayTrack[0] == BASECHAR;
-    if (arrayTrack[15] == BASECHAR) {    // Avoid 2 consecutive WALLs
+    if (arrayTrack[15] == BASECHAR) {  // Avoid 2 consecutive WALLs
       if (tempInd == 1)
         arrayTrack[0] == WALLCHAR;
     }
@@ -286,6 +290,8 @@ void loop() {
     delay(3000);
     lcd.noBlink();
     // Serial.println("Got HIT");
+    actionJump = LOW;       // initiate a jump action after switch is pressed and released
+    switchStateCur = HIGH;  // current switch status for checking switch pressed and released function
   }
   updateScoreboard();
 }
