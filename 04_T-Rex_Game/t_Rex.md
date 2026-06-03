@@ -98,7 +98,6 @@ byte clearChar[] = {
   B00000,
   B00000
 };
-const int CLEARCHAR = 0;
 
 byte baseChar[] = {
   B00000,
@@ -111,8 +110,6 @@ byte baseChar[] = {
   B11111
 };
 
-const int BASECHAR = 1;
-
 byte wallChar[] = {
   B00100,
   B01110,
@@ -123,7 +120,6 @@ byte wallChar[] = {
   B01110,
   B11111
 };
-const int WALLCHAR = 2;
 
 byte rexChar[] = {
   B00110,
@@ -135,7 +131,6 @@ byte rexChar[] = {
   B01010,
   B01001
 };
-const int REXCHAR = 3;
 
 byte hitChar[] = {
   B10101,
@@ -147,6 +142,11 @@ byte hitChar[] = {
   B01010,
   B10001
 };
+
+const int CLEARCHAR = 0;
+const int BASECHAR = 1;
+const int WALLCHAR = 2;
+const int REXCHAR = 3;
 const int HITCHAR = 4;
 
 byte arrayTrack[16] = { BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, WALLCHAR, BASECHAR, WALLCHAR,
@@ -154,12 +154,27 @@ byte arrayTrack[16] = { BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, WALLCH
 
 
   // Store special character at LCD's memory 0 to 4
-  lcd.createChar(0, clearChar);
-  lcd.createChar(1, baseChar);
-  lcd.createChar(2, wallChar);
-  lcd.createChar(3, rexChar);
-  lcd.createChar(4, hitChar);
+  lcd.createChar(CLEARCHAR, clearChar);
+  lcd.createChar(BASECHAR, baseChar);
+  lcd.createChar(WALLCHAR, wallChar);
+  lcd.createChar(REXCHAR, rexChar);
+  lcd.createChar(HITCHAR, hitChar);
 
+```
+## Reset Game
+```
+void resetGame() {
+  // Reset variables
+  t_RexStatus = LOW;
+  Score = 0;
+  numLife = NUMLIFE;
+  timePrevious = 0;
+  jumptimePrevious = 0;
+  // Draw the T-Rex exactly ONCE for the start of the game
+  lcd.clear();
+  //lcd.setCursor(t_RexPos, 1);
+  //lcd.write(REXCHAR);
+}
 ```
 
 Next step is to have a function to display the scrolling track, it will update at each "timeInterval". It will record the characters a Wall or Base at t_Rex position.
@@ -172,12 +187,14 @@ void writeTrack() {
     timePrevious = millis();
     lcd.setCursor(0, 1);  // Go to start of second line
     for (int i = 0; i < 16; i++) {
-      tempInd = (i + scrollTrackIndex) % 16;    // find the mod 16
-      if (i == t_RexPos) {                      // keep a copy of Char at t_Rex position for hit checking
-        t_RexPosChar = arrayTrack[tempInd];     // keep a copy of status at T-Rex position: wall or space
-        if (t_RexPosChar == WALLCHAR) Score++;  // gain 1 point each time passing a wall
-      }
-      lcd.write(arrayTrack[tempInd]);  // update the track
+      tempInd = (i + scrollTrackIndex) % 16;                               // find the mod 16
+      if (i == t_RexPos) {                                                 // keep a copy of Char at t_Rex position for hit checking
+        t_RexPosChar = arrayTrack[tempInd];                                // keep a copy of status at T-Rex position: wall or space
+        if ((t_RexPosChar == WALLCHAR) && (t_RexStatus == HIGH)) Score++;  // gain 1 point each time passing a wall
+        if (t_RexStatus == LOW) lcd.write(REXCHAR);                        // re-draw the t_REX at base location
+        else lcd.write(arrayTrack[tempInd]);                               // If at jump position, update the track as ussual
+      } else
+        lcd.write(arrayTrack[tempInd]);                                    // update the track at none t_RexPos
     }
     scrollTrackIndex++;  // prepare for next, shift left
   }
@@ -201,13 +218,15 @@ void jumpWall() {
     lcd.write(BASECHAR);
     jumptimePrevious = millis();  // keep time it jumps
 
-  } else if ((millis() - jumptimePrevious) > jumptimeInterval) {  // check if time to drop down
-    lcd.setCursor(t_RexPos, 0);                                   // yes, clear the jump position
-    lcd.write(CLEARCHAR);
+    // debug
+    //Serial.printf("Jmp:%lu ", jumptimePrevious);
 
+  } else if (((millis() - jumptimePrevious) > jumptimeInterval) && (t_RexStatus == HIGH)) {  // check if time to drop down
+    t_RexStatus = LOW;                                                                       // update t_Rex position
+    lcd.setCursor(t_RexPos, 0);                                                              // yes, clear the jump position
+    lcd.write(CLEARCHAR);
     lcd.setCursor(t_RexPos, 1);  // down
     lcd.write(REXCHAR);
-    t_RexStatus = LOW;  // update t_Rex position
   }
 }
 ```
@@ -218,7 +237,6 @@ Only check if t_Rex is at the track (non-jump state), got hit if the track chara
   // check whether t_Rex hitting the Wall
   if ((t_RexStatus == LOW) && (t_RexPosChar == WALLCHAR)) {
     numLife--;                   // Hiting the wall, minus one life
-    Score--;                     // minus one point as it was added in writeTrack
     lcd.setCursor(t_RexPos, 1);  //
     lcd.write(HITCHAR);          // show hit character
     lcd.setCursor(t_RexPos, 1);  // ensure blinking on HITChar
@@ -260,9 +278,7 @@ void updateScoreboard() {
       switchState = digitalRead(togglePin);
     }
     // Clear the status and continue new game
-    Score = 0;
-    numLife = NUMLIFE;
-    lcd.clear();
+    resetGame();
   }
 }
 ```
