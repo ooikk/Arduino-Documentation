@@ -183,7 +183,6 @@ void writeTrack() {
   int tempInd = 0;
   // move at fix interval
   if ((millis() - timePrevious) > timeInterval) {
-    timePrevious = millis();
     lcd.setCursor(0, 1);  // Go to start of second line
     for (int i = 0; i < 16; i++) {
       tempInd = (i + scrollTrackIndex) % 16;                               // find the mod 16
@@ -196,6 +195,7 @@ void writeTrack() {
         lcd.write(arrayTrack[tempInd]);                                    // update the track at none t_RexPos
     }
     scrollTrackIndex++;  // prepare for next, shift left
+    timePrevious = millis();
   }
 }
 ```
