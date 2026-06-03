@@ -172,8 +172,6 @@ void resetGame() {
   jumptimePrevious = 0;
   // Draw the T-Rex exactly ONCE for the start of the game
   lcd.clear();
-  //lcd.setCursor(t_RexPos, 1);
-  //lcd.write(REXCHAR);
 }
 ```
 
