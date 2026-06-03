@@ -97,7 +97,7 @@ byte arrayTrack[16] = { BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, WALLCH
 int scrollTrackIndex = 0;
 unsigned long timeInterval = 1000;  // seconds
 unsigned long timePrevious = 0;
-unsigned long jumptimeInterval = timeInterval * 1.5;  // seconds
+unsigned long jumptimeInterval = timeInterval * 1.6;  // seconds
 unsigned long jumptimePrevious = 0;
 
 const int NUMLIFE = 3;  // allow trial time
@@ -113,8 +113,8 @@ void resetGame() {
   jumptimePrevious = 0;
   // Draw the T-Rex exactly ONCE for the start of the game
   lcd.clear();
- // lcd.setCursor(t_RexPos, 1);
- // lcd.write(REXCHAR);
+  // lcd.setCursor(t_RexPos, 1);
+  // lcd.write(REXCHAR);
 }
 
 void writeTrack() {
@@ -123,8 +123,6 @@ void writeTrack() {
   if ((millis() - timePrevious) > timeInterval) {
     //unsigned long currentMillis = millis();  // Capture the time once
     //Serial.printf("Track== Prev:%lu  Cur:%lu  Diff:%lu\n", timePrevious, currentMillis, (currentMillis - timePrevious));
-
-    timePrevious = millis();
     lcd.setCursor(0, 1);  // Go to start of second line
     for (int i = 0; i < 16; i++) {
       tempInd = (i + scrollTrackIndex) % 16;                               // find the mod 16
@@ -134,11 +132,20 @@ void writeTrack() {
         if (t_RexStatus == LOW) lcd.write(REXCHAR);                        // re-draw the t_REX at base location
         else lcd.write(arrayTrack[tempInd]);                               // If at jump position, update the track as ussual
       } else
-        lcd.write(arrayTrack[tempInd]);                                    // update the track at none t_RexPos
+        lcd.write(arrayTrack[tempInd]);  // update the track at none t_RexPos
     }
     scrollTrackIndex++;  // prepare for next, shift left
+
+    // Generate random WALL position
+    arrayTrack[0] == BASECHAR;
+    if (arrayTrack[15] == BASECHAR) {    // Avoid 2 consecutive WALLs
+      if (tempInd == 1)
+        arrayTrack[0] == WALLCHAR;
+    }
+    timePrevious = millis();
   }
 }
+
 
 void jumpWall() {
   if (actionJump == HIGH) {      // Action to jump
