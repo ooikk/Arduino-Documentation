@@ -84,6 +84,21 @@ Under play mode, the code is broken into two parts in order not to block the CPU
     }
 
 ```
+
+## Reset Game
+```
+void resetGame() {
+  // Reset variables
+  t_RexStatus = LOW;
+  Score = 0;
+  numLife = NUMLIFE;
+  timePrevious = 0;
+  jumptimePrevious = 0;
+  // Draw the T-Rex exactly ONCE for the start of the game
+  lcd.clear();
+}
+```
+
 ## Moving Track
 For the playing scene, defined custom characters. Use arrayTrack[16] for characters to be displayed on LCD screen. For the running track, only baseChar and wallChar to be displayed.
 
@@ -161,20 +176,6 @@ byte arrayTrack[16] = { BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, WALLCH
   lcd.createChar(HITCHAR, hitChar);
 
 ```
-## Reset Game
-```
-void resetGame() {
-  // Reset variables
-  t_RexStatus = LOW;
-  Score = 0;
-  numLife = NUMLIFE;
-  timePrevious = 0;
-  jumptimePrevious = 0;
-  // Draw the T-Rex exactly ONCE for the start of the game
-  lcd.clear();
-}
-```
-
 Next step is to have a function to display the scrolling track, it will update at each "timeInterval". It will record the characters a Wall or Base at t_Rex position.
 
 ```
