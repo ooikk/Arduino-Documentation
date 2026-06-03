@@ -33,8 +33,6 @@ byte clearChar[] = {
   B00000
 };
 
-const int CLEARCHAR = 0;
-
 byte baseChar[] = {
   B00000,
   B00000,
@@ -45,8 +43,6 @@ byte baseChar[] = {
   B00000,
   B11111
 };
-
-const int BASECHAR = 1;
 
 byte wallChar[] = {
   B00100,
@@ -59,8 +55,6 @@ byte wallChar[] = {
   B11111
 };
 
-const int WALLCHAR = 2;
-
 byte rexChar[] = {
   B00110,
   B00111,
@@ -72,8 +66,6 @@ byte rexChar[] = {
   B01001
 };
 
-const int REXCHAR = 3;
-
 byte hitChar[] = {
   B10101,
   B01110,
@@ -84,6 +76,11 @@ byte hitChar[] = {
   B01010,
   B10001
 };
+
+const int CLEARCHAR = 0;
+const int BASECHAR = 1;
+const int WALLCHAR = 2;
+const int REXCHAR = 3;
 const int HITCHAR = 4;
 
 
@@ -93,8 +90,8 @@ bool actionJump = LOW;       // initiate a jump action after switch is pressed a
 bool switchStateCur = HIGH;  // current switch status for checking switch pressed and released function
 
 int t_RexPos = 3;
-bool t_RexStatus = LOW;      // at track position
-int t_RexPosChar = BASECHAR; // Char at t_Rex position
+bool t_RexStatus = LOW;       // at track position
+int t_RexPosChar = BASECHAR;  // Char at t_Rex position
 byte arrayTrack[16] = { BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, WALLCHAR, BASECHAR, WALLCHAR,
                         BASECHAR, BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, BASECHAR, WALLCHAR };
 int scrollTrackIndex = 0;
@@ -103,25 +100,25 @@ unsigned long timePrevious = 0.0;
 unsigned long jumptimeInterval = timeInterval * 1.5;  // seconds
 unsigned long jumptimePrevious = 0.0;
 
-const int NUMLIFE = 3;    // allow trial time
+const int NUMLIFE = 3;  // allow trial time
 int numLife = NUMLIFE;
-int Score = 0;            // Score line
+int Score = 0;  // Score line
 
 void writeTrack() {
   int tempInd = 0;
   // move at fix interval
   if ((millis() - timePrevious) > timeInterval) {
     timePrevious = millis();
-    lcd.setCursor(0, 1);                          // Go to start of second line
+    lcd.setCursor(0, 1);  // Go to start of second line
     for (int i = 0; i < 16; i++) {
-      tempInd = (i + scrollTrackIndex) % 16;      // find the mod 16
-      if (i == t_RexPos) {                        // keep a copy of Char at t_Rex position for hit checking
-        t_RexPosChar = arrayTrack[tempInd];       // keep a copy of status at T-Rex position: wall or space
-        if (t_RexPosChar == WALLCHAR) Score++;    // gain 1 point each time passing a wall
+      tempInd = (i + scrollTrackIndex) % 16;    // find the mod 16
+      if (i == t_RexPos) {                      // keep a copy of Char at t_Rex position for hit checking
+        t_RexPosChar = arrayTrack[tempInd];     // keep a copy of status at T-Rex position: wall or space
+        if (t_RexPosChar == WALLCHAR) Score++;  // gain 1 point each time passing a wall
       }
-      lcd.write(arrayTrack[tempInd]);          // update the track
+      lcd.write(arrayTrack[tempInd]);  // update the track
     }
-    scrollTrackIndex++;                        // prepare for next, shift left
+    scrollTrackIndex++;  // prepare for next, shift left
   }
 }
 
@@ -130,19 +127,19 @@ void jumpWall() {
     actionJump = LOW;            // Set to low for next command
     lcd.setCursor(t_RexPos, 0);  // jump
     lcd.write(REXCHAR);
-    t_RexStatus = HIGH;          // Update t_Rex position
+    t_RexStatus = HIGH;  // Update t_Rex position
 
     lcd.setCursor(t_RexPos, 1);
     lcd.write(BASECHAR);
-    jumptimePrevious = millis(); // keep time it jumps
+    jumptimePrevious = millis();  // keep time it jumps
 
   } else if ((millis() - jumptimePrevious) > jumptimeInterval) {  // check if time to drop down
-    lcd.setCursor(t_RexPos, 0);  // yes, clear the jump position
+    lcd.setCursor(t_RexPos, 0);                                   // yes, clear the jump position
     lcd.write(CLEARCHAR);
 
     lcd.setCursor(t_RexPos, 1);  // down
-    lcd.write(REXCHAR);          
-    t_RexStatus = LOW;           // update t_Rex position
+    lcd.write(REXCHAR);
+    t_RexStatus = LOW;  // update t_Rex position
   }
 }
 
@@ -157,7 +154,7 @@ void updateScoreboard() {
   lcd.print(" L:");
   lcd.print(numLife, DEC);
 
- // check if any more Life to continue
+  // check if any more Life to continue
   if (numLife == 0) {
     lcd.setCursor(0, 0);
     lcd.print("   Game Over!   ");
@@ -165,7 +162,7 @@ void updateScoreboard() {
     lcd.setCursor(0, 1);
     lcd.print("Press Sw 2 start");
 
-// Wait user to continue
+    // Wait user to continue
     switchState = digitalRead(togglePin);
     while (switchState == HIGH) {
       switchState = digitalRead(togglePin);
@@ -173,7 +170,7 @@ void updateScoreboard() {
     while (switchState == LOW) {
       switchState = digitalRead(togglePin);
     }
-// Clear the status and continue new game
+    // Clear the status and continue new game
     Score = 0;
     numLife = NUMLIFE;
     lcd.clear();
@@ -188,7 +185,6 @@ void setup() {
   // Configure the switch pin as INPUT
   pinMode(togglePin, INPUT);
 
-
 #ifdef HD44780
   lcd.begin(16, 2);
 #else
@@ -196,12 +192,13 @@ void setup() {
   lcd.init();
 #endif
 
-// Store special character at LCD's memory 0 to 4
-  lcd.createChar(0, clearChar);
-  lcd.createChar(1, baseChar);
-  lcd.createChar(2, wallChar);
-  lcd.createChar(3, rexChar);
-  lcd.createChar(4, hitChar);
+  // Store special character at LCD's memory 0 to 4
+
+  lcd.createChar(CLEARCHAR, clearChar);
+  lcd.createChar(BASECHAR, baseChar);
+  lcd.createChar(WALLCHAR, wallChar);
+  lcd.createChar(REXCHAR, rexChar);
+  lcd.createChar(HITCHAR, hitChar);
 
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -227,7 +224,7 @@ void setup() {
 }
 
 void loop() {
-  // When T-Rex at rest position, read the digital state of the switch pin. 
+  // When T-Rex at rest position, read the digital state of the switch pin.
   // Otherwise, continuous pressing the switch will keep T-Rex at jump position
   if (t_RexStatus == LOW) {
     switchState = digitalRead(togglePin);
@@ -238,23 +235,24 @@ void loop() {
       switchStateCur = LOW;
     }
     if ((switchStateCur == LOW) && (switchState == HIGH)) {
-      switchStateCur = HIGH;           // confirm user press and release switch
-      actionJump = HIGH;               // trigger jump action
+      switchStateCur = HIGH;  // confirm user press and release switch
+      actionJump = HIGH;      // trigger jump action
       //Serial.println("Switch Status: ON");
       //lcd.clear();
       //lcd.setCursor(0, 0);
       //lcd.print("Switch Toggled");
     }
   }
-
+ 
   writeTrack();
+
   jumpWall();
 
-// check whether t_Rex hitting the Wall
+  // check whether t_Rex hitting the Wall
   if ((t_RexStatus == LOW) && (t_RexPosChar == WALLCHAR)) {
     numLife--;                   // Hiting the wall, minus one life
     Score--;                     // minus one point as it was added in writeTrack
-    lcd.setCursor(t_RexPos, 1);  // 
+    lcd.setCursor(t_RexPos, 1);  //
     lcd.write(HITCHAR);          // show hit character
     lcd.setCursor(t_RexPos, 1);  // ensure blinking on HITChar
     lcd.blink();
