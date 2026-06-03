@@ -281,3 +281,16 @@ void updateScoreboard() {
   }
 }
 ```
+## Random Wall generator
+
+May inject random WALL in the track instead of using default fix sequence.
+
+```
+// Generate random WALL position
+  arrayTrack[0] == BASECHAR;
+  if (arrayTrack[15] == BASECHAR) {
+    tempInd = millis() % 2;
+    if (tempInd == 1)
+      arrayTrack[0] == WALLCHAR;
+  }
+```
