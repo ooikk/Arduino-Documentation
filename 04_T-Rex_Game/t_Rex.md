@@ -54,7 +54,7 @@ const int togglePin = 4;     // switch to trigger jump action
 <img alt="image" style="width: 75%; height: auto;" src="https://github.com/user-attachments/assets/4f50c7ff-d5d9-4342-916f-aa5fc1925757" />
 
 
-**NOTE:** Omit external pull-up resistor if use internal pull up configuration.
+**NOTE:** Omit external pull-up 3.3k ohm resistor if use internal pull up configuration.
 ```
   pinMode(togglePin, INPUT_PULLUP);
 ```
