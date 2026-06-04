@@ -1,0 +1,27 @@
+That display uses an SPI interface, despite what the labeling might lead you to believe at first glance.
+
+It is incredibly common to look at SCL and SDA and immediately think I2C, but on these cheap 1.8" ST7735 TFT modules, those labels are a bit of a misnomer. 
+Here is why it's definitely SPI and how those pins actually map out:
+
+Why it's SPI (and how to decode the labels)
+The dead giveaway is the presence of the CS (Chip Select) and DC (Data/Command) pins. Standard I2C displays don't use these, but they are absolutely 
+essential for a 4-wire SPI display.
+
+The manufacturer just reused standard I2C naming conventions for the clock and data lines. Here is the actual translation to standard SPI terminology:
+
+```
+SCL -> SPI SCK (Serial Clock)
+SDA -> SPI MOSI (Serial Data In / Master Out Slave In)
+RST -> Reset (Hardware reset pin)
+DC  -> Data/Command select (Sometimes labeled as RS or A0)
+CS  -> Chip Select (Active LOW to enable the display)
+BLK -> Backlight control (Can be tied to VDD or driven via PWM to control brightness)
+```
+
+Driving a high-resolution display
+Driving 128 x 160 color pixels requires pushing a massive amount of data compared to a tiny 128 x 64 monochrome OLED. If this were running over typical 400kHz I2C, 
+the refresh rate would be painfully slow—essentially a slideshow. SPI allows you to crank the clock speed up to 15 to 30 MHz (or higher, depending on your 
+microcontroller), giving you smooth rendering.
+
+If you are setting this up with an ESP32-S3 using libraries like TFT_eSPI or Adafruit_ST7735, you will just map your chosen hardware SPI pins to SCL (Clock) 
+and SDA (MOSI), and allocate three free GPIOs for RST, DC, and CS.
