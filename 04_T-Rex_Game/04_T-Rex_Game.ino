@@ -95,7 +95,7 @@ int t_RexPosChar = BASECHAR;  // Char at t_Rex position
 byte arrayTrack[16] = { BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, WALLCHAR, BASECHAR, WALLCHAR,
                         BASECHAR, BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, BASECHAR, WALLCHAR };
 int scrollTrackIndex = 0;
-unsigned long timeInterval = 1000;  // seconds
+unsigned long timeInterval = 700;  // seconds
 unsigned long timePrevious = 0;
 unsigned long jumptimeInterval = timeInterval * 1.6;  // seconds
 unsigned long jumptimePrevious = 0;
@@ -148,6 +148,7 @@ void writeTrack() {
     }
     timePrevious = millis();
   }
+
 }
 
 
@@ -215,7 +216,7 @@ void setup() {
   Serial.begin(115200);
 
   // Configure the switch pin as INPUT
-  pinMode(togglePin, INPUT);
+  pinMode(togglePin, INPUT_PULLUP);   // INPUT_PULLUP or INPUT
 
 #ifdef HD44780
   lcd.begin(16, 2);
