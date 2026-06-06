@@ -73,7 +73,7 @@ Once you do this, you will usually see a message in the Arduino IDE Serial Monit
 
 ## Voltage Regulator
 
-LM1117 Linear low drop 3.3V 800mA voltage regulator
+LM1117 Linear low drop 3.3V 800mA voltage regulator:   
 <img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/353ebae9-632c-4b28-ae44-4cfbb53b6d1c" />
 
 
