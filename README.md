@@ -40,6 +40,44 @@ https://www.calculator.net/resistor-calculator.html
 # 10 ESP32 Pro Features: Take your Projects to the Next Level!
 https://www.youtube.com/watch?v=_HzG5FjH_6g
 
+# ESP32 S3 Board
+
+## Buttons
+**1. The RST (Reset) Button**  
+What it does: It restarts the microcontroller.   
+How it works: It temporarily pulls the EN (Enable) pin to a low state, which cuts power to the chip's core and immediately restarts it.   
+Analogy: It is exactly like pressing the physical "Restart" button on a PC, or unplugging it and plugging it back in.   
+Result: The ESP32 will reboot and immediately start running the sketch (code) that is currently stored in its memory. It does not erase or change your code.   
+
+
+**2. The Boot Button**
+What it does: It tells the ESP32 to enter "Download Mode" (also called Flash Mode).   
+How it works: It is physically connected to GPIO 0. When the ESP32 boots up and sees that GPIO 0 is pulled LOW (grounded), it knows you want to upload new code, so it pauses the normal boot process and waits for a new sketch from the computer.   
+Result: The ESP32 will not run your current sketch. Instead, it will wait for the Arduino IDE (or esptool) to send a new program over the USB cable.   
+
+**How to Use Them Together (The Manual Upload Sequence)**   
+Sometimes, the Arduino IDE fails to automatically put the ESP32-S3 into Download Mode (this happens frequently with ESP32-S3 boards that use Native USB). When this happens, you must manually trigger Download Mode using both buttons.     
+The "Hold Boot, Tap RST" Sequence:
+1. Press and HOLD the Boot button.
+2. While still holding Boot, press and release the RST button.
+3. Release the Boot button.
+
+What just happened?   
+By holding Boot, you forced GPIO 0 to be LOW. By tapping RST, you restarted the chip. The chip restarted, saw that GPIO 0 was LOW, and entered Download Mode.   
+Once you do this, you will usually see a message in the Arduino IDE Serial Monitor or the bottom status bar saying "Connecting..." or "Hard resetting via RTS pin...". At this exact moment, click the Upload button in the Arduino IDE, and it will successfully flash your new code.   
+
+**Summary**   
+*RST:* "Restart the current program."   
+*Boot:* "Get ready to receive a new program."   
+*Boot + RST:* "Force the board into the mode required to upload a new program."   
+
+## Voltage Regulator
+
+LM1117 Linear low drop 3.3V 800mA voltage regulator
+<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/353ebae9-632c-4b28-ae44-4cfbb53b6d1c" />
+
+
+
 # ST7796S 4" SPI TFT touch screen  display
 The MSP4020 / MSP4021 is a 4.0-inch TFT display using the ST7796S driver and XPT2046 touch controller. To set it up with an ESP32, you will primarily use the TFT_eSPI library for the display and the XPT2046_Touchscreen library for touch functionality.
 
@@ -135,3 +173,6 @@ https://www.ti.com/tool/TINA-TI
 
 Proteus:
 https://www.labcenter.com/
+
+Cirkit Designer:
+https://app.cirkitdesigner.com/
