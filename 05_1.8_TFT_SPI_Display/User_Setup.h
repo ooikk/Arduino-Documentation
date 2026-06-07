@@ -216,9 +216,9 @@
 #define TFT_MISO -1
 #define TFT_MOSI 11
 #define TFT_SCLK 12
-#define TFT_CS   10  // Chip select control pin
+#define TFT_CS   9  // Chip select control pin
 #define TFT_DC   14  // Data Command control pin
-#define TFT_RST   9  // Reset pin (could connect to RST pin)
+#define TFT_RST  10  // Reset pin (could connect to RST pin)
 //#define TFT_RST  -1  // Set TFT_RST to -1 if display RESET is connected to ESP32 board RST
 
 
