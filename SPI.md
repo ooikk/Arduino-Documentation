@@ -50,6 +50,11 @@ SP0 and SP1 are used internally to communicate with the built-in flash memory. Y
 
 <img src="https://github.com/user-attachments/assets/4f10774c-3865-447d-8831-a3d207e15680"  alt="image" style="width: 75%; height: auto;"/>
 
+**SPI Module Overview**   
+
+<img width="836" height="373" alt="image" src="https://github.com/user-attachments/assets/140ca81c-1869-4194-9212-f1367c9c127f" />
+
+
 You can use the following code to find the default SPI pins:
 
 ```
