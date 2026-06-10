@@ -43,10 +43,11 @@ This sketch initializes the display, checks if the SD card is present, and print
 TFT_eSPI tft = TFT_eSPI();
 
 // Define the SD Chip Select pin (must match wiring)
+// Use VSPI pin to aviod conflict with HSPI
+#define SD_SCLK_PIN 4
+#define SD_MISO_PIN 5  
+#define SD_MOSI_PIN 6
 #define SD_CS_PIN 7
-#define SD_MISO_PIN 13
-#define SD_MOSI_PIN 11
-#define SD_SCLK_PIN 12
 
 void setup() {
   Serial.begin(115200);
