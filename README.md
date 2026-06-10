@@ -27,12 +27,17 @@ While most pins are available, you should generally avoid these pins to prevent 
 <img width="1149" height="800" alt="image" src="https://github.com/user-attachments/assets/ff95dae1-60c7-4860-8398-d2eef7d9ca09" />
 
 <br>
+
+## ESP32-S3 References
+
 https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 <br>
 
 **Up to date technical documents:**    
 Copy and paste below link on brower:   
-*https://www.espressif.com/en/support/documents/technical-documents*
+*https://www.espressif.com/en/support/documents/technical-documents*   
+
+https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolution-pinout-and-specs/
 
 # Resistor Color Band
 
@@ -179,5 +184,5 @@ https://www.ti.com/tool/TINA-TI
 Proteus:
 https://www.labcenter.com/
 
-Cirkit Designer:
+✔️ Cirkit Designer:
 https://app.cirkitdesigner.com/
