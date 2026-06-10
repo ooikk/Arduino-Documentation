@@ -26,6 +26,8 @@ While most pins are available, you should generally avoid these pins to prevent 
 <br><br>
 <img width="1149" height="800" alt="image" src="https://github.com/user-attachments/assets/ff95dae1-60c7-4860-8398-d2eef7d9ca09" />
 
+<img width="1423" height="669" alt="image" src="https://github.com/user-attachments/assets/7fdbc05d-7b40-44ef-98ab-6c3f41048a7b" />
+
 <br>
 
 ## ESP32-S3 References
