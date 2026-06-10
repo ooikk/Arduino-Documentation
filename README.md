@@ -31,7 +31,7 @@ https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devk
 <br>
 
 **Up to date technical documents:**   
-https://www.espressif.com/en/support/documents/
+https://www.espressif.com/en/support/
 
 # Resistor Color Band
 
