@@ -28,6 +28,10 @@ While most pins are available, you should generally avoid these pins to prevent 
 
 <br>
 https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
+<br>
+
+**Up to date technical documents:**   
+https://www.espressif.com/en/support/documents/technical-documents
 
 # Resistor Color Band
 
