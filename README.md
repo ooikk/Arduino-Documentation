@@ -40,6 +40,9 @@ https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devk
 Copy and paste below link on brower:   
 *https://www.espressif.com/en/support/documents/technical-documents*   
 
+Hardware Design Guide:    
+https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s3/index.html
+
 https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolution-pinout-and-specs/
 
 # Resistor Color Band
