@@ -45,7 +45,7 @@ https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp
 
 https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolution-pinout-and-specs/
 
-https://www.aliexpress.com/item/1005009523697481.html?invitationCode=U3EySFhoSDNTb3JTeXVQYlNDSnNidXZESWJGS0hZR1FCU0FVNFNxbVNsZ2pmdlBzNkVmWTlBPT0&srcSns
+https://www.aliexpress.com/item/1005009523697481.html?
 
 
 # Resistor Color Band
