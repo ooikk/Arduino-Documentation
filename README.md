@@ -45,6 +45,9 @@ https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp
 
 https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolution-pinout-and-specs/
 
+https://www.aliexpress.com/item/1005009523697481.html?invitationCode=U3EySFhoSDNTb3JTeXVQYlNDSnNidXZESWJGS0hZR1FCU0FVNFNxbVNsZ2pmdlBzNkVmWTlBPT0&srcSns
+
+
 # Resistor Color Band
 
 <img width="635" height="682" alt="image" src="https://github.com/user-attachments/assets/fa5e2931-75d9-4af8-9c2f-e70d87138844" />
@@ -57,6 +60,9 @@ https://www.calculator.net/resistor-calculator.html
 https://www.youtube.com/watch?v=_HzG5FjH_6g
 
 # ESP32 S3 Board
+
+<img width="605" height="491" alt="ESP32-S3-PCBA" src="https://github.com/user-attachments/assets/ec73d7da-acef-4d03-a89f-68f72a6ce86f" />
+
 
 ## Buttons
 **1. The RST (Reset) Button**  
