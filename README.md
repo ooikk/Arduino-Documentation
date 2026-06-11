@@ -24,9 +24,11 @@ While most pins are available, you should generally avoid these pins to prevent 
 
 <img width="1056" height="720" alt="ESP32-S3-Pins" src="https://github.com/user-attachments/assets/6069c03d-e222-4af0-b8f0-81319b4cd989" />
 <br><br>
-<img width="1149" height="800" alt="image" src="https://github.com/user-attachments/assets/ff95dae1-60c7-4860-8398-d2eef7d9ca09" />
 
-<img width="1431" height="774" alt="image" src="https://github.com/user-attachments/assets/06713362-b008-4fd1-b130-e639981aa5d1" />
+<img width="1000" height="880" alt="ESP32-S3-Pins-2" src="https://github.com/user-attachments/assets/2fa0093f-97df-4033-b34b-7b91a3ebafc0" />
+
+
+
 
 
 <br>
