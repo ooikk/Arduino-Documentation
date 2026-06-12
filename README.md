@@ -16,6 +16,9 @@ Store all link related to Arduino
 **Find sketches, libraries, board cores, and other files on your computer**   
 https://support.arduino.cc/hc/en-us/articles/4415103213714-Find-sketches-libraries-board-cores-and-other-files-on-your-computer
 
+***Espressif Systems**    
+https://www.aliexpress.com/item/1005009523697481.html?
+
 # ESP32-S3 Pins Assignment
 
 ## Pins to Avoid
@@ -41,6 +44,8 @@ While most pins are available, you should generally avoid these pins to prevent 
 https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 <br>
 
+https://github.com/espressif
+
 **Up to date technical documents:**    
 Copy and paste below link on brower:   
 *https://www.espressif.com/en/support/documents/technical-documents*   
@@ -50,7 +55,7 @@ https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp
 
 https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolution-pinout-and-specs/
 
-https://www.aliexpress.com/item/1005009523697481.html?
+
 
 
 # Resistor Color Band
