@@ -151,19 +151,6 @@ This sketch initializes the display, checks if the SD card is present, and print
 TFT_eSPI tft = TFT_eSPI();
 
 // --- SD Card Pins ---
-// Select VSPI or comment off for HSPI for SD Card
-//#define VSPI_PIN
-
-#ifdef VSPI_PIN
-#define SD_SCLK_PIN 4
-#define SD_MISO_PIN 5
-#define SD_MOSI_PIN 6
-#else
-#define SD_SCLK_PIN 12
-#define SD_MISO_PIN 13
-#define SD_MOSI_PIN 11
-#endif
-
 #define SD_CS_PIN 7
 #define SD_FREQUENCY 16000000  // 16MHz or 4MHz
 
@@ -199,6 +186,7 @@ void setup() {
 
   // 1. Display TFT message
   tft.println("SD Card & TFT initialized successfully.");
+  Serial.println("SD Card & TFT initialized successfully.");
 
   tft.setCursor(20, 60);
   tft.print("SD Card: ");
