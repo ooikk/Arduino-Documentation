@@ -84,7 +84,11 @@ When the ESP32-S3 executes SD.begin(SD_CS_PIN, SPI, SD_FREQUENCY), it floods the
 - If your TFT's Chip Select pin is floating or defaults to an unassigned input state when the microcontroller powers on, the TFT will assume it is being spoken to.
 - The TFT tries to parse the SD initialization sequence, reads it as completely corrupted garbage data, and experiences an internal state-machine crash. By the time the code reaches tft.init(), the TFT's internal controller is completely locked up and will not respond, causing the ESP32-S3 to hang while waiting for a handshake token.
 
-Here is the general
+**Wiring Diagram**    
+
+<img width="1169" height="694" alt="image" src="https://github.com/user-attachments/assets/fe8bbd4c-8ce9-48c2-a5cc-2865fa349e14" />
+
+Here is the general code example:    
 ```
 #include <TFT_eSPI.h>
 #include <SPI.h>
