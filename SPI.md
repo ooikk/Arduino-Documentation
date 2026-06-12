@@ -50,6 +50,7 @@ SP0 and SP1 are used internally to communicate with the built-in flash memory. Y
 
 <img src="https://github.com/user-attachments/assets/4f10774c-3865-447d-8831-a3d207e15680"  alt="image" style="width: 75%; height: auto;"/>
 
+
 **CS/SS Default Pin**   
 The CS line is not there because the bus needs it to work at all, but because each slave device needs a way to know when it is the one being addressed. On a shared SPI bus, SCK, MOSI, and MISO can be common to all devices, while CS is usually separate for each device so only one responds at a time.
 
