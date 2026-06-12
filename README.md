@@ -16,7 +16,7 @@ Store all link related to Arduino
 **Find sketches, libraries, board cores, and other files on your computer**   
 https://support.arduino.cc/hc/en-us/articles/4415103213714-Find-sketches-libraries-board-cores-and-other-files-on-your-computer
 
-***Espressif Systems**    
+**Espressif Systems**    
 https://www.aliexpress.com/item/1005009523697481.html?
 
 # ESP32-S3 Pins Assignment
