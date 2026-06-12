@@ -50,6 +50,13 @@ SP0 and SP1 are used internally to communicate with the built-in flash memory. Y
 
 <img src="https://github.com/user-attachments/assets/4f10774c-3865-447d-8831-a3d207e15680"  alt="image" style="width: 75%; height: auto;"/>
 
+**CS/SS Default Pin**   
+The CS line is not there because the bus needs it to work at all, but because each slave device needs a way to know when it is the one being addressed. On a shared SPI bus, SCK, MOSI, and MISO can be common to all devices, while CS is usually separate for each device so only one responds at a time.
+
+You can absolutely reassign GPIO 10 to another pin, even if you only have one SPI device. On the ESP32-S3, the SPI pins are generally remappable, and the default pins are mainly a convenience/performance choice, not a hard requirement.
+
+
+
 **SPI Module Overview**   
 
 <img width="836" height="373" alt="image" src="https://github.com/user-attachments/assets/140ca81c-1869-4194-9212-f1367c9c127f" />
