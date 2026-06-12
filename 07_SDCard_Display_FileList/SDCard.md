@@ -84,6 +84,55 @@ When the ESP32-S3 executes SD.begin(SD_CS_PIN, SPI, SD_FREQUENCY), it floods the
 - If your TFT's Chip Select pin is floating or defaults to an unassigned input state when the microcontroller powers on, the TFT will assume it is being spoken to.
 - The TFT tries to parse the SD initialization sequence, reads it as completely corrupted garbage data, and experiences an internal state-machine crash. By the time the code reaches tft.init(), the TFT's internal controller is completely locked up and will not respond, causing the ESP32-S3 to hang while waiting for a handshake token.
 
+Here is the general
+```
+#include <TFT_eSPI.h>
+#include <SPI.h>
+#include <SD.h>
+
+TFT_eSPI tft = TFT_eSPI();
+
+#define SD_CS_PIN 7
+#define SD_FREQUENCY 16000000  // 16MHz or 4MHz
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  
+  // CRITICAL: Initialize SD card FIRST
+  // Ensure TFT CS is HIGH (disabled) before SD init
+  pinMode(TFT_CS, OUTPUT);
+  digitalWrite(TFT_CS, HIGH);
+  
+  Serial.println("Initializing SD card...");
+  if (!SD.begin(SD_CS_PIN, SPI, SD_FREQUENCY)) {
+    Serial.println("SD Card initialization failed!");
+    while (1) delay(1000);  // Halt
+  }
+  Serial.println("SD Card initialized successfully.");
+  
+  // NOW initialize TFT
+  Serial.println("Initializing TFT...");
+  tft.init();
+  tft.setRotation(1);
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(2);
+  tft.setCursor(20, 20);
+  tft.println("SD Card: OK");
+  
+  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+  tft.setCursor(20, 50);
+  tft.print("Size: ");
+  tft.print(cardSize);
+  tft.println(" MB");
+}
+
+void loop() {
+  // Your code here
+}
+```
+
 In your Arduino IDE code, you can initialize the SD card reader simultaneously alongside your display. Ensure you pass your custom SD_CS pin 7 to the initialization function:   
 
 ```
@@ -140,7 +189,7 @@ void loop() {
 }
 
 ```
-## Combined Test Sketch (Display + Touch + SD)   
+## Combined Test Sketch (Display + Touch + SD) with shared HSPI SPI bus   
 
 This sketch initializes the display, checks if the SD card is present, and prints a basic touch prompt.    
 ***Note: You will need a microSD card formatted as FAT32 inserted into the module for the SD test to pass.***
@@ -152,49 +201,70 @@ This sketch initializes the display, checks if the SD card is present, and print
 
 TFT_eSPI tft = TFT_eSPI();
 
-// Define the SD Chip Select pin (must match wiring)
-// Use VSPI pin to aviod conflict with HSPI
+// --- SD Card Pins ---
+// Select VSPI or comment off for HSPI for SD Card
+//#define VSPI_PIN
+
+#ifdef VSPI_PIN
 #define SD_SCLK_PIN 4
-#define SD_MISO_PIN 5  
+#define SD_MISO_PIN 5
 #define SD_MOSI_PIN 6
+#else
+#define SD_SCLK_PIN 12
+#define SD_MISO_PIN 13
+#define SD_MOSI_PIN 11
+#endif
+
 #define SD_CS_PIN 7
+#define SD_FREQUENCY 16000000  // 16MHz or 4MHz
+
 
 void setup() {
   Serial.begin(115200);
-  
-  // 1. Initialize Display
+
+  // CRITICAL: Initialize SD card FIRST
+  // Ensure TFT CS is HIGH (disabled) before SD init
+  pinMode(TFT_CS, OUTPUT);
+  digitalWrite(TFT_CS, HIGH);
+
+  Serial.println("Initializing SD card...");
+  if (!SD.begin(SD_CS_PIN, SPI, SD_FREQUENCY)) {
+    Serial.println("SD Card initialization failed!");
+    while (1) delay(1000);  // Halt
+  }
+  Serial.println("SD Card initialized successfully.");
+
+
+  // run Touch_calibrate.ino from Example to do the calibration
+  // Use this calibration code in setup():
+  uint16_t calData[5] = { 263, 3627, 233, 3513, 7 };
+  tft.setTouch(calData);
+
+  // Initialize Display
   tft.init();
-  tft.setRotation(1); // Landscape
+  tft.setRotation(1);  // Landscape
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
   tft.setCursor(20, 20);
-  tft.println("Initializing...");
 
-  // 2. Initialize SD Card
+  // 1. Display TFT message
+  tft.println("SD Card & TFT initialized successfully.");
+
   tft.setCursor(20, 60);
   tft.print("SD Card: ");
-  SPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);  // SCK, MISO, MOSI 
-  // SPI transactions ensure the SD library doesn't conflict with TFT_eSPI
-  if (!SD.begin(SD_CS_PIN, SPI, 27000000)) {
-    tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.println("FAILED");
-    Serial.println("SD Card initialization failed!");
+  tft.setTextColor(TFT_GREEN, TFT_BLACK);
+  tft.println("OK");
+
+  // 2. Print SD card capacity
+  uint8_t cardType = SD.cardType();
+  if (cardType == CARD_NONE) {
+    tft.println("No SD card attached");
   } else {
-    tft.setTextColor(TFT_GREEN, TFT_BLACK);
-    tft.println("OK");
-    Serial.println("SD Card initialized successfully.");
-    
-    // Optional: Print SD card capacity
-    uint8_t cardType = SD.cardType();
-    if(cardType == CARD_NONE){
-        tft.println("No SD card attached");
-    } else {
-        uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-        tft.print("Size: ");
-        tft.print(cardSize);
-        tft.println(" MB");
-    }
+    uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+    tft.print("Size: ");
+    tft.print(cardSize);
+    tft.println(" MB");
   }
 
   // 3. Touch Prompt
@@ -210,14 +280,20 @@ void loop() {
   bool touched = tft.getTouch(&x, &y);
 
   if (touched) {
+
+    // Draw a dot where you touch
+    tft.fillCircle(x, y, 5, TFT_YELLOW);
+
     Serial.printf("Touch detected: X = %d, Y = %d\n", x, y);
-    
+
     // Clear a small area and print the coordinates on screen
     tft.fillRect(20, 160, 200, 30, TFT_BLACK);
     tft.setCursor(20, 160);
     tft.printf("X: %d  Y: %d", x, y);
-    
-    delay(100); // Debounce
+
+    delay(100);  // Debounce
+    tft.fillCircle(x, y, 5, TFT_BLACK);
   }
 }
+
 ```
