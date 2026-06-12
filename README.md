@@ -35,7 +35,7 @@ While most pins are available, you should generally avoid these pins to prevent 
 
 
 
-<img width="1240" height="1920" alt="image" src="https://github.com/user-attachments/assets/08bf4314-1528-4d3c-a6fc-99eeba7dcb08" />
+<img alt="image" style="width: 75%; height: auto;"   src="https://github.com/user-attachments/assets/08bf4314-1528-4d3c-a6fc-99eeba7dcb08" />
 
 
 <br>
