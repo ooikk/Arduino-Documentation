@@ -1,6 +1,6 @@
 # SD Card ILI9488
 
-## Activating the SD Card   
+## Initialize the SD Card to use separate SPI bus from TFT Display   
 
 Below is the general setup to initialize both SD card and ILI9488 TFT Display at separate SPI buses:  
 - SD Card -> VSPI
@@ -73,6 +73,12 @@ void loop() {
 }
 
 ```
+##  Initialize the SD Card to use same SPI bus with TFT Display   
+
+To avoid ESP32-S3 hangs during SD card initialization when sharing the SPI bus with an ILI9488 TFT display, the initialization order is very critical.   
+According to Espressif's official documentation on sharing SPI buses with SD cards, the SD card MUST be initialized BEFORE any other SPI device communicates on the bus:    
+*"This step will put the SD card into the SPI mode, which SHOULD be done before all other SPI communications on the same bus. Otherwise the card will stay in the SD mode, in which mode it may randomly respond to any SPI communications on the bus, even when its CS line is not addressed."*    
+
 
 In your Arduino IDE code, you can initialize the SD card reader simultaneously alongside your display. Ensure you pass your custom SD_CS pin 7 to the initialization function:   
 
