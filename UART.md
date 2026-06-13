@@ -112,6 +112,20 @@ void loop() {
 }
 ```
 
+Simple code to wait for user to hit Enter before proceed to next step.   
+```
+void waitForSerial() {
+
+  // Clear the serial buffer so it doesn't instantly loop again
+  while (Serial.available())
+    Serial.read();
+  Serial.println("Press <SEND> (or type a character) to advance...");
+  // Wait here until a character is received over Serial
+  while (!Serial.available())
+    ;
+}
+```
+
 ## ESP32 Setting Custom UART Pins
 Setting custom UART pins is quite simple. As we’ve seen previously, the ESP32 has three UART ports you can use: UART0, UART 1 and UART 2.
 
