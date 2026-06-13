@@ -10,11 +10,10 @@
 
 // User defined information reported by "Read_User_Setup" test & diagnostics example
 
-// Uncomment this for 3.5" ILI9488 Display, for 1.8" ST7735S Display remove this line
-#define MY_ILI9488
+// uncomment this for 3.5" ILI9488 Display, for 1.8" ST7735S Display remove this line
+//#define MY_ILI9488
 
 // Comment out to use HSPI port/SPI2
-// Need to ensure SD card does not use the same SPI port for TFT Display!!
 //#define USE_VSPI_PORT     // Use FSPI port/SPI3 for TFT Display
 
 #define USER_SETUP_INFO "User_Setup"
@@ -235,7 +234,6 @@
 // For ESP32 Dev board (only tested with ILI9341 display)
 // The hardware SPI can be mapped to any pins
 // Use default HSPI pins
-
 #if defined (USE_VSPI_PORT)
 // Use VSPI pins
 #define TFT_MISO 5
@@ -417,8 +415,6 @@
 // The ESP32 has 2 free SPI ports i.e. VSPI and HSPI, the VSPI is the default.
 // If the VSPI port is in use and pins are not accessible (e.g. TTGO T-Beam)
 // then uncomment the following line:
-// Use default HSPI pin assignments, otherwise ESP32 will go to endless reboot
-
 #if   defined (USE_VSPI_PORT)
 #define USE_FSPI_PORT
 #else
