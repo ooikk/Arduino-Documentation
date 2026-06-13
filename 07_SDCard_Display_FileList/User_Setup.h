@@ -13,7 +13,9 @@
 // uncomment this for 3.5" ILI9488 Display, for 1.8" ST7735S Display remove this line
 #define MY_ILI9488
 
-//#define TFT_INVERSION_OFF
+// Comment out to use HSPI port/SPI2
+// Need to ensure SD card does not use the same SPI port for TFT Display!!
+//#define USE_VSPI_PORT     // Use FSPI port/SPI3 for TFT Display
 
 #define USER_SETUP_INFO "User_Setup"
 
@@ -233,10 +235,18 @@
 // For ESP32 Dev board (only tested with ILI9341 display)
 // The hardware SPI can be mapped to any pins
 // Use default HSPI pins
-
+#if defined (USE_VSPI_PORT)
+// Use VSPI pins
+#define TFT_MISO 5
+#define TFT_MOSI 6
+#define TFT_SCLK 4
+#else
+// Use HSPI pins
 #define TFT_MISO 13
 #define TFT_MOSI 11
 #define TFT_SCLK 12
+#endif
+
 #define TFT_CS   9 //10  // Chip select control pin
 #define TFT_DC   14  // Data Command control pin
 #define TFT_RST  10 //9  // Reset pin (could connect to RST pin)
@@ -406,9 +416,11 @@
 // The ESP32 has 2 free SPI ports i.e. VSPI and HSPI, the VSPI is the default.
 // If the VSPI port is in use and pins are not accessible (e.g. TTGO T-Beam)
 // then uncomment the following line:
-// Use default HSPI pin assignments, otherwise ESP32 will go to endless reboot
+#if   defined (USE_VSPI_PORT)
+#define USE_FSPI_PORT
+#else
 #define USE_HSPI_PORT
-
+#endif
 
 // Comment out the following #define if "SPI Transactions" do not need to be
 // supported. When commented out the code size will be smaller and sketches will
