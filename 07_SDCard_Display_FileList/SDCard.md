@@ -75,14 +75,12 @@ void loop() {
 ```
 ##  Initialize the SD Card to use same SPI bus with TFT Display   
 
-To avoid ESP32-S3 hangs during SD card initialization when sharing the SPI bus with an ILI9488 TFT display:   
-1. The initialization order is very critical.   
-According to Espressif's official documentation on sharing SPI buses with SD cards, the SD card MUST be initialized BEFORE any other SPI device communicates on the bus:    
-*"This step will put the SD card into the SPI mode, which SHOULD be done before all other SPI communications on the same bus. Otherwise the card will stay in the SD mode, in which mode it may randomly respond to any SPI communications on the bus, even when its CS line is not addressed."*    
-2. Floating TFT Chip Select (CS) During SD Card Init    
-When the ESP32-S3 executes SD.begin(SD_CS_PIN, SPI, SD_FREQUENCY), it floods the SPI bus with high-frequency commands to configure the display registers.
-- If your TFT's Chip Select pin is floating or defaults to an unassigned input state when the microcontroller powers on, the TFT will assume it is being spoken to.
-- The TFT tries to parse the SD initialization sequence, reads it as completely corrupted garbage data, and experiences an internal state-machine crash. By the time the code reaches tft.init(), the TFT's internal controller is completely locked up and will not respond, causing the ESP32-S3 to hang while waiting for a handshake token.
+On the ESP32‑S3, two different SPIClass objects cannot manage the same hardware SPI peripheral concurrently – this leads to a lock‑up when the TFT library tries to take control. To avoid ESP32-S3 hangs during SD card initialization when sharing the SPI bus with an ILI9488 TFT display:   
+User_Setup.h is configured to use HSPI (USE_HSPI_PORT) or VSPI (USE_FSPI_PORT). The TFT_eSPI library will initialise that bus automatically inside tft.init(). You must not create any separate SPIClass object for the SD card. Instead:     
+1. Get the SPI bus instance from the TFT library using tft.getSPIinstance().
+2. Use that instance when initializing the SD card with SD.begin().
+3. Pull the CS pins of all share SPI devices HIGH at the very top of your setup() function before doing anything else to avoid unassigned state.
+
 
 **Wiring Diagram**    
 
