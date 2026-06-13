@@ -75,7 +75,7 @@ void loop() {
 ```
 ##  Initialize the SD Card to use same SPI bus with TFT Display   
 
-On the ESP32‑S3, two different SPIClass objects cannot manage the same hardware SPI peripheral concurrently – this leads to a lock‑up when the TFT library tries to take control. To avoid ESP32-S3 hangs during SD card initialization when sharing the SPI bus with an ILI9488 TFT display:   
+On the ESP32‑S3, two different SPIClass objects cannot manage the same hardware SPI peripheral concurrently – this leads to a lock‑up when the TFT library tries to take control. To avoid ESP32-S3 hangs during SD card initialization when sharing the SPI bus with an ILI9488 TFT display:     
 User_Setup.h is configured to use HSPI (USE_HSPI_PORT) or VSPI (USE_FSPI_PORT). The TFT_eSPI library will initialise that bus automatically inside tft.init(). You must not create any separate SPIClass object for the SD card. Instead:     
 1. Get the SPI bus instance from the TFT library using tft.getSPIinstance().
 2. Use that instance when initializing the SD card with SD.begin().
@@ -88,46 +88,56 @@ User_Setup.h is configured to use HSPI (USE_HSPI_PORT) or VSPI (USE_FSPI_PORT). 
 
 Here is the general code example:    
 ```
-#include <TFT_eSPI.h>
 #include <SPI.h>
 #include <SD.h>
+#include <TFT_eSPI.h>
+
+#define SD_CS_PIN 7
+#define SD_FREQUENCY 16000000   // 16MHz or 4MHz
 
 TFT_eSPI tft = TFT_eSPI();
 
-#define SD_CS_PIN 7
-#define SD_FREQUENCY 16000000  // 16MHz or 4MHz
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  
-  // CRITICAL: Initialize SD card FIRST
-  // Ensure TFT CS is HIGH (disabled) before SD init
+
+  // 1️⃣ Set all CS pins high to deselect devices before initialization
   pinMode(TFT_CS, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
-  
-  Serial.println("Initializing SD card...");
-  if (!SD.begin(SD_CS_PIN, SPI, SD_FREQUENCY)) {
-    Serial.println("SD Card initialization failed!");
-    while (1) delay(1000);  // Halt
-  }
-  Serial.println("SD Card initialized successfully.");
-  
-  // NOW initialize TFT
+  pinMode(TOUCH_CS, OUTPUT);
+  digitalWrite(TOUCH_CS, HIGH);
+  pinMode(SD_CS_PIN, OUTPUT);
+  digitalWrite(SD_CS_PIN, HIGH);
+  delay(100);
+
+  // 2️⃣ Initialize the TFT first. This also sets up the SPI bus
+  //  (HSPI or VSPI, because of USE_HSPI_PORT or USE_FSPI_PORT in User_Setup.h)
   Serial.println("Initializing TFT...");
   tft.init();
-  tft.setRotation(1);
+  tft.setRotation(2);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
-  tft.setCursor(20, 20);
-  tft.println("SD Card: OK");
-  
-  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
-  tft.setCursor(20, 50);
-  tft.print("Size: ");
-  tft.print(cardSize);
-  tft.println(" MB");
+  tft.setCursor(0, 0);
+  Serial.println("TFT ready...");
+  tft.println("TFT ready...");
+
+  // 3️⃣ Get the SPI bus instance that the TFT is using
+  SPIClass& sdSPI = tft.getSPIinstance();
+
+  // 4️⃣ Now initialize the SD card on the SAME SPI bus
+  Serial.println("Initializing SD card...");
+  if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
+    Serial.println("SD Card initialization failed!");
+    tft.println("SD Card init failed!");
+    while (1) delay(1000);
+  }  
+  Serial.println("SD Card initialized successfully.");
+  tft.println("SD Card OK");
+
+// Comtinue with the rest of the code from here  
+
 }
 
 void loop() {
