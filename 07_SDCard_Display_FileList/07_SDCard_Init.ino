@@ -2,48 +2,84 @@
 #include <SD.h>
 #include <TFT_eSPI.h>
 
-#define SD_SCLK_PIN 4
-#define SD_MISO_PIN 5  // Map to your un-shared SD_MISO line
-#define SD_MOSI_PIN 6
 #define SD_CS_PIN 7
-
-// STEP 1: Instantiate a brand new SPI object explicitly assigned to the VSPI hardware block
-SPIClass sdSPI(VSPI);
+#define SD_FREQUENCY 16000000
 
 TFT_eSPI tft = TFT_eSPI();
+
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  // STEP 2: Initialize your TFT display normally.
-  // TFT_eSPI automatically configures its own HSPI bus using pins 11, 12, 13 [User_Setup.h]
+
+  // 1️⃣ Set all CS pins high to deselect devices before initialization
+  pinMode(TFT_CS, OUTPUT);
+  digitalWrite(TFT_CS, HIGH);
+  pinMode(TOUCH_CS, OUTPUT);
+  digitalWrite(TOUCH_CS, HIGH);
+  pinMode(SD_CS_PIN, OUTPUT);
+  digitalWrite(SD_CS_PIN, HIGH);
+  delay(100);
+
+  // 2️⃣ Initialize the TFT first. This also sets up the SPI bus
+  //  (HSPI or VSPI, because of USE_HSPI_PORT or USE_FSPI_PORT in User_Setup.h)
   Serial.println("Initializing TFT...");
   tft.init();
-  tft.setRotation(1);
+  tft.setRotation(2);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
   tft.setCursor(0, 0);
-  tft.println("TFT Ready!");
+  Serial.println("TFT ready...");
+  tft.println("TFT ready...");
 
-  // STEP 3: Explicitly start the custom SD SPI bus with your chosen pins
-  // Order: sclk, miso, mosi, ss
-  Serial.println("Initializing Separate SPI Bus for SD...");
-  sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
+  // 3️⃣ Get the SPI bus instance that the TFT is using
+  SPIClass& sdSPI = tft.getSPIinstance();
 
-  // STEP 4: Tell the SD library to hook into your custom 'sdSPI' instance instead of 'SPI'
-  // Pass a safe clock frequency (e.g., 16MHz or 4MHz) for the separate bus
-  Serial.println("Initializing SD Card...");
-  if (!SD.begin(SD_CS_PIN, sdSPI, 16000000)) {
+  // 4️⃣ Now initialize the SD card on the SAME SPI bus
+  Serial.println("Initializing SD card...");
+  if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
     Serial.println("SD Card initialization failed!");
-    tft.println("SD Card FAILED!");
-  } else {
-    Serial.println("SD Card ready!");
-    tft.println("SD Card is ready!");
-    Serial.println("ESP32 is ready!");
+    tft.println("SD Card init failed!");
+    while (1) delay(1000);
   }
+  Serial.println("SD Card initialized successfully.");
+  tft.println("SD Card OK");
+
+  uint64_t cardSize = SD.cardSize() / (1024 * 1024);
+  Serial.printf("SD Card Size: %lluMB\n", cardSize);
+  tft.printf("Size: %lluMB", cardSize);
+
+  listRootdir();
+  Serial.println("File List Successfully.");
+  tft.println("File List Successfully.");
 }
 
 void loop() {
-  // Your code here
+  // ----
+}
+
+void listRootdir() {
+  File root = SD.open("/");
+  if (!root) {
+    Serial.println("Failed to open root directory");
+
+    tft.println("Failed to open root directory");
+
+    return;
+  }
+  File file = root.openNextFile();
+  while (file) {
+    String fileName = String(file.name());
+
+    String fullPath = "/" + fileName;
+    Serial.println("Displaying: " + fullPath);
+
+    tft.printf("Displaying: /%s\n", fileName.c_str());
+    //tft.println("Displaying: " + fullPath);
+
+    file.close();
+    file = root.openNextFile();
+  }
+  root.close();
 }
