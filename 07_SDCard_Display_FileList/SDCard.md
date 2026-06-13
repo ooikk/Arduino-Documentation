@@ -11,44 +11,45 @@ Below is the general setup to initialize both SD card and ILI9488 TFT Display at
 #include <SD.h>
 #include <TFT_eSPI.h>
 
-// Comment out below for SD card -> HSPI and TFT -> VSPI
+// Define the SD Chip Select pin (must match wiring)
 #define VSPI_PIN   // SD card is using VSPI and TFT is using HSPI
 
 #ifdef VSPI_PIN
 #define SD_SCLK_PIN 4
-#define SD_MISO_PIN 5  
+#define SD_MISO_PIN 5
 #define SD_MOSI_PIN 6
 #else
-#define SD_SCLK_PIN 12 
-#define SD_MISO_PIN 13  
-#define SD_MOSI_PIN 11 
-#endif 
+#define SD_SCLK_PIN 12
+#define SD_MISO_PIN 13
+#define SD_MOSI_PIN 11
+#endif
 
 #define SD_CS_PIN 7
 #define SD_FREQUENCY 16000000  // 16MHz or 4MHz
 
-// STEP 1: Instantiate a brand new SPI object explicitly assigned to the SPI hardware block
+TFT_eSPI tft = TFT_eSPI();
+
+// STEP 1: Create a new classs for SD SPI
 #ifdef VSPI_PIN
 SPIClass sdSPI(VSPI);
 #else
 SPIClass sdSPI(HSPI);
 #endif
 
-TFT_eSPI tft = TFT_eSPI();
-
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+
   // STEP 2: Initialize your TFT display normally.
   // TFT_eSPI automatically configures its own HSPI bus using pins 11, 12, 13 [User_Setup.h]
   Serial.println("Initializing TFT...");
   tft.init();
-  tft.setRotation(1);
+  tft.setRotation(2);
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
   tft.setCursor(0, 0);
-  tft.println("TFT Ready!");
+  Serial.println("TFT ready...");
+  tft.println("TFT ready...");
 
   // STEP 3: Explicitly start the custom SD SPI bus with your chosen pins
   // Order: sclk, miso, mosi, ss
@@ -64,7 +65,6 @@ void setup() {
   } else {
     Serial.println("SD Card ready!");
     tft.println("SD Card is ready!");
-    Serial.println("ESP32 is ready!");
   }
 }
 
