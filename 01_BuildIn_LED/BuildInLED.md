@@ -98,3 +98,7 @@ Addressable LEDs can be quite bright and draw significant current.
 
 - **Heat:** Running the built-in LED at full brightness (255, 255, 255) for long periods can heat up the ESP32-S3 chip area.
 - **Current:** If you add an external strip of these LEDs, do not power them directly from the ESP32-S3's 3.3V pin; use an external 5V power supply to avoid damaging the board's voltage regulator.
+
+## References    
+
+https://www.luisllamas.es/arduino-led-rgb-ws2812b/
