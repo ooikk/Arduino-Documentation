@@ -271,7 +271,7 @@ OR Use hardware "Lock" your SD Card.
 ESP32 has two hardware SPI buses: VSPI (default) and HSPI. You can put the TFT on one and the SD card on the other.    
 
 
-## Combined Test Sketch (Display + Touch + SD) with shared HSPI SPI bus   
+## Combined Test Sketch (Display + Touch + SD) with separate SPI bus   
 
 This sketch initializes the display, checks if the SD card is present, and prints a basic touch prompt.    
 ***Note: You will need a microSD card formatted as FAT32 inserted into the module for the SD test to pass.***
