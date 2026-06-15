@@ -379,6 +379,7 @@ There are a few methods to over come the memory limitation.
 
 **1. Process the file in chunks – avoid storing the whole array**    
 If you only need the pixel data for streaming (e.g., to a display), you can parse the text file incrementally without storing all pixels at once. For example, read one line of hex values at a time and send them to the display or process them on the fly.   
+Example in display565FileDirect() or displayBinary565() in sketch 07_SDCard_Display_565.ino.    
 
 **2. Use a raw binary format instead of text**    
 Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the file size is ~5× larger than binary. Parsing it also requires more temporary memory.     
@@ -386,7 +387,92 @@ Convert your images to raw binary:
 ```
 [2 bytes: height little-endian]
 [2 bytes: width  little-endian]
-[height × width × 2 bytes: raw pixel values]
+[height × width × 2 bytes: pixel data (16‑bit RGB565, little‑endian)]
 ```
 
- 
+Convert images to raw binary format offline with Python script:     
+
+Use little‑endian storage – it matches ESP32’s native byte order, giving the fastest possible read performance. Then enable byte swapping on the TFT:    
+
+Store in little‑endian (recommended)
+- File contents:
+  [height_L, height_H, width_L, width_H, pixel0_L, pixel0_H, pixel1_L, pixel1_H, ...]
+  (low byte first, high byte second)
+- Reader code:     
+  Directly read into uint16_t variables. Because ESP32 is little‑endian, the in‑memory value will be correct (e.g., bytes 0x15, 0x6C become 0x6C15).
+- TFT display:
+  Call tft.setSwapBytes(true); once. The library will reverse the byte order when sending to the display (converting to big‑endian). This is very fast (done in DMA or SPI transfer).     
+
+Advantages:     
+- No conversion needed when reading from SD.
+- Uses the native endianness of the ESP32 – fastest.
+- tft.setSwapBytes(true) is a single instruction.
+
+Below is the Python script to batch convert ASCII RGB565 images file to binary RGB565 file. 
+
+*Refer to 1.8 TFT SPI Display section for online tool to convert images to RGB565 ASCII format.*     
+- https://github.com/ooikk/Arduino-Documentation/blob/main/05_1.8_TFT_SPI_Display/1.8_TFT_Display.md
+
+```
+## run below command
+## python 565_to_bin_batch.py
+## all the file *.565 in current Directory will be converted to *.b565
+##
+
+import re
+import os
+import glob
+
+def convert_text_565_to_binary(input_path, output_path):
+    """Convert a single .565 text file to binary format."""
+    with open(input_path, 'r') as f:
+        content = f.read()
+    
+    # Remove all whitespace (spaces, newlines, tabs)
+    compact = re.sub(r'\s+', '', content)
+    
+    # Format: height,width,{...};
+    match = re.match(r'(\d+),(\d+),\{([^}]+)\};?', compact)
+    if not match:
+        raise ValueError("Invalid .565 text format: expected height,width,{...}")
+    
+    height = int(match.group(1))   # first number is ALWAYS height
+    width  = int(match.group(2))   # second number is ALWAYS width
+    hex_part = match.group(3).strip(',')
+    
+    # Split and clean
+    hex_strings = [hs for hs in hex_part.split(',') if hs and hs.startswith('0x')]
+    pixels = [int(hs, 16) for hs in hex_strings]
+    
+    expected = height * width
+    if len(pixels) != expected:
+        raise ValueError(f"Pixel count mismatch: {len(pixels)} vs {expected}")
+    
+    with open(output_path, 'wb') as out:
+        out.write(height.to_bytes(2, 'little'))
+        out.write(width.to_bytes(2, 'little'))
+        for p in pixels:
+            out.write(p.to_bytes(2, 'little'))
+    
+    print(f"✅ {input_path}: {height}x{width}, {len(pixels)} pixels -> {output_path}")
+
+def batch_convert():
+    # Find all .565 files in the current directory
+    files = glob.glob("*.565")
+    if not files:
+        print("No .565 files found in current directory.")
+        return
+    
+    print(f"Found {len(files)} .565 file(s). Converting...\n")
+    
+    for input_file in files:
+        # Generate output filename: replace .565 with .b565
+        output_file = input_file.replace(".565", ".b565")
+        try:
+            convert_text_565_to_binary(input_file, output_file)
+        except Exception as e:
+            print(f"❌ Error converting {input_file}: {e}\n")
+
+if __name__ == "__main__":
+    batch_convert()
+```
