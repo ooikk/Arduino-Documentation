@@ -410,7 +410,7 @@ void loop() {
 
 Below is the 565RGB text file structure modified from generated online by (https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/). The code in 07_SDCard_Display_565.ino will load this file and send the pixel color to pushImage() function. The format is:    
   *Height,Width,{16-bit_pixels,16-bit_pixels....};*     
-use 565 as the image file extention.
+Picture height is 320 and width is 480. Use ".565" as the image file extention.
 ```
 320,480,{
   0x7d1c, 0x7d1c, 0x7d1c,....
