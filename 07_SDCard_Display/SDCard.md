@@ -230,12 +230,23 @@ delay(50);
 ```
 Also, after closing the file, you can force a flush of the SD library cache (if any) by calling SD.end() before power down – but that’s only if you are about to sleep or reset.     
 
-**Step 5: Check for accidental writes**    
+**Step 5: Use SdFat library**    
+It allows you to explicitly pass a pointer to the SPI instance. When initializing your SD card, define the config like this:   
+```
+// Assuming you have a TFT_eSPI object named 'tft'
+#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(16), tft.getSPIinstance())
+```    
+This uses the getSPIinstance() method to fetch a pointer to the exact SPI object TFT_eSPI is using, guaranteeing they will cooperate correctly.    
+Library SdFat.h by Bill Greiman    
+https://github.com/greiman/SdFat
+
+**Step 6: Check for accidental writes**    
 Ensure you never open the file with FILE_WRITE. Use FILE_READ only.    
 ```
 File file = SD.open(filename, FILE_READ);
 ```   
 OR Use hardware "Lock" your SD Card.   
+
 
 **🛠️ Advanced: Use separate SPI buses (recommended for stability)**     
 ESP32 has two hardware SPI buses: VSPI (default) and HSPI. You can put the TFT on one and the SD card on the other.    
