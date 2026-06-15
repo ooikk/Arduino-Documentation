@@ -438,7 +438,7 @@ void loop() {
 
 ## Display RGB565 Image    
 
-Below is the 565RGB text file structure modified from generated online by (https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/). The code in 07_SDCard_Display_565.ino will load this file and send the pixel color to pushImage() function. The format is:    
+Below is the 565RGB text file structure modified from generated online by [565RGB Convertor](https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/). The code in 07_SDCard_Display_565.ino will load this file and send the pixel color to pushImage() function. The format is:    
   *Height,Width,{16-bit_pixels,16-bit_pixels....};*     
 Picture height is 320 and width is 480. Use ".565" as the image file extention.
 ```
@@ -485,7 +485,7 @@ Advantages:
 Below is the Python script to batch convert ASCII RGB565 images file to binary RGB565 file. 
 
 *Refer to 1.8 TFT SPI Display section for online tool to convert images to RGB565 ASCII format.*     
-- https://github.com/ooikk/Arduino-Documentation/blob/main/05_1.8_TFT_SPI_Display/1.8_TFT_Display.md
+- [1.8" TFT Display](1.8_TFT_Display.md)
 
 ```
 ## run below command
