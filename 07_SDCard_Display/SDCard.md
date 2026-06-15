@@ -146,6 +146,103 @@ void loop() {
 ```
 
 
+## WARNING: Sharing SPI bus with the risk of SD card corruption     
+
+SD card corruption after running ESP32 code strongly suggests a hardware or software conflict – especially since you are sharing the SPI bus between the TFT and the SD card. This is a common cause of file system corruption.
+
+**1. Missing SPI transaction management – Critical!**    
+When two devices share the same SPI bus, you must use SPI.beginTransaction() / SPI.endTransaction() to switch between them. Without this, the TFT and SD card may try to talk at the same time, causing garbage data and corrupting the SD card’s file system.
+
+What your code should do:    
+```
+// Before accessing SD card
+SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+digitalWrite(SD_CS, LOW);
+// ... read from SD ...
+digitalWrite(SD_CS, HIGH);
+SPI.endTransaction();
+
+// Before accessing TFT (the TFT library usually handles this internally)
+// But ensure the TFT library also uses transactions (TFT_eSPI does by default)
+```
+If you mix libraries that both use SPI without coordination, corruption can occur.    
+
+**2. TFT library may not release the SPI bus**     
+TFT_eSPI uses SPI transactions by default, but if you call SD functions without endTransaction(), the TFT might still hold the bus. Always ensure the TFT is not selected before using the SD card.    
+
+**3. Power brown‑out – ESP32 + TFT + SD can draw >300mA peak**     
+If your USB power is weak, a sudden current drop can cause the SD card to reset or write garbage. Even reads can corrupt the card if power glitches during SPI.    
+
+**4. SD card not closed properly before reset**   
+If your ESP32 resets (watchdog, crash, or power loss) while the SD card is still selected (CS low) or a transaction is open, the card’s internal state may be corrupted.    
+
+**✅ How to fix – Step by step**     
+
+**Step 1: Ensure proper SPI transaction around SD access**   
+Wrap every SD card operation (including SD.begin()) with transactions:    
+
+```
+#include <SPI.h>
+
+// Define CS pins
+#define TFT_CS   5   // example
+#define SD_CS    4
+
+void setup() {
+    SPI.begin();
+
+    // Initialise SD card with explicit transaction
+    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+    digitalWrite(SD_CS, LOW);
+    if (!SD.begin(SD_CS)) {
+        digitalWrite(SD_CS, HIGH);
+        SPI.endTransaction();
+        Serial.println("SD init failed");
+        return;
+    }
+    digitalWrite(SD_CS, HIGH);
+    SPI.endTransaction();
+
+    // Now initialise TFT (TFT_eSPI will manage its own transactions)
+    tft.begin();
+    tft.setRotation(2);
+}
+```
+
+**Step 2: In your file access function, wrap each file operation**   
+The SD.open and file.read already use transactions internally if the SD library is compiled with USE_SPI_TRANSACTIONS. But to be safe, you can add explicit transactions around the file open/read loop.   
+
+However, the simplest fix is to ensure that no SPI device is selected while the other is active. TFT_eSPI automatically de‑selects the TFT after each drawing command. But if you call tft.pushImage repeatedly, the TFT stays selected? No – pushImage ends with de‑select. So that’s likely fine.    
+
+**Step 3: Lower SD card SPI speed**    
+
+Many SD cards are unstable at 40 MHz. Force a lower speed:    
+```
+SD.begin(SD_CS, SPI, 4000000);  // 4 MHz
+```
+Add this after your transaction block.    
+
+**Step 4: Add delays and flush after each file access**    
+Example, after displaying an image, add a small delay to let the SD card finish any internal cleanup:    
+```
+displayBinary656(...);
+delay(50);
+```
+Also, after closing the file, you can force a flush of the SD library cache (if any) by calling SD.end() before power down – but that’s only if you are about to sleep or reset.     
+
+**Step 5: Check for accidental writes**    
+Ensure you never open the file with FILE_WRITE. Use FILE_READ only.    
+```
+File file = SD.open(filename, FILE_READ);
+```   
+OR Use hardware "Lock" your SD Card.   
+
+**🛠️ Advanced: Use separate SPI buses (recommended for stability)**     
+ESP32 has two hardware SPI buses: VSPI (default) and HSPI. You can put the TFT on one and the SD card on the other.    
+
+
+
+
 ## Combined Test Sketch (Display + Touch + SD) with shared HSPI SPI bus   
 
 This sketch initializes the display, checks if the SD card is present, and prints a basic touch prompt.    
