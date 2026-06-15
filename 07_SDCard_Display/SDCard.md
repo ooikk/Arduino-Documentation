@@ -485,7 +485,7 @@ Advantages:
 Below is the Python script to batch convert ASCII RGB565 images file to binary RGB565 file. 
 
 *Refer to 1.8 TFT SPI Display section for online tool to convert images to RGB565 ASCII format.*     
-- [1.8" TFT Display](1.8_TFT_Display.md)
+- [1.8" TFT Display](https://github.com/ooikk/Arduino-Documentation/blob/main/05_1.8_TFT_SPI_Display/1.8_TFT_Display.md))
 
 ```
 ## run below command
