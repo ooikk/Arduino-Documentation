@@ -367,3 +367,5 @@ void loop() {
 
 
 ```
+## Display RGB565 Image    
+
