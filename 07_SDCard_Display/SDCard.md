@@ -382,7 +382,7 @@ If you only need the pixel data for streaming (e.g., to a display), you can pars
 Example in display565FileDirect() or displayBinary565() in sketch 07_SDCard_Display_565.ino.    
 
 **2. Use a raw binary format instead of text**    
-Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the file size is ~5× larger than binary. Parsing it also requires more temporary memory.     
+Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the file size is ~5× larger than binary. Parsing it also requires more temporary memory. An 320×480 image in ASCII 565RGB take about 1.17MB of file size, the file size reduced to 300kB in binary format.    
 Convert your images to raw binary:     
 ```
 [2 bytes: height little-endian]
