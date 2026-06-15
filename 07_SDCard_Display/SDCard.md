@@ -382,19 +382,17 @@ If you only need the pixel data for streaming (e.g., to a display), you can pars
 Example in display565FileDirect() or displayBinary565() in sketch 07_SDCard_Display_565.ino.    
 
 **2. Use a raw binary format instead of text**    
-Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the file size is ~5× larger than binary. Parsing it also requires more temporary memory. An 320×480 image in ASCII 565RGB take about 1.17MB of file size, the file size reduced to 300kB in binary format.    
-Convert your images to raw binary:     
+Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the file size is ~5× larger than binary. Parsing it also requires more temporary memory. An 320×480 image in ASCII 565RGB take about 1.17MB of file size, the file size reduced to 300kB in binary format.       
+
+Convert images to raw binary format offline with Python script:     
+
+Use little‑endian storage – it matches ESP32’s native byte order, giving the fastest possible read performance. Then enable byte swapping on the TFT:    
 ```
 [2 bytes: height little-endian]
 [2 bytes: width  little-endian]
 [height × width × 2 bytes: pixel data (16‑bit RGB565, little‑endian)]
 ```
-
-Convert images to raw binary format offline with Python script:     
-
-Use little‑endian storage – it matches ESP32’s native byte order, giving the fastest possible read performance. Then enable byte swapping on the TFT:    
-
-Store in little‑endian (recommended)
+Store in little‑endian (recommended)     
 - File contents:
   [height_L, height_H, width_L, width_H, pixel0_L, pixel0_H, pixel1_L, pixel1_H, ...]
   (low byte first, high byte second)
