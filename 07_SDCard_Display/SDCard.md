@@ -409,9 +409,30 @@ void loop() {
 ## SD Card functions
 
 
-```
+|	Category	|	Function	|	Example	|	Description
+|	--------------	|	--------------	|	----------------------------------------------------	|	---------------------------------------------------------
+|	Initialization	|	begin(csPin)	|	if (!SD.begin(4)) { Serial.println("Init failed!"); }	|	Initializes the SD card library. Must be called first, before any other SD card functions. Returns true on success.
+|	File/Directory Info	|	exists(path)	|	if (SD.exists("/data.txt")) { Serial.println("File found"); }	|	Checks if a file or directory exists on the SD card.
+|	File/Directory Info	|	open(path, mode)	|	File dataFile = SD.open("/data.txt", FILE_WRITE);	|	Opens a file for reading/writing. Must be called before you can read or write to a file. Returns a File object or false on failure.
+|	File/Directory Info	|	remove(path)	|	if (SD.exists("/unwanted.txt")) { SD.remove("/unwanted.txt"); }	|	Deletes a file from the SD card. It's recommended to check if the file exists first using SD.exists().
+|	File/Directory Info	|	mkdir(path)	|	SD.mkdir("/newFolder/subFolder");	|	Creates a directory. Can also create intermediate directories if they don't exist.
+|	File/Directory Info	|	rmdir(path)	|	SD.rmdir("/emptyFolder");	|	Removes an empty directory. The directory must be empty before calling this.
+|	Control	|	close()	|	dataFile.close();	|	Closes a file and ensures any data written to it is saved to the SD card. It's good practice to close files when you're done with them.
+|	Control	|	flush()	|	dataFile.flush();	|	Forces any buffered data to be written to the SD card. This is done automatically when you close the file.
+|	State Information	|	available()	|	while (dataFile.available()) { char c = dataFile.read(); }	|	Checks if there are any bytes available to be read from the file.
+|	State Information	|	position()	|	uint32_t pos = dataFile.position();	|	Returns the current position (in bytes) within a file, where the next read or write will happen.
+|	State Information	|	seek(pos)	|	dataFile.seek(0); // Jump to the start of the file	|	Moves the read/write position to a specific byte in a file.
+|	State Information	|	size()	|	uint32_t fileSize = dataFile.size();	|	Returns the total size of a file in bytes.
+|	State Information	|	isDirectory()	|	if (root.isDirectory()) { Serial.println("It's a directory!"); }	|	Checks if the current File object represents a directory (folder).
+|	Reading & Writing	|	read()	|	char ch = dataFile.read();	|	Reads a single byte from a file. Returns -1 if no bytes are available.
+|	Reading & Writing	|	write(data)	|	dataFile.write("Hello, world!");	|	Writes a single byte or a buffer of data to a file.
+|	Reading & Writing	|	print(data)	|	dataFile.print("Sensor Value: "); dataFile.print(sensorValue);	|	Writes text to a file. Numbers are automatically converted to their ASCII string representation.
+|	Reading & Writing	|	println(data)	|	dataFile.println("--- End of Data ---");	|	Like print(), but adds a newline (\r\n) at the end.
+|	Reading & Writing	|	peek()	|	char nextChar = dataFile.peek();	|	Reads a byte from a file without moving the read pointer, so a subsequent read() will return the same byte.
+|	Directory Navigation	|	openNextFile()	|	File entry = dir.openNextFile();	|	Opens the next file or folder in a directory. Used in a loop to list all contents of a directory.
+|	Directory Navigation	|	rewindDirectory()	|	dir.rewindDirectory();	|	Resets the file pointer back to the first file in a directory, allowing you to iterate over it again.
+|	Information	|	name()	|	Serial.println(entry.name());	|	Returns the name of a file or directory as a character array (string).
 
-```
 
 
 ## Display RGB565 Image    
