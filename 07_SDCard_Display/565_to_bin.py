@@ -1,6 +1,6 @@
 ## In your terminal (where Annecy.565 is located):
 ## run below command
-## python 565_to_bin.py Annecy.565 Annecy.bin
+## python 565_to_bin.py Annecy.565 Annecy.b565
 ##
 
 import re
