@@ -59,16 +59,6 @@ https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolutio
 
 
 
-# Resistor Color Band
-
-<img width="635" height="682" alt="image" src="https://github.com/user-attachments/assets/fa5e2931-75d9-4af8-9c2f-e70d87138844" />
-
-**Resistor Calculator**
-
-https://www.calculator.net/resistor-calculator.html
-
-# 10 ESP32 Pro Features: Take your Projects to the Next Level!
-https://www.youtube.com/watch?v=_HzG5FjH_6g
 
 # ESP32 S3 Board
 
@@ -109,7 +99,17 @@ Once you do this, you will usually see a message in the Arduino IDE Serial Monit
 LM1117 Linear low drop 3.3V 800mA voltage regulator:   
 <img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/353ebae9-632c-4b28-ae44-4cfbb53b6d1c" />
 
+# 10 ESP32 Pro Features: Take your Projects to the Next Level!
+https://www.youtube.com/watch?v=_HzG5FjH_6g
 
+
+# Resistor Color Band
+
+<img width="635" height="682" alt="image" src="https://github.com/user-attachments/assets/fa5e2931-75d9-4af8-9c2f-e70d87138844" />
+
+**Resistor Calculator**
+
+https://www.calculator.net/resistor-calculator.html
 
 # ST7796S 4" SPI TFT touch screen  display
 The MSP4020 / MSP4021 is a 4.0-inch TFT display using the ST7796S driver and XPT2046 touch controller. To set it up with an ESP32, you will primarily use the TFT_eSPI library for the display and the XPT2046_Touchscreen library for touch functionality.
