@@ -370,7 +370,7 @@ void loop() {
 ## Display RGB565 Image    
 
 There could be memory limitaton to display 320×480 image (153,600 pixels → 307,200 bytes), ESP32 may still run out of RAM and enter continue reboot cycles.       
-Command showed ESP32-S3 has about 320kB of RAM just before image display function start.    
+getFreeHeap command showed ESP32-S3 has about 320kB of RAM just before image display function start.    
 - Free heap before open: 320020    
 ```
 Serial.printf("Free heap before open: %u\n", ESP.getFreeHeap());
