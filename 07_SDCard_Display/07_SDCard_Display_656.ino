@@ -1,5 +1,5 @@
 // Define the SD Chip Select pin (must match wiring)
-#define VSPI_PIN   // SD card is using VSPI and TFT is using HSPI
+#define VSPI_PIN  // SD card is using VSPI and TFT is using HSPI
 
 #include <SPI.h>
 #include <SD.h>
@@ -16,10 +16,12 @@
 #endif
 
 #define SD_CS_PIN 7
-#define SD_FREQUENCY 16000000
+#define SD_FREQUENCY 16000000 // 24000000 16000000 4000000
 
-#define LIST_FILES_ONLY
-#define STREAM_RGB656
+#define LIST_FILES
+#define STREAM_DIRECTLY
+#define FILE_EXT "b656"
+#define FILE_EXT_TXT "656"
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -33,242 +35,9 @@ SPIClass sdSPI(HSPI);
 uint16_t height, width;
 uint16_t* pixels = nullptr;
 
-
-bool displayBinary656(const char* filename, TFT_eSPI& tft, int destX = -1, int destY = -1) {
-  File file = SD.open(filename, FILE_READ);
-  if (!file) {
-    Serial.println("Cannot open file");
-    return false;
-  }
-
-
-  if (file.read((uint8_t*)&height, 2) != 2) {
-    file.close();
-    return false;
-  }
-  if (file.read((uint8_t*)&width, 2) != 2) {
-    file.close();
-    return false;
-  }
-
-  Serial.printf("Image: %d x %d\n", height, width);
-
-  // After reading image width, image height
-  if (width > height) {
-    // Image is landscape
-    tft.setRotation(1);
-  } else  tft.setRotation(2);
-
-  // Center on screen
-  if (destX == -1) destX = (tft.width() - width) / 2;
-  if (destY == -1) destY = (tft.height() - height) / 2;
-  if (destX < 0) destX = 0;
-  if (destY < 0) destY = 0;
-
-  uint16_t* rowBuffer = new (std::nothrow) uint16_t[width];
-  if (!rowBuffer) {
-    file.close();
-    return false;
-  }
-
-  tft.setSwapBytes(true);  // because file is little‑endian, TFT expects big‑endian
-
-  for (uint16_t y = 0; y < height; y++) {
-    size_t readBytes = file.read((uint8_t*)rowBuffer, width * 2);
-    if (readBytes != width * 2) {
-      Serial.printf("Error reading row %d\n", y);
-      delete[] rowBuffer;
-      file.close();
-      return false;
-    }
-    tft.pushImage(destX, destY + y, width, 1, rowBuffer);
-  }
-
-  delete[] rowBuffer;
-  file.close();
-  return true;
-}
-
-
-
-
-/**
- * Reads a .656 text file directly from SD and displays it on the TFT,
- * row by row, without storing the whole image in RAM.
- * 
- * @param filename   Full path to the .656 file (e.g., "/Shangrila.656")
- * @param tft        Reference to your TFT object
- * @param destX      Top‑left X coordinate on TFT (default = center of screen)
- * @param destY      Top‑left Y coordinate on TFT (default = center)
- * @return           true on success, false on error
- */
-
-bool display656FileDirect(const char* filename, TFT_eSPI& tft, int destX = -1, int destY = -1) {
-  File file = SD.open(filename, FILE_READ);
-  if (!file) {
-    Serial.println("Cannot open file");
-    return false;
-  }
-
-  // ----- Helper: skip whitespace (space, tab, newline, carriage return) -----
-  auto skipWhitespace = [&]() {
-    while (file.available()) {
-      char c = file.peek();
-      if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
-        file.read();
-      else
-        break;
-    }
-  };
-
-  // ----- Helper: read a decimal integer (height or width) -----
-  auto readDecimal = [&](uint16_t& value) -> bool {
-    value = 0;
-    skipWhitespace();
-    if (!file.available()) return false;
-    char c = file.peek();
-    if (c < '0' || c > '9') return false;
-    while (file.available()) {
-      c = file.peek();
-      if (c >= '0' && c <= '9') {
-        file.read();
-        value = value * 10 + (c - '0');
-      } else break;
-    }
-    return true;
-  };
-
-  // ----- Helper: read a hexadecimal number (0xXXXX) -----
-  auto readHex = [&](uint16_t& value) -> bool {
-    value = 0;
-    skipWhitespace();
-    if (!file.available()) return false;
-    if (file.read() != '0') return false;
-    if (!file.available()) return false;
-    char c = file.read();
-    if (c != 'x' && c != 'X') return false;
-    while (file.available()) {
-      c = file.peek();
-      if (c >= '0' && c <= '9') {
-        file.read();
-        value = (value << 4) | (c - '0');
-      } else if (c >= 'a' && c <= 'f') {
-        file.read();
-        value = (value << 4) | (c - 'a' + 10);
-      } else if (c >= 'A' && c <= 'F') {
-        file.read();
-        value = (value << 4) | (c - 'A' + 10);
-      } else break;
-    }
-    return true;
-  };
-
-  // ----- Parse header: height, width -----
-  uint16_t height, width, screenW, screenH;
-  if (!readDecimal(height)) {
-    file.close();
-    return false;
-  }
-  skipWhitespace();
-  if (file.read() != ',') {
-    file.close();
-    return false;
-  }
-  if (!readDecimal(width)) {
-    file.close();
-    return false;
-  }
-
-  // ----- Expect comma and opening brace -----
-  skipWhitespace();
-  if (file.read() != ',') {
-    file.close();
-    return false;
-  }
-  skipWhitespace();
-  if (file.read() != '{') {
-    file.close();
-    return false;
-  }
-
-  // After reading image width, image height
-  if (width > height) {
-    // Image is landscape
-    tft.setRotation(1);
-  } else  tft.setRotation(2);
-
-
-  // ----- Compute display position (centered if not specified) -----
-  if (destX == -1) destX = (tft.width() - width) / 2;
-  if (destY == -1) destY = (tft.height() - height) / 2;
-
-  // ----- Allocate a row buffer (width pixels * 2 bytes each) -----
-  // Use std::nothrow to avoid crash if allocation fails (e.g., width too large)
-  uint16_t* rowBuffer = new (std::nothrow) uint16_t[width];
-  if (rowBuffer == nullptr) {
-    Serial.println("Not enough memory for a single row buffer");
-    file.close();
-    return false;
-  }
-
-  // ----- Read and display row by row -----
-  bool success = true;
-  tft.setSwapBytes(true);  // // Swap the byte order for pushImage() and pushPixels() - corrects endianness
-  for (uint16_t y = 0; y < height; y++) {
-    // Read one entire row (width hex values)
-    for (uint16_t x = 0; x < width; x++) {
-      skipWhitespace();
-      // If we encounter '}' before finishing the row, file is malformed
-      if (file.peek() == '}') {
-        success = false;
-        break;
-      }
-      if (!readHex(rowBuffer[x])) {
-        success = false;
-        break;
-      }
-      skipWhitespace();
-      // After a hex value, there must be a comma or the closing brace
-      if (x < width - 1) {
-        if (file.peek() != ',') {
-          success = false;
-          break;
-        }
-        file.read();  // consume the comma
-      }
-    }
-    if (!success) break;
-
-    // Push the row to the TFT
-    // Using pushImage with height = 1 draws a single row efficiently
-    tft.pushImage(destX, destY + y, width, 1, rowBuffer);
-
-    // After each row, we may have a newline or comma – skip whitespace
-    skipWhitespace();
-    // If this was the last row, we expect a closing brace
-    if (y == height - 1) {
-      if (file.peek() != '}') success = false;
-      else file.read();  // consume '}'
-    } else {
-      // Otherwise, there should be a comma between rows
-      if (file.peek() == ',') file.read();
-      // (the file could also have a newline – skipWhitespace handles it)
-    }
-    if (!success) break;
-  }
-
-  // ----- Clean up -----
-  delete[] rowBuffer;
-  file.close();
-
-  // Optional: skip trailing semicolon if present
-  if (success && file.available()) {
-    skipWhitespace();
-    if (file.peek() == ';') file.read();
-  }
-
-  return success;
-}
+bool displayBinary656(const char* filename, TFT_eSPI& tft, int destX, int destY);
+bool displayBinary656Chunked(const char* filename, TFT_eSPI& tft, int destX, int destY, size_t maxChunkSize);
+bool display656FileDirect(const char* filename, TFT_eSPI& tft, int destX, int destY);
 
 void setup() {
   Serial.begin(115200);
@@ -293,11 +62,11 @@ void setup() {
   tft.setTextSize(2);
   tft.setCursor(0, 0);
 
- // 3️⃣ Get the SPI bus instance that the TFT is using
- // SPIClass& sdSPI = tft.getSPIinstance();
+  // 3️⃣ Get the SPI bus instance that the TFT is using
+  // SPIClass& sdSPI = tft.getSPIinstance();
 
- // 3️⃣ Explicitly bind SPI to your SPI pins BEFORE SD.begin()
- // SPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);
+  // 3️⃣ Explicitly bind SPI to your SPI pins BEFORE SD.begin()
+  // SPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);
   sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);  // SCK, MISO, MOSI
 
 
@@ -311,7 +80,7 @@ void setup() {
 
   Serial.printf("Free heap before open: %u\n", ESP.getFreeHeap());
 
-#ifdef LIST_FILES_ONLY
+#ifdef LIST_FILES
   int count = 0;
   String* files = getFileListByExtension("*", count);  // Get all files
 
@@ -326,12 +95,39 @@ void setup() {
   } else {
     Serial.println("SD card error or no files.");
   }
-#else
 
-#ifdef STREAM_RGB656
+  Serial.println("Continue next...");
+  waitForSerial();
+
+#endif
+
+#ifdef STREAM_DIRECTLY
+
+/**********************************************************************************************
+Three method to display the image from file 656 or b656
+Method 1: Display image line by line
+Method 2: Display image in chunked, defined by memory allocation example 100*1024
+Method 3: Display image directly from text 656 file, make sure switch file extension to FILE_EXT_TXT above
+*********************************************************************************************/
+#define METHOD 2  // change this to 1, 2, or 3 to select different code
 
   int fileCount = 0;
-  String* files = getFileListByExtension("b656", fileCount);
+#ifndef LIST_FILES
+#if METHOD == 3
+  String* files = getFileListByExtension(FILE_EXT_TXT, fileCount);
+#else
+  String* files = getFileListByExtension(FILE_EXT, fileCount);
+#endif
+#else
+  // do not declare files 2 times
+#if METHOD == 3
+  files = getFileListByExtension(FILE_EXT_TXT, fileCount);
+#else
+  files = getFileListByExtension(FILE_EXT, fileCount);
+#endif
+#endif
+
+  uint32_t start_Time;
 
   if (files && fileCount > 0) {
     for (int i = 0; i < fileCount; i++) {
@@ -340,22 +136,38 @@ void setup() {
       tft.fillScreen(TFT_BLACK);
       // Display the file – centered automatically
 
-      if (displayBinary656(files[i].c_str(), tft)) {
-        //if (display656FileDirect(files[i].c_str(), tft)) {
-        Serial.println("  OK");
+      start_Time = millis();
+
+      /**
+Three method to display the image from file 656 or b656
+**/
+
+#if METHOD == 1
+      // Method 1: Display image line by line
+      if (displayBinary656(files[i].c_str(), tft, -1, -1)) {
+#elif METHOD == 2
+      // Method 2: Display image in chunked, defined by memory allocation example 100*1024
+      if (displayBinary656Chunked(files[i].c_str(), tft, -1, -1, 100 * 1024)) {
+#else
+      // Method 3: Display image directly from text 656 file, make sure switch file extension to FILE_EXT_TXT above
+      if (display656FileDirect(files[i].c_str(), tft, -1, -1)) {
+#endif
+        // Serial.println("  OK");
       } else {
         Serial.println("  Failed to display");
       }
 
       // Wait a moment before next image
       //      delay(3000);
+      Serial.printf("Process time :  %lu ms \n", millis() - start_Time);
       Serial.println("Continue next image...");
       waitForSerial();
     }
     delete[] files;
   } else {
-    Serial.println("No .656 files found");
+    Serial.println("No .b656 files found");
   }
+  Serial.println("Exit: No more image files...");
 
 #else
   /**
@@ -363,7 +175,13 @@ void setup() {
   Required huge memory which limit it's application to small image < 200x200
 **/
   int fileCount = 0;
-  String* files = getFileListByExtension("656", fileCount);  // get all .656 files
+
+#ifndef LIST_FILES
+  String* files = getFileListByExtension(FILE_EXT_TXT, fileCount);
+#else
+  // do not declare files 2 times
+  files = getFileListByExtension(FILE_EXT_TXT, fileCount);
+#endif
 
   if (files && fileCount > 0) {
     for (int i = 0; i < fileCount; i++) {
@@ -373,6 +191,7 @@ void setup() {
       uint16_t height, width;
       uint16_t* pixels = nullptr;
 
+      // Read 656 image file than display
       if (read656FileText(files[i].c_str(), height, width, pixels)) {
         showimage16(width, height, pixels);
         delete[] pixels;  // free memory after use
@@ -386,7 +205,7 @@ void setup() {
   } else {
     Serial.println("No .656 files found or SD error.");
   }
-#endif
+  Serial.println("Exit: No more image files...");
 #endif
 }
 
@@ -788,8 +607,324 @@ bool read656FileText(const char* filename, uint16_t& height, uint16_t& width, ui
   return true;
 }
 
+/**
+ * Reads a .656 text file directly from SD and displays it on the TFT,
+ * row by row, without storing the whole image in RAM.
+ * 
+ * @param filename   Full path to the .656 file (e.g., "/Shangrila.656")
+ * @param tft        Reference to your TFT object
+ * @param destX      Top‑left X coordinate on TFT (default = center of screen)
+ * @param destY      Top‑left Y coordinate on TFT (default = center)
+ * @return           true on success, false on error
+ */
+
+bool display656FileDirect(const char* filename, TFT_eSPI& tft, int destX = -1, int destY = -1) {
+  File file = SD.open(filename, FILE_READ);
+  if (!file) {
+    Serial.println("Cannot open file");
+    return false;
+  }
+
+  // ----- Helper: skip whitespace (space, tab, newline, carriage return) -----
+  auto skipWhitespace = [&]() {
+    while (file.available()) {
+      char c = file.peek();
+      if (c == ' ' || c == '\t' || c == '\n' || c == '\r')
+        file.read();
+      else
+        break;
+    }
+  };
+
+  // ----- Helper: read a decimal integer (height or width) -----
+  auto readDecimal = [&](uint16_t& value) -> bool {
+    value = 0;
+    skipWhitespace();
+    if (!file.available()) return false;
+    char c = file.peek();
+    if (c < '0' || c > '9') return false;
+    while (file.available()) {
+      c = file.peek();
+      if (c >= '0' && c <= '9') {
+        file.read();
+        value = value * 10 + (c - '0');
+      } else break;
+    }
+    return true;
+  };
+
+  // ----- Helper: read a hexadecimal number (0xXXXX) -----
+  auto readHex = [&](uint16_t& value) -> bool {
+    value = 0;
+    skipWhitespace();
+    if (!file.available()) return false;
+    if (file.read() != '0') return false;
+    if (!file.available()) return false;
+    char c = file.read();
+    if (c != 'x' && c != 'X') return false;
+    while (file.available()) {
+      c = file.peek();
+      if (c >= '0' && c <= '9') {
+        file.read();
+        value = (value << 4) | (c - '0');
+      } else if (c >= 'a' && c <= 'f') {
+        file.read();
+        value = (value << 4) | (c - 'a' + 10);
+      } else if (c >= 'A' && c <= 'F') {
+        file.read();
+        value = (value << 4) | (c - 'A' + 10);
+      } else break;
+    }
+    return true;
+  };
+
+  // ----- Parse header: height, width -----
+  uint16_t height, width, screenW, screenH;
+  if (!readDecimal(height)) {
+    file.close();
+    return false;
+  }
+  skipWhitespace();
+  if (file.read() != ',') {
+    file.close();
+    return false;
+  }
+  if (!readDecimal(width)) {
+    file.close();
+    return false;
+  }
+
+  // ----- Expect comma and opening brace -----
+  skipWhitespace();
+  if (file.read() != ',') {
+    file.close();
+    return false;
+  }
+  skipWhitespace();
+  if (file.read() != '{') {
+    file.close();
+    return false;
+  }
+
+  // After reading image width, image height
+  if (width > height) {
+    // Image is landscape
+    tft.setRotation(1);
+  } else tft.setRotation(2);
 
 
+  // ----- Compute display position (centered if not specified) -----
+  if (destX == -1) destX = (tft.width() - width) / 2;
+  if (destY == -1) destY = (tft.height() - height) / 2;
+
+  // ----- Allocate a row buffer (width pixels * 2 bytes each) -----
+  // Use std::nothrow to avoid crash if allocation fails (e.g., width too large)
+  uint16_t* rowBuffer = new (std::nothrow) uint16_t[width];
+  if (rowBuffer == nullptr) {
+    Serial.println("Not enough memory for a single row buffer");
+    file.close();
+    return false;
+  }
+
+  // ----- Read and display row by row -----
+  bool success = true;
+  tft.setSwapBytes(true);  // // Swap the byte order for pushImage() and pushPixels() - corrects endianness
+  for (uint16_t y = 0; y < height; y++) {
+    // Read one entire row (width hex values)
+    for (uint16_t x = 0; x < width; x++) {
+      skipWhitespace();
+      // If we encounter '}' before finishing the row, file is malformed
+      if (file.peek() == '}') {
+        success = false;
+        break;
+      }
+      if (!readHex(rowBuffer[x])) {
+        success = false;
+        break;
+      }
+      skipWhitespace();
+      // After a hex value, there must be a comma or the closing brace
+      if (x < width - 1) {
+        if (file.peek() != ',') {
+          success = false;
+          break;
+        }
+        file.read();  // consume the comma
+      }
+    }
+    if (!success) break;
+
+    // Push the row to the TFT
+    // Using pushImage with height = 1 draws a single row efficiently
+    tft.pushImage(destX, destY + y, width, 1, rowBuffer);
+
+    // After each row, we may have a newline or comma – skip whitespace
+    skipWhitespace();
+    // If this was the last row, we expect a closing brace
+    if (y == height - 1) {
+      if (file.peek() != '}') success = false;
+      else file.read();  // consume '}'
+    } else {
+      // Otherwise, there should be a comma between rows
+      if (file.peek() == ',') file.read();
+      // (the file could also have a newline – skipWhitespace handles it)
+    }
+    if (!success) break;
+  }
+
+  // ----- Clean up -----
+  delete[] rowBuffer;
+  file.close();
+
+  // Optional: skip trailing semicolon if present
+  if (success && file.available()) {
+    skipWhitespace();
+    if (file.peek() == ';') file.read();
+  }
+
+  return success;
+}
+
+bool displayBinary656(const char* filename, TFT_eSPI& tft, int destX = -1, int destY = -1) {
+  File file = SD.open(filename, FILE_READ);
+  if (!file) {
+    Serial.println("Cannot open file");
+    return false;
+  }
+  if (file.read((uint8_t*)&height, 2) != 2) {
+    file.close();
+    return false;
+  }
+  if (file.read((uint8_t*)&width, 2) != 2) {
+    file.close();
+    return false;
+  }
+
+  Serial.printf("Image: %d x %d\n", height, width);
+
+  // After reading image width, image height
+  if (width > height) {
+    // Image is landscape
+    tft.setRotation(1);
+  } else tft.setRotation(2);
+
+  // Center on screen
+  if (destX == -1) destX = (tft.width() - width) / 2;
+  if (destY == -1) destY = (tft.height() - height) / 2;
+  if (destX < 0) destX = 0;
+  if (destY < 0) destY = 0;
+
+  uint16_t* rowBuffer = new (std::nothrow) uint16_t[width];
+  if (!rowBuffer) {
+    file.close();
+    return false;
+  }
+
+  tft.setSwapBytes(true);  // because file is little‑endian, TFT expects big‑endian
+
+  for (uint16_t y = 0; y < height; y++) {
+    size_t readBytes = file.read((uint8_t*)rowBuffer, width * 2);
+    if (readBytes != width * 2) {
+      Serial.printf("Error reading row %d\n", y);
+      delete[] rowBuffer;
+      file.close();
+      return false;
+    }
+    tft.pushImage(destX, destY + y, width, 1, rowBuffer);
+  }
+
+  delete[] rowBuffer;
+  file.close();
+  return true;
+}
+
+/**
+ * Display a binary .b656 file using a chunked buffer (max ~100KB).
+ * Falls back to full‑buffer if the entire image fits within the limit.
+ */
+bool displayBinary656Chunked(const char* filename, TFT_eSPI& tft, int destX = -1, int destY = -1, size_t maxChunkSize = 100 * 1024) {
+  File file = SD.open(filename, FILE_READ);
+  if (!file) return false;
+
+  // Read dimensions (little‑endian)
+  uint16_t height, width;
+  if (file.read((uint8_t*)&height, 2) != 2) {
+    file.close();
+    return false;
+  }
+  if (file.read((uint8_t*)&width, 2) != 2) {
+    file.close();
+    return false;
+  }
+
+  uint32_t totalPixels = (uint32_t)height * (uint32_t)width;
+  uint32_t bufferSize = totalPixels * 2;
+
+  // Verify file size
+  if (file.size() != 4 + bufferSize) {
+    Serial.printf("File size mismatch\n");
+    file.close();
+    return false;
+  }
+
+  // If the whole image fits within maxChunkSize, use the fast single‑buffer method
+  if (bufferSize <= maxChunkSize) {
+    file.close();
+    return displayBinary656(filename, tft, destX, destY);  // reuse your full‑buffer version
+  }
+
+  // Compute how many rows fit in one chunk
+  uint32_t bytesPerRow = width * 2;
+  uint32_t maxRows = maxChunkSize / bytesPerRow;
+  if (maxRows == 0) maxRows = 1;  // at least one row for very wide images
+
+  // After reading image width, image height
+  if (width > height) {
+    // Image is landscape
+    tft.setRotation(1);
+  } else tft.setRotation(2);
+
+  // Centre the image
+  if (destX == -1) destX = (tft.width() - width) / 2;
+  if (destY == -1) destY = (tft.height() - height) / 2;
+  if (destX < 0) destX = 0;
+  if (destY < 0) destY = 0;
+
+  tft.setSwapBytes(true);
+
+  uint16_t rowsProcessed = 0;
+  bool success = true;
+
+  while (rowsProcessed < height) {
+    uint16_t rowsThisChunk = (height - rowsProcessed);
+    if (rowsThisChunk > maxRows) rowsThisChunk = maxRows;
+
+    uint32_t chunkBufferBytes = rowsThisChunk * bytesPerRow;
+    uint16_t* chunkBuffer = new (std::nothrow) uint16_t[rowsThisChunk * width];
+    if (!chunkBuffer) {
+      Serial.printf("Chunk allocation failed (%u bytes)\n", chunkBufferBytes);
+      success = false;
+      break;
+    }
+
+    size_t bytesRead = file.read((uint8_t*)chunkBuffer, chunkBufferBytes);
+    if (bytesRead != chunkBufferBytes) {
+      Serial.printf("Short read at row %d\n", rowsProcessed);
+      delete[] chunkBuffer;
+      success = false;
+      break;
+    }
+
+    // Draw the entire chunk in one call
+    tft.pushImage(destX, destY + rowsProcessed, width, rowsThisChunk, chunkBuffer);
+
+    delete[] chunkBuffer;
+    rowsProcessed += rowsThisChunk;
+  }
+
+  file.close();
+  return success;
+}
 
 void showimage16(int W, int H, const uint16_t* p) {
 
