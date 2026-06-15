@@ -146,7 +146,7 @@ void loop() {
 ```
 
 
-## WARNING: Sharing SPI bus with the risk of SD card corruption     
+## WARNING: Sharing SPI bus expose the risk of SD card corruption     
 
 SD card corruption after running ESP32 code strongly suggests a hardware or software conflict – especially since you are sharing the SPI bus between the TFT and the SD card. This is a common cause of file system corruption.
 
