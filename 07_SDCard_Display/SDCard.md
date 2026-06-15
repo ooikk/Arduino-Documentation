@@ -82,7 +82,7 @@ User_Setup.h is configured to use HSPI (USE_HSPI_PORT) or VSPI (USE_FSPI_PORT). 
 3. Pull the CS pins of all share SPI devices HIGH at the very top of your setup() function before doing anything else to avoid unassigned state.
 
 
-**Wiring Diagram**    
+**Wiring Diagram - share SPI**    
 
 <img width="1169" height="694" alt="image" src="https://github.com/user-attachments/assets/fe8bbd4c-8ce9-48c2-a5cc-2865fa349e14" />
 
@@ -96,7 +96,6 @@ Here is the general code example:
 #define SD_FREQUENCY 16000000   // 16MHz or 4MHz
 
 TFT_eSPI tft = TFT_eSPI();
-
 
 void setup() {
   Serial.begin(115200);
@@ -145,6 +144,93 @@ void loop() {
 }
 ```
 
+**Wiring Diagram - separate SPI**    
+
+<img width="1207" height="679" alt="image" src="https://github.com/user-attachments/assets/42b4d4a6-25fb-4d4c-b98c-553a4afc759b" />
+
+Here is the general code setup:    
+
+```
+#include <SPI.h>
+#include <SD.h>
+#include <TFT_eSPI.h>
+
+// 1️⃣ Define SPI pins for SD
+
+#define VSPI_PIN   // SD card is using VSPI and TFT is using HSPI (defined in User_Setup.h)
+
+#ifdef VSPI_PIN
+#define SD_SCLK_PIN 4
+#define SD_MISO_PIN 5
+#define SD_MOSI_PIN 6
+#else
+#define SD_SCLK_PIN 12
+#define SD_MISO_PIN 13
+#define SD_MOSI_PIN 11
+#endif
+
+// Define the SD Chip Select pin (must match wiring)
+#define SD_CS_PIN 7
+#define SD_FREQUENCY 16000000  // 16MHz or 4MHz
+
+TFT_eSPI tft = TFT_eSPI();
+
+// 2️⃣ Define SPI class for SD
+#ifdef VSPI_PIN
+SPIClass sdSPI(VSPI);
+#else
+SPIClass sdSPI(HSPI);
+#endif
+
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+/* Optional for separate SPI bus
+  // CRITICAL: Initialize SD card FIRST
+  // Ensure TFT CS is HIGH (disabled) before SD init
+  pinMode(TFT_CS, OUTPUT);
+  digitalWrite(TFT_CS, HIGH);
+  pinMode(TOUCH_CS, OUTPUT);
+  digitalWrite(TOUCH_CS, HIGH);
+  pinMode(SD_CS_PIN, OUTPUT);
+  digitalWrite(SD_CS_PIN, HIGH);
+  delay(100);
+*/
+
+// 3️⃣ Initialize the TFT. This also sets up the SPI bus
+  Serial.println("Initializing TFT...");
+  tft.init();
+  tft.setRotation(2);
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextColor(TFT_WHITE, TFT_BLACK);
+  tft.setTextSize(2);
+  tft.setCursor(0, 0);
+  Serial.println("TFT ready...");
+  tft.println("TFT ready...");
+
+// 4️⃣ Explicitly bind SPI to your SPI pins BEFORE SD.begin()
+  sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);  // SCK, MISO, MOSI
+
+  Serial.println("Initializing SD card...");
+// 5️⃣ Now initialize the SD card on the second SPI bus
+  if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {    
+    Serial.println("SD Card initialization failed!");
+    while (1) delay(1000);  // Halt
+  }
+  
+  Serial.println("SD Card initialized successfully.");
+  tft.println("SD Card OK");
+
+// Your code here
+
+}
+
+void loop() {
+    // ----
+}
+```
 
 ## WARNING: Sharing SPI bus expose the risk of SD card corruption     
 
@@ -250,8 +336,6 @@ OR Use hardware "Lock" your SD Card.
 
 **🛠️ Advanced: Use separate SPI buses (recommended for stability)**     
 ESP32 has two hardware SPI buses: VSPI (default) and HSPI. You can put the TFT on one and the SD card on the other.    
-
-
 
 
 ## Combined Test Sketch (Display + Touch + SD) with shared HSPI SPI bus   
