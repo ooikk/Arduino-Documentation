@@ -185,8 +185,8 @@ Wrap every SD card operation (including SD.begin()) with transactions:
 #include <SPI.h>
 
 // Define CS pins
-#define TFT_CS   5   // example
-#define SD_CS    4
+#define TFT_CS   9   // example
+#define SD_CS    7
 
 void setup() {
     SPI.begin();
