@@ -2,17 +2,36 @@
 #include <SD.h>
 #include <TFT_eSPI.h>
 
+// Define the SD Chip Select pin (must match wiring)
+#define VSPI_PIN   // SD card is using VSPI and TFT is using HSPI
+
+#ifdef VSPI_PIN
+#define SD_SCLK_PIN 4
+#define SD_MISO_PIN 5
+#define SD_MOSI_PIN 6
+#else
+#define SD_SCLK_PIN 12
+#define SD_MISO_PIN 13
+#define SD_MOSI_PIN 11
+#endif
+
 #define SD_CS_PIN 7
 #define SD_FREQUENCY 16000000
 
 TFT_eSPI tft = TFT_eSPI();
 
+// 1️⃣ Define SPI class for SD
+#ifdef VSPI_PIN
+SPIClass sdSPI(VSPI);
+#else
+SPIClass sdSPI(HSPI);
+#endif
 
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  // 1️⃣ Set all CS pins high to deselect devices before initialization
+  // 2️⃣ Set all CS pins high to deselect devices before initialization
   pinMode(TFT_CS, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
   pinMode(TOUCH_CS, OUTPUT);
@@ -33,9 +52,12 @@ void setup() {
   tft.println("TFT ready...");
 
   // 3️⃣ Get the SPI bus instance that the TFT is using
-  SPIClass& sdSPI = tft.getSPIinstance();
+  // SPIClass& sdSPI = tft.getSPIinstance();
   
- // 4️⃣ Now initialize the SD card on the SAME SPI bus
+  // 4️⃣ Explicitly bind SPI to your SPI pins BEFORE SD.begin()
+  sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);  // SCK, MISO, MOSI
+
+ // 5️⃣ Now initialize the SD card on the SAME SPI bus
   Serial.println("Initializing SD card...");
   if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
     Serial.println("SD Card initialization failed!");

@@ -4,12 +4,35 @@
 #include <TJpg_Decoder.h>
 #include <PNGdec.h>
 
+
+// Define the SD Chip Select pin (must match wiring)
+#define VSPI_PIN   // SD card is using VSPI and TFT is using HSPI
+
+// --- SD Card Pins ---
+#ifdef VSPI_PIN
+#define SD_SCLK_PIN 4
+#define SD_MISO_PIN 5
+#define SD_MOSI_PIN 6
+#else
+#define SD_SCLK_PIN 12
+#define SD_MISO_PIN 13
+#define SD_MOSI_PIN 11
+#endif
+
+#define SD_CS_PIN 7
+#define SD_FREQUENCY 16000000  // 16MHz or 4MHz
+
 TFT_eSPI tft = TFT_eSPI();
 PNG png;
 
-// --- SD Card Pins ---
-#define SD_CS_PIN 7
-#define SD_FREQUENCY 16000000  // 16MHz or 4MHz
+
+// 1️⃣ Define SPI class for SD
+#ifdef VSPI_PIN
+SPIClass sdSPI(VSPI);
+#else
+SPIClass sdSPI(HSPI);
+#endif
+
 
 // --- Callback for TJpg_Decoder (JPEG) ---
 bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t *bitmap) {
@@ -159,7 +182,7 @@ void drawBMP(const char *filename, int16_t x, int16_t y) {
 void setup() {
   Serial.begin(115200);
 
-  // 1️⃣ Set all CS pins high to deselect devices before initialization
+  // 2️⃣ Set all CS pins high to deselect devices before initialization
   pinMode(TFT_CS, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
   pinMode(TOUCH_CS, OUTPUT);
@@ -168,7 +191,7 @@ void setup() {
   digitalWrite(SD_CS_PIN, HIGH);
   delay(100);
 
-  // 2️⃣ Initialize the TFT first. This also sets up the SPI bus
+ // 3️⃣ Initialize the TFT first. This also sets up the SPI bus
   tft.init();
   tft.setRotation(1);  // Landscape 480x320
   tft.fillScreen(TFT_BLACK);
@@ -177,9 +200,14 @@ void setup() {
   tft.setCursor(10, 10);
   tft.println("Initializing SD...");
 
+
   // 3️⃣ Get the SPI bus instance that the TFT is using
-  SPIClass& sdSPI = tft.getSPIinstance();
-  // 4️⃣ Now initialize the SD card on the SAME SPI bus
+  // SPIClass& sdSPI = tft.getSPIinstance();
+  // 4️⃣ Explicitly bind SPI to your SPI pins BEFORE SD.begin()
+  // SPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);
+  sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);  // SCK, MISO, MOSI
+
+  // 5️⃣ Now initialize the SD card on the SPI bus
   if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
     Serial.println("SD Card Mount Failed!");
     tft.println("SD Failed");

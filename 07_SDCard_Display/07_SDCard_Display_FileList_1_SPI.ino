@@ -1,31 +1,12 @@
-// Define the SD Chip Select pin (must match wiring)
-#define VSPI_PIN   // SD card is using VSPI and TFT is using HSPI
-
 #include <SPI.h>
 #include <SD.h>
 #include <TFT_eSPI.h>
 
-#ifdef VSPI_PIN
-#define SD_SCLK_PIN 4
-#define SD_MISO_PIN 5
-#define SD_MOSI_PIN 6
-#else
-#define SD_SCLK_PIN 12
-#define SD_MISO_PIN 13
-#define SD_MOSI_PIN 11
-#endif
-
+// MISO, MOSI and CLK are declared under Setup_user.h in TFT_eSPI
 #define SD_CS_PIN 7
 #define SD_FREQUENCY 16000000
 
 TFT_eSPI tft = TFT_eSPI();
-
-// 1️⃣ Define SPI class for SD
-#ifdef VSPI_PIN
-SPIClass sdSPI(VSPI);
-#else
-SPIClass sdSPI(HSPI);
-#endif
 
 int16_t xStart, yStart;
 int32_t screenWidth, screenHeight;
@@ -34,17 +15,16 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  // 2️⃣ Set all CS pins high to deselect devices before initialization
+  // 1️⃣ Set all CS pins high to deselect devices before initialization
   pinMode(TFT_CS, OUTPUT);
   digitalWrite(TFT_CS, HIGH);
   pinMode(TOUCH_CS, OUTPUT);
   digitalWrite(TOUCH_CS, HIGH);
   pinMode(SD_CS_PIN, OUTPUT);
   digitalWrite(SD_CS_PIN, HIGH);
-  delay(100); 
+  delay(100);
 
-
- // 3️⃣ Initialize the TFT first. This also sets up the SPI bus
+  // 2️⃣ Initialize the TFT first. This also sets up the SPI bus
  //    (HSPI or VSPI, because of USE_HSPI_PORT or USE_FSPI_PORT in User_Setup.h)
   Serial.println("Initializing TFT...");
   tft.init();
@@ -53,14 +33,13 @@ void setup() {
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
   tft.setCursor(0, 0);
-  Serial.println("TFT ready...");
+  tft.println("TFT ready...");
   tft.println("TFT ready...");
 
-  // 4️⃣ Explicitly bind SPI to your SPI pins BEFORE SD.begin()
-  // SPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);
-  sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);  // SCK, MISO, MOSI
+  // 3️⃣ Get the SPI bus instance that the TFT is using
+  SPIClass& sdSPI = tft.getSPIinstance();
 
-  // 5️⃣ Now initialize the SD card on the SPI bus
+  // 4️⃣ Now initialize the SD card on the SAME SPI bus
   Serial.println("Initializing SD card...");
   if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
     Serial.println("SD Card initialization failed!");
@@ -72,6 +51,7 @@ void setup() {
 
   readCardType();
 
+
   xStart = tft.getCursorX();
   yStart = tft.getCursorY();
   screenWidth = tft.width();
@@ -80,13 +60,15 @@ void setup() {
 
 }
 
+
+
 void loop() {
   //tft.fillScreen(TFT_BLACK);
 
   tft.fillRect(0, yStart, screenWidth, (screenHeight - yStart), TFT_BLACK);
   tft.setCursor(0, yStart);
-
-  listDir(SD, "/", 0);
+  // Display Sub-directory 1 level down
+  listDir(SD, "/", 1);
 
   listRootdir();
 
