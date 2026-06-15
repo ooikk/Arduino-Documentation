@@ -40,26 +40,6 @@ While most pins are available, you should generally avoid these pins to prevent 
 
 <br>
 
-## ESP32-S3 References
-
-https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
-<br>
-
-https://github.com/espressif
-
-**Up to date technical documents:**    
-Copy and paste below link on brower:   
-*https://www.espressif.com/en/support/documents/technical-documents*   
-
-Hardware Design Guide:    
-https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s3/index.html
-
-https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolution-pinout-and-specs/
-
-
-
-
-
 # ESP32 S3 Board
 
 <img width="605" height="491" alt="ESP32-S3-PCBA" src="https://github.com/user-attachments/assets/ec73d7da-acef-4d03-a89f-68f72a6ce86f" />
@@ -98,6 +78,24 @@ Once you do this, you will usually see a message in the Arduino IDE Serial Monit
 
 LM1117 Linear low drop 3.3V 800mA voltage regulator:   
 <img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/353ebae9-632c-4b28-ae44-4cfbb53b6d1c" />
+
+## ESP32-S3 References
+
+https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
+<br>
+
+https://github.com/espressif
+
+**Up to date technical documents:**    
+Copy and paste below link on brower:   
+*https://www.espressif.com/en/support/documents/technical-documents*   
+
+Hardware Design Guide:    
+https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp32s3/index.html
+
+https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolution-pinout-and-specs/
+
+
 
 # 10 ESP32 Pro Features: Take your Projects to the Next Level!
 https://www.youtube.com/watch?v=_HzG5FjH_6g
