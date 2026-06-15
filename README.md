@@ -79,7 +79,7 @@ Once you do this, you will usually see a message in the Arduino IDE Serial Monit
 LM1117 Linear low drop 3.3V 800mA voltage regulator:   
 <img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/353ebae9-632c-4b28-ae44-4cfbb53b6d1c" />
 
-## ESP32-S3 References
+# ESP32-S3 References
 
 https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 <br>
