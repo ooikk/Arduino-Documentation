@@ -432,7 +432,6 @@ void loop() {
 |	Directory Navigation	|	openNextFile()	|	File entry = dir.openNextFile();	|	Opens the next file or folder in a directory. Used in a loop to list all contents of a directory.	|
 |	Directory Navigation	|	rewindDirectory()	|	dir.rewindDirectory();	|	Resets the file pointer back to the first file in a directory, allowing you to iterate over it again.	|
 |	Information	|	name()	|	Serial.println(entry.name());	|	Returns the name of a file or directory as a character array (string).	|
-<img width="1754" height="753" alt="image" src="https://github.com/user-attachments/assets/b139ccf1-9c6b-4dc5-b45e-17503ffce333" />
 
 
 
