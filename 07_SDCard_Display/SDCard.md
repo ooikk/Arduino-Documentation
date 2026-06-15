@@ -369,3 +369,24 @@ void loop() {
 ```
 ## Display RGB565 Image    
 
+There could be memory limitaton to display 320×480 image (153,600 pixels → 307,200 bytes), ESP32 may still run out of RAM and enter continue reboot cycles.       
+Command showed ESP32-S3 has about 320kB of RAM just before image display function start.    
+- Free heap before open: 320020    
+```
+Serial.printf("Free heap before open: %u\n", ESP.getFreeHeap());
+```
+There are a few methods to over come the memory limitation.
+
+**1. Process the file in chunks – avoid storing the whole array**    
+If you only need the pixel data for streaming (e.g., to a display), you can parse the text file incrementally without storing all pixels at once. For example, read one line of hex values at a time and send them to the display or process them on the fly.   
+
+**2. Use a raw binary format instead of text**    
+Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the file size is ~5× larger than binary. Parsing it also requires more temporary memory.     
+Convert your images to raw binary:     
+```
+[2 bytes: height little-endian]
+[2 bytes: width  little-endian]
+[height × width × 2 bytes: raw pixel values]
+```
+
+ 
