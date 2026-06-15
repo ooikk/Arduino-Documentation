@@ -406,6 +406,14 @@ void loop() {
 
 
 ```
+## SD Card functions
+
+
+```
+
+```
+
+
 ## Display RGB565 Image    
 
 Below is the 565RGB text file structure modified from generated online by (https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/). The code in 07_SDCard_Display_565.ino will load this file and send the pixel color to pushImage() function. The format is:    
