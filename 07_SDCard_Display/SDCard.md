@@ -556,6 +556,7 @@ if __name__ == "__main__":
 
 **Library**
 
-JPEGDecoder by Bodmer
-https://github.com/Bodmer/JPEGDecoder
+TJpg_Decoder by Bodmer     
+https://github.com/Bodmer/TJpg_Decoder
+
 
