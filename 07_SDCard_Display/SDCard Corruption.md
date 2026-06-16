@@ -19,10 +19,10 @@ If the physical switch isn't the problem, the write protection might be set in s
 6. Close the Registry Editor and restart your computer.      
 *Note:* If the **StorageDevicePolicies** key doesn't exist, you can create it. Right‑click in the right pane, select **New > Key**, and name it exactly. Then inside it, create a new **DWORD (32‑bit) Value** named **WriteProtect**.
 
-# 🛠️ Force format a corrupted SD card   
+# 🛠️ Force format a corrupted SD card     
 
 ## 1. Diskpart Command Prompt (Advanced Format)
-This method forcefully removes corrupted partitions and rebuilds the file system from scratch. [1]
+This method forcefully removes corrupted partitions and rebuilds the file system from scratch.
 1. Insert the SD card into your PC.
 2. Press the Windows Key + S, type **cmd**, right-click Command Prompt, and select Run as administrator.
 3. Type **diskpart** and hit Enter.
@@ -32,4 +32,19 @@ This method forcefully removes corrupted partitions and rebuilds the file system
 7. Type **clean** and press Enter.
 8. Type **create partition primary** and press Enter.
 9. Type **format fs=exfat quick** (or **format fs=fat32 quick** for cards under 32GB) and press Enter.
-10. Once completed, type **assign** to give the card a drive letter, then type **exit** to finish. [1, 2, 3, 4, 5]
+10. Once completed, type **assign** to give the card a drive letter, then type **exit** to finish.
+
+## 2. Disk Management Utility    
+If diskpart fails, Windows Disk Management allows you to delete and recreate the volume.
+1. Right-click the Start menu and select Disk Management.
+2. Scroll to the bottom and locate your SD card.
+3. Right-click the SD card's volume block and select Delete Volume (this removes the corrupted partition).
+4. Right-click the newly unallocated black space and select New Simple Volume.
+5. Follow the on-screen wizard to assign a drive letter and format it.
+
+## 3. Dedicated Formatting Software   
+If Windows tools fail, you can use specialized third-party formatting software designed to override errors.
+- Use the official [SD Memory Card Formatter](https://www.sdcard.org/downloads/formatter/) by the SD Association, which is optimized exclusively for SD technology.
+- Try low-level format software like [HDD Low Level Format Tool](http://hddguru.com/) to completely zero out the card's sector markers.
+
+
