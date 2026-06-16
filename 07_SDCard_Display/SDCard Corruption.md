@@ -18,3 +18,18 @@ If the physical switch isn't the problem, the write protection might be set in s
 5. Double‑click the **WriteProtect DWORD**, set its Value data to **0**, and click OK.
 6. Close the Registry Editor and restart your computer.      
 *Note:* If the **StorageDevicePolicies** key doesn't exist, you can create it. Right‑click in the right pane, select **New > Key**, and name it exactly. Then inside it, create a new **DWORD (32‑bit) Value** named **WriteProtect**.
+
+# 🛠️ Force format a corrupted SD card   
+
+## 1. Diskpart Command Prompt (Advanced Format)
+This method forcefully removes corrupted partitions and rebuilds the file system from scratch. [1]
+1. Insert the SD card into your PC.
+2. Press the Windows Key + S, type **cmd**, right-click Command Prompt, and select Run as administrator.
+3. Type **diskpart** and hit Enter.
+4. Type **list disk** and press Enter. Carefully identify your SD card's disk number (e.g., Disk 1 or Disk 2) based on its size.
+5. Type **select disk X** (replace X with your SD card's number) and hit Enter.
+6. Type **attributes disk clear readonly** and press Enter.
+7. Type **clean** and press Enter.
+8. Type **create partition primary** and press Enter.
+9. Type **format fs=exfat quick** (or **format fs=fat32 quick** for cards under 32GB) and press Enter.
+10. Once completed, type **assign** to give the card a drive letter, then type **exit** to finish. [1, 2, 3, 4, 5]
