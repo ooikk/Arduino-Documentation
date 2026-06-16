@@ -560,6 +560,11 @@ https://github.com/Bodmer/TJpg_Decoder
 
 **Sample Code**    
 ```
+#include <SPI.h>
+#include <SD.h>
+#include <TFT_eSPI.h>
+#include <TJpg_Decoder.h>
+
 /**
  * @brief Display a JPEG from SD card with auto‑rotation and smart scaling.
  *
