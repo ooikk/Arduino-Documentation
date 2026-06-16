@@ -558,6 +558,123 @@ if __name__ == "__main__":
 TJpg_Decoder by Bodmer     
 https://github.com/Bodmer/TJpg_Decoder
 
+**Sample Code**    
+```
+/**
+ * @brief Display a JPEG from SD card with auto‑rotation and smart scaling.
+ *
+ * The image orientation is matched to the screen (longer side aligns with longer side).
+ * If the image is larger than the screen, it is down‑scaled to *cover* the display
+ * (edges are cropped). If it is smaller, it is shown centered (letterboxed).
+ *
+ * @param filename   Full path to the .jpg file (e.g., "/Shangrila.jpg")
+ * @param tft        Reference to your TFT_eSPI object
+ * @param maxSize    Maximum RAM usage (TJpg_Decoder uses ~3.5KB fixed, this param is kept for compatibility)
+ * @return           true on success, false on error
+ */
+bool displayJPG(const char* filename, TFT_eSPI& tft, size_t maxSize) {
+  // ------------------------------------------------------------------
+  // 1. Get JPEG dimensions without decoding
+  // ------------------------------------------------------------------
+  uint16_t imgW = 0, imgH = 0;
+  JRESULT result = TJpgDec.getSdJpgSize(&imgW, &imgH, filename);
+  if (result != JDR_OK || imgW == 0 || imgH == 0) {
+    Serial.print("Decoding error: ");
+    Serial.println(result);  // 0 = OK, 1 = parameter error, 2 = out of memory, etc.
+    return false;
+  }
+
+  // ------------------------------------------------------------------
+  // 2. Save current rotation and auto‑rotate screen if needed
+  // ------------------------------------------------------------------
+  /*
+  uint8_t currentRot = tft.getRotation();
+  int sw = tft.width();
+  int sh = tft.height();
+  bool scrLandscape = (sw >= sh);
+  bool imgLandscape = (imgW >= imgH);
+
+  if (imgLandscape != scrLandscape) {
+    tft.setRotation((currentRot + 1) % 4);  // 90° clockwise
+    sw = tft.width();                       // update after rotation
+    sh = tft.height();
+  }
+*/
+  // After reading image width, image height
+
+  uint8_t currentRot = tft.getRotation();
+
+  if (imgW > imgH) {
+    // Image is landscape
+    tft.setRotation(1);
+  } else tft.setRotation(2);
+
+  int sw = tft.width();  // update after rotation
+  int sh = tft.height();
+
+
+  // ------------------------------------------------------------------
+  // 3. Compute the best integer scale (1, 2, 4, or 8)
+  //    "Cover" mode if possible, otherwise "fit" mode.
+  // ------------------------------------------------------------------
+  float ratioW = (float)imgW / sw;
+  float ratioH = (float)imgH / sh;
+  float minRatio = (ratioW < ratioH) ? ratioW : ratioH;
+
+  uint8_t scale = 1;
+  if (minRatio >= 1.0f) {
+    // Image is large enough to cover the screen – choose largest power‑of‑2 ≤ minRatio
+    while (scale * 2 <= minRatio && scale < 8) {
+      scale *= 2;
+    }
+  } else {
+    // Image is smaller in at least one dimension – fit entirely (letterbox)
+    float maxRatio = (ratioW > ratioH) ? ratioW : ratioH;
+    while (scale < maxRatio && scale < 8) {
+      scale *= 2;
+    }
+  }
+
+  // Compute scaled image size and centre position
+  int scaledW = imgW / scale;
+  int scaledH = imgH / scale;
+  int x = (sw - scaledW) / 2;
+  int y = (sh - scaledH) / 2;
+
+  // ------------------------------------------------------------------
+  // 4. Configure TJpg_Decoder
+  // ------------------------------------------------------------------
+  TJpgDec.setJpgScale(scale);
+  TJpgDec.setCallback(tft_output);
+  TJpgDec.setSwapBytes(true);
+  // ------------------------------------------------------------------
+  // 5. Draw the JPEG from SD card
+  // ------------------------------------------------------------------
+  // Note: drawSdJpg() draws at the specified (x,y) position.
+  // The callback (tft_output) handles clipping at screen edges.
+  result = TJpgDec.drawSdJpg(x, y, filename);
+
+  // ------------------------------------------------------------------
+  // 6. Restore original screen rotation
+  // ------------------------------------------------------------------
+  tft.setRotation(currentRot);
+
+  return (result == JDR_OK);
+}
+
+
+// ------------------------------------------------------------------
+// Rendering callback – called by TJpg_Decoder for each MCU block
+// ------------------------------------------------------------------
+bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) {
+  if (y >= tft.height()) return 0;
+  tft.pushImage(x, y, w, h, bitmap);
+  return 1;
+}
+
+```
+
+
 **Key Features Explained**     
 |Feature | How It's Implemented|
 |--- | ---|
@@ -567,7 +684,6 @@ https://github.com/Bodmer/TJpg_Decoder
 |Centering	| The image is always drawn at the centre of the screen (the destX/destY arguments are ignored).|
 |Edge cropping	| When covering the screen, the image is cropped symmetrically on the shorter side, preserving the aspect ratio.|
 |Callback‑based rendering	| The tft_output function is called for each MCU block, streaming the image directly to the TFT without a full‑frame buffer.|
-
 
 **Important Notes**
 1. JPEG format – The library only supports 24‑bit JPEGs (not 8‑bit) and does not support progressive JPEGs.
