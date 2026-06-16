@@ -551,3 +551,11 @@ def batch_convert():
 if __name__ == "__main__":
     batch_convert()
 ```
+
+## Display JPEG Image    
+
+**Library**
+
+JPEGDecoder by Bodmer
+https://github.com/Bodmer/JPEGDecoder
+
