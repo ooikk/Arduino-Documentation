@@ -266,12 +266,11 @@ File file = SD.open(filename, FILE_READ);
 ```   
 OR Use hardware "Lock" your SD Card.   
 
-## Recover Corrupted SD Card     
-If you have accidentally corrupted or damaged your SD Card, follow this link to try restore back your SD Card [SD Card Recovery](SDCard%20Corruption.md)
-
 **🛠️ Advanced: Use separate SPI buses (recommended for stability)**     
-ESP32 has two hardware SPI buses: VSPI (default) and HSPI. You can put the TFT on one and the SD card on the other.    
+ESP32 has two hardware SPI buses: VSPI (default) and HSPI. You can put the TFT on one and the SD card on the other.     
 
+## Recover Corrupted SD Card     
+If you have accidentally corrupted or damaged your SD Card, follow this link to try restore back your SD Card [SD Card Recovery](SDCard%20Corruption.md)     
 
 ## Combined Test Sketch (Display + Touch + SD) with separate SPI bus   
 
