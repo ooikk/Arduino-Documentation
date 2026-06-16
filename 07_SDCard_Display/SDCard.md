@@ -552,11 +552,26 @@ if __name__ == "__main__":
     batch_convert()
 ```
 
-## Library to display Images    
+## To display JPEG images    
 
-**For JPEG Images**
-
+**Library**     
 TJpg_Decoder by Bodmer     
 https://github.com/Bodmer/TJpg_Decoder
 
+**Key Features Explained**
+Feature | How It's Implemented
+- | -
+Auto‑rotation	| The screen rotation is temporarily changed by 90° if the image and screen have opposite orientations (landscape vs. portrait).
+Scaling	| The function selects the smallest power‑of‑two scale (1, 2, 4, or 8) that either covers the screen (cropping edges) if possible, or fits entirely (letterbox) if the image is smaller.
+Memory usage	| TJpg_Decoder uses a fixed ~3.5KB workspace – the maxSize parameter is kept for compatibility but is not needed.
+Centering	| The image is always drawn at the centre of the screen (the destX/destY arguments are ignored).
+Edge cropping	| When covering the screen, the image is cropped symmetrically on the shorter side, preserving the aspect ratio.
+Callback‑based rendering	| The tft_output function is called for each MCU block, streaming the image directly to the TFT without a full‑frame buffer.
 
+
+**Important Notes**
+1. JPEG format – The library only supports 24‑bit JPEGs (not 8‑bit) and does not support progressive JPEGs.
+2. SD Card initialisation – Make sure SD.begin() is called before any drawSdJpg() calls.
+3. Scaling limits – The library only supports scaling factors of 1, 2, 4, or 8. The function automatically picks the best one.
+4. Callback clipping – The tft_output callback already clips at screen edges, so negative x/y positions are handled automatically.
+5. Restoring rotation – The original screen rotation is restored after drawing, so the rest of your UI remains unaffected.
