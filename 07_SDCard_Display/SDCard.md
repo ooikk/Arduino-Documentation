@@ -558,7 +558,7 @@ if __name__ == "__main__":
 TJpg_Decoder by Bodmer     
 https://github.com/Bodmer/TJpg_Decoder
 
-**Key Features Explained**
+**Key Features Explained**     
 Feature | How It's Implemented
 - | -
 Auto‑rotation	| The screen rotation is temporarily changed by 90° if the image and screen have opposite orientations (landscape vs. portrait).
