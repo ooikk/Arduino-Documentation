@@ -559,14 +559,14 @@ TJpg_Decoder by Bodmer
 https://github.com/Bodmer/TJpg_Decoder
 
 **Key Features Explained**     
-Feature | How It's Implemented
-- | -
-Auto‑rotation	| The screen rotation is temporarily changed by 90° if the image and screen have opposite orientations (landscape vs. portrait).
-Scaling	| The function selects the smallest power‑of‑two scale (1, 2, 4, or 8) that either covers the screen (cropping edges) if possible, or fits entirely (letterbox) if the image is smaller.
-Memory usage	| TJpg_Decoder uses a fixed ~3.5KB workspace – the maxSize parameter is kept for compatibility but is not needed.
-Centering	| The image is always drawn at the centre of the screen (the destX/destY arguments are ignored).
-Edge cropping	| When covering the screen, the image is cropped symmetrically on the shorter side, preserving the aspect ratio.
-Callback‑based rendering	| The tft_output function is called for each MCU block, streaming the image directly to the TFT without a full‑frame buffer.
+|Feature | How It's Implemented|
+|--- | ---|
+|Auto‑rotation	| The screen rotation is temporarily changed by 90° if the image and screen have opposite orientations (landscape vs. portrait).|
+|Scaling	| The function selects the smallest power‑of‑two scale (1, 2, 4, or 8) that either covers the screen (cropping edges) if possible, or fits entirely (letterbox) if the image is smaller.|
+|Memory usage	| TJpg_Decoder uses a fixed ~3.5KB workspace – the maxSize parameter is kept for compatibility but is not needed.|
+|Centering	| The image is always drawn at the centre of the screen (the destX/destY arguments are ignored).|
+|Edge cropping	| When covering the screen, the image is cropped symmetrically on the shorter side, preserving the aspect ratio.|
+|Callback‑based rendering	| The tft_output function is called for each MCU block, streaming the image directly to the TFT without a full‑frame buffer.|
 
 
 **Important Notes**
