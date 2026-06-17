@@ -106,7 +106,7 @@ void setup() {
     return;
   }
   Serial.println("✅ SD Card Mounted");
-  checkReadOnlyState();
+  //checkReadOnlyState();
   Serial.println("SD Card initialized successfully.");
   tft.println("SD Card OK");
   // 3. Use SdFat syntax to get card size (sectorCount * 512 bytes)
