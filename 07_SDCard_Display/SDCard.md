@@ -257,9 +257,9 @@ It allows you to explicitly pass a pointer to the SPI instance. When initializin
 ```    
 This uses the getSPIinstance() method to fetch a pointer to the exact SPI object TFT_eSPI is using, guaranteeing they will cooperate correctly.    
 Library SdFat.h by Bill Greiman    
-https://github.com/greiman/SdFat
+https://github.com/greiman/SdFat      
 
-[Check here for detail about SdFat](https://github.com/ooikk/Arduino-Documentation/blob/main/07_SDCard_Display/SDCard_SdFat.md)
+Check here for detail about [SdFat](https://github.com/ooikk/Arduino-Documentation/blob/main/07_SDCard_Display/SDCard_SdFat.md)
 
 
 **Step 6: Check for accidental writes**    
