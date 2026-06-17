@@ -435,7 +435,74 @@ void loop() {
 |	Information	|	name()	|	Serial.println(entry.name());	|	Returns the name of a file or directory as a character array (string).	|
 
 
+## Sampel code to access the SD Card
 
+**Get SD Card information**   
+
+```
+Serial.begin(115200);
+if (!SD.begin()) {
+  Serial.println("Initialisation failed");
+  return;
+}
+
+// Get the card object and check read-only
+uint8_t cardType = SD.cardType();
+uint64_t cardSize = SD.cardSize();
+bool isReadOnly = SD.card()->isReadOnly();  // may not be available in all versions
+
+
+if (cardType == CARD_MMC) {
+  Serial.println("Card type: MMC");
+} else if (cardType == CARD_SD) {
+  Serial.println("Card type: SDSC");
+} else if (cardType == CARD_SDHC) {
+  Serial.println("Card type: SDHC");
+} else {
+  Serial.println("Unknown card type");
+}
+
+Serial.printf("Card type: %d, Size: %llu MB\n", cardType, cardSize / (1024 * 1024));
+Serial.printf("Read-only status: %s\n", isReadOnly ? "Yes" : "No");
+}
+
+```
+
+**Writing a text file to SD Card**      
+
+Below is a simple test code to write a text to SD Card.
+```
+File test = SD.open("/test.txt", FILE_WRITE);
+if (test) {
+    test.println("Test");
+    test.close();
+    SD.remove("/test.txt");
+    Serial.println("Card is writeable");
+} else {
+    Serial.println("Card is read-only or write failed");
+}
+```
+**Reading a text file from SD Card**     
+```
+  // Open the file for reading
+  File file = SD.open("/test.txt", FILE_READ);
+  if (!file) {
+    Serial.println("Failed to open test.txt for reading.");
+    return;
+  }
+
+  Serial.println("Contents of test.txt:");
+  // Read and print all characters from the file
+  while (file.available()) {
+    Serial.write(file.read());  // writes the raw byte to the serial
+  }
+
+  // Close the file
+  file.close();
+  Serial.println("\n--- End of file ---");
+}
+
+```
 
 ## Display RGB565 Image    
 
