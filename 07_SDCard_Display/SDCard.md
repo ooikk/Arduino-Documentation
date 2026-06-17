@@ -765,3 +765,346 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) 
 3. Scaling limits – The library only supports scaling factors of 1, 2, 4, or 8. The function automatically picks the best one.
 4. Callback clipping – The tft_output callback already clips at screen edges, so negative x/y positions are handled automatically.
 5. Restoring rotation – The original screen rotation is restored after drawing, so the rest of your UI remains unaffected.
+
+## Display BMP images       
+
+**Library**     
+
+None     
+
+**Sample Code**     
+
+Below is a complete implementation of displayBMP() that reads a 24‑bit BMP file from an SD card, automatically rotates the TFT to match the image orientation, and scales/crops the image to fill the screen while preserving aspect ratio. The image is centered, and only the necessary portion of the BMP is loaded into memory, respecting the maxSize parameter.    
+
+```
+#include <SPI.h>
+#include <SD.h>
+#include <TFT_eSPI.h>
+
+
+#pragma pack(push, 1)
+typedef struct {
+  uint16_t bfType;
+  uint32_t bfSize;
+  uint16_t bfReserved1;
+  uint16_t bfReserved2;
+  uint32_t bfOffBits;
+} BITMAPFILEHEADER;
+
+typedef struct {
+  uint32_t biSize;
+  int32_t biWidth;
+  int32_t biHeight;  // positive = bottom-up, negative = top-down
+  uint16_t biPlanes;
+  uint16_t biBitCount;
+  uint32_t biCompression;
+  uint32_t biSizeImage;
+  int32_t biXPelsPerMeter;
+  int32_t biYPelsPerMeter;
+  uint32_t biClrUsed;
+  uint32_t biClrImportant;
+} BITMAPINFOHEADER;
+#pragma pack(pop)
+
+
+static inline uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
+    return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+}
+
+// Read a contiguous block of pixels from a BMP row.
+// Returns true on success.
+// rowIndex: 0 = top row (for both orientations), startCol, numCols.
+static bool readBMPRowSegment(File& file, int rowIndex, int startCol, int numCols,
+                              uint8_t* buffer, int imgWidth, int imgHeight,
+                              int rowSize, int dataOffset, int bytesPerPixel,
+                              bool isBottomUp) {
+  if (numCols <= 0) return true;
+
+  int actualRow;
+  if (isBottomUp) {
+    // Bottom-up: row 0 is the bottom row of the image.
+    actualRow = imgHeight - 1 - rowIndex;
+  } else {
+    // Top-down: row 0 is the top row.
+    actualRow = rowIndex;
+  }
+
+  uint32_t rowOffset = dataOffset + actualRow * rowSize;
+  uint32_t seekPos = rowOffset + startCol * bytesPerPixel;
+  if (!file.seek(seekPos)) return false;
+
+  size_t bytesToRead = numCols * bytesPerPixel;
+  if (file.read(buffer, bytesToRead) != bytesToRead) return false;
+
+  return true;
+}
+
+/*
+ * @param filename   Full path to the .bmp file (e.g., "/image.bmp")
+ * @param tft        Reference to your TFT object
+ * @param maxSize Max memory usage 
+ * @return           true on success, false on error
+ */
+
+bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
+  File file = SD.open(filename, "r");
+  if (!file) {
+    Serial.println("Failed to open BMP file");
+    return false;
+  }
+  tft.setSwapBytes(true);  // <-- FIXES the random dots (byte order)
+  BITMAPFILEHEADER fileHeader;
+  if (file.read((uint8_t*)&fileHeader, sizeof(fileHeader)) != sizeof(fileHeader)) {
+    file.close();
+    return false;
+  }
+  if (fileHeader.bfType != 0x4D42) {
+    Serial.println("Not a BMP file");
+    file.close();
+    return false;
+  }
+
+  BITMAPINFOHEADER infoHeader;
+  if (file.read((uint8_t*)&infoHeader, sizeof(infoHeader)) != sizeof(infoHeader)) {
+    file.close();
+    return false;
+  }
+
+  if (infoHeader.biBitCount != 24 || infoHeader.biCompression != 0) {
+    Serial.println("Only uncompressed 24-bit BMP supported");
+    file.close();
+    return false;
+  }
+
+  int imgWidth = abs(infoHeader.biWidth);
+  int imgHeight = abs(infoHeader.biHeight);
+  bool isBottomUp = (infoHeader.biHeight > 0);  // true = standard Windows BMP
+
+  int bytesPerPixel = 3;
+  int rowSize = ((imgWidth * bytesPerPixel + 3) & ~3);
+  uint32_t dataOffset = fileHeader.bfOffBits;
+
+  // Debug info
+  Serial.printf("BMP: %dx%d, %s\n", imgWidth, imgHeight, isBottomUp ? "bottom-up" : "top-down");
+
+  // Auto-rotate: align longer side with screen longer side
+  if (imgWidth > imgHeight) {
+    tft.setRotation(1);  // Landscape
+  } else {
+    tft.setRotation(2);  // Portrait
+  }
+
+  int screenW = tft.width();
+  int screenH = tft.height();
+
+  // Compute scaling and offsets (fill screen, crop edges)
+  float scaleX = (float)screenW / imgWidth;
+  float scaleY = (float)screenH / imgHeight;
+  float scale = (scaleX > scaleY) ? scaleX : scaleY;  // fill
+  int newW = (int)(imgWidth * scale + 0.5f);
+  int newH = (int)(imgHeight * scale + 0.5f);
+  int offsetX = (screenW - newW) / 2;
+  int offsetY = (screenH - newH) / 2;
+
+  Serial.printf("Scale: %.2f, display size: %dx%d, offset: %d,%d\n", scale, newW, newH, offsetX, offsetY);
+
+  // Decide interpolation: bilinear only when upscaling (smooth)
+  bool useBilinear = (scale > 1.0f);
+
+  // Precompute mapping constants (using double for accuracy)
+  double invScaleX = 1.0 / scale;
+  double invScaleY = 1.0 / scale;
+  double srcX0 = -offsetX * invScaleX;  // source column at screen x=0
+  double srcY0 = -offsetY * invScaleY;  // source row at screen y=0
+
+  // Determine the range of source columns we need to read.
+  int srcColStart = (int)floor(srcX0);
+  int srcColEnd = (int)floor(srcX0 + (screenW - 1) * invScaleX);
+  int minCol = (srcColStart < 0) ? 0 : srcColStart;
+  int maxCol = (srcColEnd >= imgWidth) ? imgWidth - 1 : srcColEnd;
+  // For bilinear we need one extra column for interpolation (if available)
+  if (useBilinear && maxCol + 1 < imgWidth) maxCol++;
+  int numColsToRead = maxCol - minCol + 1;
+
+  size_t rowBufferSize = numColsToRead * bytesPerPixel;
+  size_t totalBufferSize = useBilinear ? 2 * rowBufferSize : rowBufferSize;
+  if (totalBufferSize > maxSize) {
+    // Fallback to nearest-neighbor if bilinear would exceed memory
+    useBilinear = false;
+    totalBufferSize = rowBufferSize;
+    if (totalBufferSize > maxSize) {
+      Serial.println("BMP row segment too large for memory; increase maxSize or process in strips.");
+      file.close();
+      return false;
+    }
+  }
+
+  uint8_t* rowBuf0 = (uint8_t*)malloc(rowBufferSize);
+  if (!rowBuf0) {
+    file.close();
+    return false;
+  }
+  uint8_t* rowBuf1 = nullptr;
+  if (useBilinear) {
+    rowBuf1 = (uint8_t*)malloc(rowBufferSize);
+    if (!rowBuf1) {
+      free(rowBuf0);
+      file.close();
+      return false;
+    }
+  }
+
+  uint16_t* screenRow = (uint16_t*)malloc(screenW * sizeof(uint16_t));
+  if (!screenRow) {
+    free(rowBuf0);
+    if (rowBuf1) free(rowBuf1);
+    file.close();
+    return false;
+  }
+
+  // Helper: get a packed 24-bit pixel from the buffer (0x00RRGGBB)
+  auto getPixel = [&](uint8_t* buf, int col) -> uint32_t {
+    int idx = (col - minCol) * bytesPerPixel;
+    uint8_t b = buf[idx];
+    uint8_t g = buf[idx + 1];
+    uint8_t r = buf[idx + 2];
+    return (uint32_t)((r << 16) | (g << 8) | b);
+  };
+
+  // For each screen row
+  for (int y = 0; y < screenH; y++) {
+    double srcY_f = srcY0 + y * invScaleY;
+    int srcRow = (int)floor(srcY_f);
+    double fracY = srcY_f - srcRow;
+
+    // Clamp source row to valid range
+    if (srcRow < 0) {
+      srcRow = 0;
+      fracY = 0;
+    }
+    if (srcRow >= imgHeight) {
+      srcRow = imgHeight - 1;
+      fracY = 0;
+    }
+
+    int srcRowNext = srcRow + 1;
+    if (srcRowNext >= imgHeight) srcRowNext = imgHeight - 1;
+
+    // Read the two row segments
+    if (!readBMPRowSegment(file, srcRow, minCol, numColsToRead, rowBuf0,
+                           imgWidth, imgHeight, rowSize, dataOffset, bytesPerPixel, isBottomUp)) {
+      free(screenRow);
+      free(rowBuf0);
+      if (rowBuf1) free(rowBuf1);
+      file.close();
+      return false;
+    }
+    if (useBilinear && (srcRow != srcRowNext || fracY != 0)) {
+      if (!readBMPRowSegment(file, srcRowNext, minCol, numColsToRead, rowBuf1,
+                             imgWidth, imgHeight, rowSize, dataOffset, bytesPerPixel, isBottomUp)) {
+        free(screenRow);
+        free(rowBuf0);
+        if (rowBuf1) free(rowBuf1);
+        file.close();
+        return false;
+      }
+    } else if (useBilinear) {
+      // Same row, copy
+      memcpy(rowBuf1, rowBuf0, rowBufferSize);
+    }
+
+    // For each screen column
+    for (int x = 0; x < screenW; x++) {
+      double srcX_f = srcX0 + x * invScaleX;
+      int srcCol = (int)floor(srcX_f);
+      double fracX = srcX_f - srcCol;
+
+      // Clamp to image boundaries
+      if (srcCol < 0) {
+        srcCol = 0;
+        fracX = 0;
+      }
+      if (srcCol >= imgWidth) {
+        srcCol = imgWidth - 1;
+        fracX = 0;
+      }
+      int srcColNext = srcCol + 1;
+      if (srcColNext >= imgWidth) srcColNext = imgWidth - 1;
+
+      // **Safety clamp to the actual buffer range** to avoid reading garbage
+      if (srcCol < minCol) srcCol = minCol;
+      if (srcCol > maxCol) srcCol = maxCol;
+      if (srcColNext < minCol) srcColNext = minCol;
+      if (srcColNext > maxCol) srcColNext = maxCol;
+
+      uint32_t c00, c01, c10, c11;
+      if (useBilinear) {
+        c00 = getPixel(rowBuf0, srcCol);
+        c01 = getPixel(rowBuf0, srcColNext);
+        c10 = getPixel(rowBuf1, srcCol);
+        c11 = getPixel(rowBuf1, srcColNext);
+      } else {
+        // Nearest neighbor
+        uint32_t c = getPixel(rowBuf0, srcCol);
+        uint8_t r = (c >> 16) & 0xFF;
+        uint8_t g = (c >> 8) & 0xFF;
+        uint8_t b = c & 0xFF;
+        screenRow[x] = rgb565(r, g, b);
+        continue;
+      }
+
+      // Bilinear interpolation
+      uint8_t r00 = (c00 >> 16) & 0xFF;
+      uint8_t g00 = (c00 >> 8) & 0xFF;
+      uint8_t b00 = c00 & 0xFF;
+      uint8_t r01 = (c01 >> 16) & 0xFF;
+      uint8_t g01 = (c01 >> 8) & 0xFF;
+      uint8_t b01 = c01 & 0xFF;
+      uint8_t r10 = (c10 >> 16) & 0xFF;
+      uint8_t g10 = (c10 >> 8) & 0xFF;
+      uint8_t b10 = c10 & 0xFF;
+      uint8_t r11 = (c11 >> 16) & 0xFF;
+      uint8_t g11 = (c11 >> 8) & 0xFF;
+      uint8_t b11 = c11 & 0xFF;
+
+      float fx = fracX, fy = fracY;
+      float r = r00 * (1 - fx) * (1 - fy) + r01 * fx * (1 - fy) + r10 * (1 - fx) * fy + r11 * fx * fy;
+      float g = g00 * (1 - fx) * (1 - fy) + g01 * fx * (1 - fy) + g10 * (1 - fx) * fy + g11 * fx * fy;
+      float b = b00 * (1 - fx) * (1 - fy) + b01 * fx * (1 - fy) + b10 * (1 - fx) * fy + b11 * fx * fy;
+
+      screenRow[x] = rgb565((uint8_t)r, (uint8_t)g, (uint8_t)b);
+    }
+
+    tft.pushImage(0, y, screenW, 1, screenRow);
+  }
+
+  free(screenRow);
+  free(rowBuf0);
+  if (rowBuf1) free(rowBuf1);
+  file.close();
+  return true;
+}
+
+```
+
+**Usage Example:**    
+```
+    // Display a BMP image with a memory limit of 4096 bytes per row
+    if (!displayBMP("/image.bmp", tft, 4096)) {
+        Serial.println("Failed to display BMP");
+    }
+```
+
+**Key Features**
+- Auto‑rotation: The TFT is rotated so that the image’s longer side aligns with the screen’s longer side (setRotation(1) for landscape, 2 for portrait).
+- Scaling & Cropping: If the image is larger than the screen, it is scaled to fill the entire display; excess edge pixels are discarded to preserve aspect ratio. If the image is smaller, the code expands the image to fill the entire screen even if the original image is smaller than the TFT.
+- Memory‑aware: Only the required portion of each BMP row is read into a buffer; the buffer size is checked against maxSize. (For very wide images, you may need to extend the implementation with horizontal strip processing.)
+- Centering: The image is always centered on the screen, whether scaled or not.
+- Supported format: Uncompressed 24‑bit BMP (the most common format).
+
+**Notes*8
+- The function assumes the SD library provides a File object with seek(), read(), write(), etc. Adjust the SD.open path prefix as needed for your filesystem (e.g., SPIFFS or LittleFS).
+- If your BMP has negative height (top‑down orientation), it is handled correctly.
+- For extremely wide images that exceed maxSize after cropping, you can implement horizontal strip processing by splitting the screen into vertical bands and calling pushImage for each band. The provided code returns false in that case for simplicity.
+
+  
