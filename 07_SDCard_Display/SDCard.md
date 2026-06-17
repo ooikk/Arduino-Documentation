@@ -259,6 +259,9 @@ This uses the getSPIinstance() method to fetch a pointer to the exact SPI object
 Library SdFat.h by Bill Greiman    
 https://github.com/greiman/SdFat
 
+[Check here for detail about SdFat](https://github.com/ooikk/Arduino-Documentation/blob/main/07_SDCard_Display/SDCard_SdFat.md)
+
+
 **Step 6: Check for accidental writes**    
 Ensure you never open the file with FILE_WRITE. Use FILE_READ only.    
 ```
