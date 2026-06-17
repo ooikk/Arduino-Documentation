@@ -621,7 +621,7 @@ if __name__ == "__main__":
     batch_convert()
 ```
 
-## To display JPEG images    
+## Display JPEG images    
 
 **Library**     
 TJpg_Decoder by Bodmer     
