@@ -10,6 +10,18 @@ If the physical switch isn't the problem, the write protection might be set in s
 5. Type **attributes disk clear readonly** and press Enter.
 6. Wait for the confirmation, then type **exit** to close DiskPart.
 
+*Note:* If after you type  **attributes disk clear readonly** and noticed "Current Read-only State : Yes", reboot your computer and re-insert you SD Card again. It should show No" status.
+```
+DISKPART> attributes disk
+Current Read-only State : No
+Read-only  : No
+Boot Disk  : No
+Pagefile Disk  : No
+Hibernation File Disk  : No
+Crashdump Disk  : No
+Clustered Disk  : No
+```
+
 ## Modify the Windows Registry (Alternative)
 1. If **DiskPart** doesn't work, you can remove the write protection through the Registry Editor.
 2. Press Win + R, type **regedit**, and press Enter.
@@ -33,6 +45,8 @@ This method forcefully removes corrupted partitions and rebuilds the file system
 8. Type **create partition primary** and press Enter.
 9. Type **format fs=exfat quick** (or **format fs=fat32 quick** for cards under 32GB) and press Enter.
 10. Once completed, type **assign** to give the card a drive letter, then type **exit** to finish.
+
+
 
 ## 2. Disk Management Utility    
 If diskpart fails, Windows Disk Management allows you to delete and recreate the volume.
