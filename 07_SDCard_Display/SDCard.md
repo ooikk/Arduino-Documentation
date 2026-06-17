@@ -449,8 +449,7 @@ if (!SD.begin()) {
 // Get the card object and check read-only
 uint8_t cardType = SD.cardType();
 uint64_t cardSize = SD.cardSize();
-bool isReadOnly = SD.card()->isReadOnly();  // may not be available in all versions
-
+bool isReadOnly = SD.card()->readOnly();  
 
 if (cardType == CARD_MMC) {
   Serial.println("Card type: MMC");
