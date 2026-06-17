@@ -1102,7 +1102,7 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
 - Centering: The image is always centered on the screen, whether scaled or not.
 - Supported format: Uncompressed 24‑bit BMP (the most common format).
 
-**Notes*8
+**Notes**
 - The function assumes the SD library provides a File object with seek(), read(), write(), etc. Adjust the SD.open path prefix as needed for your filesystem (e.g., SPIFFS or LittleFS).
 - If your BMP has negative height (top‑down orientation), it is handled correctly.
 - For extremely wide images that exceed maxSize after cropping, you can implement horizontal strip processing by splitting the screen into vertical bands and calling pushImage for each band. The provided code returns false in that case for simplicity.
