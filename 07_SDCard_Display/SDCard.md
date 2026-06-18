@@ -1119,10 +1119,8 @@ The PNG function support standard non‑interlaced 24‑bit PNG, if unable to di
 
 **Online Tools**          
 
-- To convert PNG to 24-bit PNG:
-  https://elysiatools.com/en/tools/png-to-24bit-png
-- To resize or crop image:
-  https://imageresizer.com/crop-image
+- To convert PNG to 24-bit PNG: https://elysiatools.com/en/tools/png-to-24bit-png
+- To resize or crop image: https://imageresizer.com/crop-image
   
 **Library**     
 
