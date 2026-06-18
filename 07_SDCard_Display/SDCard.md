@@ -163,7 +163,19 @@ void loop() {
   // Your code here
 }
 ```
-
+**Note**     
+Sometime having problem with SD Card initialization on first power up after code download, you may implement a retry code.    
+```
+  if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
+    Serial.println("SD Card initialization failed! Try again...");
+    delay(1000);
+    if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
+      Serial.println("SD Card initialization failed!");
+      tft.println("SD Card init failed!");
+      while (1) delay(1000);
+    }
+  }
+```
 
 ## WARNING: Sharing SPI bus expose the risk of SD card corruption     
 
@@ -438,7 +450,7 @@ void loop() {
 |	Information	|	name()	|	Serial.println(entry.name());	|	Returns the name of a file or directory as a character array (string).	|
 
 
-## Sampel code to access the SD Card
+## Sample code to access the SD Card
 
 **Get SD Card information**   
 
