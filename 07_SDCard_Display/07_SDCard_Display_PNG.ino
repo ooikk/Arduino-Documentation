@@ -1,7 +1,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include <TFT_eSPI.h>
-#include <TJpg_Decoder.h>
+#include <PNGdec.h>  // PNG decoder library
 
 
 // Define the SD Chip Select pin (must match wiring)
@@ -21,12 +21,11 @@
 #define SD_FREQUENCY 16000000  // 24000000 16000000 4000000
 
 #define LIST_FILES
-#define FILE_EXT "jpg"
+#define FILE_EXT "png"
 
-// algorithm has fix scale of 1, 2, 4, or 8 only
 //#define SMALLER_IMAGE
-#define SCR_WIDTH (320 / 4)
-#define SCR_HEIGHT (480 / 4)
+#define SCR_WIDTH 200
+#define SCR_HEIGHT 150
 #define SCR_OFFSET_X 20
 #define SCR_OFFSET_Y 30
 
@@ -39,9 +38,25 @@ SPIClass sdSPI(VSPI);
 SPIClass sdSPI(HSPI);
 #endif
 
+// ─── Global state ──────────────────────────────────────────────
+static PNG png;
+static TFT_eSPI* pTFT = nullptr;
+static File* pngFileHandle = nullptr;
+
+static float pngScale = 1.0f;
+static int16_t pngXOffset = 0;
+static int16_t pngYOffset = 0;
+static int16_t pngScaledW = 0;
+static int16_t pngScaledH = 0;
+static int16_t pngImgWidth = 0;
+static int16_t pngImgHeight = 0;
+static int16_t pngScreenW = 0;
+static int16_t pngScreenH = 0;
+static uint16_t* pngRowBuffer = nullptr;
+static int16_t pngLastDrawnY = -1;  // reset before decode
+
 String* getFileListByExtension(const char* extension, int& fileCount);
-bool displayJPG(const char* filename, TFT_eSPI& tft, size_t maxSize);
-bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap);
+bool displayPNG(const char* filename, TFT_eSPI& tft, size_t maxSize);
 
 
 void setup() {
@@ -152,7 +167,7 @@ void setup() {
 
       start_Time = millis();
 
-      if (displayJPG(files[i].c_str(), tft, 100 * 1024)) {
+      if (displayPNG(files[i].c_str(), tft, 100 * 1024)) {
         // Serial.println("  OK");
       } else {
         Serial.println("  Failed to display");
@@ -334,7 +349,6 @@ String* getFileListByExtension(const char* extension, int& fileCount) {
   return result;
 }
 
-
 void waitForSerial() {
 
   // Clear the serial buffer so it doesn't instantly loop again
@@ -347,142 +361,218 @@ void waitForSerial() {
 }
 
 
-// Forward declaration of the rendering callback
-//bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap);
 
+// ─── PNGdec callbacks ──────────────────────────────────────────
+
+static void* pngOpen(const char* filename, int32_t* pSize) {
+  if (pngFileHandle) {
+    pngFileHandle->close();
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+  }
+  pngFileHandle = new File(SD.open(filename, "r"));
+  if (!*pngFileHandle) {
+    Serial.printf("SD.open FAILED: %s\n", filename);
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+    return nullptr;
+  }
+  uint8_t sig[8];
+  if (pngFileHandle->read(sig, 8) != 8) {
+    Serial.printf("Can't read signature from %s\n", filename);
+    pngFileHandle->close();
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+    return nullptr;
+  }
+  const uint8_t pngSig[8] = { 137, 80, 78, 71, 13, 10, 26, 10 };
+  if (memcmp(sig, pngSig, 8) != 0) {
+    Serial.printf("Invalid PNG signature in %s\n", filename);
+    pngFileHandle->close();
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+    return nullptr;
+  }
+  pngFileHandle->seek(0);
+  *pSize = pngFileHandle->size();
+  return (void*)pngFileHandle;
+}
+
+static void pngClose(void* pHandle) {
+  if (pngFileHandle) {
+    pngFileHandle->close();
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+  }
+}
+
+static int32_t pngRead(PNGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
+  if (!pngFileHandle) return -1;
+  return pngFileHandle->read(pBuf, iLen);
+}
+
+static int32_t pngSeek(PNGFILE* pFile, int32_t iPos) {
+  if (!pngFileHandle) return -1;
+  return pngFileHandle->seek(iPos) ? iPos : -1;
+}
+
+// ─── Draw callback with proper up/down scaling ─────────────────
+
+static int pngDraw(PNGDRAW* pDraw) {
+  // Get decoded source row (original width)
+  uint16_t lineBuffer[pDraw->iWidth];
+  png.getLineAsRGB565(pDraw, lineBuffer, PNG_RGB565_BIG_ENDIAN, 0xffffffff);
+
+  // Vertical mapping range for this source row
+  int tgtY_start = (int)(pDraw->y * pngScale + pngYOffset + 0.5f);
+  int tgtY_end = (int)((pDraw->y + 1) * pngScale + pngYOffset + 0.5f);
+  // For downscaling, ensure at least one row
+  if (tgtY_end <= tgtY_start) tgtY_end = tgtY_start + 1;
+
+  // Determine horizontal visible segment (same for all rows in this block)
+  int visibleStart = 0, visibleEnd = pngScaledW - 1;
+  int screenStartX = pngXOffset;
+  int screenEndX = pngXOffset + pngScaledW - 1;
+  if (screenEndX < 0 || screenStartX >= pngScreenW) return 1;  // completely off
+
+  if (screenStartX < 0) {
+    visibleStart = -pngXOffset;
+    screenStartX = 0;
+  }
+  if (screenEndX >= pngScreenW) {
+    visibleEnd = pngScreenW - 1 - pngXOffset;
+    screenEndX = pngScreenW - 1;
+  }
+  int visibleWidth = visibleEnd - visibleStart + 1;
+  if (visibleWidth <= 0) return 1;
+
+  // Resize the visible segment horizontally (nearest neighbour)
+  for (int x = 0; x < visibleWidth; x++) {
+    int srcX = (int)((visibleStart + x - pngXOffset) / pngScale + 0.5f);
+    if (srcX < 0) srcX = 0;
+    if (srcX >= pngImgWidth) srcX = pngImgWidth - 1;
+    pngRowBuffer[x] = lineBuffer[srcX];
+  }
+
+  // Draw vertical block: from tgtY_start to tgtY_end - 1
+  for (int tgtY = tgtY_start; tgtY < tgtY_end; tgtY++) {
+    if (tgtY < 0 || tgtY >= pngScreenH) continue;
+    // Avoid duplicate drawing (only needed for downscaling, but harmless)
+    if (tgtY == pngLastDrawnY) continue;
+    pngLastDrawnY = tgtY;
+    pTFT->pushImage(screenStartX, tgtY, visibleWidth, 1, pngRowBuffer);
+  }
+  return 1;
+}
+
+// ─── Cleanup ────────────────────────────────────────────────────
+
+static void pngCleanup() {
+  png.close();
+  if (pngFileHandle) {
+    pngFileHandle->close();
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+  }
+  if (pngRowBuffer) {
+    free(pngRowBuffer);
+    pngRowBuffer = nullptr;
+  }
+  delay(10);
+}
+
+// ─── Main display function ──────────────────────────────────────
 /**
- * @brief Display a JPEG from SD card with auto‑rotation and smart scaling.
- *
- * The image orientation is matched to the screen (longer side aligns with longer side).
- * If the image is larger than the screen, it is down‑scaled to *cover* the display
- * (edges are cropped). If it is smaller, it is shown centered (letterboxed).
- *
- * @param filename   Full path to the .jpg file (e.g., "/Shangrila.jpg")
- * @param tft        Reference to your TFT_eSPI object
- * @param maxSize    Maximum RAM usage (TJpg_Decoder uses ~3.5KB fixed, this param is kept for compatibility)
- * @return           true on success, false on error
+ * Display a PNG image from SD card.
+ * @param filename Full path (e.g., "/image.png")
+ * @param tft      Reference to your TFT_eSPI object
+ * @param maxSize  Not used (kept for compatibility)
+ * @return         true on success, false on error
  */
-bool displayJPG(const char* filename, TFT_eSPI& tft, size_t maxSize) {
-  // ------------------------------------------------------------------
-  // 1. Get JPEG dimensions without decoding
-  // ------------------------------------------------------------------
-  uint16_t imgW = 0, imgH = 0;
-  JRESULT result = TJpgDec.getSdJpgSize(&imgW, &imgH, filename);
-  if (result != JDR_OK || imgW == 0 || imgH == 0) {
-    Serial.print("Decoding error: ");
-    Serial.println(result);  // 0 = OK, 1 = parameter error, 2 = out of memory, etc.
+
+bool displayPNG(const char* filename, TFT_eSPI& tft, size_t maxSize) {
+  pngCleanup();
+
+  if (!SD.exists(filename)) {
+    Serial.printf("File NOT found: %s\n", filename);
     return false;
   }
 
-  // ------------------------------------------------------------------
-  // 2. Save current rotation and auto‑rotate screen if needed
-  // ------------------------------------------------------------------
-  /*
-  uint8_t currentRot = tft.getRotation();
-  int sw = tft.width();
-  int sh = tft.height();
-  bool scrLandscape = (sw >= sh);
-  bool imgLandscape = (imgW >= imgH);
-
-  if (imgLandscape != scrLandscape) {
-    tft.setRotation((currentRot + 1) % 4);  // 90° clockwise
-    sw = tft.width();                       // update after rotation
-    sh = tft.height();
+  int rc = png.open(filename, pngOpen, pngClose, pngRead, pngSeek, pngDraw);
+  if (rc != PNG_SUCCESS) {
+    Serial.printf("PNG open failed: %d for %s\n", rc, filename);
+    pngCleanup();
+    return false;
   }
-*/
-  // After reading image width, image height
 
-  uint8_t currentRot = tft.getRotation();
+  pngImgWidth = png.getWidth();
+  pngImgHeight = png.getHeight();
+  Serial.printf("PNG: %dx%d\n", pngImgWidth, pngImgHeight);
 
-  if (imgW > imgH) {
-    // Image is landscape
-    tft.setRotation(1);
-  } else tft.setRotation(2);
+  if (pngImgWidth > pngImgHeight) tft.setRotation(1);
+  else tft.setRotation(2);
 
 /**
-* User can define target display image dimension by changing sw and sh
+* User can define target display image dimension by changing pngScreenW and pngScreenH
 * Current default to tft width and height
-* It will not work if the image is too large, or ratio of orginal image / scale down image
-* because the algorithm has fix scale of 1, 2, 4, or 8 only
 */
-#ifdef SMALLER_IMAGE
-  int sw = SCR_WIDTH;  // update after rotation
-  int sh = SCR_HEIGHT;
-#else
-  int sw = tft.width();  // update after rotation
-  int sh = tft.height();
-#endif
-
-  // ------------------------------------------------------------------
-  // 3. Compute the best integer scale (1, 2, 4, or 8)
-  //    "Cover" mode if possible, otherwise "fit" mode.
-  // ------------------------------------------------------------------
-  float ratioW = (float)imgW / sw;
-  float ratioH = (float)imgH / sh;
 
 #ifdef SMALLER_IMAGE
-  float minRatio = (ratioW < ratioH) ? ratioW : ratioH;
+  pngScreenW = SCR_WIDTH;
+  pngScreenH = SCR_HEIGHT;
 #else
-  float minRatio = (ratioW < ratioH) ? ratioW : ratioH;
+  pngScreenW = tft.width();
+  pngScreenH = tft.height();
 #endif
 
-  uint8_t scale = 1;
-  if (minRatio >= 1.0f) {
-    // Image is large enough to cover the screen – choose largest power‑of‑2 ≤ minRatio
-    while (scale * 2 <= minRatio && scale < 8) {
-      scale *= 2;
-    }
-  } else {
-    // Image is smaller in at least one dimension – fit entirely (letterbox)
-    float maxRatio = (ratioW > ratioH) ? ratioW : ratioH;
-    while (scale < maxRatio && scale < 8) {
-      scale *= 2;
-    }
-  }
 
-  // Compute scaled image size and centre position
-  int scaledW = imgW / scale;
-  int scaledH = imgH / scale;
+  float scaleX = (float)pngScreenW / pngImgWidth;
+  float scaleY = (float)pngScreenH / pngImgHeight;
 
-/**
-* User can define target display offset x and y
+#ifdef SMALLER_IMAGE
+  pngScale = (scaleX < scaleY) ? scaleX : scaleY;   // if display smaller image, make sure choose the lower scale factor to maximise image
+#else
+  pngScale = (scaleX > scaleY) ? scaleX : scaleY;   // default
+#endif  
+
+  pngScaledW = (int)(pngImgWidth * pngScale + 0.5f);
+  pngScaledH = (int)(pngImgHeight * pngScale + 0.5f);
+
+  /**
+* User can define target display offset pngXOffset and pngYOffset
 * Current default to 0, 0 of the screen
 */
 #ifdef SMALLER_IMAGE
-  int x = SCR_OFFSET_X;
-  int y = SCR_OFFSET_Y;
+  pngXOffset = SCR_OFFSET_X;
+  pngYOffset = SCR_OFFSET_Y;
 #else
-  int x = (sw - scaledW) / 2;
-  int y = (sh - scaledH) / 2;
-#endif
-
-  // ------------------------------------------------------------------
-  // 4. Configure TJpg_Decoder
-  // ------------------------------------------------------------------
-  TJpgDec.setJpgScale(scale);
-  TJpgDec.setCallback(tft_output);
-  TJpgDec.setSwapBytes(true);
-  // ------------------------------------------------------------------
-  // 5. Draw the JPEG from SD card
-  // ------------------------------------------------------------------
-  // Note: drawSdJpg() draws at the specified (x,y) position.
-  // The callback (tft_output) handles clipping at screen edges.
-  result = TJpgDec.drawSdJpg(x, y, filename);
-
-  // ------------------------------------------------------------------
-  // 6. Restore original screen rotation
-  // ------------------------------------------------------------------
-  tft.setRotation(currentRot);
-
-  return (result == JDR_OK);
-}
+  pngXOffset = (pngScreenW - pngScaledW) / 2;
+  pngYOffset = (pngScreenH - pngScaledH) / 2;
+#endif  
 
 
-// ------------------------------------------------------------------
-// Rendering callback – called by TJpg_Decoder for each MCU block
-// ------------------------------------------------------------------
-bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) {
-  if (y >= tft.height()) return 0;
-  tft.pushImage(x, y, w, h, bitmap);
-  return 1;
+
+  pngRowBuffer = (uint16_t*)malloc(pngScreenW * sizeof(uint16_t));
+  if (!pngRowBuffer) {
+    Serial.println("Row buffer allocation failed");
+    png.close();
+    return false;
+  }
+
+  pTFT = &tft;
+  pngLastDrawnY = -1;  // reset for this image
+
+  tft.startWrite();
+  uint32_t start = millis();
+  rc = png.decode(nullptr, 0);
+  Serial.printf("Decode time: %d ms\n", millis() - start);
+  tft.endWrite();
+
+  pngCleanup();
+
+  if (rc != PNG_SUCCESS) {
+    Serial.printf("PNG decode failed: %d\n", rc);
+    return false;
+  }
+  return true;
 }

@@ -22,6 +22,11 @@
 #define LIST_FILES
 #define FILE_EXT "bmp"
 
+#define SMALLER_IMAGE
+#define SCR_WIDTH 200
+#define SCR_HEIGHT 150
+#define SCR_OFFSET_X 20
+#define SCR_OFFSET_Y 30
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -64,7 +69,7 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize);
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(500);
 
   // 1️⃣ Set all CS pins high to deselect devices before initialization
   pinMode(TFT_CS, OUTPUT);
@@ -92,13 +97,16 @@ void setup() {
   // SPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);
   sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);  // SCK, MISO, MOSI
 
-
   // 4️⃣ Now initialize the SD card on the SPI bus
   Serial.println("Initializing SD card...");
   if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
-    Serial.println("SD Card initialization failed!");
-    tft.println("SD Card init failed!");
-    while (1) delay(1000);
+    Serial.println("SD Card initialization failed! Try again...");
+    delay(1000);
+    if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
+      Serial.println("SD Card initialization failed!");
+      tft.println("SD Card init failed!");
+      while (1) delay(1000);
+    }
   }
 
   Serial.printf("Free heap before open: %u\n", ESP.getFreeHeap());
@@ -360,7 +368,7 @@ void waitForSerial() {
 }
 
 static inline uint16_t rgb565(uint8_t r, uint8_t g, uint8_t b) {
-    return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+  return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
 }
 
 // Read a contiguous block of pixels from a BMP row.
@@ -446,17 +454,44 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
     tft.setRotation(2);  // Portrait
   }
 
+  /**
+* User can define target display image dimension by changing pngScreenW and pngScreenH
+* Current default to tft width and height
+*/
+
+#ifdef SMALLER_IMAGE
+  int screenW = SCR_WIDTH;
+  int screenH = SCR_HEIGHT;
+#else
   int screenW = tft.width();
   int screenH = tft.height();
+#endif
 
   // Compute scaling and offsets (fill screen, crop edges)
   float scaleX = (float)screenW / imgWidth;
   float scaleY = (float)screenH / imgHeight;
+  
+#ifdef SMALLER_IMAGE  
   float scale = (scaleX > scaleY) ? scaleX : scaleY;  // fill
+#else
+  float scale = (scaleX > scaleY) ? scaleX : scaleY;  // fill
+#endif
+
   int newW = (int)(imgWidth * scale + 0.5f);
   int newH = (int)(imgHeight * scale + 0.5f);
+
+/**
+* User can define target display offset pngXOffset and pngYOffset
+* Current default to 0, 0 of the screen
+*/
+#ifdef SMALLER_IMAGE
+  int offsetX = SCR_OFFSET_X;
+  int offsetY = SCR_OFFSET_Y;
+#else
   int offsetX = (screenW - newW) / 2;
   int offsetY = (screenH - newH) / 2;
+#endif
+
 
   Serial.printf("Scale: %.2f, display size: %dx%d, offset: %d,%d\n", scale, newW, newH, offsetX, offsetY);
 
@@ -466,8 +501,11 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
   // Precompute mapping constants (using double for accuracy)
   double invScaleX = 1.0 / scale;
   double invScaleY = 1.0 / scale;
-  double srcX0 = -offsetX * invScaleX;  // source column at screen x=0
-  double srcY0 = -offsetY * invScaleY;  // source row at screen y=0
+
+  //double srcX0 = -offsetX * invScaleX;  // source column at screen x=0
+  //double srcY0 = -offsetY * invScaleY;  // source row at screen y=0
+  double srcX0 = 0;  // source column at screen x=0
+  double srcY0 = 0;  // source row at screen y=0
 
   // Determine the range of source columns we need to read.
   int srcColStart = (int)floor(srcX0);
@@ -627,7 +665,8 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
       screenRow[x] = rgb565((uint8_t)r, (uint8_t)g, (uint8_t)b);
     }
 
-    tft.pushImage(0, y, screenW, 1, screenRow);
+    //tft.pushImage(0, y, screenW, 1, screenRow);
+    tft.pushImage(offsetX, offsetY + y, screenW, 1, screenRow);
   }
 
   free(screenRow);
