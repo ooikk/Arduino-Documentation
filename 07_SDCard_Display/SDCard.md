@@ -1110,10 +1110,12 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
 
 ## Display PNG images       
 
-**Library**     
+The PNG function support standard non‑interlaced 24‑bit PNG, if unable to display the image, convert the PNG file with the following settings:     
+- Interlaced = OFF (not checked)
+- Bit depth = 24‑bit (or "Truecolor")
+- No alpha channel if possible (or it may still work)
 
-PNGdec by Larry Bank          
-https://github.com/bitbank2/PNGdec     
+**Note:** Transparency – The PNG decoder handles alpha channels; this code uses 0xffffffff as the background colour for blending (fully opaque). If you want transparency to show the TFT background, you can modify the callback to blend pixels.    
 
 **Online Tools**          
 
@@ -1121,6 +1123,12 @@ https://github.com/bitbank2/PNGdec
   https://elysiatools.com/en/tools/png-to-24bit-png
 - To resize or crop image:
   https://imageresizer.com/crop-image
+  
+**Library**     
+
+PNGdec by Larry Bank          
+https://github.com/bitbank2/PNGdec     
+
 
 **Sample Code**     
 
