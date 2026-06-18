@@ -1112,16 +1112,15 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
 
 **Library**     
 
-PNGdec     
 PNGdec by Larry Bank          
 https://github.com/bitbank2/PNGdec     
 
 **Online Tools**          
-To convert PNG to 24-bit PNG:     
-https://elysiatools.com/en/tools/png-to-24bit-png     
 
-To resize or crop image:     
-https://imageresizer.com/crop-image
+- To convert PNG to 24-bit PNG:
+  https://elysiatools.com/en/tools/png-to-24bit-png
+- To resize or crop image:
+  https://imageresizer.com/crop-image
 
 **Sample Code**     
 
