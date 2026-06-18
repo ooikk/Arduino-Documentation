@@ -1131,7 +1131,6 @@ https://github.com/bitbank2/PNGdec
 **Sample Code**     
 
 ```
-#include <FS.h>
 #include <SD.h>
 #include <TFT_eSPI.h>
 #include <PNGdec.h>
