@@ -1075,7 +1075,8 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
       screenRow[x] = rgb565((uint8_t)r, (uint8_t)g, (uint8_t)b);
     }
 
-    tft.pushImage(0, y, screenW, 1, screenRow);
+    //tft.pushImage(0, y, screenW, 1, screenRow);
+    tft.pushImage(offsetX, offsetY+y, screenW, 1, screenRow);
   }
 
   free(screenRow);
