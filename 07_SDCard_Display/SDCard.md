@@ -914,8 +914,10 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
   // Precompute mapping constants (using double for accuracy)
   double invScaleX = 1.0 / scale;
   double invScaleY = 1.0 / scale;
-  double srcX0 = -offsetX * invScaleX;  // source column at screen x=0
-  double srcY0 = -offsetY * invScaleY;  // source row at screen y=0
+  //double srcX0 = -offsetX * invScaleX;  // source column at screen x=0
+  //double srcY0 = -offsetY * invScaleY;  // source row at screen y=0
+  double srcX0 = 0;  // source column at screen x=0
+  double srcY0 = 0;  // source row at screen y=0
 
   // Determine the range of source columns we need to read.
   int srcColStart = (int)floor(srcX0);
