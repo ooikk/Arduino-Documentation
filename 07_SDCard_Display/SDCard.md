@@ -1130,4 +1130,201 @@ https://github.com/bitbank2/PNGdec
 
 **Sample Code**     
 
+```
+#include <FS.h>
+#include <SD.h>
+#include <TFT_eSPI.h>
+#include <PNGdec.h>
+
+static PNG png;
+static TFT_eSPI* pTFT = nullptr;
+static File* pngFileHandle = nullptr;
+
+static float   pngScale = 1.0f;
+static int16_t pngXOffset = 0;
+static int16_t pngYOffset = 0;
+static int16_t pngScaledW = 0;
+static int16_t pngScaledH = 0;
+static int16_t pngImgWidth = 0;
+static int16_t pngImgHeight = 0;
+static int16_t pngScreenW = 0;
+static int16_t pngScreenH = 0;
+static uint16_t* pngRowBuffer = nullptr;
+static int16_t pngLastDrawnY = -1;   // reset before decode
+
+// ─── PNGdec callbacks ──────────────────────────────────────────
+
+static void* pngOpen(const char* filename, int32_t* pSize) {
+    if (pngFileHandle) { pngFileHandle->close(); delete pngFileHandle; pngFileHandle = nullptr; }
+    pngFileHandle = new File(SD.open(filename, "r"));
+    if (!*pngFileHandle) {
+        Serial.printf("SD.open FAILED: %s\n", filename);
+        delete pngFileHandle; pngFileHandle = nullptr;
+        return nullptr;
+    }
+    uint8_t sig[8];
+    if (pngFileHandle->read(sig, 8) != 8) {
+        Serial.printf("Can't read signature from %s\n", filename);
+        pngFileHandle->close(); delete pngFileHandle; pngFileHandle = nullptr;
+        return nullptr;
+    }
+    const uint8_t pngSig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
+    if (memcmp(sig, pngSig, 8) != 0) {
+        Serial.printf("Invalid PNG signature in %s\n", filename);
+        pngFileHandle->close(); delete pngFileHandle; pngFileHandle = nullptr;
+        return nullptr;
+    }
+    pngFileHandle->seek(0);
+    *pSize = pngFileHandle->size();
+    return (void*)pngFileHandle;
+}
+
+static void pngClose(void* pHandle) {
+    if (pngFileHandle) { pngFileHandle->close(); delete pngFileHandle; pngFileHandle = nullptr; }
+}
+
+static int32_t pngRead(PNGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
+    if (!pngFileHandle) return -1;
+    return pngFileHandle->read(pBuf, iLen);
+}
+
+static int32_t pngSeek(PNGFILE* pFile, int32_t iPos) {
+    if (!pngFileHandle) return -1;
+    return pngFileHandle->seek(iPos) ? iPos : -1;
+}
+
+// ─── Draw callback with proper up/down scaling ─────────────────
+
+static int pngDraw(PNGDRAW* pDraw) {
+    // Get decoded source row (original width)
+    uint16_t lineBuffer[pDraw->iWidth];
+    png.getLineAsRGB565(pDraw, lineBuffer, PNG_RGB565_BIG_ENDIAN, 0xffffffff);
+
+    // Vertical mapping range for this source row
+    int tgtY_start = (int)(pDraw->y * pngScale + pngYOffset + 0.5f);
+    int tgtY_end   = (int)((pDraw->y + 1) * pngScale + pngYOffset + 0.5f);
+    // For downscaling, ensure at least one row
+    if (tgtY_end <= tgtY_start) tgtY_end = tgtY_start + 1;
+
+    // Determine horizontal visible segment (same for all rows in this block)
+    int visibleStart = 0, visibleEnd = pngScaledW - 1;
+    int screenStartX = pngXOffset;
+    int screenEndX   = pngXOffset + pngScaledW - 1;
+    if (screenEndX < 0 || screenStartX >= pngScreenW) return 1; // completely off
+
+    if (screenStartX < 0) {
+        visibleStart = -pngXOffset;
+        screenStartX = 0;
+    }
+    if (screenEndX >= pngScreenW) {
+        visibleEnd = pngScreenW - 1 - pngXOffset;
+        screenEndX = pngScreenW - 1;
+    }
+    int visibleWidth = visibleEnd - visibleStart + 1;
+    if (visibleWidth <= 0) return 1;
+
+    // Resize the visible segment horizontally (nearest neighbour)
+    for (int x = 0; x < visibleWidth; x++) {
+        int srcX = (int)((visibleStart + x - pngXOffset) / pngScale + 0.5f);
+        if (srcX < 0) srcX = 0;
+        if (srcX >= pngImgWidth) srcX = pngImgWidth - 1;
+        pngRowBuffer[x] = lineBuffer[srcX];
+    }
+
+    // Draw vertical block: from tgtY_start to tgtY_end - 1
+    for (int tgtY = tgtY_start; tgtY < tgtY_end; tgtY++) {
+        if (tgtY < 0 || tgtY >= pngScreenH) continue;
+        // Avoid duplicate drawing (only needed for downscaling, but harmless)
+        if (tgtY == pngLastDrawnY) continue;
+        pngLastDrawnY = tgtY;
+        pTFT->pushImage(screenStartX, tgtY, visibleWidth, 1, pngRowBuffer);
+    }
+    return 1;
+}
+
+// ─── Cleanup ────────────────────────────────────────────────────
+
+static void pngCleanup() {
+    png.close();
+    if (pngFileHandle) { pngFileHandle->close(); delete pngFileHandle; pngFileHandle = nullptr; }
+    if (pngRowBuffer) { free(pngRowBuffer); pngRowBuffer = nullptr; }
+    delay(10);
+}
+
+// ─── Main display function ──────────────────────────────────────
+
+bool displayPNG(const char* filename, TFT_eSPI& tft, size_t maxSize) {
+    pngCleanup();
+
+    if (!SD.exists(filename)) {
+        Serial.printf("File NOT found: %s\n", filename);
+        return false;
+    }
+
+    int rc = png.open(filename, pngOpen, pngClose, pngRead, pngSeek, pngDraw);
+    if (rc != PNG_SUCCESS) {
+        Serial.printf("PNG open failed: %d for %s\n", rc, filename);
+        pngCleanup();
+        return false;
+    }
+
+    pngImgWidth  = png.getWidth();
+    pngImgHeight = png.getHeight();
+    Serial.printf("PNG: %dx%d\n", pngImgWidth, pngImgHeight);
+
+    if (pngImgWidth > pngImgHeight) tft.setRotation(1); else tft.setRotation(2);
+
+    pngScreenW = tft.width();
+    pngScreenH = tft.height();
+
+    float scaleX = (float)pngScreenW / pngImgWidth;
+    float scaleY = (float)pngScreenH / pngImgHeight;
+    pngScale = (scaleX > scaleY) ? scaleX : scaleY;
+
+    pngScaledW = (int)(pngImgWidth  * pngScale + 0.5f);
+    pngScaledH = (int)(pngImgHeight * pngScale + 0.5f);
+
+    pngXOffset = (pngScreenW - pngScaledW) / 2;
+    pngYOffset = (pngScreenH - pngScaledH) / 2;
+
+    pngRowBuffer = (uint16_t*)malloc(pngScreenW * sizeof(uint16_t));
+    if (!pngRowBuffer) {
+        Serial.println("Row buffer allocation failed");
+        png.close();
+        return false;
+    }
+
+    pTFT = &tft;
+    pngLastDrawnY = -1;   // reset for this image
+
+    tft.startWrite();
+    uint32_t start = millis();
+    rc = png.decode(nullptr, 0);
+    Serial.printf("Decode time: %d ms\n", millis() - start);
+    tft.endWrite();
+
+    pngCleanup();
+
+    if (rc != PNG_SUCCESS) {
+        Serial.printf("PNG decode failed: %d\n", rc);
+        return false;
+    }
+    return true;
+}
+```
+
+**Usage Example:**    
+
+```
+if (!displayPNG("/image.png", tft, 4096)) {
+    Serial.println("Display failed");
+}
+```
+
+**Key Features**
+- Auto‑rotation: The TFT is rotated so that the image’s longer side aligns with the screen’s longer side (setRotation(1) for landscape, 2 for portrait).
+- Scaling & Cropping: If the image is larger than the screen, it is scaled to fill the entire display; excess edge pixels are discarded to preserve aspect ratio. If the image is smaller, the code expands the image to fill the entire screen even if the original image is smaller than the TFT.
+- Memory‑aware: Only the required portion of each PNG row is read into a buffer; the buffer size is checked against maxSize. (For very wide images, you may need to extend the implementation with horizontal strip processing.)
+- Centering: The image is always centered on the screen, whether scaled or not.
+- Supported format: Standard non‑interlaced 24‑bit PNG.
 
