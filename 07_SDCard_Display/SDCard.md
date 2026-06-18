@@ -774,7 +774,7 @@ None
 
 **Sample Code**     
 
-Below is a complete implementation of displayBMP() that reads a 24‑bit BMP file from an SD card, automatically rotates the TFT to match the image orientation, and scales/crops the image to fill the screen while preserving aspect ratio. The image is centered, and only the necessary portion of the BMP is loaded into memory, respecting the maxSize parameter.    
+Below is a complete implementation of displayBMP() that reads a **24‑bit BMP** file from an SD card, automatically rotates the TFT to match the image orientation, and scales/crops the image to fill the screen while preserving aspect ratio. The image is centered, and only the necessary portion of the BMP is loaded into memory, respecting the maxSize parameter.    
 
 ```
 #include <SPI.h>
