@@ -2,11 +2,11 @@
 #include <SPI.h>
 #include <SD.h>
 #include <TJpg_Decoder.h>
-#include <PNGdec.h>
+//#include <PNGdec.h>
 
 
 // Define the SD Chip Select pin (must match wiring)
-#define VSPI_PIN   // SD card is using VSPI and TFT is using HSPI
+#define VSPI_PIN  // SD card is using VSPI and TFT is using HSPI
 
 // --- SD Card Pins ---
 #ifdef VSPI_PIN
@@ -20,10 +20,10 @@
 #endif
 
 #define SD_CS_PIN 7
-#define SD_FREQUENCY 16000000  // 16MHz or 4MHz
+#define SD_FREQUENCY 4000000  //16000000  // 16MHz or 4MHz
 
 TFT_eSPI tft = TFT_eSPI();
-PNG png;
+//PNG png;
 
 
 // 1️⃣ Define SPI class for SD
@@ -131,7 +131,7 @@ void drawBMP(const char *filename, int16_t x, int16_t y) {
   uint32_t bmpWidth, bmpHeight;
   uint16_t bmpDepth;
   uint32_t bmpImageoffset;
-
+  tft.setSwapBytes(true);
   bmpFile.seek(18);
   bmpWidth = bmpFile.read() | (bmpFile.read() << 8) | (bmpFile.read() << 16) | (bmpFile.read() << 24);
   bmpHeight = bmpFile.read() | (bmpFile.read() << 8) | (bmpFile.read() << 16) | (bmpFile.read() << 24);
@@ -177,6 +177,7 @@ void drawBMP(const char *filename, int16_t x, int16_t y) {
   delete[] rowBuffer;
   delete[] lineBuffer;
   bmpFile.close();
+  tft.setSwapBytes(false);
 }
 
 void setup() {
@@ -191,7 +192,7 @@ void setup() {
   digitalWrite(SD_CS_PIN, HIGH);
   delay(100);
 
- // 3️⃣ Initialize the TFT first. This also sets up the SPI bus
+  // 3️⃣ Initialize the TFT first. This also sets up the SPI bus
   tft.init();
   tft.setRotation(1);  // Landscape 480x320
   tft.fillScreen(TFT_BLACK);
@@ -209,10 +210,15 @@ void setup() {
 
   // 5️⃣ Now initialize the SD card on the SPI bus
   if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
-    Serial.println("SD Card Mount Failed!");
-    tft.println("SD Failed");
-    return;
+    Serial.println("SD Card Mount Failed! Try again...");
+    delay(1000);
+    if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
+      Serial.println("SD Card Mount Failed!");
+      tft.println("SD Card init failed!");
+      while (1) delay(1000);
+    }
   }
+
   Serial.println("SD Card Mounted Successfully!");
   tft.fillScreen(TFT_BLACK);
 }
