@@ -17,6 +17,39 @@ The ESP32-S3 is highly flexible. Using the standard Arduino framework, a GPIO pi
 - **INPUT_PULLUP**: The pin is configured as an input but activates an internal resistor connected to 3.3V. This prevents the pin from floating, ensuring it reads HIGH by default until an external switch pulls it down to LOW (Ground).
 - **INPUT_PULLDOWN**: The pin is configured as an input but activate an internal resistor connected to ground.
 
+## GPIO Pins for user     
+
+The ESP32-S3 chip features a total of 45 physical GPIO pins (numbered GPIO 0 to 21, and GPIO 26 to 48).  However, the actual number of "user-usable" pins drops significantly because several pins are hardwired internally to handle critical tasks like flash memory, system booting, and communication.The practical breakdown of available pins depends on how your specific module is configured:      
+
+**1. Pins You Cannot Use (Internal Memory)**     
+The ESP32-S3 chip relies on external Flash and PSRAM (Pseudo-Static RAM) encapsulated inside the module (like the standard ESP32-S3-WROOM-1).     
+- Quad SPI Flash Modules (Standard): Pins *GPIO 26 through 32 (7 pins)* are permanently wired to the internal SPI flash memory. If you try to use them, the micro-controller will instantly crash or refuse to boot.
+- Octal Flash / Octal PSRAM Modules (High Performance): If your specific board uses the high-speed Octal memory variants (like the N8R8 or N16R8), an additional 5 pins (*GPIO 33 through 37*) are consumed by the system.
+Available Pins Remaining: ~33 to 38 pins.     
+
+**2. Pins to Use With Caution (Strapping & USB)**      
+Several pins are exposed and usable, but have major caveats depending on your board's hardware design.
+- Strapping Pins (*GPIO 0, 3, 45, 46*): These control how the chip boots up.
+  - *GPIO 0*: Must be HIGH to boot normally into your code (it drops LOW to enter flashing mode). You can use it as an output, but avoid pulling it LOW with external hardware during a reset.     
+  - *GPIO 46*: Is an input-only pin and lacks internal pull-up/pull-down resistors.
+- Native USB & Debugging (*GPIO 19, 20, 43, 44*): * *GPIO 19* and *20* handle the native USB-OTG/JTAG connection. If your board programs via native USB, using these pins will break your serial connection.
+  - *GPIO 43* and *44* are typically tied to the UART0 transceiver for hardware-level flashing and logging.
+  
+**Summary Table: Truly Safe & Usable GPIOs**     
+If you want completely un-restricted, safe pins for sensors, displays, and relays without interfering with memory, booting, or standard USB flashing, you have roughly *23* to *28* "safe" pins available on a standard development board.     
+
+|GPIO Ranges	| Usability Status |	Notes / Limitations |
+| - | - | - |
+|GPIO 1 to 2, 4 to 18, 21	|🟢 100% Safe|	Excellent general-purpose pins. Many double as ADC (Analog) and Capacitive Touch pins. |
+|GPIO 38 to 42	|🟡 Generally Safe|	Fully available on Quad-SPI modules, though frequently routed to onboard peripherals (like camera data/microphones) on specialized modules.
+|GPIO 0, 3, 45	|⚠️ Conditional|	Strapping pins. Safe for outputs, but must not be forced to conflicting logic levels during a power cycle/reboot.
+|GPIO 46	|⚠️ Conditional|	Strapping pin. Input Only. No internal pull-up/pull-down resistors.
+|GPIO 19, 20	|❌ Restricted|	Reserved for native USB-OTG/JTAG functionality.
+|GPIO 43, 44	|❌ Restricted|	Typically reserved for Main Hardware Serial (UART0 TX/RX).
+|GPIO 26 to 32	|🚫 Never Use|	Dedicated entirely to SPI Flash memory.
+|GPIO 33 to 37	|🚫 Never Use (Usually)|	Dedicated to High-speed PSRAM/Flash if using an Octal module variant.
+
+
 ## Code Examples (Arduino IDE)     
 Here are practical code examples demonstrating how to use these modes.
 
