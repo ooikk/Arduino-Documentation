@@ -58,6 +58,8 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) 
 
   uint16_t clipW = endX - startX;
   uint16_t clipH = endY - startY;
+  
+  tft.setSwapBytes(false);
 
   if (clipW <= 0 || clipH <= 0) return 1;
 
@@ -285,7 +287,6 @@ void drawBMP(const char* filename, int16_t x, int16_t y) {
   delete[] rowBuffer;
   delete[] lineBuffer;
   bmpFile.close();
-  tft.setSwapBytes(false);
 }
 
 void setup() {
