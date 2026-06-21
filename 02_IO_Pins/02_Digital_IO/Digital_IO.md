@@ -114,7 +114,7 @@ attachInterruptArg(uint8_t pin, voidFuncPtrArg handler, void * arg, int mode);
 - *pin* defines the GPIO pin number.
 - *handler* set the handler function.
 - *arg* pointer to the interrupt arguments.
-- *mode* set the interrupt mode.     
+- *mode* set the interrupt mode.        
 
 
 **detachInterrupt**     
