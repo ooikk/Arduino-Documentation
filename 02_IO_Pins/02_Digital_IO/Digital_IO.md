@@ -49,6 +49,126 @@ If you want completely un-restricted, safe pins for sensors, displays, and relay
 |GPIO 26 to 32	|🚫 Never Use|	Dedicated entirely to SPI Flash memory.
 |GPIO 33 to 37	|🚫 Never Use (Usually)|	Dedicated to High-speed PSRAM/Flash if using an Octal module variant.
 
+## GPIO API     
+**pinMode**    
+The **pinMode** function is used to define the GPIO operation mode for a specific pin.
+```
+void pinMode(uint8_t pin, uint8_t mode);
+```
+*pin* defines the GPIO pin number.    
+*mode* sets operation mode.    
+
+The following modes are supported for the basic input and output:
+- *INPUT* sets the GPIO as input without pullup or pulldown (high impedance).
+- *OUTPUT* sets the GPIO as output/read mode.
+- *INPUT_PULLDOWN* sets the GPIO as input with the internal pulldown.
+- *INPUT_PULLUP* sets the GPIO as input with the internal pullup.     
+
+**Internal Pullup and Pulldown**     
+The ESP32 SoC families supports the internal pullup and pulldown throught a 45kR resistor, that can be enabled when configuring the GPIO mode as INPUT mode. If the pullup or pulldown mode is not defined, the pin will stay in the high impedance mode.     
+
+**digitalWrite**     
+The function **digitalWrite** sets the state of the selected GPIO to *HIGH* or *LOW*. This function is only used if the **pinMode** was configured as *OUTPUT*.     
+```
+void digitalWrite(uint8_t pin, uint8_t val);
+```
+- *pin* defines the GPIO pin number.
+- *val* set the output digital state to *HIGH* or *LOW*.
+
+**digitalRead**    
+To read the state of a given pin configured as INPUT, the function digitalRead is used.     
+```
+int digitalRead(uint8_t pin);
+```
+- *pin* select GPIO     
+
+This function will return the logical state of the selected pin as *HIGH* or *LOW*.     
+
+**Interrupts**     
+The GPIO peripheral on the ESP32 supports interruptions.
+
+**attachInterrupt**     
+The function **attachInterrupt** is used to attach the interrupt to the defined pin.
+```
+attachInterrupt(uint8_t pin, voidFuncPtr handler, int mode);
+```
+- *pin* defines the GPIO pin number.
+- *handler* set the handler function.
+- *mode* set the interrupt mode.     
+Here are the supported interrupt modes:
+- DISABLED
+- RISING
+- FALLING
+- CHANGE
+- ONLOW
+- ONHIGH
+- ONLOW_WE
+- ONHIGH_WE
+
+**attachInterruptArg**     
+The function **attachInterruptArg** is used to attach the interrupt to the defined pin using arguments.     
+```
+attachInterruptArg(uint8_t pin, voidFuncPtrArg handler, void * arg, int mode);
+```
+- *pin* defines the GPIO pin number.
+- *handler* set the handler function.
+- *arg* pointer to the interrupt arguments.
+- *mode* set the interrupt mode.     
+**detachInterrupt**     
+To detach the interruption from a specific pin, use the **detachInterrupt** function giving the GPIO to be detached.  
+```
+detachInterrupt(uint8_t pin);
+```
+- *pin* defines the GPIO pin number.     
+
+**Example Code: GPIO Interrupt**     
+```
+#include <Arduino.h>
+
+struct Button {
+    const uint8_t PIN;
+    uint32_t numberKeyPresses;
+    bool pressed;
+};
+
+Button button1 = {23, 0, false};
+Button button2 = {18, 0, false};
+
+void ARDUINO_ISR_ATTR isr(void* arg) {
+    Button* s = static_cast<Button*>(arg);
+    s->numberKeyPresses += 1;
+    s->pressed = true;
+}
+
+void ARDUINO_ISR_ATTR isr() {
+    button2.numberKeyPresses += 1;
+    button2.pressed = true;
+}
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(button1.PIN, INPUT_PULLUP);
+    attachInterruptArg(button1.PIN, isr, &button1, FALLING);
+    pinMode(button2.PIN, INPUT_PULLUP);
+    attachInterrupt(button2.PIN, isr, FALLING);
+}
+
+void loop() {
+    if (button1.pressed) {
+        Serial.printf("Button 1 has been pressed %lu times\n", button1.numberKeyPresses);
+        button1.pressed = false;
+    }
+    if (button2.pressed) {
+        Serial.printf("Button 2 has been pressed %lu times\n", button2.numberKeyPresses);
+        button2.pressed = false;
+    }
+    static uint32_t lastMillis = 0;
+    if (millis() - lastMillis > 10000) {
+      lastMillis = millis();
+      detachInterrupt(button1.PIN);
+    }
+}
+```
 
 ## Code Examples (Arduino IDE)     
 Here are practical code examples demonstrating how to use these modes.
