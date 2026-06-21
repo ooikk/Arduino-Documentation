@@ -22,7 +22,7 @@
 #define LIST_FILES
 #define FILE_EXT "bmp"
 
-#define SMALLER_IMAGE
+//#define SMALLER_IMAGE
 #define SCR_WIDTH 200
 #define SCR_HEIGHT 150
 #define SCR_OFFSET_X 20

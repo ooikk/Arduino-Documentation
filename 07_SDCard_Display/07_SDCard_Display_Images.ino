@@ -2,7 +2,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include <TJpg_Decoder.h>
-//#include <PNGdec.h>
+#include <PNGdec.h>
 
 
 // Define the SD Chip Select pin (must match wiring)
@@ -23,8 +23,17 @@
 #define SD_FREQUENCY 4000000  //16000000  // 16MHz or 4MHz
 
 TFT_eSPI tft = TFT_eSPI();
-//PNG png;
 
+static PNG png;  // PNG decoder instance
+static File* pngFileHandle = nullptr;
+static TFT_eSPI* pTFT = nullptr;
+static int16_t pngXOffset = 0;  // horizontal offset (for centering)
+static int16_t pngYOffset = 0;  // vertical offset
+static int16_t pngImgWidth = 0;
+static int16_t pngImgHeight = 0;
+static int16_t pngScreenW = 0;
+static int16_t pngScreenH = 0;
+static uint16_t* pngRowBuffer = nullptr;  // buffer for one clipped row
 
 // 1️⃣ Define SPI class for SD
 #ifdef VSPI_PIN
@@ -35,7 +44,7 @@ SPIClass sdSPI(HSPI);
 
 
 // --- Callback for TJpg_Decoder (JPEG) ---
-bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t *bitmap) {
+bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) {
   if (y >= 320) return 0;
   if (x >= 480) return 1;
   if (x + w <= 0) return 1;
@@ -52,7 +61,7 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t *bitmap) 
 
   if (clipW <= 0 || clipH <= 0) return 1;
 
-  uint16_t *clipBuffer = new uint16_t[clipW * clipH];
+  uint16_t* clipBuffer = new uint16_t[clipW * clipH];
   for (int16_t row = 0; row < clipH; row++) {
     memcpy(&clipBuffer[row * clipW], &bitmap[(row + (startY - y)) * w + (startX - x)], clipW * 2);
   }
@@ -62,66 +71,165 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t *bitmap) 
   return 1;
 }
 
-/*
-// --- Callback for PNGdec (PNG) ---
-int pngDraw(PNGDRAW *pDraw) {
-  int16_t x = pDraw->x;
-  int16_t y = pDraw->y;
-  uint16_t w = pDraw->iWidth;
-  uint16_t h = 1;
 
-  if (y >= 320) return 0;
-  if (x >= 480) return 1;
-  if (x + w <= 0) return 1;
-  if (y + h <= 0) return 1;
-
-  int16_t startX = max((int16_t)0, x);
-  int16_t startY = max((int16_t)0, y);
-  int16_t endX = min(480, x + w);
-  int16_t endY = min(320, y + h);
-
-  uint16_t clipW = endX - startX;
-  uint16_t clipH = endY - startY;
-
-  if (clipW <= 0 || clipH <= 0) return 1;
-
-  uint16_t *rgb565 = new uint16_t[w];
-  png.getLineAsRGB565(pDraw, rgb565, 0xFF, 0x000000);
-
-  uint16_t *clipBuffer = new uint16_t[clipW * clipH];
-  for (int16_t row = 0; row < clipH; row++) {
-    memcpy(&clipBuffer[row * clipW], &rgb565[(row + (startY - y)) * w + (startX - x)], clipW * 2);
+// ─── PNGdec callbacks ──────────────────────────────────────────
+static void* pngOpen(const char* filename, int32_t* pSize) {
+  if (pngFileHandle) {
+    pngFileHandle->close();
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
   }
-
-  tft.pushImage(startX, startY, clipW, clipH, clipBuffer);
-  delete[] rgb565;
-  delete[] clipBuffer;
-  
-  return 1; // Important: Must return 1 to continue decoding
+  pngFileHandle = new File(SD.open(filename, "r"));
+  if (!*pngFileHandle) {
+    Serial.printf("SD.open FAILED: %s\n", filename);
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+    return nullptr;
+  }
+  // Verify PNG signature
+  uint8_t sig[8];
+  if (pngFileHandle->read(sig, 8) != 8) {
+    Serial.printf("Can't read signature from %s\n", filename);
+    pngFileHandle->close();
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+    return nullptr;
+  }
+  const uint8_t pngSig[8] = { 137, 80, 78, 71, 13, 10, 26, 10 };
+  if (memcmp(sig, pngSig, 8) != 0) {
+    Serial.printf("Invalid PNG signature in %s\n", filename);
+    pngFileHandle->close();
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+    return nullptr;
+  }
+  pngFileHandle->seek(0);
+  *pSize = pngFileHandle->size();
+  return (void*)pngFileHandle;
 }
 
+static void pngClose(void* pHandle) {
+  if (pngFileHandle) {
+    pngFileHandle->close();
+    delete pngFileHandle;
+    pngFileHandle = nullptr;
+  }
+}
 
-// --- PNG File IO Callbacks ---
-void *myOpen(const char *filename, int32_t *size) {
-  File f = SD.open(filename);
-  *size = f.size();
-  return new File(f);
+static int32_t pngRead(PNGFILE* pFile, uint8_t* pBuf, int32_t iLen) {
+  if (!pngFileHandle) return -1;
+  return pngFileHandle->read(pBuf, iLen);
 }
-void myClose(void *handle) {
-  if (handle) delete (File*)handle;
+
+static int32_t pngSeek(PNGFILE* pFile, int32_t iPos) {
+  if (!pngFileHandle) return -1;
+  return pngFileHandle->seek(iPos) ? iPos : -1;
 }
-int32_t myRead(PNGFILE *handle, uint8_t *buffer, int32_t length) {
-  if (!handle) return -1;
-  return ((File*)handle)->read(buffer, length);
+
+static int pngDraw(PNGDRAW* pDraw) {
+    int srcY = pDraw->y;
+    int imgW = pDraw->iWidth;
+    int tgtY = srcY + pngYOffset;
+
+    if (tgtY < 0 || tgtY >= pngScreenH) return 1;
+
+    // Allocate line buffer (safe even for large images)
+    uint16_t* lineBuffer = (uint16_t*)malloc(imgW * sizeof(uint16_t));
+    if (!lineBuffer) return 0;
+
+    // Use little‑endian (ESP32) and black background for transparency
+    png.getLineAsRGB565(pDraw, lineBuffer, PNG_RGB565_LITTLE_ENDIAN, 0x000000);
+
+    // Horizontal clipping
+    int srcStart = 0, srcEnd = imgW;
+    int tgtStart = pngXOffset;
+    if (tgtStart < 0) {
+        srcStart = -tgtStart;
+        tgtStart = 0;
+    }
+    if (tgtStart + imgW > pngScreenW) {
+        srcEnd = pngScreenW - tgtStart;
+    }
+    pTFT->setSwapBytes(true);
+    int clipW = srcEnd - srcStart;
+    if (clipW > 0) {
+        // Copy visible slice
+        for (int i = 0; i < clipW; i++) {
+            pngRowBuffer[i] = lineBuffer[srcStart + i];
+        }
+        // Push without swapping (since we used LITTLE_ENDIAN)
+        pTFT->pushImage(tgtStart, tgtY, clipW, 1, pngRowBuffer);
+    }
+    free(lineBuffer);
+    return 1;
 }
-int32_t mySeek(PNGFILE *handle, int32_t position) {
-  if (!handle) return -1;
-  return ((File*)handle)->seek(position);
+
+bool displayPNG(const char* filename, TFT_eSPI& tft) {
+    // Clean up previous session
+    png.close();
+    if (pngFileHandle) {
+        pngFileHandle->close();
+        delete pngFileHandle;
+        pngFileHandle = nullptr;
+    }
+    if (pngRowBuffer) {
+        free(pngRowBuffer);
+        pngRowBuffer = nullptr;
+    }
+
+    if (!SD.exists(filename)) {
+        Serial.printf("File NOT found: %s\n", filename);
+        return false;
+    }
+
+    int rc = png.open(filename, pngOpen, pngClose, pngRead, pngSeek, pngDraw);
+    if (rc != PNG_SUCCESS) {
+        Serial.printf("PNG open failed: %d for %s\n", rc, filename);
+        return false;
+    }
+
+    pngImgWidth = png.getWidth();
+    pngImgHeight = png.getHeight();
+    Serial.printf("PNG: %dx%d\n", pngImgWidth, pngImgHeight);
+
+    pngScreenW = tft.width();
+    pngScreenH = tft.height();
+
+    // Center if image fits, otherwise crop from (0,0)
+    pngXOffset = (pngImgWidth < pngScreenW) ? (pngScreenW - pngImgWidth) / 2 : 0;
+    pngYOffset = (pngImgHeight < pngScreenH) ? (pngScreenH - pngImgHeight) / 2 : 0;
+
+    // Allocate a buffer large enough for one screen row (in pixels)
+    pngRowBuffer = (uint16_t*)malloc(pngScreenW * sizeof(uint16_t));
+    if (!pngRowBuffer) {
+        Serial.println("Row buffer allocation failed");
+        png.close();
+        return false;
+    }
+
+    pTFT = &tft;
+
+    tft.startWrite();
+    uint32_t start = millis();
+    rc = png.decode(nullptr, 0);
+    Serial.printf("Decode time: %d ms\n", millis() - start);
+    tft.endWrite();
+
+    // Cleanup
+    png.close();
+    if (pngFileHandle) {
+        pngFileHandle->close();
+        delete pngFileHandle;
+        pngFileHandle = nullptr;
+    }
+    free(pngRowBuffer);
+    pngRowBuffer = nullptr;
+
+    return (rc == PNG_SUCCESS);
 }
-*/
 
 // --- Custom BMP Decoder (24-bit only) ---
-void drawBMP(const char *filename, int16_t x, int16_t y) {
+void drawBMP(const char* filename, int16_t x, int16_t y) {
   File bmpFile = SD.open(filename);
   if (!bmpFile) {
     Serial.println("BMP file not found");
@@ -154,8 +262,8 @@ void drawBMP(const char *filename, int16_t x, int16_t y) {
 
   bmpFile.seek(bmpImageoffset);
   uint32_t rowSize = (bmpWidth * 3 + 3) & ~3;  // 4-byte aligned rows
-  uint8_t *rowBuffer = new uint8_t[rowSize];
-  uint16_t *lineBuffer = new uint16_t[bmpWidth];
+  uint8_t* rowBuffer = new uint8_t[rowSize];
+  uint16_t* lineBuffer = new uint16_t[bmpWidth];
 
   for (int32_t row = 0; row < bmpHeight; row++) {
     bmpFile.read(rowBuffer, rowSize);
@@ -246,12 +354,17 @@ void loop() {
         TJpgDec.setSwapBytes(true);
         TJpgDec.setCallback(tft_output);
         TJpgDec.drawSdJpg(0, 0, fullPath.c_str());
-      } else if (fileName.endsWith(".png")) {
-        /* 
-        png.open(fullPath.c_str(), myOpen, myClose, myRead, mySeek, pngDraw);
-        png.decode(NULL, 0);
-        png.close();
-        */
+      } else if (fileName.endsWith(".png") || fileName.endsWith(".PNG")) {
+        String fullPath = "/" + fileName;
+        tft.fillScreen(TFT_BLACK);
+        if (displayPNG(fullPath.c_str(), tft)) {
+          Serial.println("PNG OK");
+        } else {
+          Serial.println("PNG failed");
+        }
+        delay(2000);
+
+
       } else if (fileName.endsWith(".bmp")) {
         drawBMP(fullPath.c_str(), 0, 0);
       }

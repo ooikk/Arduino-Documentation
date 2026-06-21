@@ -532,7 +532,7 @@ bool displayPNG(const char* filename, TFT_eSPI& tft, size_t maxSize) {
 #ifdef SMALLER_IMAGE
   pngScale = (scaleX < scaleY) ? scaleX : scaleY;   // if display smaller image, make sure choose the lower scale factor to maximise image
 #else
-  pngScale = (scaleX > scaleY) ? scaleX : scaleY;   // default
+  pngScale = (scaleX < scaleY) ? scaleX : scaleY;   // default
 #endif  
 
   pngScaledW = (int)(pngImgWidth * pngScale + 0.5f);
