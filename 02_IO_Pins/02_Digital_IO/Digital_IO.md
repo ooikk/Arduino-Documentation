@@ -94,7 +94,8 @@ attachInterrupt(uint8_t pin, voidFuncPtr handler, int mode);
 ```
 - *pin* defines the GPIO pin number.
 - *handler* set the handler function.
-- *mode* set the interrupt mode.     
+- *mode* set the interrupt mode.   
+
 Here are the supported interrupt modes:
 - DISABLED
 - RISING
