@@ -55,8 +55,8 @@ The **pinMode** function is used to define the GPIO operation mode for a specifi
 ```
 void pinMode(uint8_t pin, uint8_t mode);
 ```
-*pin* defines the GPIO pin number.    
-*mode* sets operation mode.    
+- *pin* defines the GPIO pin number.
+- *mode* sets operation mode.    
 
 The following modes are supported for the basic input and output:
 - *INPUT* sets the GPIO as input without pullup or pulldown (high impedance).
