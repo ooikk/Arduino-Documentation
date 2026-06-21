@@ -32,3 +32,7 @@ if (touchVal > THESHOLD) {
 // touch detected
 }
 ```
+
+## Reference    
+
+https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/touch.html
