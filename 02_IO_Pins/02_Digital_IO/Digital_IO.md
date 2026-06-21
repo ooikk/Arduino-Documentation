@@ -115,6 +115,8 @@ attachInterruptArg(uint8_t pin, voidFuncPtrArg handler, void * arg, int mode);
 - *handler* set the handler function.
 - *arg* pointer to the interrupt arguments.
 - *mode* set the interrupt mode.     
+
+
 **detachInterrupt**     
 To detach the interruption from a specific pin, use the **detachInterrupt** function giving the GPIO to be detached.  
 ```
