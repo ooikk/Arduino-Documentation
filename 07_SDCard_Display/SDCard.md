@@ -1136,7 +1136,12 @@ The PNG function support standard non‑interlaced 24‑bit PNG, if unable to di
 
 - To convert PNG to 24-bit PNG: https://elysiatools.com/en/tools/png-to-24bit-png
 - To resize or crop image: https://imageresizer.com/crop-image
-  
+
+
+<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/957670a6-59bf-41d9-af09-d6f7dcf1be1a" />
+
+
+
 **Library**     
 
 PNGdec by Larry Bank          
