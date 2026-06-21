@@ -108,3 +108,14 @@ void loop() {
   delay(50); // Small delay to de-noise/debounce slightly
 }
 ```
+## References    
+
+https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/gpio.html
+
+https://randomnerdtutorials.com/esp32-digital-inputs-outputs-arduino/
+
+https://www.oceanlabz.in/esp32-inputs-outputs/
+
+https://deepbluembedded.com/esp32-digital-inputs-outputs-arduino/
+
+https://docs.arduino.cc/language-reference/en/functions/digital-io/pinMode/
