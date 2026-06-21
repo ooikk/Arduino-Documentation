@@ -54,7 +54,7 @@ If you want completely un-restricted, safe pins for sensors, displays, and relay
 The **pinMode** function is used to define the GPIO operation mode for a specific pin.
 ```
 void pinMode(uint8_t pin, uint8_t mode);
-```
+```    
 - *pin* defines the GPIO pin number.
 - *mode* sets operation mode.    
 
