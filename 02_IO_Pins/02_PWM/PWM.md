@@ -87,7 +87,7 @@ Because of the ESP32-S3’s internal routing flexibility, there isn't a fixed se
 ## LED Control (LEDC) API   
 
 **ledcAttach**     
-This function is used to setup LEDC pin with given frequency and resolution. LEDC channel will be selected automatically.
+This function is used to setup LEDC pin with given frequency and resolution. LEDC channel will be selected automatically.     
 
 ```
 bool ledcAttach(uint8_t pin, uint32_t freq, uint8_t resolution);
@@ -97,91 +97,71 @@ bool ledcAttach(uint8_t pin, uint32_t freq, uint8_t resolution);
 - *resolution* select resolution for LEDC channel.
   - range is 1-14 bits (1-20 bits for ESP32).
 
-This function will return *true* if configuration is successful. If *false* is returned, error occurs and LEDC channel was not configured.
+This function will return *true* if configuration is successful. If *false* is returned, error occurs and LEDC channel was not configured.     
 
-ledcAttachChannel
-This function is used to setup LEDC pin with given frequency, resolution and channel.
-
+**ledcAttachChannel**     
+This function is used to setup LEDC pin with given frequency, resolution and channel.     
+```
 bool ledcAttachChannel(uint8_t pin, uint32_t freq, uint8_t resolution, uint8_t channel);
-pin select LEDC pin.
+```
+- *pin* select LEDC pin.
+- *freq* select frequency of pwm.
+- *resolution* select resolution for LEDC channel.
+- *channel* select LEDC channel.
+  - range is 1-14 bits (1-20 bits for ESP32).
 
-freq select frequency of pwm.
+This function will return *true* if configuration is successful. If *false* is returned, error occurs and LEDC channel was not configured.     
 
-resolution select resolution for LEDC channel.
-
-channel select LEDC channel.
-
-range is 1-14 bits (1-20 bits for ESP32).
-
-This function will return true if configuration is successful. If false is returned, error occurs and LEDC channel was not configured.
-
-ledcWrite
-This function is used to set duty for the LEDC pin.
-
+**ledcWrite**     
+This function is used to set duty for the LEDC pin.     
+```
 void ledcWrite(uint8_t pin, uint32_t duty);
-pin select LEDC pin.
+```
+- *pin* select LEDC pin.
+- *duty* select duty to be set for selected LEDC pin.     
 
-duty select duty to be set for selected LEDC pin.
+This function will return *true* if setting duty is successful. If *false* is returned, error occurs and duty was not set.     
 
-This function will return true if setting duty is successful. If false is returned, error occurs and duty was not set.
-
-ledcRead
-This function is used to get configured duty for the LEDC pin.
-
+**ledcRead**     
+This function is used to get configured duty for the LEDC pin.     
+```
 uint32_t ledcRead(uint8_t pin);
-pin select LEDC pin to read the configured LEDC duty.
+```
+- *pin* select LEDC pin to read the configured LEDC duty.     
 
 This function will return duty set for selected LEDC pin.
 
-ledcReadFreq
-This function is used to get configured frequency for the LEDC channel.
-
+**ledcReadFreq**    
+This function is used to get configured frequency for the LEDC channel.     
+```
 uint32_t ledcReadFreq(uint8_t pin);
-pin select LEDC pin to read the configured frequency.
+```
+- *pin* select LEDC pin to read the configured frequency.
 
-This function will return frequency configured for selected LEDC pin.
+This function will return frequency configured for selected LEDC pin.     
 
-ledcWriteTone
-This function is used to setup the LEDC pin to 50 % PWM tone on selected frequency.
-
+**ledcWriteTone**     
+This function is used to setup the LEDC pin to 50 % PWM tone on selected frequency.      
+```
 uint32_t ledcWriteTone(uint8_t pin, uint32_t freq);
-pin select LEDC pin.
+```
+- *pin* select LEDC pin.
+- *freq* select frequency of pwm signal. If frequency is 0, duty will be set to 0.      
 
-freq select frequency of pwm signal. If frequency is 0, duty will be set to 0.
+This function will return *frequency* set for LEDC pin. If *0* is returned, error occurs and LEDC pin was not configured.      
 
-This function will return frequency set for LEDC pin. If 0 is returned, error occurs and LEDC pin was not configured.
-
-ledcWriteNote
-This function is used to setup the LEDC pin to specific note.
-
+**ledcWriteNote**     
+This function is used to setup the LEDC pin to specific note.     
+```
 uint32_t ledcWriteNote(uint8_t pin, note_t note, uint8_t octave);
-pin select LEDC pin.
+```
+- *pin* select LEDC pin.     
+- *note* select note to be set.    
 
-note select note to be set.
+|NOTE_C|NOTE_Cs|NOTE_D|NOTE_Eb|NOTE_E|NOTE_F|
+|NOTE_Fs|NOTE_G|NOTE_Gs|NOTE_A|NOTE_Bb|NOTE_B|
 
-NOTE_C
 
-NOTE_Cs
-
-NOTE_D
-
-NOTE_Eb
-
-NOTE_E
-
-NOTE_F
-
-NOTE_Fs
-
-NOTE_G
-
-NOTE_Gs
-
-NOTE_A
-
-NOTE_Bb
-
-NOTE_B
 
 octave select octave for note.
 
