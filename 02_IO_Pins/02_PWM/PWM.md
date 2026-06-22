@@ -36,6 +36,9 @@ The Motor Control Pulse Width Modulator (MCPWM) peripheral is intended for motor
 The timing and control resources inside are allocated into two major types of submodules: PWM timers and PWM operators. Each PWM timer provides timing references that can either run freely or be synced to other timers or external sources. Each PWM operator has all necessary control resources to generate waveform pairs for one PWM channel. The MCPWM peripheral also contains a dedicated capture submodule that is used in systems where accurate timing of external events is important.     
 ESP32-S3 contains two MCPWM peripherals: *MCPWM0* and *MCPWM1*.     
 
+<img width="636" height="367" alt="image" src="https://github.com/user-attachments/assets/faefd3a8-c764-4643-81b9-c2208edd6004" />
+
+
 <img width="719" height="535" alt="image" src="https://github.com/user-attachments/assets/012b99b7-568f-4b51-893c-47fa011fedb6" />
 
 An overview of the submodules’ function in Figure 36.2-1 is shown below:     
