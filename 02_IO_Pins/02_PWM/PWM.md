@@ -352,6 +352,8 @@ https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peri
 
 https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/mcpwm.html
 
+https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32s3/api-reference/peripherals/mcpwm.html
+
 https://www.oceanlabz.in/esp32-pwm/
 
 https://randomnerdtutorials.com/esp32-pwm-arduino-ide/
