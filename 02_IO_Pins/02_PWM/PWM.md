@@ -345,6 +345,10 @@ void loop() {
 
 https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/ledc.html
 
+https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/ledc.html
+
+https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/mcpwm.html
+
 https://www.oceanlabz.in/esp32-pwm/
 
 https://randomnerdtutorials.com/esp32-pwm-arduino-ide/
