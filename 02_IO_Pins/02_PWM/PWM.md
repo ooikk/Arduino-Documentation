@@ -66,7 +66,7 @@ An overview of the submodules’ function in Figure 36.2-1 is shown below:
   - The capture timer can sync with a PWM timer or external signals.
   - Interrupt on each of the three capture channels
 
-**The PWM-Capable Pins**     
+## The PWM-Capable Pins     
 The 45 physical GPIO pins available for user assignment are:     
 - GPIO 0 through 21
 - GPIO 26 through 48     
