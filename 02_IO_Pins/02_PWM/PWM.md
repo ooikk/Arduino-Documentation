@@ -80,9 +80,7 @@ While all 45 pins are technically PWM-capable, you should prioritize or avoid ce
 - GPIO 19 and 20: Default for the Native USB port.
 4. **Recommended (Priority 2)**: Pins that can be freely used without restrictions include **GPIO 1, 2, 4 through 8, 15 through 18, and 21**.
 
-
-
-## Total Number of PWM Pins for the User       
+**Total Number of PWM Pins for the User**       
 Because of the ESP32-S3’s internal routing flexibility, there isn't a fixed set of "PWM pins."
 - **Maximum Simultaneous PWM Outputs**: You can output up to 8 independent PWM signals at the same time (matching the 8 hardware channels).
 - **Which Pins Can Be Used**: You can assign those 8 channels to any of the ~23 to 28 safe general-purpose GPIO pins detailed previously (e.g., **GPIO 1–2, 4–18, 21, 35–42, 47, 48**).
