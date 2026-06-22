@@ -1,6 +1,6 @@
 // Define the GPIO pins
-const int BUTTON_PIN = 5;
-const int LED_PIN = 4;
+const int BUTTON_PIN = 17;
+const int LED_PIN = 15;
 
 void setup() {
   // Initialize serial communication for debugging
