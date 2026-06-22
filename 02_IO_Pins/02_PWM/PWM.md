@@ -16,7 +16,18 @@ While any pin can output PWM, the total number of independent PWM signals you ca
 
 - **Sigma-Delta Modulated Output (SDM)**: Provides *8 channels* of 1-bit second-order sigma-delta modulation, which can produce Pulse Density Modulation (PDM) signals.     
 
-**The PWM-Capable Pins**
+**LED PWM Controller (LEDC)**     
+The LED PWM Controller has the following features:
+• Eight independent PWM generators (i.e., eight channels)
+• Four independent timers that support division by fractions
+• Automatic duty cycle fading (i.e., gradual increase/decrease of a PWM’s duty cycle without interference
+from the processors) with interrupt generation on fade completion
+• Adjustable phase of PWM signal output
+• PWM signal output in low-power mode (Light-sleep mode)
+• Maximum PWM resolution: 14 bits
+
+
+**The PWM-Capable Pins**     
 The 45 physical GPIO pins available for user assignment are:     
 - GPIO 0 through 21
 - GPIO 26 through 48     
