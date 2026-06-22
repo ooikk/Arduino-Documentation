@@ -250,6 +250,7 @@ void analogWriteFrequency(uint8_t pin, uint32_t freq);
 - *pin* select the GPIO pin.
 - *freq* select frequency of pwm.     
 
+**Note:** In Core 3.0+, Espressif deprecated *ledcSetup* and *ledcAttachPin*. They introduced a streamlined API where channels are assigned automatically in the background. You no longer need to manage channel numbers (0–7) manually. You simply pass the physical GPIO pin directly into the configuration and write functions.    
 
 ## Code Examples (Arduino IDE)       
 In the standard ESP32 Arduino core, PWM is handled natively using the **ledc** functions.     
@@ -262,31 +263,48 @@ const int LED_PIN = 4;
 
 // PWM Properties
 const int PWM_FREQ = 5000;    // 5 kHz frequency
+/*  Old API
 const int PWM_CHANNEL = 0;   // Use PWM channel 0 (0-7 available)
+*/
 const int PWM_RES = 8;       // 8-bit resolution (0 - 255 values)
 
 void setup() {
+/* Old API
   // Configure the LEDC PWM channel with frequency and resolution
   ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RES);
   
   // Attach the physical GPIO pin to the configured PWM channel
   ledcAttachPin(LED_PIN, PWM_CHANNEL);
+*/
+
+// New API: Automatically configures an underlying channel and attaches the pin
+  ledcAttach(LED_PIN, PWM_FREQ, PWM_RES);
 }
 
 void loop() {
   // Fade inside loop (increasing brightness)
   for (int dutyCycle = 0; dutyCycle <= 255; dutyCycle++) {
+/* Old API
     ledcWrite(PWM_CHANNEL, dutyCycle);
+*/
+  // Pass the PIN directly to ledcWrite instead of the channel
+    ledcWrite(LED_PIN, dutyCycle);
     delay(5);
   }
 
   // Fade outside loop (decreasing brightness)
   for (int dutyCycle = 255; dutyCycle >= 0; dutyCycle--) {
+/* Old API
     ledcWrite(PWM_CHANNEL, dutyCycle);
+*/
+  // Pass the PIN directly to ledcWrite instead of the channel
+    ledcWrite(LED_PIN, dutyCycle);
     delay(5);
   }
 }
 ```
+This example (old code) sets up an 8-bit PWM channel on a GPIO pin to smoothly fade an LED up and down. 
+
 **2. Controlling a RC Servo Motor (Specific Frequency & Resolution)**     
 Standard hobby servos require a specific frame rate frequency of 50Hz and a pulse width that varies precisely between roughly 1ms and 2ms to position the motor shaft between 0 and 180 degrees.    
 
@@ -296,7 +314,6 @@ const int SERVO_PIN = 5;
 
 // Servo PWM Settings
 const int SERVO_FREQ = 50;     // 50Hz frequency is standard for servos
-const int SERVO_CHANNEL = 1;   // Use channel 1 to avoid conflicts
 const int SERVO_RES = 10;      // 10-bit resolution (0 - 1023)
 
 // Calculated target values for standard 50Hz / 10-bit setup
@@ -304,21 +321,22 @@ const int SERVO_MIN = 26;      // ~0.5ms pulse (0 degrees)
 const int SERVO_MAX = 123;     // ~2.4ms pulse (180 degrees)
 
 void setup() {
-  ledcSetup(SERVO_CHANNEL, SERVO_FREQ, SERVO_RES);
-  ledcAttachPin(SERVO_PIN, SERVO_CHANNEL);
+  // NEW API: Bind the pin, frequency, and resolution directly.
+  // The system assigns an internal hardware channel automatically.
+  ledcAttach(SERVO_PIN, SERVO_FREQ, SERVO_RES);
 }
 
 void loop() {
-  // Turn to 0 degrees
-  ledcWrite(SERVO_CHANNEL, SERVO_MIN);
+  // Turn to 0 degrees (Pass the physical PIN instead of a channel)
+  ledcWrite(SERVO_PIN, SERVO_MIN);
   delay(1000);
 
   // Turn to 90 degrees (midpoint)
-  ledcWrite(SERVO_CHANNEL, (SERVO_MIN + SERVO_MAX) / 2);
+  ledcWrite(SERVO_PIN, (SERVO_MIN + SERVO_MAX) / 2);
   delay(1000);
 
   // Turn to 180 degrees
-  ledcWrite(SERVO_CHANNEL, SERVO_MAX);
+  ledcWrite(SERVO_PIN, SERVO_MAX);
   delay(1000);
 }
 ```
