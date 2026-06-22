@@ -257,7 +257,7 @@ In the standard ESP32 Arduino core, PWM is handled natively using the **ledc** f
 This example sets up an 8-bit PWM channel on a GPIO pin to smoothly fade an LED up and down.     
 ```
 // Define the GPIO pin
-const int LED_PIN = 4;
+const int LED_PIN = 15;
 
 // PWM Properties
 const int PWM_FREQ = 5000;    // 5 kHz frequency
