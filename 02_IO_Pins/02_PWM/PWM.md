@@ -344,6 +344,13 @@ void loop() {
 }
 ```
 
+## MCPWM API    
+
+Refer to the following links for details of the APIs    
+- https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/mcpwm.html
+- https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32s3/api-reference/peripherals/mcpwm.html
+
+
 ## References     
 
 https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/ledc.html
