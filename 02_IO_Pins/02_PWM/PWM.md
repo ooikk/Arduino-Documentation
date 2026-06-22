@@ -66,6 +66,8 @@ An overview of the submodules’ function in Figure 36.2-1 is shown below:
   - The capture timer can sync with a PWM timer or external signals.
   - Interrupt on each of the three capture channels
 
+
+
 ## The PWM-Capable Pins for user     
 The 45 physical GPIO pins available for user assignment are:     
 - GPIO 0 through 21
@@ -339,7 +341,35 @@ void loop() {
 
 ## MCPWM API    
 
-Refer to the following links for details of the APIs    
+Each A/B pair may be clocked by any one of the three timers Timer 0, 1 and 2. The same timer may be used to clock more than one pair of PWM outputs. Each unit is also able to collect inputs such as SYNC SIGNALS, detect FAULT SIGNALS like motor overcurrent or overvoltage, as well as obtain feedback with CAPTURE SIGNALS on e.g. a rotor position.     
+Description of this API starts with configuration of MCPWM’s Timer and Generator submodules to provide the basic motor control functionality. Then it discusses more advanced submodules and functionalities of a Fault Handler, signal Capture and Carrier.
+
+**Configure**     
+The scope of configuration depends on the motor type, in particular how many outputs and inputs are required, and what will be the sequence of signals to drive the motor.
+
+In this case we will describe a simple configuration to control a brushed DC motor that is using only some of the available MCPWM’s resources. An example circuit is shown below. It includes a H-Bridge to switch polarization of a voltage applied to the motor (M) and to provide sufficient current to drive it.
+
+<img width="611" height="377" alt="image" src="https://github.com/user-attachments/assets/6bf92b0e-26a7-40cc-9984-dd0021bd1253" />
+
+Configuration covers the following steps:
+1. Selection of a MCPWM unit that will be used to drive the motor. There are two units available on-board of ESP32-S3 and enumerated in *mcpwm_unit_t*.
+2. Initialization of two GPIOs as output signals within selected unit by calling *mcpwm_gpio_init()*. The two output signals are typically used to command the motor to rotate right or left. All available signal options are listed in *mcpwm_io_signals_t*. To set more than a single pin at a time, use function *mcpwm_set_pin()* together with *mcpwm_pin_config_t*.
+3. Selection of a timer. There are three timers available within the unit. The timers are listed in *mcpwm_timer_t*.
+4. Setting of the timer frequency and initial duty within *mcpwm_config_t* structure.
+5. Setting timer resolution if necessary, by calling *mcpwm_group_set_resolution()* and *mcpwm_timer_set_resolution()*
+6. Calling of *mcpwm_init()* with the above parameters to make the configuration effective.
+
+**Operate**   
+To operate a motor connected to the MCPWM unit, e.g. turn it left or right, or vary the speed, we should apply some control signals to the unit’s outputs. The outputs are organized into three pairs. Within a pair they are labeled “A” and “B” and each driven by a submodule called an “Generator”. To provide a PWM signal, the Operator itself, which contains two Generator, should be clocked by one of three available Timers. To make the API simpler, each Timer is automatically associated by the API to drive an Operator of the same index, e.g. Timer 0 is associated with Operator 0.
+
+There are the following basic ways to control the outputs:     
+- We can drive particular signal steady high or steady low with function *mcpwm_set_signal_high()* or *mcpwm_set_signal_low()*. This will make the motor to turn with a maximum speed or stop. Depending on selected output A or B the motor will rotate either right or left.
+- Another option is to drive the outputs with the PWM signal by calling *mcpwm_start()* or *mcpwm_stop()*. The motor speed will be proportional to the PWM duty.
+- To vary PWM’s duty call *mcpwm_set_duty()* and provide the duty value in %. Optionally, you may call *mcpwm_set_duty_in_us()*, if you prefer to set the duty in microseconds. Checking of currently set value is possible by calling *mcpwm_get_duty()*. Phase of the PWM signal may be altered by calling *mcpwm_set_duty_type()*. The duty is set individually for each A and B output using *mcpwm_generator_t* in specific function calls. The duty value refers either to high or low output signal duration. This is configured when calling *mcpwm_init()*, as discussed in section Configure, and selecting one of options from *mcpwm_duty_type_t*.
+
+**Continue the following topics: Adjust, Synchronize, Capture, Fault Handler, Carrier, Interrupts, Resolution**
+
+Refer to the following links for more details of the APIs    
 - https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32s3/api-reference/peripherals/mcpwm.html
 - https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/peripherals/mcpwm.html
 
