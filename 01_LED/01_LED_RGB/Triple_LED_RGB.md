@@ -17,6 +17,13 @@ A triple output LED RGB contains three individual light-emitting diodes (Red, Gr
 - Luminosity (RGB): (800, 4000, 900)mcd
 
 **Diagram**     
-<img width="596" height="661" alt="image" src="https://github.com/user-attachments/assets/5f31ee73-85c5-424b-ac84-f4cfc34aac74" />
 
 <img width="1275" height="806" alt="image" src="https://github.com/user-attachments/assets/83f687e2-2cc9-4bc2-aa69-88d4afd8c6de" />
+
+## Reference      
+
+https://robot-r-us.com.sg/p/5mm-triple-output-led-rgb-common-cathode-5pcs
+
+https://learn.sparkfun.com/tutorials/light-emitting-diodes-leds
+
+https://wiring.org.co/learning/basics/rgbled.html
