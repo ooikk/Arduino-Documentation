@@ -102,3 +102,5 @@ Addressable LEDs can be quite bright and draw significant current.
 ## References    
 
 https://www.luisllamas.es/arduino-led-rgb-ws2812b/
+
+https://www.instructables.com/How-to-Use-an-RGB-LED/
