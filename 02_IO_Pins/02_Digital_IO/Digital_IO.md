@@ -231,6 +231,11 @@ void loop() {
   delay(50); // Small delay to de-noise/debounce slightly
 }
 ```
+**Wiring Diagram**     
+
+<img width="581" height="485" alt="image" src="https://github.com/user-attachments/assets/e4e82679-cb7e-4c16-a542-79cbb03fddc9" />
+
+
 ## References    
 
 https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/gpio.html
