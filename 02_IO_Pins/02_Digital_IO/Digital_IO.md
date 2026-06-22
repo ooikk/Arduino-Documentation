@@ -181,18 +181,22 @@ This example configures a pin as an output to repeatedly turn an LED on and off.
 
 ```
 // Define the GPIO pin connected to the LED
-const int LED_PIN = 4; 
+const int LED_PIN_R = 15; 
+const int LED_PIN_B = 16; 
 
 void setup() {
   // Configure the pin as an OUTPUT
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(LED_PIN_R, OUTPUT);
+  pinMode(LED_PIN_B, OUTPUT);
 }
 
 void loop() {
-  digitalWrite(LED_PIN, HIGH); // Turn the LED on (Output 3.3V)
+  digitalWrite(LED_PIN_R, HIGH); // Turn the LED on (Output 3.3V)
+  digitalWrite(LED_PIN_B, LOW); // Turn the LED on (Output 3.3V)
   delay(1000);                 // Wait for 1 second
   
-  digitalWrite(LED_PIN, LOW);  // Turn the LED off (Output 0V)
+  digitalWrite(LED_PIN_R, LOW);  // Turn the LED off (Output 0V)
+  digitalWrite(LED_PIN_B, HIGH); // Turn the LED on (Output 3.3V)  
   delay(1000);                 // Wait for 1 second
 }
 ```
@@ -202,8 +206,8 @@ Using INPUT_PULLUP is the standard way to read a simple button. When the button 
 
 ```
 // Define the GPIO pins
-const int BUTTON_PIN = 5;
-const int LED_PIN = 4;
+const int BUTTON_PIN = 15;
+const int LED_PIN = 17;
 
 void setup() {
   // Initialize serial communication for debugging
