@@ -15,7 +15,7 @@ While any pin can output PWM, the total number of independent PWM signals you ca
   - MCPWM1 (Unit 1): pwm1_out0a, pwm1_out0b, pwm1_out1a, pwm1_out1b, pwm1_out2a, and pwm1_out2b
 - **Sigma-Delta Modulated Output (SDM)**: Provides *8 channels* of 1-bit second-order sigma-delta modulation, which can produce Pulse Density Modulation (PDM) signals.     
 
-**LED PWM Controller (LEDC)**     
+## LED PWM Controller (LEDC)     
 The LED PWM Controller is a peripheral designed to generate PWM signals for LED control. It has specialized features such as automatic duty cycle fading. However, the LED PWM Controller can also be used to generate PWM signals for other purposes.    
 
 The LED PWM Controller has the following features:     
@@ -31,7 +31,7 @@ The LED PWM Controller has the following features:
 LED PWM Architecture:      
 <img width="319" height="311" alt="image" src="https://github.com/user-attachments/assets/bd677d8f-d366-4d79-b79a-e7cac52484cb" />
 
-**Motor Control PWM (MCPWM)**     
+## Motor Control PWM (MCPWM)     
 The Motor Control Pulse Width Modulator (MCPWM) peripheral is intended for motor and power control. It provides six PWM outputs that can be set up to operate in several topologies. One common topology uses a pair of PWM outputs driving an H-bridge to control motor rotation speed and rotation direction.     
 The timing and control resources inside are allocated into two major types of submodules: PWM timers and PWM operators. Each PWM timer provides timing references that can either run freely or be synced to other timers or external sources. Each PWM operator has all necessary control resources to generate waveform pairs for one PWM channel. The MCPWM peripheral also contains a dedicated capture submodule that is used in systems where accurate timing of external events is important.     
 ESP32-S3 contains two MCPWM peripherals: *MCPWM0* and *MCPWM1*.     
@@ -79,12 +79,208 @@ While all 45 pins are technically PWM-capable, you should prioritize or avoid ce
 
 
 
-
-
 ## Total Number of PWM Pins for the User       
 Because of the ESP32-S3’s internal routing flexibility, there isn't a fixed set of "PWM pins."
 - **Maximum Simultaneous PWM Outputs**: You can output up to 8 independent PWM signals at the same time (matching the 8 hardware channels).
 - **Which Pins Can Be Used**: You can assign those 8 channels to any of the ~23 to 28 safe general-purpose GPIO pins detailed previously (e.g., **GPIO 1–2, 4–18, 21, 35–42, 47, 48**).
+
+## LED Control (LEDC) API   
+
+**ledcAttach**     
+This function is used to setup LEDC pin with given frequency and resolution. LEDC channel will be selected automatically.
+
+```
+bool ledcAttach(uint8_t pin, uint32_t freq, uint8_t resolution);
+```
+- *pin* select LEDC pin.
+- *freq* select frequency of pwm.
+- *resolution* select resolution for LEDC channel.
+  - range is 1-14 bits (1-20 bits for ESP32).
+
+This function will return *true* if configuration is successful. If *false* is returned, error occurs and LEDC channel was not configured.
+
+ledcAttachChannel
+This function is used to setup LEDC pin with given frequency, resolution and channel.
+
+bool ledcAttachChannel(uint8_t pin, uint32_t freq, uint8_t resolution, uint8_t channel);
+pin select LEDC pin.
+
+freq select frequency of pwm.
+
+resolution select resolution for LEDC channel.
+
+channel select LEDC channel.
+
+range is 1-14 bits (1-20 bits for ESP32).
+
+This function will return true if configuration is successful. If false is returned, error occurs and LEDC channel was not configured.
+
+ledcWrite
+This function is used to set duty for the LEDC pin.
+
+void ledcWrite(uint8_t pin, uint32_t duty);
+pin select LEDC pin.
+
+duty select duty to be set for selected LEDC pin.
+
+This function will return true if setting duty is successful. If false is returned, error occurs and duty was not set.
+
+ledcRead
+This function is used to get configured duty for the LEDC pin.
+
+uint32_t ledcRead(uint8_t pin);
+pin select LEDC pin to read the configured LEDC duty.
+
+This function will return duty set for selected LEDC pin.
+
+ledcReadFreq
+This function is used to get configured frequency for the LEDC channel.
+
+uint32_t ledcReadFreq(uint8_t pin);
+pin select LEDC pin to read the configured frequency.
+
+This function will return frequency configured for selected LEDC pin.
+
+ledcWriteTone
+This function is used to setup the LEDC pin to 50 % PWM tone on selected frequency.
+
+uint32_t ledcWriteTone(uint8_t pin, uint32_t freq);
+pin select LEDC pin.
+
+freq select frequency of pwm signal. If frequency is 0, duty will be set to 0.
+
+This function will return frequency set for LEDC pin. If 0 is returned, error occurs and LEDC pin was not configured.
+
+ledcWriteNote
+This function is used to setup the LEDC pin to specific note.
+
+uint32_t ledcWriteNote(uint8_t pin, note_t note, uint8_t octave);
+pin select LEDC pin.
+
+note select note to be set.
+
+NOTE_C
+
+NOTE_Cs
+
+NOTE_D
+
+NOTE_Eb
+
+NOTE_E
+
+NOTE_F
+
+NOTE_Fs
+
+NOTE_G
+
+NOTE_Gs
+
+NOTE_A
+
+NOTE_Bb
+
+NOTE_B
+
+octave select octave for note.
+
+This function will return frequency configured for the LEDC pin according to note and octave inputs. If 0 is returned, error occurs and the LEDC channel was not configured.
+
+ledcDetach
+This function is used to detach the pin from LEDC.
+
+bool ledcDetach(uint8_t pin);
+pin select LEDC pin.
+
+This function returns true if detaching was successful. If false is returned, an error occurred and the pin was not detached.
+
+ledcChangeFrequency
+This function is used to set frequency for the LEDC pin.
+
+uint32_t ledcChangeFrequency(uint8_t pin, uint32_t freq, uint8_t resolution);
+pin select LEDC pin.
+
+freq select frequency of pwm.
+
+resolution select resolution for LEDC channel.
+
+range is 1-14 bits (1-20 bits for ESP32).
+
+This function will return frequency configured for the LEDC channel. If 0 is returned, error occurs and the LEDC channel frequency was not set.
+
+ledcFade
+This function is used to setup and start fade for the LEDC pin.
+
+bool ledcFade(uint8_t pin, uint32_t start_duty, uint32_t target_duty, int max_fade_time_ms);
+pin select LEDC pin.
+
+start_duty select starting duty of fade.
+
+target_duty select target duty of fade.
+
+max_fade_time_ms select maximum time for fade.
+
+This function will return true if configuration is successful. If false is returned, error occurs and LEDC fade was not configured / started.
+
+ledcFadeWithInterrupt
+This function is used to setup and start fade for the LEDC pin with interrupt.
+
+bool ledcFadeWithInterrupt(uint8_t pin, uint32_t start_duty, uint32_t target_duty, int max_fade_time_ms, void (*userFunc)(void));
+pin select LEDC pin.
+
+start_duty select starting duty of fade.
+
+target_duty select target duty of fade.
+
+max_fade_time_ms select maximum time for fade.
+
+userFunc funtion to be called when interrupt is triggered.
+
+This function will return true if configuration is successful and fade start. If false is returned, error occurs and LEDC fade was not configured / started.
+
+ledcFadeWithInterruptArg
+This function is used to setup and start fade for the LEDC pin with interrupt using arguments.
+
+bool ledcFadeWithInterruptArg(uint8_t pin, uint32_t start_duty, uint32_t target_duty, int max_fade_time_ms, void (*userFunc)(void*), void * arg);
+pin select LEDC pin.
+
+start_duty select starting duty of fade.
+
+target_duty select target duty of fade.
+
+max_fade_time_ms select maximum time for fade.
+
+userFunc funtion to be called when interrupt is triggered.
+
+arg pointer to the interrupt arguments.
+
+This function will return true if configuration is successful and fade start. If false is returned, error occurs and LEDC fade was not configured / started.
+
+analogWrite
+This function is used to write an analog value (PWM wave) on the pin. It is compatible with Arduinos analogWrite function.
+
+void analogWrite(uint8_t pin, int value);
+pin select the GPIO pin.
+
+value select the duty cycle of pwm. * range is from 0 (always off) to 255 (always on).
+
+analogWriteResolution
+This function is used to set resolution for selected analogWrite pin.
+
+void analogWriteResolution(uint8_t pin, uint8_t resolution);
+pin select the GPIO pin.
+
+resolution select resolution for analog channel.
+
+analogWriteFrequency
+This function is used to set frequency for selected analogWrite pin.
+
+void analogWriteFrequency(uint8_t pin, uint32_t freq);
+pin select the GPIO pin.
+
+freq select frequency of pwm.
+
 
 ## Code Examples (Arduino IDE)       
 In the standard ESP32 Arduino core, PWM is handled natively using the **ledc** functions.     
