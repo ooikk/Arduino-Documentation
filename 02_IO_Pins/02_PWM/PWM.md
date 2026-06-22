@@ -10,7 +10,10 @@ On the ESP32-S3, there are 45 physical GPIO pins that can be used for PWM output
 **Available PWM Resources**     
 While any pin can output PWM, the total number of independent PWM signals you can generate simultaneously is determined by the internal controllers:
 - **LED PWM Controller (LEDC)**: Provides up to *8 independent channels*. It supports gradual duty cycle fading and resolutions up to 14 bits.
-- **Motor Control PWM (MCPWM)**: There are *two MCPWM units*, each with 6 output signals, providing a total of *12 outputs* (named pwm0_out0a/b through pwm1_out2b).
+- **Motor Control PWM (MCPWM)**: There are *two MCPWM units*, each with 6 output signals, providing a total of *12 outputs*.
+  - Unit 0: pwm0_out0a through pwm0_out2b correspond to indices 160 through 165
+  - Unit 1: pwm1_out0a through pwm1_out2b correspond to indices 166 through 171
+
 - **Sigma-Delta Modulated Output (SDM)**: Provides *8 channels* of 1-bit second-order sigma-delta modulation, which can produce Pulse Density Modulation (PDM) signals.     
 
 **The PWM-Capable Pins**
