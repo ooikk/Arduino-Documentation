@@ -5,6 +5,33 @@
 
 By varying the **Duty Cycle** (the percentage of time the signal remains HIGH during one full cycle), you control the average power delivered to a component. This allows you to dim LEDs, control the speed of DC motors, or drive servo motors.
 
+On the ESP32-S3, there are 45 physical GPIO pins that can be used for PWM output. Because the chip utilizes a flexible GPIO Matrix, any of the internal PWM peripheral signals can be routed to any of these 45 programmable GPIOs.
+
+**Available PWM Resources**     
+While any pin can output PWM, the total number of independent PWM signals you can generate simultaneously is determined by the internal controllers:
+- **LED PWM Controller (LEDC)**: Provides up to *8 independent channels*. It supports gradual duty cycle fading and resolutions up to 14 bits.
+- **Motor Control PWM (MCPWM)**: There are *two MCPWM units*, each with 6 output signals, providing a total of *12 outputs* (named pwm0_out0a/b through pwm1_out2b).
+- **Sigma-Delta Modulated Output (SDM)**: Provides *8 channels* of 1-bit second-order sigma-delta modulation, which can produce Pulse Density Modulation (PDM) signals.     
+
+**The PWM-Capable Pins**
+The 45 physical GPIO pins available for user assignment are:     
+- GPIO 0 through 21
+- GPIO 26 through 48     
+
+**Important Pin Restrictions**     
+While all 45 pins are technically PWM-capable, you should prioritize or avoid certain pins based on their primary hardware functions:
+1. **Avoid (Internal Memory)**: GPIO 26 through 32 are allocated for communication with the in-package SPI flash/PSRAM. Using these for PWM can cause system failure or data corruption.
+2. **Use with Caution (Strapping Pins)**: GPIO 0, 3, 45, and 46 are strapping pins used to determine boot modes and voltage levels at power-up. Connecting external PWM loads to these pins might prevent the chip from starting correctly.
+3. **Use with Caution (Debug/USB)**:
+- GPIO 43 and 44: Default for UART0 (Serial Debugging).
+- GPIO 19 and 20: Default for the Native USB port.
+4. **Recommended (Priority 2)**: Pins that can be freely used without restrictions include GPIO 1, 2, 4 through 8, 15 through 18, and 21.
+
+**How to Route PWM Signals**
+To route a PWM signal to a specific pin, you must configure the GPIO Matrix for that pin to select the desired peripheral signal index (e.g., LEDC output indices range from 73 to 80) and set the pin's IO MUX to "Function 1" (GPIO function)
+
+
+
 **How Many PWM Channels & Modes Can Be Configured?**
 Unlike older microcontrollers (like the Arduino Uno) which have specific hardware pins dedicated to PWM, the ESP32-S3 features an internal peripheral called the **LED Control (LEDC)** PWM controller.
 
