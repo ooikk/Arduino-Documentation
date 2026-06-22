@@ -9,6 +9,7 @@ Below is the general setup to initialize both SD card and ILI9488 TFT Display at
 **Wiring Diagram - separate SPI**    
 
 <img width="1207" height="679" alt="image" src="https://github.com/user-attachments/assets/42b4d4a6-25fb-4d4c-b98c-553a4afc759b" />
+<img width="1283" height="683" alt="image" src="https://github.com/user-attachments/assets/9295b346-a905-4f83-9c77-06c00559bef4" />
 
 Here is the general code setup:    
 
