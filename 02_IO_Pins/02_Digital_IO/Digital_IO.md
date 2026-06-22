@@ -233,7 +233,8 @@ void loop() {
 ```
 **Wiring Diagram**     
 
-<img width="581" height="485" alt="image" src="https://github.com/user-attachments/assets/e4e82679-cb7e-4c16-a542-79cbb03fddc9" />
+<img width="562" height="486" alt="image" src="https://github.com/user-attachments/assets/36c7d625-592f-488f-8238-431cbe2307f8" />
+
 
 
 ## References    
