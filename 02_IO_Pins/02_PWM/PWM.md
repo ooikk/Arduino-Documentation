@@ -28,7 +28,7 @@ While all 45 pins are technically PWM-capable, you should prioritize or avoid ce
 3. **Use with Caution (Debug/USB)**:
 - GPIO 43 and 44: Default for UART0 (Serial Debugging).
 - GPIO 19 and 20: Default for the Native USB port.
-4. **Recommended (Priority 2)**: Pins that can be freely used without restrictions include GPIO 1, 2, 4 through 8, 15 through 18, and 21.
+4. **Recommended (Priority 2)**: Pins that can be freely used without restrictions include **GPIO 1, 2, 4 through 8, 15 through 18, and 21**.
 
 **How to Route PWM Signals**
 To route a PWM signal to a specific pin, you must configure the GPIO Matrix for that pin to select the desired peripheral signal index (e.g., LEDC output indices range from 73 to 80) and set the pin's IO MUX to "Function 1" (GPIO function)
@@ -49,7 +49,7 @@ Through an internal routing matrix, any of the user-accessible digital GPIO pins
 ## Total Number of PWM Pins for the User       
 Because of the ESP32-S3’s internal routing flexibility, there isn't a fixed set of "PWM pins."
 - **Maximum Simultaneous PWM Outputs**: You can output up to 8 independent PWM signals at the same time (matching the 8 hardware channels).
-- **Which Pins Can Be Used**: You can assign those 8 channels to any of the ~23 to 28 safe general-purpose GPIO pins detailed previously (e.g., GPIO 1–2, 4–18, 21, 38–42).
+- **Which Pins Can Be Used**: You can assign those 8 channels to any of the ~23 to 28 safe general-purpose GPIO pins detailed previously (e.g., **GPIO 1–2, 4–18, 21, 35–42, 47, 48**).
 
 ## Code Examples (Arduino IDE)       
 In the standard ESP32 Arduino core, PWM is handled natively using the **ledc** functions.     
