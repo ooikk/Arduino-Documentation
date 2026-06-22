@@ -105,7 +105,8 @@ User_Setup.h is configured to use HSPI (USE_HSPI_PORT) or VSPI (USE_FSPI_PORT). 
 **Wiring Diagram - share SPI**    
 
 <img width="1169" height="694" alt="image" src="https://github.com/user-attachments/assets/fe8bbd4c-8ce9-48c2-a5cc-2865fa349e14" />
-<img width="1125" height="654" alt="image" src="https://github.com/user-attachments/assets/969a3874-0a96-4232-a89f-90e6a4a414fc" />
+<img width="1236" height="706" alt="image" src="https://github.com/user-attachments/assets/57c1138f-699c-4697-a05b-56a6171a618c" />
+
 
 
 Here is the general code example:    
