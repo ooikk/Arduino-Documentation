@@ -159,6 +159,7 @@ uint32_t ledcWriteNote(uint8_t pin, note_t note, uint8_t octave);
 - *note* select note to be set.    
 
 |NOTE_C|NOTE_Cs|NOTE_D|NOTE_Eb|NOTE_E|NOTE_F|
+|-|-|-|-|-|-|
 |NOTE_Fs|NOTE_G|NOTE_Gs|NOTE_A|NOTE_Bb|NOTE_B|
 
 
