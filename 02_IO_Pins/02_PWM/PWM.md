@@ -18,13 +18,15 @@ While any pin can output PWM, the total number of independent PWM signals you ca
 **LED PWM Controller (LEDC)**     
 The LED PWM Controller is a peripheral designed to generate PWM signals for LED control. It has specialized features such as automatic duty cycle fading. However, the LED PWM Controller can also be used to generate PWM signals for other purposes.    
 
-The LED PWM Controller has the following features:
-- Eight independent PWM generators (i.e., eight channels)
-- Four independent timers that support division by fractions
-- Automatic duty cycle fading (i.e., gradual increase/decrease of a PWM’s duty cycle without interference from the processors) with interrupt generation on fade completion
-- Adjustable phase of PWM signal output
-- PWM signal output in low-power mode (Light-sleep mode)
-- Maximum PWM resolution: 14 bits
+The LED PWM Controller has the following features:     
+- **Channels**: Eight independent PWM generators (i.e., eight channels)
+- **Timers**: Four independent timers that support division by fractions. Multiple channels can share the same timer if they need to operate at identical frequencies, but they can still maintain different duty cycles.
+- **Automatic Fading**: Automatic duty cycle fading (i.e., gradual increase/decrease of a PWM’s duty cycle without interference from the processors) with interrupt generation on fade completion
+- **Phase**: Adjustable phase of PWM signal output
+- **Low Power Mode**: PWM signal output in low-power mode (Light-sleep mode)
+- **Speed Mode**: It operates entirely in High-Speed Mode (the low-speed mode from older ESP32 chips was removed in the S3).
+- **Resolution**: The resolution is highly configurable, ranging from 1-bit to 14-bit (and up to 20-bit depending on the frequency). For instance, an 8-bit resolution gives you 256 distinct steps of power control (0 to 255), while a 10-bit resolution gives you 1024 steps (0 to 1023).
+
 
 LED PWM Architecture:      
 <img width="319" height="311" alt="image" src="https://github.com/user-attachments/assets/bd677d8f-d366-4d79-b79a-e7cac52484cb" />
@@ -75,21 +77,9 @@ While all 45 pins are technically PWM-capable, you should prioritize or avoid ce
 - GPIO 19 and 20: Default for the Native USB port.
 4. **Recommended (Priority 2)**: Pins that can be freely used without restrictions include **GPIO 1, 2, 4 through 8, 15 through 18, and 21**.
 
-**How to Route PWM Signals**
-To route a PWM signal to a specific pin, you must configure the GPIO Matrix for that pin to select the desired peripheral signal index (e.g., LEDC output indices range from 73 to 80) and set the pin's IO MUX to "Function 1" (GPIO function)
 
 
 
-**How Many PWM Channels & Modes Can Be Configured?**
-Unlike older microcontrollers (like the Arduino Uno) which have specific hardware pins dedicated to PWM, the ESP32-S3 features an internal peripheral called the **LED Control (LEDC)** PWM controller.
-
-Through an internal routing matrix, any of the user-accessible digital GPIO pins can be configured to output a PWM signal.
-
-**The System Structure:**
-- **Channels**: The ESP32-S3 provides 8 independent PWM channels.
-- **Speed Mode**: It operates entirely in High-Speed Mode (the low-speed mode from older ESP32 chips was removed in the S3).
-- **Timers**: There are 4 independent timers. Multiple channels can share the same timer if they need to operate at identical frequencies, but they can still maintain different duty cycles.
-- **Resolution**: The resolution is highly configurable, ranging from 1-bit to 14-bit (and up to 20-bit depending on the frequency). For instance, an 8-bit resolution gives you 256 distinct steps of power control (0 to 255), while a 10-bit resolution gives you 1024 steps (0 to 1023).     
 
 ## Total Number of PWM Pins for the User       
 Because of the ESP32-S3’s internal routing flexibility, there isn't a fixed set of "PWM pins."
