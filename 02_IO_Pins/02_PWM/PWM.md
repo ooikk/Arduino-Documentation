@@ -66,24 +66,19 @@ An overview of the submodules’ function in Figure 36.2-1 is shown below:
   - The capture timer can sync with a PWM timer or external signals.
   - Interrupt on each of the three capture channels
 
-## The PWM-Capable Pins     
+## The PWM-Capable Pins for user     
 The 45 physical GPIO pins available for user assignment are:     
 - GPIO 0 through 21
 - GPIO 26 through 48     
 
 **Important Pin Restrictions**     
-While all 45 pins are technically PWM-capable, you should prioritize or avoid certain pins based on their primary hardware functions:
+While all 45 pins are technically PWM-capable, and there isn't a fixed set of "PWM pins". You can output up to 8 independent PWM signals simultaneously at the same time (matching the 8 hardware channels). You should prioritize or avoid certain pins based on their primary hardware functions:
 1. **Avoid (Internal Memory)**: GPIO 26 through 32 are allocated for communication with the in-package SPI flash/PSRAM. Using these for PWM can cause system failure or data corruption.
 2. **Use with Caution (Strapping Pins)**: GPIO 0, 3, 45, and 46 are strapping pins used to determine boot modes and voltage levels at power-up. Connecting external PWM loads to these pins might prevent the chip from starting correctly.
 3. **Use with Caution (Debug/USB)**:
 - GPIO 43 and 44: Default for UART0 (Serial Debugging).
 - GPIO 19 and 20: Default for the Native USB port.
-4. **Recommended (Priority 2)**: Pins that can be freely used without restrictions include **GPIO 1, 2, 4 through 8, 15 through 18, and 21**.
-
-**Total Number of PWM Pins for the User**       
-Because of the ESP32-S3’s internal routing flexibility, there isn't a fixed set of "PWM pins."
-- **Maximum Simultaneous PWM Outputs**: You can output up to 8 independent PWM signals at the same time (matching the 8 hardware channels).
-- **Which Pins Can Be Used**: You can assign those 8 channels to any of the ~23 to 28 safe general-purpose GPIO pins detailed previously (e.g., **GPIO 1–2, 4–18, 21, 35–42, 47, 48**).
+4. **Recommended**: Pins that can be freely used without restrictions include **GPIO 1–2, 4–18, 21, 35–42, 47, 48**.
 
 ## LED Control (LEDC) API   
 
