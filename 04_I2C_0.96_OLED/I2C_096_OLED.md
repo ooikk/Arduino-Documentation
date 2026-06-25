@@ -40,10 +40,10 @@ Insatll libraries by Adafruit:
   https://github.com/adafruit/Adafruit_SSD1306
 
 2. Adafruit GFX Library
-   https://github.com/adafruit/Adafruit-GFX-Library
+  https://github.com/adafruit/Adafruit-GFX-Library
 
 4. Adafruit BusIO
-   https://github.com/adafruit/Adafruit_BusIO
+  https://github.com/adafruit/Adafruit_BusIO
 
 
 
