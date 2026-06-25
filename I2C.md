@@ -419,3 +419,5 @@ https://www.circuitbasics.com/basics-of-the-i2c-communication-protocol/
 https://www.oceanlabz.in/lesson-07-i2c/
 
 https://www.luisllamas.es/en/esp32-i2c/
+
+https://deepbluembedded.com/esp32-i2c-tutorial-change-pins-i2c-scanner-arduino/
