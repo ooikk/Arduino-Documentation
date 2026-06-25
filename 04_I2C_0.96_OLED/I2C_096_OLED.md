@@ -92,3 +92,5 @@ https://www.oceanlabz.in/project-3-oled-display-with-esp32-displaying-sensor-dat
 
 https://www.luisllamas.es/conectar-arduino-a-una-pantalla-oled-de-0-96/
 
+https://randomnerdtutorials.com/esp32-ssd1306-oled-display-arduino-ide/
+
