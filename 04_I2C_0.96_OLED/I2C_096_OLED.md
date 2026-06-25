@@ -18,9 +18,10 @@ These types of OLED screens are interesting for projects where we can take advan
 
 <img width="333" height="334" alt="image" src="https://github.com/user-attachments/assets/e0b72553-91ba-464b-aea8-919d0d8056f3" />
 <img width="333" height="334" alt="image" src="https://github.com/user-attachments/assets/070bcd75-011a-4365-b36e-caba64e9435b" />
+<img width="333" height="334" alt="image" src="https://github.com/user-attachments/assets/56e074fd-2923-4a98-989f-c63f20203461" />
 
 
-"389" height="380"     
+
 
 ## Connect to OLED     
 
