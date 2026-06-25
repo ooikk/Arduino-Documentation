@@ -38,10 +38,8 @@ SCL              GPIO 9    // default I2C
 Insatll libraries by Adafruit:
 1. Adafruit SSD1306     
   https://github.com/adafruit/Adafruit_SSD1306
-
 2. Adafruit GFX Library       
   https://github.com/adafruit/Adafruit-GFX-Library
-
 4. Adafruit BusIO      
   https://github.com/adafruit/Adafruit_BusIO
 
