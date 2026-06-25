@@ -19,6 +19,33 @@ These types of OLED screens are interesting for projects where we can take advan
 <img width="389" height="380" alt="image" src="https://github.com/user-attachments/assets/e0b72553-91ba-464b-aea8-919d0d8056f3" />
 
 
+## Connect to OLED     
+
+```
+0.96 OLED        ESP32 S3
+GND              GND
+VCC              3.3V
+SDA              GPIO 8    // default I2C
+SCL              GPIO 9    // default I2C
+```
+
+## Wiring Diagram     
+
+<img width="580" height="587" alt="image" src="https://github.com/user-attachments/assets/9dc00342-cde8-47ed-a046-8a25d050572c" />
+
+## Library for OLED     
+
+Insatll libraries by Adafruit:
+1. Adafruit SSD1306     
+  https://github.com/adafruit/Adafruit_SSD1306
+
+2. Adafruit GFX Library
+  https://github.com/adafruit/Adafruit-GFX-Library
+
+3. Adafruit BusIO
+  https://github.com/adafruit/Adafruit_BusIO
+
+
 
 
 ## Reference
