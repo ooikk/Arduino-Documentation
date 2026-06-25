@@ -84,6 +84,11 @@ void setup() {
 void loop() {
 }
 ```
+## Display Bitmap Images in the OLED      
+
+Use this tool to convert image to 565RGB array, decode as 1-bit line art.     
+
+<img width="719" height="617" alt="image" src="https://github.com/user-attachments/assets/ee1aaeea-206d-403c-9494-dceedff6c356" />
 
 
 ## Reference
