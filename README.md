@@ -7,9 +7,10 @@ Store all link related to Arduino
    https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
 3. Go to the “Board manager” tab, on the left-hand side of the screen. Type “esp32” in the search bar.
    Install **esp32 (by Espressif Systems)**
-4. Go to **Tools > Board** and select **ESP32S3 Dev Module**
-5. Connect the ESP32S3 Dev Module to your computer using a USB cable. Then, go to **Tools > Port** and select the COM port that the ESP32S3 Dev Module is connected to.
-6. If you have trouble to connect to computer, identify the driver for your ESP32S3:<br>
+   https://github.com/espressif/arduino-esp32   
+5. Go to **Tools > Board** and select **ESP32S3 Dev Module**
+6. Connect the ESP32S3 Dev Module to your computer using a USB cable. Then, go to **Tools > Port** and select the COM port that the ESP32S3 Dev Module is connected to.
+7. If you have trouble to connect to computer, identify the driver for your ESP32S3:<br>
    (a) CH343P Driver (Used by your new ESP32-S3 board), click the link for CH343SER.EXE: https://www.wch-ic.com/downloads/CH343SER_EXE.html<br>
    (b) CP2102 Driver (Used by older/standard ESP32 boards), click the link for "CP210x Universal Windows Driver": https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads<br>
 
