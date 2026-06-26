@@ -350,12 +350,13 @@ Discharging capacitor equation:
 <img width="203" height="50" alt="image" src="https://github.com/user-attachments/assets/adaf09e6-76c3-407d-9acc-ec67f5c9f2e4" />
 
 Below is the example of the response for a given settings:     
-<img alt="image" style="width: 75%; height: auto;"  src="https://github.com/user-attachments/assets/93f49df4-479f-4b84-8937-e9ce859f94f9" />
+<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/93f49df4-479f-4b84-8937-e9ce859f94f9" />
 
 Voltage output:     
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/ba57d7cb-c586-4d60-a22e-5b3142474510" />
 
-
+Link to equation derivation: https://docs.google.com/document/d/1Z1LyTMkD0gJsj7zBMVP3iZKuiQb6vydKDT4mPzqHD1U/edit?tab=t.0      
+Link to PWM R-C circuit response: https://docs.google.com/spreadsheets/d/10Ih6O-8kVcTtxQ6LSR1iQ8BdQ8ajPfoUlZrpEv3AAdg/edit?gid=0#gid=0
 
 ## MCPWM API    
 
