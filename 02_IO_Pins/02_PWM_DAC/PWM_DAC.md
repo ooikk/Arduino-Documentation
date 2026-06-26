@@ -2,7 +2,8 @@
    
 Connecting PWM pin to a R-C circuit will function as cheap DAC for external control. Below is the simple R-C circuit connected as passive low pass filter.
 
-<img width="337" height="150" alt="image" src="https://github.com/user-attachments/assets/1aba49bd-0482-4c2d-b3cc-251739fe15aa" />
+<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/0a6b178b-ab7b-4aed-9cbc-22c7138478ee" />
+
 
 The equation for charging the capacitor is given:      
 <img width="362" height="50" alt="image" src="https://github.com/user-attachments/assets/10dcb452-49c4-4342-a43a-6d7495e5b342" />         
