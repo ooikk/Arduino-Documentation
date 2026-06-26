@@ -350,7 +350,7 @@ Discharging capacitor equation:
 <img width="203" height="50" alt="image" src="https://github.com/user-attachments/assets/adaf09e6-76c3-407d-9acc-ec67f5c9f2e4" />
 
 Below is the example of the response for a given settings:     
-<img width="200" height=auto alt="image" src="https://github.com/user-attachments/assets/855332f4-876c-4781-bed9-abde151c2392" />     
+<img width="300" height=auto alt="image" src="https://github.com/user-attachments/assets/855332f4-876c-4781-bed9-abde151c2392" />     
 
 Voltage output:     
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/ba57d7cb-c586-4d60-a22e-5b3142474510" />
