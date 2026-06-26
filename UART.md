@@ -324,19 +324,27 @@ void loop() {
   }
 }
 
-// Helper function to check if the entire string consists only of digits
+// --- Helper Function ---
+// Checks if the string contains ONLY valid numeric digits
 bool isNumeric(String str) {
+  // If the user just hit enter without typing anything, it's not a number
   if (str.length() == 0) return false;
   
   for (unsigned int i = 0; i < str.length(); i++) {
-    // Allow a negative sign at the very beginning
-    if (i == 0 && str[i] == '-') continue; 
+    // Allow a negative sign (-) or positive sign (+) ONLY at the very beginning
+    if (i == 0 && (str[i] == '-' || str[i] == '+')) {
+      // If the string is JUST "-" or "+", it's invalid
+      if (str.length() == 1) return false; 
+      continue; 
+    }
     
+    // If any character is not a digit (0-9), the whole thing is invalid
     if (!isdigit(str[i])) {
-      return false; // Found a non-digit character
+      return false; 
     }
   }
-  return true;
+  
+  return true; // Passed all checks!
 }
 ```
 Alternative: Let Arduino Separate It for You
