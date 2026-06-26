@@ -20,9 +20,41 @@ A triple output LED RGB contains three individual light-emitting diodes (Red, Gr
 
 <img width="1275" height="806" alt="image" src="https://github.com/user-attachments/assets/83f687e2-2cc9-4bc2-aa69-88d4afd8c6de" />
 
-Wiring the LED      
+**Wiring the LED**      
 <img width="623" height="298" alt="image" src="https://github.com/user-attachments/assets/20146b6a-8ba6-4836-a817-6339e379791e" />
 
+**Sample code**     
+```
+int REDPin = 4;    // RED pin of the LED to PWM pin 4
+int GREENPin = 5;  // GREEN pin of the LED to PWM pin 5
+int BLUEPin = 6;   // BLUE pin of the LED to PWM pin 6
+int brightness = 0; // LED brightness
+int increment = 5;  // brightness increment
+
+void setup()
+{
+  pinMode(REDPin, OUTPUT);
+  pinMode(GREENPin, OUTPUT);
+  pinMode(BLUEPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop()
+{
+  brightness = brightness + increment;  // increment brightness for next loop iteration
+
+  if (brightness <= 0 || brightness >= 255)    // reverse the direction of the fading
+  {
+    increment = -increment;
+  }
+  brightness = constrain(brightness, 0, 255);
+  analogWrite(REDPin, brightness);
+  analogWrite(GREENPin, brightness);
+  analogWrite(BLUEPin, brightness);
+
+  delay(20);  // wait for 20 milliseconds to see the dimming effect
+}
+```
 
 ## Reference      
 
