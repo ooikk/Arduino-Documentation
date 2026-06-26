@@ -349,6 +349,13 @@ The equation for charging the capacitor is given:
 Discharging capacitor equation:               
 <img width="203" height="50" alt="image" src="https://github.com/user-attachments/assets/adaf09e6-76c3-407d-9acc-ec67f5c9f2e4" />
 
+Below is the example of the response for a given settings:     
+<img width="354" height="238" alt="image" src="https://github.com/user-attachments/assets/93f49df4-479f-4b84-8937-e9ce859f94f9" />
+
+Voltage output:     
+<img width="1364" height="843" alt="image" src="https://github.com/user-attachments/assets/ba57d7cb-c586-4d60-a22e-5b3142474510" />
+
+
 
 ## MCPWM API    
 
