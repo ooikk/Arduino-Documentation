@@ -339,6 +339,17 @@ void loop() {
 }
 ```
 
+**PWM as DAC**      
+Connecting PWM pin to a R-C circuit will function as cheap DAC for external control. Below is the simple R-C circuit connected as passive low pass filter.
+
+<img width="646" height="287" alt="image" src="https://github.com/user-attachments/assets/1aba49bd-0482-4c2d-b3cc-251739fe15aa" />
+
+The equation for charging the capacitor is given:     
+<img width="536" height="74" alt="image" src="https://github.com/user-attachments/assets/10dcb452-49c4-4342-a43a-6d7495e5b342" />
+Discharging capacitor equation:       
+<img width="240" height="59" alt="image" src="https://github.com/user-attachments/assets/adaf09e6-76c3-407d-9acc-ec67f5c9f2e4" />
+
+
 ## MCPWM API    
 
 Each A/B pair may be clocked by any one of the three timers Timer 0, 1 and 2. The same timer may be used to clock more than one pair of PWM outputs. Each unit is also able to collect inputs such as SYNC SIGNALS, detect FAULT SIGNALS like motor overcurrent or overvoltage, as well as obtain feedback with CAPTURE SIGNALS on e.g. a rotor position.     
