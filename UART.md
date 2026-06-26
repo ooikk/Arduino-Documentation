@@ -264,6 +264,189 @@ void loop() {
   }
 }
 ```
+**Reading single character at a time**
+
+When you use *Serial.read()*, it reads exactly one byte of data from the serial buffer at a time and returns it as its ASCII character value (an integer).
+
+Because it only reads one character at a time, you cannot immediately know if it is part of a larger "string" (text) or a "number" without checking the value of that character, or reading the entire incoming message first.      
+
+If you want to check if the incoming byte is a digit (0–9) or an alphabetical letter (a–z, A–Z), you can use built-in Arduino character analysis functions like *isdigit()* and *isalpha()*.      
+```
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    char inChar = Serial.read(); // Read one character
+
+    if (isdigit(inChar)) {
+      Serial.print("Received a NUMBER character: ");
+      Serial.println(inChar);
+    } 
+    else if (isalpha(inChar)) {
+      Serial.print("Received a LETTER (String component): ");
+      Serial.println(inChar);
+    } 
+    else {
+      Serial.print("Received something else (like a space or punctuation): ");
+      Serial.println(inChar);
+    }
+  }
+}
+```      
+**Parsing Whole Numbers vs. Strings**     
+
+If someone types 456 or hello into the Serial Monitor, *Serial.read()* will look at them one letter at a time ('4', then '5', then '6'). To handle the whole piece of data, it is usually better to read the entire line first.
+
+You can use *Serial.readString()* to grab the incoming data as a complete string, and then determine if that string represents a number.     
+```
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    // Read the entire incoming line as a String
+    String input = Serial.readStringUntil('\n'); 
+    input.trim(); // Remove any hidden newline or carriage return spaces
+
+    if (isNumeric(input)) {
+      // It's a number! Convert it to an actual integer to use mathematically
+      int number = input.toInt(); 
+      Serial.print("Valid Integer Received: ");
+      Serial.println(number);
+    } else {
+      // It's text/string
+      Serial.print("Text String Received: ");
+      Serial.println(input);
+    }
+  }
+}
+
+// Helper function to check if the entire string consists only of digits
+bool isNumeric(String str) {
+  if (str.length() == 0) return false;
+  
+  for (unsigned int i = 0; i < str.length(); i++) {
+    // Allow a negative sign at the very beginning
+    if (i == 0 && str[i] == '-') continue; 
+    
+    if (!isdigit(str[i])) {
+      return false; // Found a non-digit character
+    }
+  }
+  return true;
+}
+```
+Alternative: Let Arduino Separate It for You
+If you know you are expecting numbers, you can skip *Serial.read()* entirely and use *Serial.parseInt()* or *Serial.parseFloat()*.
+
+*Serial.parseInt()* automatically skips any initial letters/symbols, looks specifically for numeric digits in the buffer, and returns them as an actual integer. If it times out without finding a number, it returns 0.     
+
+If your main goal is to read numbers (like 42, -15, or 3.14) from the Serial Monitor, you have three main ways to do it depending on how robust you want your code to be.
+
+Here are the best methods, ranked from the easiest to the most professional.     
+
+**Method 1:** The Easiest Way (Serial.parseInt() or Serial.parseFloat())    
+
+```
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Enter a number:");
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    // Look for the next valid integer in the incoming serial stream
+    int myNumber = Serial.parseInt();
+    
+    Serial.print("I received the number: ");
+    Serial.println(myNumber);
+  }
+}
+```
+⚠️ The Catch: parseInt() is a "blocking" function. If you don't type anything for a moment, it will pause your code for up to 1 second (the default timeout) waiting for data, and then return 0.     
+
+**Method 2:** The Cleanest Way (Serial.readStringUntil())     
+To avoid the 1-second lag/timeout issue of *parseInt()*, it is usually better to read the entire line as text first, and then convert it to a number using *.toInt()* or *.toFloat()*.
+
+Set your Serial Monitor dropdown (at the bottom right) to "Newline" or "Both NL & CR" for this to work best.
+```
+void setup() {
+  Serial.begin(9600);
+  Serial.println("Enter a number:");
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    // Read everything until the user hits 'Enter' (\n)
+    String input = Serial.readStringUntil('\n'); 
+    
+    // Convert the text string to an integer
+    int myNumber = input.toInt(); 
+    
+    // (Use input.toFloat() if you are expecting decimals)
+
+    Serial.print("Converted Number: ");
+    Serial.println(myNumber);
+  }
+}
+```
+
+If a user enters non-numeric text in above Method 2, toInt() will attempt to parse what it can, but it will usually return 0. The exact behavior depends entirely on where the non-number characters are in the text. Here is how toInt() handles different inputs:      
+
+|	User Types	|	What toInt() Sees	|	Final Return Value	|
+|	-	|	-	|	-	|
+|	"123"	|	Valid integer	|	123	|
+|	"hello"	|	Invalid start	|	0	|
+|	"45mph"	|	Stops at 'm'	|	45	|
+|	"3.99"	|	Stops at '.'	|	3	|
+|	"-50"	|	Valid negative integer	|	-50	|
+|	"" (Empty)	|	No data	|	0	|      
+
+
+**Method 3:** The Pro Way (Non-blocking Character Gathering)      
+If your Arduino is controlling motors or time-sensitive sensors, you cannot afford to let Serial.readString() or parseInt() pause your code.
+
+The professional approach is to read characters one by one as they arrive, store them in a string, and convert them to a number only when the user hits 'Enter'.
+
+```
+String inputString = "";      // A string to hold incoming data
+bool stringComplete = false;  // Whether the string is complete
+
+void setup() {
+  Serial.begin(9600);
+  inputString.reserve(200); // Reserve 200 bytes for the string
+}
+
+void loop() {
+  // 1. Read characters in the background without pausing the code
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();
+    
+    if (inChar == '\n') {
+      stringComplete = true; // User hit 'Enter'
+    } else if (inChar != '\r') { 
+      inputString += inChar; // Add character to the string (skip carriage returns)
+    }
+  }
+
+  // 2. Once the full message is received, process the number
+  if (stringComplete) {
+    int myNumber = inputString.toInt();
+    
+    Serial.print("Result: ");
+    Serial.println(myNumber);
+    
+    // Clear the string for the next input:
+    inputString = "";
+    stringComplete = false;
+  }
+  
+  // Your other fast-running code can go here without being slowed down!
+}
+```    
 
 ## Reference
 
