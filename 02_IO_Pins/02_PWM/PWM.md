@@ -339,15 +339,15 @@ void loop() {
 }
 ```
 
-**PWM as DAC**      
+**3. PWM as DAC**      
 Connecting PWM pin to a R-C circuit will function as cheap DAC for external control. Below is the simple R-C circuit connected as passive low pass filter.
 
 <img width="646" height="287" alt="image" src="https://github.com/user-attachments/assets/1aba49bd-0482-4c2d-b3cc-251739fe15aa" />
 
-The equation for charging the capacitor is given:     
-<img width="536" height="74" alt="image" src="https://github.com/user-attachments/assets/10dcb452-49c4-4342-a43a-6d7495e5b342" />
-Discharging capacitor equation:       
-<img width="240" height="59" alt="image" src="https://github.com/user-attachments/assets/adaf09e6-76c3-407d-9acc-ec67f5c9f2e4" />
+The equation for charging the capacitor is given:      
+<img width="362" height="50" alt="image" src="https://github.com/user-attachments/assets/10dcb452-49c4-4342-a43a-6d7495e5b342" />
+Discharging capacitor equation:               
+<img width="203" height="50" alt="image" src="https://github.com/user-attachments/assets/adaf09e6-76c3-407d-9acc-ec67f5c9f2e4" />
 
 
 ## MCPWM API    
