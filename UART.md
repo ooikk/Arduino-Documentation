@@ -347,6 +347,8 @@ bool isNumeric(String str) {
   return true; // Passed all checks!
 }
 ```
+Solves the "Zero" Dilemma: If the user types 0, isNumeric returns true, and your code processes it perfectly. If they type hello, isNumeric catches it as false instead of giving you a fake 0.
+
 Alternative: Let Arduino Separate It for You
 If you know you are expecting numbers, you can skip *Serial.read()* entirely and use *Serial.parseInt()* or *Serial.parseFloat()*.
 
