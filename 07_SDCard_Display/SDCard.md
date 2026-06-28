@@ -1426,14 +1426,14 @@ void setup() {
 }
 
 void loop() {
-// 2. Clear the internal Sprite canvas
+  // 2. Clear the internal Sprite canvas
   ball.fillSprite(TFT_BLACK);
 
   // 3. Draw the ball in the CENTER of the Sprite (Local coordinates)
   ball.fillCircle((SPRITE_SIZE / 2), (SPRITE_SIZE / 2), R_BALL, TFT_ORANGE);
 
   // 4. Push the Sprite to the TFT Screen (Global coordinates)
-  // We subtract R_BALL so x_pos_ball and y_pos_ball represent the center of the ball
+  // We subtract SPRITE_SIZE/2 so x_pos_ball and y_pos_ball represent the center of the ball
   ball.pushSprite((x_pos_ball - (SPRITE_SIZE / 2)), (y_pos_ball - (SPRITE_SIZE / 2)));
 
 
