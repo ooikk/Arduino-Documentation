@@ -1349,3 +1349,56 @@ if (!displayPNG("/image.png", tft, 4096)) {
 - Centering: The image is always centered on the screen, whether scaled or not.
 - Supported format: Standard non‑interlaced 24‑bit PNG.
 
+## TFT_eSprite     
+
+TFT_eSprite is a class in the TFT_eSPI library that creates an off-screen memory buffer (a canvas). It is highly useful for eliminating screen flicker, building complex UI components, and rendering smooth animations on your ESP32 display.     
+
+**Core Workflow**     
+To use sprites effectively, follow this standard sequence in your code:     
+1. **Instantiation**: Create an instance of *TFT_eSprite* linked to your main *TFT_eSPI* object.
+2. **Allocation**: Define the size of your sprite in memory using *createSprite()*.
+3. **Drawing**: Use sprite equivalents of standard commands (e.g., *drawString()*, *fillRect()*) to draw to the buffer.
+4. **Rendering**: Push the completed sprite to the screen using *pushSprite()*.
+5. **Memory Management**: Free up ESP32 RAM by using *deleteSprite()* when the sprite is no longer needed.
+
+**Code Example**     
+```
+#include <TFT_eSPI.h>
+
+TFT_eSPI tft = TFT_eSPI();           // Main TFT object
+TFT_eSprite spr = TFT_eSprite(&tft); // Sprite object linked to TFT
+
+int x_pos = 0;
+int x_dir = 2;
+
+void setup() {
+  tft.init();
+  tft.setRotation(1);
+  
+  // Create a sprite canvas (120 pixels wide by 50 pixels high)
+  spr.createSprite(120, 50);
+}
+
+void loop() {
+  // 1. Clear the sprite background (instead of the whole screen)
+  spr.fillSprite(TFT_BLACK);
+  
+  // 2. Set font and colors within the sprite
+  spr.setTextColor(TFT_GREEN, TFT_BLACK); // Text and background color
+  spr.drawString("ESP32", 10, 15, 4);      // String, x, y, font index
+
+  // 3. Push the sprite to the screen
+  spr.pushSprite(x_pos, 50); // Push to X position, Y position
+
+  // 4. Update position for movement
+  x_pos += x_dir;
+  if (x_pos > 200 || x_pos < 0) {
+    x_dir = -x_dir; // Bounce
+  }
+  
+  delay(10);
+}
+```
+
+
+
