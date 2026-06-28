@@ -1363,6 +1363,27 @@ To use sprites effectively, follow this standard sequence in your code:
 
 NOTE: When you draw inside a Sprite, the coordinates are relative to the Sprite itself (where 0,0 is the top-left corner of the sprite), not the main screen.
 
+**Memory & Color Settings**     
+**Color Depths**           
+Sprites support different color depths to help balance rendering speed against RAM usage on the ESP32:      
+- **8-bit (Color)**: Uses 1 byte per pixel. Requires less RAM.
+- **16-bit (RGB565)**: Uses 2 bytes per pixel. Default setting for high-quality color.
+- **1-bit (Palette/Monochrome)**: Uses 1 bit per pixel. Extremely memory-efficient; ideal for e-paper displays or compressing static bitmaps. Set using *spr.setColorDepth(1)*;.
+
+**Color Depth Syntax**     
+To declare a custom color depth, insert the function immediately after creation:      
+```
+spr.createSprite(100, 100);
+spr.setColorDepth(8); // Switch to 8-bit color depth
+```
+
+**Best Practices***     
+- **Avoid Full-Screen Sprites**: ESP32 RAM is limited. Allocating a full-screen sprite (e.g., 320 × 240 × 2 bytes) can quickly cause a memory crash (OutOfMemory). Use smaller sprites for text, gauges, or small icons instead.
+- **Use Transparency**: To overlay sprites without overwriting the background, use *pushSprite(x, y, transparent_color)*. For example, if your background is black, use *spr.pushSprite(x, y, TFT_BLACK);*.
+
+For a full guide on installing and setting up the base TFT_eSPI library for ESP32 boards, you can refer to the [TFT_eSPI Getting Started Docs](https://doc-tft-espi.readthedocs.io/graphics/)) or follow this setup guide:
+
+
 **Code Example**     
 
 Scrolling Text:     
