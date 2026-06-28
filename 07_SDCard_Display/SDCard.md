@@ -1359,7 +1359,9 @@ To use sprites effectively, follow this standard sequence in your code:
 2. **Allocation**: Define the size of your sprite in memory using *createSprite()*.
 3. **Drawing**: Use sprite equivalents of standard commands (e.g., *drawString()*, *fillRect()*) to draw to the buffer.
 4. **Rendering**: Push the completed sprite to the screen using *pushSprite()*.
-5. **Memory Management**: Free up ESP32 RAM by using *deleteSprite()* when the sprite is no longer needed.
+5. **Memory Management**: Free up ESP32 RAM by using *deleteSprite()* when the sprite is no longer needed.     
+
+NOTE: When you draw inside a Sprite, the coordinates are relative to the Sprite itself (where 0,0 is the top-left corner of the sprite), not the main screen.
 
 **Code Example**     
 ```
