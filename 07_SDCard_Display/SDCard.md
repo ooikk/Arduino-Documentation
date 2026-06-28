@@ -1377,7 +1377,7 @@ spr.createSprite(100, 100);
 spr.setColorDepth(8); // Switch to 8-bit color depth
 ```
 
-**Best Practices***     
+**Best Practices**     
 - **Avoid Full-Screen Sprites**: ESP32 RAM is limited. Allocating a full-screen sprite (e.g., 320 × 240 × 2 bytes) can quickly cause a memory crash (OutOfMemory). Use smaller sprites for text, gauges, or small icons instead.
 - **Use Transparency**: To overlay sprites without overwriting the background, use *pushSprite(x, y, transparent_color)*. For example, if your background is black, use *spr.pushSprite(x, y, TFT_BLACK);*.
 
