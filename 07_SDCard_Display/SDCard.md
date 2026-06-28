@@ -1364,6 +1364,8 @@ To use sprites effectively, follow this standard sequence in your code:
 NOTE: When you draw inside a Sprite, the coordinates are relative to the Sprite itself (where 0,0 is the top-left corner of the sprite), not the main screen.
 
 **Code Example**     
+
+Scrolling Text:     
 ```
 #include <TFT_eSPI.h>
 
@@ -1401,6 +1403,59 @@ void loop() {
   delay(10);
 }
 ```
+Boucing Ball:      
+```
+#include <TFT_eSPI.h>
+TFT_eSprite ball = TFT_eSprite(&tft);  // Sprite object linked to TFT
+int x_pos_ball = 320 / 2;
+int y_pos_ball = 480 / 2;
+int x_dir_ball = 2;
+int y_dir_ball = 4;
+#define R_BALL 35
+// 1. MAKE THE SPRITE LARGER: Add padding so the sprite box covers its own trail.
+// Since your max speeds are x_dir=2 and y_dir=4, adding 10-15 pixels of padding is perfect.
+#define PADDING 10
+#define SPRITE_SIZE ((R_BALL * 2) + PADDING)
 
+void setup() {
+  tft.init();
+  tft.setRotation(1);
+  
+  // Create a sprite canvas
+    ball.createSprite(SPRITE_SIZE, SPRITE_SIZE);
+}
+
+void loop() {
+// 2. Clear the internal Sprite canvas
+  ball.fillSprite(TFT_BLACK);
+
+  // 3. Draw the ball in the CENTER of the Sprite (Local coordinates)
+  ball.fillCircle((SPRITE_SIZE / 2), (SPRITE_SIZE / 2), R_BALL, TFT_ORANGE);
+
+  // 4. Push the Sprite to the TFT Screen (Global coordinates)
+  // We subtract R_BALL so x_pos_ball and y_pos_ball represent the center of the ball
+  ball.pushSprite((x_pos_ball - (SPRITE_SIZE / 2)), (y_pos_ball - (SPRITE_SIZE / 2)));
+
+
+  // Update the new coordinate after clearing the old sprite location with tft.fillRect, avoid using tft.fillScreen(TFT_BLACK);
+  // 5. Move the ball
+  x_pos_ball += x_dir_ball;
+  y_pos_ball += y_dir_ball;
+
+  // 6. Bounce Logic (accounting for radius so it bounces off edges properly)
+  if (x_pos_ball > (tft.width() - R_BALL) || x_pos_ball < R_BALL) {
+    x_dir_ball = -x_dir_ball;  // Fixed: Uncommented bounce
+    x_pos_ball += x_dir_ball;
+  }
+
+  if (y_pos_ball > (tft.height() - R_BALL) || y_pos_ball < R_BALL) {
+    y_dir_ball = -y_dir_ball;  // Bounce
+    y_pos_ball += y_dir_ball;
+  }
+
+  delay(10);
+
+}
+```
 
 
