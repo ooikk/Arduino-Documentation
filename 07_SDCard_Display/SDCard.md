@@ -1377,6 +1377,25 @@ spr.createSprite(100, 100);
 spr.setColorDepth(8); // Switch to 8-bit color depth
 ```
 
+**pushSprite()**      
+1. Full Sprite Pushing      
+   Renders the entire sprite to the screen at a specified top-left coordinate.
+```
+spr.pushSprite(x, y);
+```
+
+2. Full Sprite Pushing with Transparency
+   Renders the entire sprite while ignoring a specific background color, allowing graphics to appear transparent.
+```
+spr.pushSprite(x, y, transparent_color);
+```
+3. Partial Sprite Pushing
+   Copies a specific sub-rectangle of the sprite onto the screen.     
+```
+spr.pushSprite(tft_x, tft_y, sprite_x, sprite_y, width, height);
+```
+ 
+
 **Best Practices**     
 - **Avoid Full-Screen Sprites**: ESP32 RAM is limited. Allocating a full-screen sprite (e.g., 320 × 240 × 2 bytes) can quickly cause a memory crash (OutOfMemory). Use smaller sprites for text, gauges, or small icons instead.
 - **Use Transparency**: To overlay sprites without overwriting the background, use *pushSprite(x, y, transparent_color)*. For example, if your background is black, use *spr.pushSprite(x, y, TFT_BLACK);*.
