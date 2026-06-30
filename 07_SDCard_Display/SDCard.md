@@ -1379,7 +1379,7 @@ spr.setColorDepth(8); // Switch to 8-bit color depth
 
 **pushSprite()**      
 1. Full Sprite Pushing      
-   Renders the entire sprite to the screen at a specified top-left coordinate.
+   Renders the entire sprite to the screen at a specified top-left coordinate. Example *spr.pushSprite(0, 0);* start from top left corner of the screen.
 ```
 spr.pushSprite(x, y);
 ```
