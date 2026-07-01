@@ -60,9 +60,11 @@ void setup() {
 
   Serial.println("Initializing SD card...");
   //if (!SD.begin(SD_CS_PIN, SPI, SD_FREQUENCY)) {
-  if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {    
-    Serial.println("SD Card initialization failed!");
-    while (1) delay(1000);  // Halt
+  if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
+    Serial.println("SD Card initialization failed! Try again...");
+    if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
+      while (1) delay(1000);  // Halt
+    }
   }
   
   Serial.println("SD Card initialized successfully.");
