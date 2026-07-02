@@ -111,11 +111,11 @@ void setup() {
   }
   
   Serial.println("SD Card initialized successfully.");
-  tft.println("SD Card OK");
+  //tft.println("SD Card OK");
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
-  tft.printf("Size: %lluMB", cardSize);
+  //tft.printf("Size: %lluMB", cardSize);
 
 }
 

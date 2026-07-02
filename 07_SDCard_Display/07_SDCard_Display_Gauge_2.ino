@@ -19,6 +19,12 @@
 #define SD_CS_PIN 7
 #define SD_FREQUENCY 16000000  // 16MHz or 4MHz
 
+#ifdef VSPI_PIN
+SPIClass sdSPI(VSPI);
+#else
+SPIClass sdSPI(HSPI);
+#endif
+
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite gauge = TFT_eSprite(&tft); // Canvas buffer to prevent flicker
 // ==========================================
@@ -50,11 +56,7 @@ float targetValue = RANGE_MIN;
 void simulateSensor();
 
 
-#ifdef VSPI_PIN
-SPIClass sdSPI(VSPI);
-#else
-SPIClass sdSPI(HSPI);
-#endif
+
 
 
 void setup() {
@@ -92,11 +94,11 @@ void setup() {
   }
   
   Serial.println("SD Card initialized successfully.");
-  tft.println("SD Card OK");
+  //tft.println("SD Card OK");
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
-  tft.printf("Size: %lluMB", cardSize);
+  //tft.printf("Size: %lluMB", cardSize);
 
 }
 
