@@ -44,6 +44,25 @@ SPIClass sdSPI(HSPI);
 
 TFT_eSprite gaugeSprite = TFT_eSprite(&tft);  // sprite for off‑screen rendering
 
+#define CUSTOM_NEEDLE
+
+#ifdef CUSTOM_NEEDLE
+// Create an instance of the sprite class for flickering-free smooth rotation
+TFT_eSprite needle(&tft);
+
+#include <scaled_clockhand.h>
+
+// ---------- User Settings ----------
+
+#define NEEDLE_CENTERX 7     // Original pivot X (from top-left)
+#define NEEDLE_CENTERY 86    // Original pivot Y (from top-left)
+#define NEEDLE_START_ADJ 90  // Adjustment for 0 reading angle
+
+// Display pivot (where the needle rotates around on screen)
+//#define SCREEN_PIVOT_X CENTER_X  // Example: center of a 320x240 screen
+//#define SCREEN_PIVOT_Y CENTER_Y
+#endif
+
 
 // ======================== USER CONFIGURABLE PARAMETERS ========================
 
@@ -158,6 +177,14 @@ void setup() {
   gaugeSprite.setTextColor(TFT_WHITE, COLOR_BG);
   gaugeSprite.setTextSize(1);  // base size, we'll set per element
 
+#ifdef CUSTOM_NEEDLE
+  needle.createSprite(CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT);
+  needle.pushImage(0, 0, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
+  needle.setPivot(NEEDLE_CENTERX, NEEDLE_CENTERY);
+  // Set the screen pivot (where the needle will rotate)
+  tft.setPivot(CENTER_X, CENTER_Y);
+  tft.setSwapBytes(true);
+#endif
   drawGauge(0);
 }
 
@@ -175,7 +202,7 @@ void loop() {
 
   drawGauge(speed);
 
-  delay(1);  // update rate
+  delay(5);  // update rate
 }
 
 
@@ -192,8 +219,13 @@ void drawGauge(float speed) {
   drawTicksAndNumbers();
   //  drawNeedle(speed);
   drawDigitalValue(speed);
+#ifdef CUSTOM_NEEDLE
+  gaugeSprite.pushSprite(spriteOffsetX, spriteOffsetY);
+  drawNeedle(speed);
+#else
   drawNeedle(speed);
   gaugeSprite.pushSprite(spriteOffsetX, spriteOffsetY);
+#endif
 }
 
 void drawTicksAndNumbers() {
@@ -234,6 +266,14 @@ void drawTicksAndNumbers() {
 }
 
 void drawNeedle(float speed) {
+
+#ifdef CUSTOM_NEEDLE
+  float angle = speedToAngle(speed) + NEEDLE_START_ADJ;
+  // 360-START_ANGLE_DEG;//
+  needle.pushImage(0, 0, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
+  needle.pushRotated(angle, TFT_BLACK);
+  //Serial.printf("angle: %f.2 speed: %f.1 \n",angle,speed );
+#else
   float angle = speedToAngle(speed);
   float rad = angle * DEG2RAD;
   int xTip = CENTER_X + NEEDLE_LENGTH * cos(rad);
@@ -244,6 +284,7 @@ void drawNeedle(float speed) {
 
   gaugeSprite.fillCircle(CENTER_X, CENTER_Y, RADIUS * 0.05, COLOR_NEEDLE);
   gaugeSprite.drawCircle(CENTER_X, CENTER_Y, RADIUS * 0.05, COLOR_BG);
+#endif
 }
 
 void drawDigitalValue(float speed) {
@@ -254,7 +295,7 @@ void drawDigitalValue(float speed) {
   gaugeSprite.setTextColor(COLOR_DIGITAL);  //, COLOR_DIGITAL_BG);  // KK
   gaugeSprite.setTextSize(4);
   boxHeight = gaugeSprite.fontHeight();
-  boxWidth = gaugeSprite.textWidth("1234"); //find 4 digit width
+  boxWidth = gaugeSprite.textWidth("1234");  //find 4 digit width
   //gaugeSprite.fillRect(x0, y0 - 4, boxWidth, currentFontHeight + 4, COLOR_DIGITAL_BG);
   x0 = CENTER_X - boxWidth / 2;
   y0 = CENTER_Y + RADIUS * 0.3;        // 30% below center
