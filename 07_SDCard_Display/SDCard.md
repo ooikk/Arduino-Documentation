@@ -1545,5 +1545,61 @@ void loop() {
 
 }
 ```
+**Sprite deletion**      
+To release a sprite generated with the TFT_eSPI library, you call the deleteSprite() method on the sprite object. This frees the internal frame buffer that was allocated by createSprite().
 
+✅ Basic Usage     
+```
+TFT_eSprite mySprite = TFT_eSprite(&tft);  // create the object
+mySprite.createSprite(100, 100);            // allocate memory
+// ... use the sprite ...
+mySprite.deleteSprite();                    // release memory
+```
+
+🔄 Reusing a Sprite Object       
+You can delete a sprite and then recreate it with different dimensions using the same object:     
+```
+mySprite.deleteSprite();          // free old buffer
+mySprite.createSprite(200, 50);   // allocate new buffer
+```
+🧠 Important: Sprites Created with new     
+If you allocated the sprite on the heap using new (like *TFT_eSprite* sprite = new TFT_eSprite(&tft);*), you must:    
+1. Call sprite->deleteSprite(); to free its internal buffer.
+2. Call delete sprite; to free the object itself.
+
+```
+TFT_eSprite* sprite = new TFT_eSprite(&tft);
+sprite->createSprite(32, 32);
+// ...
+sprite->deleteSprite();   // free buffer
+delete sprite;            // free object
+```
+
+⚠️ Watch Out for Memory Fragmentation      
+Frequently creating and deleting sprites of different sizes can cause heap fragmentation – especially on memory‑constrained microcontrollers (ESP8266, Arduino Uno). To avoid this, it's often better to:
+
+Create all sprites once during setup() and keep them alive.     
+
+Reuse the same sprite (delete and recreate) only when absolutely necessary.    
+
+🔍 Verifying Memory Release      
+You can check free heap memory before and after to confirm deletion:
+```
+#ifdef ESP32
+  Serial.printf("Free heap: %u\n", ESP.getFreeHeap());
+#endif
+mySprite.deleteSprite();
+#ifdef ESP32
+  Serial.printf("After delete: %u\n", ESP.getFreeHeap());
+#endif
+```
+
+📌 Summary     
+|Action|	Method|
+|-|-|
+|Release sprite buffer	|sprite.deleteSprite()|
+|Release object (if new used)	|delete sprite|
+|Recreate sprite	|sprite.createSprite(w, h) after deleting|
+
+Always call deleteSprite() when you're done with a sprite to keep your RAM usage under control.
 
