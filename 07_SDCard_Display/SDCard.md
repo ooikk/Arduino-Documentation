@@ -636,14 +636,30 @@ if __name__ == "__main__":
 ```
 
 **Other Pythons Tools for 565RGB**     
-1. Convert background color, use text editor to replace background color to any color of your choice.
-   Example search 0xffff (white) and replace with 0xf800 (RED).
+1. Convert background color, use text editor to replace background color to any color of your choice.       
+   Example search 0xffff (white) and replace with 0xf800 (RED).      
 2. Convert 565RGB image edge color to RED, use this script: *edge_to_red.py*, free to modify to any color. Usage:
-   *python replace_all_nonzero.py input-black.txt output-all-red.txt*
-4. Change all object color to any single color, change the desire color in the script: *replace_all_nonzero.py*. Usage:    
-   *python replace_all_nonzero.py input-black.txt output-all-red.txt*
-5. Scaled the image to any size, *scale_image.py*. Usage:
-   *python scale_image.py 0.5 clockhand.h scaled_clockhand.h*
+   Provide raw data as text file: *0x0000, 0x0000, 0xe572, 0xc347, 0xf71a, 0x0000,...*
+   *cmd /c "python edge_to_red.py < input-black.txt > output-black.txt"t*      
+4. Change all object color to any single color, change the desire color in the script: *replace_all_nonzero.py*. Usage:
+   Provide raw data as text file: *0x0000, 0x0000, 0xe572, 0xc347, 0xf71a, 0x0000,...*
+   *python replace_all_nonzero.py input-black.txt output-all-red.txt*       
+6. Scaled the image to any size, *scale_image.py*. Usage:
+   Provide raw data as text file:
+   ```
+   #define CLOCKHAND_WIDTH 28
+   #define CLOCKHAND_HEIGHT 185
+   // array size is 10360
+   static const uint16_t clockhand[] PROGMEM = {
+   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+   :
+   0x0000, 0x0000
+   };
+   
+  ```
+  For scale factor of 0.5:         
+  *python scale_image.py 0.5 clockhand.h scaled_clockhand.h*      
 
 
 
