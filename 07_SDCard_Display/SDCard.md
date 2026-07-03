@@ -640,7 +640,7 @@ if __name__ == "__main__":
    Example search 0xffff (white) and replace with 0xf800 (RED).      
 2. Convert 565RGB image edge color to RED, use this script: *edge_to_red.py*, free to modify to any color. Usage:       
    Provide raw data as text file: *0x0000, 0x0000, 0xe572, 0xc347, 0xf71a, 0x0000,...*        
-   *cmd /c "python edge_to_red.py < input-black.txt > output-black.txt"t*      
+   *cmd /c "python edge_to_red.py < input-black.txt > output-black.txt"*      
 4. Change all object color to any single color, change the desire color in the script: *replace_all_nonzero.py*. Usage:       
    Provide raw data as text file: *0x0000, 0x0000, 0xe572, 0xc347, 0xf71a, 0x0000,...*         
    *python replace_all_nonzero.py input-black.txt output-all-red.txt*       
