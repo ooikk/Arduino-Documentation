@@ -65,6 +65,8 @@ TFT_eSprite needle(&tft);
 
 
 // ======================== USER CONFIGURABLE PARAMETERS ========================
+const int METER_X = 10;  // Meter's top left location X
+const int METER_Y = 10;  // Meter's top left location Y
 
 const int MIN_SPEED = 0;
 const int MAX_SPEED = 140;
@@ -105,7 +107,7 @@ const int NUM_OFFSET = 8;  // original offset for size 1
 
 const int SPRITE_W = GAUGE_SIZE + 2 * MARGIN;
 const int SPRITE_H = GAUGE_SIZE + 2 * MARGIN;
-int spriteOffsetX, spriteOffsetY;
+
 
 // ======================== FUNCTION PROTOTYPES ==============================
 
@@ -167,14 +169,13 @@ void setup() {
   int screenW = tft.width();
   int screenH = tft.height();
 
-  spriteOffsetX = 0;  //(screenW - SPRITE_W) / 2;
-  spriteOffsetY = 0;  //(screenH - SPRITE_H) / 2;
 
   Serial.printf("Screen W: %d H: %d\n", screenW, screenH);
-  Serial.printf("sprite X: %d Y: %d\n", spriteOffsetX, spriteOffsetY);
 
   gaugeSprite.createSprite(SPRITE_W, SPRITE_H);
   gaugeSprite.setTextColor(TFT_WHITE, COLOR_BG);
+  // CORRECT: Sets the pivot inside the destination sprite
+  gaugeSprite.setPivot(CENTER_X, CENTER_Y);
   gaugeSprite.setTextSize(1);  // base size, we'll set per element
 
 #ifdef CUSTOM_NEEDLE
@@ -182,8 +183,10 @@ void setup() {
   needle.pushImage(0, 0, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
   needle.setPivot(NEEDLE_CENTERX, NEEDLE_CENTERY);
   // Set the screen pivot (where the needle will rotate)
-  tft.setPivot(CENTER_X, CENTER_Y);
-  tft.setSwapBytes(true);
+  //tft.setPivot(CENTER_X, CENTER_Y);
+  //tft.setSwapBytes(false);
+  //gaugeSprite.setSwapBytes(false);
+  needle.setSwapBytes(true);
 #endif
   drawGauge(0);
 }
@@ -219,13 +222,10 @@ void drawGauge(float speed) {
   drawTicksAndNumbers();
   //  drawNeedle(speed);
   drawDigitalValue(speed);
-#ifdef CUSTOM_NEEDLE
-  gaugeSprite.pushSprite(spriteOffsetX, spriteOffsetY);
+
   drawNeedle(speed);
-#else
-  drawNeedle(speed);
-  gaugeSprite.pushSprite(spriteOffsetX, spriteOffsetY);
-#endif
+  gaugeSprite.pushSprite(METER_X, METER_Y);
+
 }
 
 void drawTicksAndNumbers() {
@@ -271,7 +271,13 @@ void drawNeedle(float speed) {
   float angle = speedToAngle(speed) + NEEDLE_START_ADJ;
   // 360-START_ANGLE_DEG;//
   needle.pushImage(0, 0, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
-  needle.pushRotated(angle, TFT_BLACK);
+  // Do not push to needle sprite as image will be flicky, push to gaugeSprite instead
+  //needle.pushRotated(angle, TFT_BLACK);
+
+  // Push the source sprite into the DESTINATION sprite's memory at angle
+  // Parameters: (&dest_sprite, angle,  transparent_color)
+  needle.pushRotated(&gaugeSprite, angle, TFT_BLACK);
+
   //Serial.printf("angle: %f.2 speed: %f.1 \n",angle,speed );
 #else
   float angle = speedToAngle(speed);
