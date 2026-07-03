@@ -656,10 +656,9 @@ if __name__ == "__main__":
    :
    0x0000, 0x0000
    };
-   
-  ```
-  For scale factor of 0.5:         
-  *python scale_image.py 0.5 clockhand.h scaled_clockhand.h*      
+   ```
+   For scale factor of 0.5:         
+   *python scale_image.py 0.5 clockhand.h scaled_clockhand.h*      
 
 
 
