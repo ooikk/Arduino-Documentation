@@ -638,14 +638,18 @@ if __name__ == "__main__":
 **Other Pythons Tools for 565RGB**     
 1. Convert background color, use text editor to replace background color to any color of your choice.       
    Example search 0xffff (white) and replace with 0xf800 (RED).      
-2. Convert 565RGB image edge color to RED, use this script: *edge_to_red.py*, free to modify to any color. Usage:       
-   Provide raw data as text file: *0x0000, 0x0000, 0xe572, 0xc347, 0xf71a, 0x0000,...*        
-   *cmd /c "python edge_to_red.py < input-black.txt > output-black.txt"*      
-4. Change all object color to any single color, change the desire color in the script: *replace_all_nonzero.py*. Usage:       
-   Provide raw data as text file: *0x0000, 0x0000, 0xe572, 0xc347, 0xf71a, 0x0000,...*         
-   *python replace_all_nonzero.py input-black.txt output-all-red.txt*       
-6. Scaled the image to any size, *scale_image.py*. Usage:                  
-   Provide raw data as text file:               
+2. Convert 565RGB image edge color, use this script: *draw_edge_line.py*, it uses background color as baseline to check for edge. You can change the BG_COLOR and EDGE_COLOR in the script. Usage:
+   *python draw_edge_line.py input-black.h output-red.h*              
+3. Replace pixels color to any color, change the desire color in the script: *replace_color.py*. Usage:
+   - REPLACE_MATCH = 1 → replaces matching pixels (equal to SEARCH_COLOR) with REPLACE_COLOR.
+   - REPLACE_MATCH = 0 → replaces non‑matching pixels (not equal to SEARCH_COLOR) with REPLACE_COLOR.
+   *python replace_color.py input-black.h output-red.h*       
+4. Scaled the image to any size, *scale_image.py*. Usage:                  
+   For scale factor of 0.5:          
+   *python scale_image.py 0.5 clockhand.h scaled_clockhand.h*      
+
+*File Format*: File has to use the following format as generated from [Online Convertor](https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/)      
+
    ```
    #define CLOCKHAND_WIDTH 28
    #define CLOCKHAND_HEIGHT 185
@@ -656,11 +660,7 @@ if __name__ == "__main__":
    :
    0x0000, 0x0000
    };
-   ```                 
-   For scale factor of 0.5:          
-   *python scale_image.py 0.5 clockhand.h scaled_clockhand.h*      
-
-
+   ```     
 
 ## Display JPEG images    
 
