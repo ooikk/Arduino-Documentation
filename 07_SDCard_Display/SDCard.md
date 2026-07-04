@@ -1539,7 +1539,7 @@ Before pushing the new angle, *fillSprite()* with background color and redraw ne
   needle.pushRotated(angle, TFT_BLACK);  // needle with black background color TFT_BLACK 
 ```      
 
-2. pushRotated to aother sprite          
+2. pushRotated to another sprite          
 When pushing a rotated needle into a bigger sprite, you only need to think about two pivot points, and they work together like a hinge and a nail on a wall.
 The Mental Model    
 Imagine:     
