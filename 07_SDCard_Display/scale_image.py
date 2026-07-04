@@ -1,5 +1,5 @@
 # scale_image.py
-# python3 scale_image.py 0.5 clockhand.h scaled_clockhand.h
+# python scale_image.py 0.5 clockhand.h scaled_clockhand.h
 # input file format:
 """
 #define CLOCKHAND_WIDTH 28
