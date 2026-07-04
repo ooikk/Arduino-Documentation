@@ -1509,6 +1509,134 @@ void drawNeedleOnScreen(float angle, int screenX, int screenY) {
   // The library automatically aligns needle.setPivot() with tft.setPivot()
   needle.pushRotated((int16_t)angle, TFT_BLACK);
 }
+```      
+
+How it works:     
+- *tft.setPivot(screenX, screenY)* places the "nail" on your physical screen at (screenX, screenY).
+- *needle.setPivot(...)* defines the "hole" in your needle image.
+- *needle.pushRotated(angle)* rotates the needle around its hole, and then docks that hole directly onto the TFT's nail.     
+
+⚠️ CRITICAL WARNING: The "Smearing" Problem       
+Because you are drawing directly to the TFT without a destination sprite to hold the background, the TFT does not automatically erase the old needle.     
+If you call *drawNeedleOnScreen()* in a loop to animate the gauge, the new needle will draw on top of the old needle, creating a massive smeared mess.
+How to fix the smearing:      
+Since you don't have a destination sprite to *fillSprite()* and redraw, you must manually erase the old needle before drawing the new one.
+The Solution: Create a bigger sprite area     
+Before pushing the new angle, *fillSprite()* with background color and redraw needle before *pushRotated()*.      
+
+```
+// in setup():
+  needle.createSprite(CLOCKHAND_HEIGHT * 2, CLOCKHAND_HEIGHT * 2);    // ensure the area cover the needle length
+  needle.fillSprite(TFT_BLACK);                                       // background color
+// now the sprite area is larger, need to move the needle to the center of the sprite and anchor the rotating pivot
+  needle.pushImage(CLOCKHAND_HEIGHT-NEEDLE_CENTERX, CLOCKHAND_HEIGHT-NEEDLE_CENTERY, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
+  needle.setPivot(CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT);                // set the rotating pivot at center of the sprite
+  tft.setPivot(METER_X+CLOCKHAND_HEIGHT, METER_Y+CLOCKHAND_HEIGHT);   // pivot point to lay the image on tft screen
+
+// in loop():
+  needle.fillSprite(TFT_BLACK);
+  needle.pushImage(CLOCKHAND_HEIGHT-NEEDLE_CENTERX, CLOCKHAND_HEIGHT-NEEDLE_CENTERY, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
+  needle.pushRotated(angle, TFT_BLACK);  // needle with black background color TFT_BLACK 
+```      
+
+2. pushRotated to aother sprite      
+When pushing a rotated needle into a bigger sprite, you only need to think about two pivot points, and they work together like a hinge and a nail on a wall.
+The Mental Model    
+Imagine:     
+- The destination sprite is a wall.
+- The source sprite (needle) is a clock hand.
+- The destination pivot is the nail you hammer into the wall.
+- The source pivot is the hole at the base of the clock hand.
+- pushRotated() hangs the hole onto the nail and spins it.
+
+1. Source Pivot (Needle) → "Where is the hole?"
+This is the coordinate inside the needle image where the physical pin/hinge is.     
+```
+Needle Image (e.g., 20 x 100 pixels)
+  ┌───────┐
+  │   ▲   │  (0,0) is top-left
+  │   │   │
+  │   │   │  ← needle body
+  │   │   │
+  │   ●   │  ← The physical pin is HERE
+  └───────┘
+     (10, 90)  ← So setPivot(10, 90)
+
+needle.setPivot(10, 90);  // The "hole" in the needle
+```      
+2. Destination Pivot (Gauge) → "Where is the nail?"       
+This is the coordinate inside the gauge sprite where the center of the dial is drawn.    
+```
+Gauge Sprite (e.g., 240 x 240 pixels)
+
+      (120, 120)
+          ●  ← Center of dial = "the nail"
+         /|\
+        / | \
+
+gaugeSprite.setPivot(120, 120);  // The "nail" on the wall
+```    
+*Important*: This is relative to the gauge sprite's own (0,0) top-left corner, not the physical screen.      
+What Happens During pushRotated        
+```
+needle.pushRotated(&gaugeSprite, 45, TFT_MAGENTA);
+```
+The library does this internally:
+- Takes the needle image
+- Rotates it 45° around its pivot (10, 90)
+- Moves the entire rotated image so that point (10, 90) lands exactly on (120, 120) of the gauge sprite
+```
+Before rotation:                After rotation & docking:
+
+  Needle pivot (10,90)          Gauge pivot (120,120)
+       ●                              ●
+       |                             /
+       |                            /  ← needle rotated 45°
+       |                           /
+      tip                        tip
+```          
+⚠️ Critical: Destination Sprite Must Be Big Enough        
+When a sprite rotates, its bounding box grows. A 20×100 needle rotated 45° needs roughly 85×85 pixels of space.      
+If your gauge sprite is too small, the rotated needle gets clipped at the edges:     
+```
+┌─────────────────┐
+│    ╱  ← clipped!│
+│   ╱             │
+│  ●              │  ← gauge sprite boundary
+│                 │
+└─────────────────┘
+```
+*Rule of thumb*: The destination sprite should be at least as large as 2 times of source sprite length     
+
+Complete Working Example:      
+```
+// --- INIT ---
+// Needle: 20 wide, 100 tall, pin at bottom-center
+needle.createSprite(20, 100);
+needle.setSwapBytes(true);
+needle.pushImage(0, 0, 20, 100, clockhand);
+needle.setPivot(10, 95);         // Hole: bottom-center of needle
+
+// Gauge: 240x240, dial center at (120, 120)
+gaugeSprite.createSprite(240, 240);
+gaugeSprite.setPivot(120, 120);  // Nail: center of dial
+
+// --- LOOP ---
+void drawNeedle(float angle) {
+  // 1. Redraw gauge background (erase old needle)
+  gaugeSprite.fillSprite(COLOR_BG);
+  drawDialFace();  // your dial drawing function
+
+  // 2. Prepare needle with transparent background
+  needle.fillSprite(TFT_MAGENTA);
+  needle.pushImage(0, 0, 20, 100, clockhand);
+
+  // 3. Dock the hole onto the nail and rotate
+  needle.pushRotated(&gaugeSprite, (int16_t)angle, TFT_MAGENTA);
+
+  // 4. Push combined result to screen
+  gaugeSprite.pushSprite(0, 0);       // or define X and Y on screen
+}
 ```
 
 
