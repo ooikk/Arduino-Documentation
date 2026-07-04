@@ -1468,8 +1468,110 @@ spr.pushSprite(x, y, transparent_color);
    Copies a specific sub-rectangle of the sprite onto the screen.     
 ```
 spr.pushSprite(tft_x, tft_y, sprite_x, sprite_y, width, height);
-```     
+```       
 
+
+**Best Practices**     
+- **Avoid Full-Screen Sprites**: ESP32 RAM is limited. Allocating a full-screen sprite (e.g., 320 × 240 × 2 bytes) can quickly cause a memory crash (OutOfMemory). Use smaller sprites for text, gauges, or small icons instead.
+- **Use Transparency**: To overlay sprites without overwriting the background, use *pushSprite(x, y, transparent_color)*. For example, if your background is black, use *spr.pushSprite(x, y, TFT_BLACK);*.
+
+For a full guide on installing and setting up the base TFT_eSPI library for ESP32 boards, you can refer to the [TFT_eSPI Getting Started Docs](https://doc-tft-espi.readthedocs.io/graphics/)) or follow this setup guide:
+
+
+**Code Example**     
+
+Scrolling Text:     
+```
+#include <TFT_eSPI.h>
+
+TFT_eSPI tft = TFT_eSPI();           // Main TFT object
+TFT_eSprite spr = TFT_eSprite(&tft); // Sprite object linked to TFT
+
+int x_pos = 0;
+int x_dir = 2;
+
+void setup() {
+  tft.init();
+  tft.setRotation(1);
+  
+  // Create a sprite canvas (120 pixels wide by 50 pixels high)
+  spr.createSprite(120, 50);
+}
+
+void loop() {
+  // 1. Clear the sprite background (instead of the whole screen)
+  spr.fillSprite(TFT_BLACK);
+  
+  // 2. Set font and colors within the sprite
+  spr.setTextColor(TFT_GREEN, TFT_BLACK); // Text and background color
+  spr.drawString("ESP32", 10, 15, 4);      // String, x, y, font index
+
+  // 3. Push the sprite to the screen
+  spr.pushSprite(x_pos, 50); // Push to X position, Y position
+
+  // 4. Update position for movement
+  x_pos += x_dir;
+  if (x_pos > 200 || x_pos < 0) {
+    x_dir = -x_dir; // Bounce
+  }
+  
+  delay(10);
+}
+```
+Boucing Ball:      
+```
+#include <TFT_eSPI.h>
+TFT_eSprite ball = TFT_eSprite(&tft);  // Sprite object linked to TFT
+int x_pos_ball = 320 / 2;
+int y_pos_ball = 480 / 2;
+int x_dir_ball = 2;
+int y_dir_ball = 4;
+#define R_BALL 35
+// 1. MAKE THE SPRITE LARGER: Add padding so the sprite box covers its own trail.
+// Since your max speeds are x_dir=2 and y_dir=4, adding 10-15 pixels of padding is perfect.
+#define PADDING 10
+#define SPRITE_SIZE ((R_BALL * 2) + PADDING)
+
+void setup() {
+  tft.init();
+  tft.setRotation(1);
+  
+  // Create a sprite canvas
+    ball.createSprite(SPRITE_SIZE, SPRITE_SIZE);
+}
+
+void loop() {
+  // 2. Clear the internal Sprite canvas
+  ball.fillSprite(TFT_BLACK);
+
+  // 3. Draw the ball in the CENTER of the Sprite (Local coordinates)
+  ball.fillCircle((SPRITE_SIZE / 2), (SPRITE_SIZE / 2), R_BALL, TFT_ORANGE);
+
+  // 4. Push the Sprite to the TFT Screen (Global coordinates)
+  // We subtract SPRITE_SIZE/2 so x_pos_ball and y_pos_ball represent the center of the ball
+  ball.pushSprite((x_pos_ball - (SPRITE_SIZE / 2)), (y_pos_ball - (SPRITE_SIZE / 2)));
+
+
+  // Update the new coordinate after clearing the old sprite location with tft.fillRect, avoid using tft.fillScreen(TFT_BLACK);
+  // 5. Move the ball
+  x_pos_ball += x_dir_ball;
+  y_pos_ball += y_dir_ball;
+
+  // 6. Bounce Logic (accounting for radius so it bounces off edges properly)
+  if (x_pos_ball > (tft.width() - R_BALL) || x_pos_ball < R_BALL) {
+    x_dir_ball = -x_dir_ball;  // Fixed: Uncommented bounce
+    x_pos_ball += x_dir_ball;
+  }
+
+  if (y_pos_ball > (tft.height() - R_BALL) || y_pos_ball < R_BALL) {
+    y_dir_ball = -y_dir_ball;  // Bounce
+    y_pos_ball += y_dir_ball;
+  }
+
+  delay(10);
+
+}
+```     
 
 **pushRotated**      
 *pushRotated(angle)* is a geometric transformation function. It takes a source Sprite, rotates its pixels by a specified angle, and pastes it onto a destination. Instead of using (x, y) coordinates, it aligns the pivot point of the source sprite with the pivot point of the destination. Because it requires trigonometric calculations to map the rotated pixels, it is computationally heavier, but it is essential for drawing dynamic, rotating elements like gauge needles or clock hands.     
@@ -1639,108 +1741,6 @@ void drawNeedle(float angle) {
 ```
 
 
-
-**Best Practices**     
-- **Avoid Full-Screen Sprites**: ESP32 RAM is limited. Allocating a full-screen sprite (e.g., 320 × 240 × 2 bytes) can quickly cause a memory crash (OutOfMemory). Use smaller sprites for text, gauges, or small icons instead.
-- **Use Transparency**: To overlay sprites without overwriting the background, use *pushSprite(x, y, transparent_color)*. For example, if your background is black, use *spr.pushSprite(x, y, TFT_BLACK);*.
-
-For a full guide on installing and setting up the base TFT_eSPI library for ESP32 boards, you can refer to the [TFT_eSPI Getting Started Docs](https://doc-tft-espi.readthedocs.io/graphics/)) or follow this setup guide:
-
-
-**Code Example**     
-
-Scrolling Text:     
-```
-#include <TFT_eSPI.h>
-
-TFT_eSPI tft = TFT_eSPI();           // Main TFT object
-TFT_eSprite spr = TFT_eSprite(&tft); // Sprite object linked to TFT
-
-int x_pos = 0;
-int x_dir = 2;
-
-void setup() {
-  tft.init();
-  tft.setRotation(1);
-  
-  // Create a sprite canvas (120 pixels wide by 50 pixels high)
-  spr.createSprite(120, 50);
-}
-
-void loop() {
-  // 1. Clear the sprite background (instead of the whole screen)
-  spr.fillSprite(TFT_BLACK);
-  
-  // 2. Set font and colors within the sprite
-  spr.setTextColor(TFT_GREEN, TFT_BLACK); // Text and background color
-  spr.drawString("ESP32", 10, 15, 4);      // String, x, y, font index
-
-  // 3. Push the sprite to the screen
-  spr.pushSprite(x_pos, 50); // Push to X position, Y position
-
-  // 4. Update position for movement
-  x_pos += x_dir;
-  if (x_pos > 200 || x_pos < 0) {
-    x_dir = -x_dir; // Bounce
-  }
-  
-  delay(10);
-}
-```
-Boucing Ball:      
-```
-#include <TFT_eSPI.h>
-TFT_eSprite ball = TFT_eSprite(&tft);  // Sprite object linked to TFT
-int x_pos_ball = 320 / 2;
-int y_pos_ball = 480 / 2;
-int x_dir_ball = 2;
-int y_dir_ball = 4;
-#define R_BALL 35
-// 1. MAKE THE SPRITE LARGER: Add padding so the sprite box covers its own trail.
-// Since your max speeds are x_dir=2 and y_dir=4, adding 10-15 pixels of padding is perfect.
-#define PADDING 10
-#define SPRITE_SIZE ((R_BALL * 2) + PADDING)
-
-void setup() {
-  tft.init();
-  tft.setRotation(1);
-  
-  // Create a sprite canvas
-    ball.createSprite(SPRITE_SIZE, SPRITE_SIZE);
-}
-
-void loop() {
-  // 2. Clear the internal Sprite canvas
-  ball.fillSprite(TFT_BLACK);
-
-  // 3. Draw the ball in the CENTER of the Sprite (Local coordinates)
-  ball.fillCircle((SPRITE_SIZE / 2), (SPRITE_SIZE / 2), R_BALL, TFT_ORANGE);
-
-  // 4. Push the Sprite to the TFT Screen (Global coordinates)
-  // We subtract SPRITE_SIZE/2 so x_pos_ball and y_pos_ball represent the center of the ball
-  ball.pushSprite((x_pos_ball - (SPRITE_SIZE / 2)), (y_pos_ball - (SPRITE_SIZE / 2)));
-
-
-  // Update the new coordinate after clearing the old sprite location with tft.fillRect, avoid using tft.fillScreen(TFT_BLACK);
-  // 5. Move the ball
-  x_pos_ball += x_dir_ball;
-  y_pos_ball += y_dir_ball;
-
-  // 6. Bounce Logic (accounting for radius so it bounces off edges properly)
-  if (x_pos_ball > (tft.width() - R_BALL) || x_pos_ball < R_BALL) {
-    x_dir_ball = -x_dir_ball;  // Fixed: Uncommented bounce
-    x_pos_ball += x_dir_ball;
-  }
-
-  if (y_pos_ball > (tft.height() - R_BALL) || y_pos_ball < R_BALL) {
-    y_dir_ball = -y_dir_ball;  // Bounce
-    y_pos_ball += y_dir_ball;
-  }
-
-  delay(10);
-
-}
-```
 **Sprite deletion**      
 To release a sprite generated with the TFT_eSPI library, you call the deleteSprite() method on the sprite object. This frees the internal frame buffer that was allocated by createSprite().
 
