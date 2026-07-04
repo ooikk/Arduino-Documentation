@@ -524,11 +524,14 @@ if (test) {
 
 Below is the 565RGB text file structure modified from generated online by [565RGB Convertor](https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/). The code in 07_SDCard_Display_565.ino will load this file and send the pixel color to pushImage() function. The format is:    
   *Height,Width,{16-bit_pixels,16-bit_pixels....};*     
-Picture height is 320 and width is 480. Use ".565" as the image file extention.
+Picture height is 320 and width is 480. Use ".565" (sometimes rename as .h file to load in program memory) as the image file extention.
 ```
-320,480,{
-  0x7d1c, 0x7d1c, 0x7d1c,....
-...
+#define IMAGE_WIDTH 480
+#define IMAGE_HEIGHT 320
+
+// array size is 307,200
+static const uint16_t image[] PROGMEM = {
+  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 0x736d, 0x4a48
 };
 ```
@@ -572,67 +575,85 @@ Below is the Python script to batch convert ASCII RGB565 images file to binary R
 - [1.8" TFT Display](https://github.com/ooikk/Arduino-Documentation/blob/main/05_1.8_TFT_SPI_Display/1.8_TFT_Display.md)
 
 ```
-## run below command
-## python 565_to_bin_batch.py
-## all the file *.565 in current Directory will be converted to *.b565
-##
+#!/usr/bin/env python3
+"""
+Convert a C header with PROGMEM array (e.g. clockhand.h) to a binary .b565 file.
+Usage:
+    python 565_to_bin.py input.h output.b565
 
+The input file must contain:
+    #define SOMETHING_WIDTH  <number>
+    #define SOMETHING_HEIGHT <number>
+and a 'static const uint16_t name[] PROGMEM = { ... }' with hex values.
+The output is a raw binary file with:
+    height (uint16_t, little‑endian),
+    width  (uint16_t, little‑endian),
+    pixel data (uint16_t, little‑endian) in row‑major order.
+"""
+
+import sys
 import re
-import os
-import glob
+import struct
 
-def convert_text_565_to_binary(input_path, output_path):
-    """Convert a single .565 text file to binary format."""
-    with open(input_path, 'r') as f:
+def parse_defines(text):
+    """Extract width/height from any #define ending with WIDTH/HEIGHT."""
+    width = height = None
+    w_name = h_name = None
+    for match in re.finditer(r'#define\s+(\w+)\s+(\d+)', text):
+        name, val = match.group(1), int(match.group(2))
+        if name.upper().endswith('WIDTH') and width is None:
+            width, w_name = val, name
+        elif name.upper().endswith('HEIGHT') and height is None:
+            height, h_name = val, name
+        if width is not None and height is not None:
+            break
+    return width, height, w_name, h_name
+
+def parse_hex_numbers(text):
+    """Extract all 0xXXXX tokens and return list of ints."""
+    return [int(m, 16) for m in re.findall(r'0x[0-9A-Fa-f]{1,4}', text)]
+
+def main():
+    if len(sys.argv) != 3:
+        print("Usage: python 565_to_bin.py input.h output.b565")
+        sys.exit(1)
+
+    input_file, output_file = sys.argv[1], sys.argv[2]
+
+    with open(input_file, 'r', encoding='utf-8') as f:
         content = f.read()
-    
-    # Remove all whitespace (spaces, newlines, tabs)
-    compact = re.sub(r'\s+', '', content)
-    
-    # Format: height,width,{...};
-    match = re.match(r'(\d+),(\d+),\{([^}]+)\};?', compact)
-    if not match:
-        raise ValueError("Invalid .565 text format: expected height,width,{...}")
-    
-    height = int(match.group(1))   # first number is ALWAYS height
-    width  = int(match.group(2))   # second number is ALWAYS width
-    hex_part = match.group(3).strip(',')
-    
-    # Split and clean
-    hex_strings = [hs for hs in hex_part.split(',') if hs and hs.startswith('0x')]
-    pixels = [int(hs, 16) for hs in hex_strings]
-    
-    expected = height * width
-    if len(pixels) != expected:
-        raise ValueError(f"Pixel count mismatch: {len(pixels)} vs {expected}")
-    
-    with open(output_path, 'wb') as out:
-        out.write(height.to_bytes(2, 'little'))
-        out.write(width.to_bytes(2, 'little'))
-        for p in pixels:
-            out.write(p.to_bytes(2, 'little'))
-    
-    print(f"✅ {input_path}: {height}x{width}, {len(pixels)} pixels -> {output_path}")
 
-def batch_convert():
-    # Find all .565 files in the current directory
-    files = glob.glob("*.565")
-    if not files:
-        print("No .565 files found in current directory.")
-        return
-    
-    print(f"Found {len(files)} .565 file(s). Converting...\n")
-    
-    for input_file in files:
-        # Generate output filename: replace .565 with .b565
-        output_file = input_file.replace(".565", ".b565")
-        try:
-            convert_text_565_to_binary(input_file, output_file)
-        except Exception as e:
-            print(f"❌ Error converting {input_file}: {e}\n")
+    # 1. Extract dimensions
+    width, height, w_name, h_name = parse_defines(content)
+    if width is None or height is None:
+        print("Error: Could not find WIDTH/HEIGHT defines in input.", file=sys.stderr)
+        sys.exit(1)
+    print(f"Detected dimensions: {width}x{height} (from {w_name}, {h_name})", file=sys.stderr)
+
+    # 2. Extract pixel data
+    pixels = parse_hex_numbers(content)
+    expected = width * height
+    if len(pixels) != expected:
+        print(f"Warning: Found {len(pixels)} pixels, expected {expected}.", file=sys.stderr)
+        if len(pixels) < expected:
+            print("Padding missing pixels with 0x0000", file=sys.stderr)
+            pixels += [0] * (expected - len(pixels))
+        else:
+            print("Truncating to expected count", file=sys.stderr)
+            pixels = pixels[:expected]
+
+    # 3. Write binary file
+    with open(output_file, 'wb') as out:
+        # height, width as little-endian uint16_t
+        out.write(struct.pack('<HH', height, width))
+        # pixel data as little-endian uint16_t
+        for p in pixels:
+            out.write(struct.pack('<H', p))
+
+    print(f"Converted {input_file} -> {output_file}: {height}x{width}, {len(pixels)} pixels", file=sys.stderr)
 
 if __name__ == "__main__":
-    batch_convert()
+    main()
 ```
 
 **Other Pythons Tools for 565RGB**     
