@@ -1797,5 +1797,8 @@ mySprite.deleteSprite();
 |Release object (if new used)	|delete sprite|
 |Recreate sprite	|sprite.createSprite(w, h) after deleting|
 
-Always call deleteSprite() when you're done with a sprite to keep your RAM usage under control.
+Always call deleteSprite() when you're done with a sprite to keep your RAM usage under control.     
 
+Refer to this for more details about:
+- [sprite.h](https://github.com/Bodmer/TFT_eSPI/blob/master/Extensions/Sprite.h)
+- [TFT_eSPI.h](https://github.com/Bodmer/TFT_eSPI/blob/master/TFT_eSPI.h)
