@@ -44,7 +44,7 @@ SPIClass sdSPI(HSPI);
 
 TFT_eSprite gaugeSprite = TFT_eSprite(&tft);  // sprite for off‑screen rendering
 
-#define CUSTOM_NEEDLE
+//#define CUSTOM_NEEDLE
 
 #ifdef CUSTOM_NEEDLE
 // Create an instance of the sprite class for flickering-free smooth rotation
@@ -71,10 +71,27 @@ const int METER_Y = 10;  // Meter's top left location Y
 const int MIN_SPEED = 0;
 const int MAX_SPEED = 140;
 const int RED_ZONE_START = 120;
-const int GAUGE_SIZE = 240;  // diameter in pixels
+const int GAUGE_SIZE = 240;  // Gauge diameter in pixels
 const int MARGIN = 10;
 const char* ODO_TITLE = "KM/H";  //
+const int DIGITAL_TEXT_SIZE = 4;   // 
+const int TITLE_FONT = 4;   // 
 
+/***********************************************************************************
+0°   = right (3 o’clock)
+90°  = down (6 o’clock)
+180° = left (9 o’clock)
+270° = up (12 o’clock)
+360° = right again (full circle)
+====================================================================================
+You can adjust these angles to create different gauge shapes:
+Desired Gauge	                        START_ANGLE_DEG	  END_ANGLE_DEG    Sweep
+Bottom semicircle (like a tachometer)	180°	            360°	           180°
+Top semicircle	                      0°	              180°	           180°
+Full circle	                          0°	              360°	           360°
+Wide arc (240°)	                      150°	            390° (eg 30+360) 240°
+Narrow arc (90°)	                    225°	            315°	           90°
+***********************************************************************************/
 const float START_ANGLE_DEG = 135.0;  // upper‑left
 const float END_ANGLE_DEG = 405.0;    // upper‑right (270° sweep)
 
@@ -89,8 +106,8 @@ const uint16_t COLOR_DIGITAL_BG = 0xfffd;       // KK
 const uint16_t COLOR_DIGITAL_FRAME = 0xef7d;    // KK Sivler
 
 
-const int MAJOR_TICK_UNIT = 10;      //10;
-const int MINOR_TICK_UNIT = 2;       //5;
+const int MAJOR_TICK_UNIT = 10;      // = speed / 10 
+const int MINOR_TICK_UNIT = 2;       // = MAJOR_TICK_UNIT / MINOR_TICK_UNIT = number of minor ticks
 const int NEEDLE_LENGTH_RATIO = 65;  // shortened to avoid numbers
 
 // ======================== COMPUTED CONSTANTS ================================
@@ -120,8 +137,10 @@ void drawDigitalValue(float speed);
 // ======================== SETUP ============================================
 // Odormeter input
 float speed = MIN_SPEED;
+int speed_inc = 10;
 
-void setup() {
+  void
+  setup() {
   Serial.begin(115200);
   delay(1000);
 
@@ -175,8 +194,8 @@ void setup() {
   gaugeSprite.createSprite(SPRITE_W, SPRITE_H);
   gaugeSprite.setTextColor(TFT_WHITE, COLOR_BG);
   // CORRECT: Sets the pivot inside the destination sprite
-  gaugeSprite.setPivot(CENTER_X, CENTER_Y);
-  gaugeSprite.setTextSize(1);  // base size, we'll set per element
+  gaugeSprite.setPivot(CENTER_X, CENTER_Y);  // point in gaugeSprite area for needle to anchor/pivot
+  gaugeSprite.setTextSize(1);                // base size, we'll set per element
 
 #ifdef CUSTOM_NEEDLE
   needle.createSprite(CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT);
@@ -200,8 +219,12 @@ void loop() {
 
   // Uncomment below for a demo cycling speed:
 
-  speed += 1.0;
-  if (speed > MAX_SPEED) speed = MIN_SPEED;
+  speed += speed_inc;
+  if (speed > MAX_SPEED) {
+    speed = MIN_SPEED;
+    if (speed_inc == 1) speed_inc = 10;
+    else speed_inc = 1;
+  }
 
   drawGauge(speed);
 
@@ -225,7 +248,6 @@ void drawGauge(float speed) {
 
   drawNeedle(speed);
   gaugeSprite.pushSprite(METER_X, METER_Y);
-
 }
 
 void drawTicksAndNumbers() {
@@ -299,7 +321,7 @@ void drawDigitalValue(float speed) {
   //gaugeSprite.fillRect(x0, y0, boxWidth, boxHeight, COLOR_DIGITAL_BG);
   // Digital speed value – font size 2
   gaugeSprite.setTextColor(COLOR_DIGITAL);  //, COLOR_DIGITAL_BG);  // KK
-  gaugeSprite.setTextSize(4);
+  gaugeSprite.setTextSize(DIGITAL_TEXT_SIZE);
   boxHeight = gaugeSprite.fontHeight();
   boxWidth = gaugeSprite.textWidth("1234");  //find 4 digit width
   //gaugeSprite.fillRect(x0, y0 - 4, boxWidth, currentFontHeight + 4, COLOR_DIGITAL_BG);
@@ -320,7 +342,7 @@ void drawDigitalValue(float speed) {
   gaugeSprite.setTextColor(COLOR_DIGITAL_TITLE);  // KK
 
   //gaugeSprite.setFreeFont(&FreeMono9pt7b);
-  gaugeSprite.setTextFont(4);
+  gaugeSprite.setTextFont(TITLE_FONT);
   gaugeSprite.setTextSize(1);
 
   gaugeSprite.setTextDatum(TC_DATUM);
