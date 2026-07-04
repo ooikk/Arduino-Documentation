@@ -1486,7 +1486,7 @@ needle.pushRotated(&meterArea, angle, TFT_BLACK);   // push to another sprite me
 ```      
 
 **setPivot**       
-1. pushRotated to TFT screen direatly
+1. pushRotated to TFT screen direatly      
 To draw a needle directly to the TFT screen at any arbitrary location, you use the version of pushRotated() that does not take a sprite pointer.
 When pushing directly to the TFT, the library aligns the Source Sprite's Pivot with the TFT's Pivot.
 Here is exactly how to do it:
@@ -1539,7 +1539,7 @@ Before pushing the new angle, *fillSprite()* with background color and redraw ne
   needle.pushRotated(angle, TFT_BLACK);  // needle with black background color TFT_BLACK 
 ```      
 
-2. pushRotated to aother sprite      
+2. pushRotated to aother sprite          
 When pushing a rotated needle into a bigger sprite, you only need to think about two pivot points, and they work together like a hinge and a nail on a wall.
 The Mental Model    
 Imagine:     
