@@ -1469,6 +1469,8 @@ spr.pushSprite(x, y, transparent_color);
 ```
 spr.pushSprite(tft_x, tft_y, sprite_x, sprite_y, width, height);
 ```     
+
+
 **pushRotated**      
 *pushRotated(angle)* is a geometric transformation function. It takes a source Sprite, rotates its pixels by a specified angle, and pastes it onto a destination. Instead of using (x, y) coordinates, it aligns the pivot point of the source sprite with the pivot point of the destination. Because it requires trigonometric calculations to map the rotated pixels, it is computationally heavier, but it is essential for drawing dynamic, rotating elements like gauge needles or clock hands.     
 Examples:      
@@ -1484,10 +1486,10 @@ needle.pushRotated(&meterArea, angle, TFT_BLACK);   // push to another sprite me
 ```      
 
 **setPivot**       
-1. pushRotated to TFT screen direatly       
-   To draw a needle directly to the TFT screen at any arbitrary location, you use the version of pushRotated() that does not take a sprite pointer.
-   When pushing directly to the TFT, the library aligns the Source Sprite's Pivot with the TFT's Pivot.
-   Here is exactly how to do it:
+1. pushRotated to TFT screen direatly
+To draw a needle directly to the TFT screen at any arbitrary location, you use the version of pushRotated() that does not take a sprite pointer.
+When pushing directly to the TFT, the library aligns the Source Sprite's Pivot with the TFT's Pivot.
+Here is exactly how to do it:
 ```
 // --- INITIALIZATION ---
 // 1. Create and draw the needle
