@@ -1454,7 +1454,7 @@ spr.setColorDepth(8); // Switch to 8-bit color depth
 
 **pushSprite()**      
 1. Full Sprite Pushing      
-   Renders the entire sprite to the screen at a specified top-left coordinate. Example *spr.pushSprite(0, 0);* start from top left corner of the screen.
+*pushSprite(x, y)* is a fast, direct pixel-transfer function. It copies a source Sprite and pastes it onto a destination (the TFT screen or another Sprite) at exact (x, y) coordinates. It always aligns the top-left corner of the source sprite to the target location. Because it involves no complex math, it is extremely fast and efficient.                  
 ```
 spr.pushSprite(x, y);
 ```
@@ -1469,7 +1469,47 @@ spr.pushSprite(x, y, transparent_color);
 ```
 spr.pushSprite(tft_x, tft_y, sprite_x, sprite_y, width, height);
 ```
- 
+**pushRotated**      
+*pushRotated(angle)* is a geometric transformation function. It takes a source Sprite, rotates its pixels by a specified angle, and pastes it onto a destination. Instead of using (x, y) coordinates, it aligns the pivot point of the source sprite with the pivot point of the destination. Because it requires trigonometric calculations to map the rotated pixels, it is computationally heavier, but it is essential for drawing dynamic, rotating elements like gauge needles or clock hands.     
+Examples:      
+```
+
+           // Push a rotated copy of Sprite to TFT with optional transparent colour
+  bool     pushRotated(int16_t angle, uint32_t transp = 0x00FFFFFF);
+           // Push a rotated copy of Sprite to another different Sprite with optional transparent colour
+  bool     pushRotated(TFT_eSprite *spr, int16_t angle, uint32_t transp = 0x00FFFFFF);
+
+needle.pushRotated(angle, TFT_WHITE);               // rotate at angle and ignore background color TFT_WHITE
+needle.pushRotated(&meterArea, angle, TFT_BLACK);   // push to another sprite meterArea
+```
+
+**setPivot**       
+1. pushRotated to TFT screen direatly       
+   To draw a needle directly to the TFT screen at any arbitrary location, you use the version of pushRotated() that does not take a sprite pointer.
+   When pushing directly to the TFT, the library aligns the Source Sprite's Pivot with the TFT's Pivot.
+   Here is exactly how to do it:
+   ```
+// --- INITIALIZATION ---
+// 1. Create and draw the needle
+needle.createSprite(CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT);
+needle.setSwapBytes(true); // Fix the red/blue color swap
+needle.pushImage(0, 0, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
+
+// 2. Set the needle's pivot (where the physical pin is inside the image)
+needle.setPivot(NEEDLE_CENTERX, NEEDLE_CENTERY);
+
+// --- DRAWING FUNCTION ---
+void drawNeedleOnScreen(float angle, int screenX, int screenY) {
+  // 1. Tell the TFT where the center of rotation is on the physical screen
+  tft.setPivot(screenX, screenY);
+  
+  // 2. Push directly to the TFT. 
+  // The library automatically aligns needle.setPivot() with tft.setPivot()
+  needle.pushRotated((int16_t)angle, TFT_BLACK);
+}
+  ```
+
+
 
 **Best Practices**     
 - **Avoid Full-Screen Sprites**: ESP32 RAM is limited. Allocating a full-screen sprite (e.g., 320 × 240 × 2 bytes) can quickly cause a memory crash (OutOfMemory). Use smaller sprites for text, gauges, or small icons instead.
