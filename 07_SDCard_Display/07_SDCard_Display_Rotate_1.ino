@@ -30,14 +30,20 @@ SPIClass sdSPI(VSPI);
 SPIClass sdSPI(HSPI);
 #endif
 
+
+//#define METER_AREA
+
 // Clock hand 565RGB image
 #include <scaled_clockhand.h>
 // Create an instance of the sprite class for flickering-free smooth rotation
 TFT_eSprite needle(&tft);
-TFT_eSprite meterArea(&tft);
 
+#ifdef METER_AREA
+TFT_eSprite meterArea(&tft);
+#endif
 
 int angle = 0;
+int angle_inc = 30;
 
 // ---------- User Settings ----------
 
@@ -49,7 +55,7 @@ int angle = 0;
 #define SCREEN_PIVOT_Y 140
 
 #define METER_X 50
-#define METER_Y 50
+#define METER_Y 80
 
 
 void setup() {
@@ -87,16 +93,28 @@ void setup() {
 
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
-
   needle.setSwapBytes(true);
+
+#ifdef METER_AREA
+
   needle.createSprite(CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT);
   needle.pushImage(0, 0, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
   needle.setPivot(NEEDLE_CENTERX, NEEDLE_CENTERY);
 
   meterArea.createSprite(CLOCKHAND_HEIGHT * 2, CLOCKHAND_HEIGHT * 2);
   meterArea.fillSprite(TFT_BLACK);
-  meterArea.setPivot(CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT);
+  meterArea.setPivot(CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT); 
+#else
 
+  needle.createSprite(CLOCKHAND_HEIGHT * 2, CLOCKHAND_HEIGHT * 2);
+  needle.fillSprite(TFT_YELLOW);
+  needle.pushImage(CLOCKHAND_HEIGHT-NEEDLE_CENTERX, CLOCKHAND_HEIGHT-NEEDLE_CENTERY, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
+  needle.setPivot(CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT);
+  //needle.fillSprite(TFT_WHITE);
+  tft.setPivot(METER_X+CLOCKHAND_HEIGHT, METER_Y+CLOCKHAND_HEIGHT);   // pivot point to lay the image on tft screen
+  //needle.pushRotated((int)0, TFT_BLACK);
+
+#endif
   // Set the screen pivot (where the needle will rotate)
   //tft.setPivot(SCREEN_PIVOT_X, SCREEN_PIVOT_Y);
 
@@ -112,19 +130,37 @@ void loop() {
   // Method 1: push to the sprite
   //needle.fillSprite(TFT_BLACK);
   //needle.pushRotated(angle_old, TFT_WHITE);
-
+#ifdef METER_AREA
   // Method 2: just fill circle to tft directly
   // tft.fillCircle(SCREEN_PIVOT_X,SCREEN_PIVOT_Y,CLOCKHAND_HEIGHT,TFT_BLACK);
-  meterArea.fillSprite(TFT_BLACK);
-  meterArea.drawCircle(CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT, TFT_YELLOW);
-  meterArea.drawCircle(CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT - 1, TFT_YELLOW);
+  meterArea.fillSprite(TFT_WHITE);
+  meterArea.drawCircle(CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT, TFT_GREEN);
+  meterArea.drawCircle(CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT - 1, TFT_GREEN);
+  meterArea.drawCircle(CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT, CLOCKHAND_HEIGHT - 2, TFT_GREEN);
   needle.pushImage(0, 0, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
-  needle.pushRotated(&meterArea, angle, TFT_BLACK);
+  needle.pushRotated(&meterArea, angle, TFT_BLACK);  // needle with black background color TFT_BLACK
 
   meterArea.pushSprite(METER_X, METER_Y);
 
+#else
+
+  //needle.fillSprite(TFT_YELLOW);  // to see the effect
+  needle.fillSprite(TFT_BLACK);
+  needle.pushImage(CLOCKHAND_HEIGHT-NEEDLE_CENTERX, CLOCKHAND_HEIGHT-NEEDLE_CENTERY, CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT, clockhand);
+  needle.pushRotated(angle, TFT_WHITE);  // needle with black background color TFT_BLACK if use black it will skip black from image hence will not erase past pixel.
+
+#endif
+
   // 4. Update angle for next frame
-  angle = (angle + 1) % 360;
+  //angle = (angle + 1) % 360;
+  angle += angle_inc;
+  if (angle >= 360) {
+    angle = 0;
+    if (angle_inc == 1) angle_inc = 30;
+    else angle_inc = 1;
+  }
+
+
 
   delay(10);  // Adjust speed
 }

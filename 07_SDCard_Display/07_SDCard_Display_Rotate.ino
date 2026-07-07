@@ -58,14 +58,16 @@ const uint16_t arrowIcon[256] PROGMEM = {
 int angle = 0;  // Tracks rotation angle (0 to 360 degrees)
 
 #else
+
 // Create an instance of the sprite class for flickering-free smooth rotation
 //TFT_eSprite* needleSprite = nullptr;  // Will hold the scaled needle
+
 TFT_eSprite blackScreen = TFT_eSprite(&tft);
 TFT_eSprite needle(&tft);
 
 int angle = 0;
-int angle_old = 0;
-int dstW, dstH;
+int angle_inc = 30;
+int dstW, dstH, pivotX, pivotY;
 // ---------- User Settings ----------
 #define SCALE_FACTOR 0.5f   // Must be < 1 to downscale
 #define NEEDLE_CENTERX 14   // Original pivot X (from top-left)
@@ -353,16 +355,17 @@ void setup() {
   // Compute destination dimensions (round to nearest integer, at least 1)
   dstW = max(1, (int)(CLOCKHAND_WIDTH * SCALE_FACTOR + 0.5f));
   dstH = max(1, (int)(CLOCKHAND_HEIGHT * SCALE_FACTOR + 0.5f));
+  // Set the sprite's pivot to the scaled original pivot
+  pivotX = (int)(NEEDLE_CENTERX * SCALE_FACTOR + 0.5f);
+  pivotY = (int)(NEEDLE_CENTERY * SCALE_FACTOR + 0.5f);
+
 
   blackScreen.createSprite(dstH * 2, dstH * 2);
   blackScreen.fillSprite(TFT_BLACK);
-  blackScreen.setPivot(dstH, dstH);  // at center of the sprite
-
+  blackScreen.setPivot(dstH, dstH);  // center of black area, pivot for the needle to pin on
   needle.createSprite(dstW, dstH);
-  // Set the sprite's pivot to the scaled original pivot
-  int pivotX = (int)(NEEDLE_CENTERX * SCALE_FACTOR + 0.5f);
-  int pivotY = (int)(NEEDLE_CENTERY * SCALE_FACTOR + 0.5f);
-  needle.setPivot(pivotX, pivotY);
+  needle.setPivot(pivotX, pivotY);   // draw to blackScreen' dstH and dstW location
+
   needle.setSwapBytes(true);
   // Create the scaled needle sprite
   scaleClockHand(&needle);
@@ -390,17 +393,22 @@ void loop() {
 #else
 
   // Clear the whole screen (removes any ghost)
-  blackScreen.fillSprite(TFT_WHITE);
+  blackScreen.fillSprite(TFT_WHITE); //
   // scale the image
-  scaleClockHand(&needle); 
+  scaleClockHand(&needle);
 
   // Push the rotated needle to blackScreen sprite memory
-  needle.pushRotated(&blackScreen, angle, TFT_WHITE);
+  needle.pushRotated(&blackScreen, angle, TFT_BLACK);  // TFT_BLACK image is black background
   // Push the sprite to tft
   blackScreen.pushSprite(SCREEN_PIVOT_X, SCREEN_PIVOT_Y);
 
   // 4. Update angle for next frame
-  angle = (angle + 1) % 360;
+  angle = (angle + angle_inc);  // % 360;
+  if (angle >= 360) {
+    angle = 0;
+    if (angle_inc == 1) angle_inc = 30;
+    else angle_inc = 1;
+  }
 
   delay(15);  // Adjust speed
 

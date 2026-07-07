@@ -56,7 +56,7 @@ TFT_eSprite needle(&tft);
 
 #define NEEDLE_CENTERX 7     // Original pivot X (from top-left)
 #define NEEDLE_CENTERY 86    // Original pivot Y (from top-left)
-#define NEEDLE_START_ADJ 90  // Adjustment for 0 reading angle
+#define NEEDLE_START_ADJ 90  // Adjustment for 0 reading angle. gauge 0° at 3 o’clock position, pushRotated 0° at 12 o’clock position
 
 // Display pivot (where the needle rotates around on screen)
 //#define SCREEN_PIVOT_X CENTER_X  // Example: center of a 320x240 screen
@@ -75,7 +75,8 @@ const int GAUGE_SIZE = 240;  // Gauge diameter in pixels
 const int MARGIN = 10;
 const char* ODO_TITLE = "KM/H";  //
 const int DIGITAL_TEXT_SIZE = 4;   // 
-const int TITLE_FONT = 4;   // 
+//const int TITLE_FONT = 4;   // 1, 2, 4
+#define TITLE_FONT &FreeSerif12pt7b  // 9pt, 12pt, 18pt, 24pt etc
 
 /***********************************************************************************
 0°   = right (3 o’clock)
@@ -210,6 +211,8 @@ int speed_inc = 10;
   drawGauge(0);
 }
 
+
+
 void loop() {
 
   // Example: read speed from an analog input (potentiometer)
@@ -273,6 +276,7 @@ void drawTicksAndNumbers() {
 
   // Draw numbers (major ticks) with font size 1 (keep original)
   gaugeSprite.setTextColor(COLOR_NUMBERS, COLOR_BG);
+  gaugeSprite.setTextFont(1);
   gaugeSprite.setTextSize(1);  // <-- scale numbers remain size 1
   gaugeSprite.setTextDatum(MC_DATUM);
 
@@ -321,6 +325,7 @@ void drawDigitalValue(float speed) {
   //gaugeSprite.fillRect(x0, y0, boxWidth, boxHeight, COLOR_DIGITAL_BG);
   // Digital speed value – font size 2
   gaugeSprite.setTextColor(COLOR_DIGITAL);  //, COLOR_DIGITAL_BG);  // KK
+  gaugeSprite.setTextFont(1);   // use internal fonts
   gaugeSprite.setTextSize(DIGITAL_TEXT_SIZE);
   boxHeight = gaugeSprite.fontHeight();
   boxWidth = gaugeSprite.textWidth("1234");  //find 4 digit width
@@ -341,14 +346,14 @@ void drawDigitalValue(float speed) {
   // "km/h" label – also font size 2
   gaugeSprite.setTextColor(COLOR_DIGITAL_TITLE);  // KK
 
-  //gaugeSprite.setFreeFont(&FreeMono9pt7b);
-  gaugeSprite.setTextFont(TITLE_FONT);
+  gaugeSprite.setFreeFont(TITLE_FONT);    // use freefont
+  //gaugeSprite.setTextFont(TITLE_FONT);
   gaugeSprite.setTextSize(1);
 
   gaugeSprite.setTextDatum(TC_DATUM);
   //gaugeSprite.drawString("km/h", CENTER_X, y0 + boxHeight * 0.75);
   gaugeSprite.drawString(ODO_TITLE, CENTER_X, y0 + boxHeight + 4);
-  //gaugeSprite.setFreeFont(NULL);
-  gaugeSprite.setTextFont(1);
-  gaugeSprite.setTextSize(1);
+  gaugeSprite.setFreeFont(NULL);
+  //gaugeSprite.setTextFont(1);
+  //gaugeSprite.setTextSize(1);
 }
