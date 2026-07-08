@@ -20,10 +20,12 @@
 
 
 //#define SMALLER_IMAGE
+/*
 #define SCR_WIDTH 200
 #define SCR_HEIGHT 150
 #define SCR_OFFSET_X 20
 #define SCR_OFFSET_Y 30
+*/
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -32,12 +34,14 @@ TFT_eSprite gaugeSpr = TFT_eSprite(&tft);  // Create a localized sprite instance
 int needleAngle = 0;
 void drawGaugeNeedle(int centerX, int centerY, int angle, int length, uint16_t color);
 void startGaugeMeter(int needleAngle);
+#define SPR_DIAMETER 120
 
 // 150x150 pixel twin gauge canvas
 TFT_eSprite gaugeMeter = TFT_eSprite(&tft);  // Create a localized sprite instance
 float temperature = 0.0;
 float speed = 0.0;
 void drawCustomGauge(float val, float minVal, float maxVal, const char* label);
+#define CUSTOM_DIAMETER 150
 
 // Dedicated sprite for the classic panel gauge
 TFT_eSprite classGauge = TFT_eSprite(&tft);
@@ -65,10 +69,10 @@ void setup() {
   delay(500);
 
   // Allocate memory for a 120x120 pixel canvas for the odometer gauge
-  gaugeSpr.createSprite(120, 120);
+  gaugeSpr.createSprite(SPR_DIAMETER, SPR_DIAMETER);
 
   // Allocate memory block for our 150x150 pixel gauge canvas
-  gaugeMeter.createSprite(150, 150);
+  gaugeMeter.createSprite(CUSTOM_DIAMETER, CUSTOM_DIAMETER);
 
   // Allocate the Sprite memory box ONCE right here at startup
   classGauge.createSprite(PANEL_WIDTH, PANEL_HEIGHT);
@@ -144,6 +148,7 @@ void loop() {
 
   /*  Guage 1 */
   startGaugeMeter(needleAngle);
+  gaugeSpr.pushSprite(10, 10);
   // Update odometer value for next frame
   needleAngle += 2;
   if (needleAngle > 180) needleAngle = 0;
@@ -203,16 +208,16 @@ void startGaugeMeter(int needleAngle) {
   gaugeSpr.fillSprite(TFT_BLACK);
 
   // 2. Draw static gauge elements on the sprite
-  gaugeSpr.drawCircle(60, 60, 55, TFT_WHITE);
+  gaugeSpr.drawCircle(SPR_DIAMETER / 2, SPR_DIAMETER / 2, SPR_DIAMETER / 2 - 5, TFT_WHITE);  // Smaller radius with margin
   gaugeSpr.setFreeFont(&FreeSans9pt7b);
-  gaugeSpr.drawCentreString("km/h", 60, 80, 1);
+  gaugeSpr.drawCentreString("km/h", SPR_DIAMETER / 2, SPR_DIAMETER / 2 + 20, 1);  // 20 pixel below center of gauge
 
   // 3. Draw the dynamic updating needle
   // pivot points are center of sprite (60,60), length 45 pixels
-  drawGaugeNeedle(60, 60, needleAngle, 45, TFT_RED);
+  drawGaugeNeedle(SPR_DIAMETER / 2, SPR_DIAMETER / 2, needleAngle, SPR_DIAMETER / 2 - 15, TFT_RED);  // ensure needle length is less than the circle
 
   // 4. Push the finished, crisp frame instantly to coordinates (X=50, Y=50)
-  gaugeSpr.pushSprite(10, 10);
+  //gaugeSpr.pushSprite(10, 10);
 }
 
 void drawGaugeNeedle(int centerX, int centerY, int angle, int length, uint16_t color) {
@@ -243,9 +248,9 @@ void drawCustomGauge(float val, float minVal, float maxVal, const char* label) {
   // 1. Initialize/Clear the Sprite workspace (Size: 150x150 pixels)
   gaugeMeter.fillSprite(TFT_BLACK);
 
-  int cx = 75;  // Center X of the gauge box
-  int cy = 75;  // Center Y of the gauge box
-  int r = 65;   // Outer radius of the gauge scale ring
+  int cx = CUSTOM_DIAMETER / 2;      // Center X of the gauge box
+  int cy = CUSTOM_DIAMETER / 2;      // Center Y of the gauge box
+  int r = CUSTOM_DIAMETER / 2 - 10;  // Outer radius of the gauge scale ring, add margin
 
   // Define angles: 0 degrees is straight right in math, so:
   // 135 deg = bottom-left start, 405 deg = bottom-right end (total 270 deg arc)
@@ -303,7 +308,7 @@ void drawCustomGauge(float val, float minVal, float maxVal, const char* label) {
   float needleAngle = startAngle + ((val - minVal) * (endAngle - startAngle) / (maxVal - minVal));
   float needleRad = needleAngle * 3.14159 / 180.0;
 
-  int needleLength = 48;
+  int needleLength = CUSTOM_DIAMETER / 2 - 30;  // 48;
   int nx = cx + (needleLength * cos(needleRad));
   int ny = cy + (needleLength * sin(needleRad));
 
@@ -336,12 +341,12 @@ void drawCustomGauge(float val, float minVal, float maxVal, const char* label) {
  */
 void drawClassicGauge(float val, float minVal, float maxVal, const char* label) {
   // 1. Clear the sprite canvas with a clean white background
-  classGauge.fillSprite(TFT_BLACK);  //TFT_WHITE);
+  //classGauge.fillSprite(TFT_BLACK);  //TFT_WHITE);
 
   // 2. Map coordinates directly to a widescreen layout configuration
-  int cx = PANEL_WIDTH / 2;                    // Centered horizontally
-  int cy = PANEL_HEIGHT + (PANEL_WIDTH / 45);  // Drop center point *just* below the floor line
-  int r = (PANEL_WIDTH * 50) / 100;            // Boosted radius to 45% of total width (90% of half-width) to fill edges
+  int cx = PANEL_WIDTH / 2;          // Centered horizontally
+  int cy = PANEL_HEIGHT * 0.9;       //+ (PANEL_WIDTH / 45);  // Drop center point *just* below the floor line
+  int r = (PANEL_WIDTH * 45) / 100;  // Boosted radius to 45% of total width (90% of half-width) to fill edges
 
   // True classic wide sweeping arc limit angles
   int startAngle = 218;
@@ -357,15 +362,21 @@ void drawClassicGauge(float val, float minVal, float maxVal, const char* label) 
   classGauge.drawRoundRect(4, 4, PANEL_WIDTH - 8, PANEL_HEIGHT - 8, 4, TFT_BLACK);
 
   // 4. Draw the Continuous Curved Scale Background Arc Line
+#define USE_DRAW_ARC
+#ifndef USE_DRAW_ARC
   for (int a = startAngle; a < endAngle; a++) {
     float rad1 = a * 3.14159 / 180.0;
     float rad2 = (a + 1) * 3.14159 / 180.0;
     classGauge.drawLine(cx + (r * cos(rad1)), cy + (r * sin(rad1)),
                         cx + (r * cos(rad2)), cy + (r * sin(rad2)), TFT_BLACK);
   }
+#else
+  classGauge.drawSmoothArc(cx, cy, r + 1, r + 1, startAngle - 90, endAngle - 90, TFT_BLACK, TFT_SILVER);
+#endif
 
   // 5. Draw All Scale Ticks (31 marks total creates perfect increments of 0.5)
   int totalTicks = 31;
+  int tickWidth = 1;
   for (int i = 0; i < totalTicks; i++) {
     float angle = startAngle + (i * (endAngle - startAngle) / (float)(totalTicks - 1));
     float rad = angle * 3.14159 / 180.0;
@@ -373,11 +384,13 @@ void drawClassicGauge(float val, float minVal, float maxVal, const char* label) 
     // Scale tick mark lines based on frame depth factors
     int tickLen = PANEL_WIDTH / 60;
     if (tickLen < 3) tickLen = 3;
-
+    tickWidth = 1;
     if (i % 10 == 0) {
       tickLen = PANEL_WIDTH / 16;  // Major markers (0, 5, 10, 15)
+      tickWidth = 3;
     } else if (i % 5 == 0) {
       tickLen = PANEL_WIDTH / 24;  // Halfway marker points
+      tickWidth = 2;
     }
 
     // Ticks extend inward from the main arc line boundary path
@@ -386,7 +399,8 @@ void drawClassicGauge(float val, float minVal, float maxVal, const char* label) 
     int x1 = cx + ((r - tickLen) * cos(rad));
     int y1 = cy + ((r - tickLen) * sin(rad));
 
-    classGauge.drawLine(x0, y0, x1, y1, TFT_BLACK);
+    //classGauge.drawLine(x0, y0, x1, y1, TFT_BLACK);
+    classGauge.drawWideLine(x0, y0, x1, y1, tickWidth, TFT_BLACK);
   }
 
   // 6. Draw the 4 Major Scale Numbers (0, 5, 10, 15)
@@ -408,7 +422,7 @@ void drawClassicGauge(float val, float minVal, float maxVal, const char* label) 
       textX += 0;  //6;
       textY += 5;
     }
-    if (i == 3) {
+    if (i == (numLabels - 1)) {
       textX -= -4;  //6;
       textY += 5;
     }
@@ -440,20 +454,20 @@ void drawClassicGauge(float val, float minVal, float maxVal, const char* label) 
   // =========================================================================
   // 8. IMPROVED: Draw Tapered Pointer Needle with Counterweight
   // =========================================================================
- val = constrain(val, minVal, maxVal);
+  val = constrain(val, minVal, maxVal);
   float needleAngle = startAngle + ((val - minVal) * (endAngle - startAngle) / (maxVal - minVal));
-  
+
   // Radians for the main pointer direction and its perpendicular thickness vectors
   float rad = needleAngle * 3.14159 / 180.0;
-  float radLeft  = (needleAngle - 90) * 3.14159 / 180.0;
+  float radLeft = (needleAngle - 90) * 3.14159 / 180.0;
   float radRight = (needleAngle + 90) * 3.14159 / 180.0;
 
   // Length dimensions scaled to your radius
-  int tipLength  = r - 2;                        // Reaches out near the tick marks
-  int tailLength = PANEL_WIDTH / 15;             // The counterweight tail extending backwards
-  
-  // Thickness dimensions 
-  float baseThickness = PANEL_WIDTH / 75.0;      // Thickness at the center pivot hub point
+  int tipLength = r - 2;              // Reaches out near the tick marks
+  int tailLength = PANEL_WIDTH / 15;  // The counterweight tail extending backwards
+
+  // Thickness dimensions
+  float baseThickness = PANEL_WIDTH / 75.0;  // Thickness at the center pivot hub point
   if (baseThickness < 2.5) baseThickness = 2.5;
 
   // Calculate the 4 coordinate positions
@@ -489,9 +503,9 @@ void drawClassicGauge(float val, float minVal, float maxVal, const char* label) 
   // 9. Pivot Hub accent circle overlay at the base
   // =========================================================================
   int hubRadius = PANEL_WIDTH / 15;
-  classGauge.fillCircle(cx, cy, hubRadius, 0x31A6); 
+  classGauge.fillCircle(cx, cy, hubRadius, 0x31A6);
   classGauge.fillCircle(cx, cy, hubRadius - 2, TFT_BLACK);
-  classGauge.fillCircle(cx, cy, 2, TFT_SILVER); // Small center pin head accent dot
+  classGauge.fillCircle(cx, cy, 2, TFT_SILVER);  // Small center pin head accent dot
 
 
 #else
@@ -510,6 +524,7 @@ void drawClassicGauge(float val, float minVal, float maxVal, const char* label) 
   int ny1 = cy + (needleEndR * sin(needleRad));
 
   //classGauge.drawLine(nx0, ny0, nx1, ny1, TFT_RED);
-  classGauge.drawWideLine(nx0, ny0, nx1, ny1, 2, TFT_RED, TFT_RED);
+  //classGauge.drawWideLine(nx0, ny0, nx1, ny1, 2, TFT_RED, TFT_RED);
+  classGauge.drawWedgeLine(nx0, ny0, nx1, ny1, 4, 1, TFT_RED, TFT_RED);
 #endif
 }

@@ -199,13 +199,28 @@ void drawAnalogTicks() {
 
 // Generates structural tracking arcs with anti-aliasing edges
 void drawGaugeTrack(float pct, uint16_t dynamicColor) {
-  // Empty background static containment guide channel ring
-  gauge.drawSmoothArc(CENTER, CENTER, RADIUS, RADIUS - 8, START_ANG, END_ANG, COLOR_BG, COLOR_CARD);
 
+  // Empty background static containment guide channel ring
+  // drawSmoothArc 0 deg is at 6 O'clock position, need to -90, total -180 due to  addition -90 phase correction at drawLine
+  // START_ANG - 180 = -45, so add 360 to make it positive
+  float tempAngle_Start = START_ANG - 180;
+  //tempAngle_Start < 0 ? tempAngle_Start + 360 : tempAngle_Start;
+  if (tempAngle_Start < 0) {
+    tempAngle_Start += 360;
+  }
+  float tempAngle_End = END_ANG - 180;
+  if (tempAngle_End < 0) {
+    tempAngle_End += 360;
+  }
+  gauge.drawSmoothArc(CENTER, CENTER, RADIUS, RADIUS - 8, tempAngle_Start, tempAngle_End, COLOR_BG, COLOR_CARD);
   // Overlay responsive dynamic progress indicator stroke filling track
   if (pct > 0.01) {
-    float activeEndAngle = START_ANG + (pct * (END_ANG - START_ANG));
-    gauge.drawSmoothArc(CENTER, CENTER, RADIUS, RADIUS - 8, START_ANG, activeEndAngle, dynamicColor, COLOR_CARD);
+    float activeEndAngle = START_ANG + (pct * (END_ANG - START_ANG)) - 180;
+
+    if (activeEndAngle < 0) {
+      activeEndAngle += 360;
+    }
+    gauge.drawSmoothArc(CENTER, CENTER, RADIUS, RADIUS - 8, tempAngle_Start, activeEndAngle, dynamicColor, COLOR_CARD);
   }
 }
 
@@ -256,11 +271,11 @@ void drawTypography(uint16_t dynamicColor) {
 // Basic simulated sine sweep engine mirroring genuine sensor fluctuations over execution intervals
 void simulateSensorData() {
   static unsigned long lastTimeCheck = 0;
-  if (millis() - lastTimeCheck > 3500) {
+  if (millis() - lastTimeCheck > 1000) {
     lastTimeCheck = millis();
     // Drops dynamic target limits anywhere randomly spanning scale minimum directly through scale maximum
     //targetValue = random(RANGE_MIN * 10, RANGE_MAX * 10) / 10.0;
-    targetValue += 10;
+    targetValue += 5;
     if (targetValue > RANGE_MAX)
       targetValue = RANGE_MIN;
   }
