@@ -106,7 +106,8 @@ void loop() {
   simulateSensor();
 
   // Smooth out needle physics using linear interpolation (lerp)
-  currentValue += (targetValue - currentValue) * 0.15;
+  //currentValue += (targetValue - currentValue) * 0.15;
+  currentValue = targetValue;
 
   // 1. Reset canvas with container background color
   gauge.fillSprite(COLOR_CARD);
@@ -134,12 +135,14 @@ void loop() {
 
 void drawGaugeTrack(float pct) {
   // Background static guide track ring
-  gauge.drawSmoothArc(CENTER, CENTER, RADIUS, RADIUS - 10, START_ANG, END_ANG, COLOR_BG, COLOR_CARD);
+  gauge.drawSmoothArc(CENTER, CENTER, RADIUS, RADIUS - 10, START_ANG - 180 + 360, END_ANG - 180, COLOR_BG, COLOR_CARD);
 
   // Dynamic active mint progress ring overlay
   if (pct > 0.01) {
-    float activeEnd = START_ANG + (pct * (END_ANG - START_ANG));
-    gauge.drawSmoothArc(CENTER, CENTER, RADIUS, RADIUS - 10, START_ANG, activeEnd, COLOR_MINT, COLOR_CARD);
+    float activeEnd = START_ANG + (pct * (END_ANG - START_ANG)) - 180;
+    //(activeEnd < 0) ? (float)activeEnd + 360 : activeEnd;
+    if (activeEnd < 0) activeEnd += 360;
+    gauge.drawSmoothArc(CENTER, CENTER, RADIUS, RADIUS - 10, START_ANG - 180 + 360, activeEnd, COLOR_MINT, COLOR_CARD);
   }
 }
 
@@ -167,7 +170,7 @@ void drawTypography() {
   gauge.drawString(GAUGE_TITLE, CENTER, CENTER - 45, 2);
 
   // Clean digital output layout value
-  gauge.setTextColor(COLOR_WHITE, COLOR_CARD);   // over write old text
+  gauge.setTextColor(COLOR_WHITE, COLOR_CARD);  // over write old text
   char valBuffer[10];
   dtostrf(currentValue, 4, 1, valBuffer);  // Format string to 1 decimal place, recommend method
   //sprintf(valBuffer, "%.1f", (currentValue + 0.05));
@@ -181,8 +184,11 @@ void drawTypography() {
 void simulateSensor() {
   // Random walk sweep simulator logic
   static unsigned long lastUpdate = 0;
-  if (millis() - lastUpdate > 3000) {
+  if (millis() - lastUpdate > 1000) {
     lastUpdate = millis();
-    targetValue = random(RANGE_MIN * 10, RANGE_MAX * 10) / 10.0;
+    //  targetValue = random(RANGE_MIN * 10, RANGE_MAX * 10) / 10.0;
+
+    targetValue += 5;
+    if (targetValue > RANGE_MAX) targetValue = RANGE_MIN;
   }
 }
