@@ -1,6 +1,9 @@
 // Define the SD Chip Select pin (must match wiring)
 #define VSPI_PIN  // SD card is using VSPI and TFT is using HSPI
 
+// Need to comment off #define MY_ILI9488 in User_Setup.h
+//#define TFT_DISPLAY_1P8
+
 #include <SPI.h>
 #include <SD.h>
 #include <TFT_eSPI.h>
@@ -15,8 +18,11 @@
 #define SD_MOSI_PIN 11
 #endif
 
+#ifndef TFT_DISPLAY_1P8
+
 #define SD_CS_PIN 7
 #define SD_FREQUENCY 16000000  // 16MHz or 4MHz
+#endif
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -65,18 +71,30 @@ TFT_eSprite needle(&tft);
 
 
 // ======================== USER CONFIGURABLE PARAMETERS ========================
-const int METER_X = 10;  // Meter's top left location X
-const int METER_Y = 10;  // Meter's top left location Y
+const int METER_X = 0;  //10;  // Meter's top left location X
+const int METER_Y = 0;  //10;  // Meter's top left location Y
 
+#ifdef TFT_DISPLAY_1P8
+const int MIN_SPEED = 0;
+const int MAX_SPEED = 100;
+const int RED_ZONE_START = 80;
+const int GAUGE_SIZE = 120;       //240;  // Gauge diameter in pixels
+const int MARGIN = 4;             //10;
+const char* ODO_TITLE = "KM/H";   //
+const int DIGITAL_TEXT_SIZE = 1;  //
+const int TITLE_FONT = 2;   // 1, 2, 4
+//#define TITLE_FONT &FreeSerif12pt7b  // 9pt, 12pt, 18pt, 24pt etc
+#else
 const int MIN_SPEED = 0;
 const int MAX_SPEED = 140;
 const int RED_ZONE_START = 120;
 const int GAUGE_SIZE = 240;  // Gauge diameter in pixels
 const int MARGIN = 10;
-const char* ODO_TITLE = "KM/H";  //
-const int DIGITAL_TEXT_SIZE = 4;   // 
+const char* ODO_TITLE = "KM/H";   //
+const int DIGITAL_TEXT_SIZE = 4;  //
 //const int TITLE_FONT = 4;   // 1, 2, 4
 #define TITLE_FONT &FreeSerif12pt7b  // 9pt, 12pt, 18pt, 24pt etc
+#endif
 
 /***********************************************************************************
 0°   = right (3 o’clock)
@@ -107,7 +125,7 @@ const uint16_t COLOR_DIGITAL_BG = 0xfffd;       // KK
 const uint16_t COLOR_DIGITAL_FRAME = 0xef7d;    // KK Sivler
 
 
-const int MAJOR_TICK_UNIT = 10;      // = speed / 10 
+const int MAJOR_TICK_UNIT = 10;      // = speed / 10
 const int MINOR_TICK_UNIT = 2;       // = MAJOR_TICK_UNIT / MINOR_TICK_UNIT = number of minor ticks
 const int NEEDLE_LENGTH_RATIO = 65;  // shortened to avoid numbers
 
@@ -140,8 +158,7 @@ void drawDigitalValue(float speed);
 float speed = MIN_SPEED;
 int speed_inc = 10;
 
-  void
-  setup() {
+void setup() {
   Serial.begin(115200);
   delay(1000);
 
@@ -150,6 +167,7 @@ int speed_inc = 10;
   Serial.println("Initializing TFT...");
   tft.init();
   tft.setRotation(2);
+
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.setTextSize(2);
@@ -157,6 +175,7 @@ int speed_inc = 10;
   Serial.println("TFT ready...");
   tft.println("TFT ready...");
 
+#ifndef TFT_DISPLAY_1P8
   // Explicitly bind SPI to your SPI pins BEFORE SD.begin()
   // SPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);
   sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);  // SCK, MISO, MOSI
@@ -179,8 +198,15 @@ int speed_inc = 10;
   //tft.printf("Size: %lluMB", cardSize);
 
   // *****************************************************
+#endif
 
-  tft.setRotation(1);  // Adjust rotation as needed
+#ifdef TFT_DISPLAY_1P8
+  tft.setRotation(0);
+ // tft.setSwapBytes(true);
+#else
+  tft.setRotation(1);             // Adjust rotation as needed
+#endif
+
   tft.fillScreen(COLOR_BG);
   tft.setTextColor(TFT_WHITE, COLOR_BG);
   tft.setTextSize(1);
@@ -231,7 +257,7 @@ void loop() {
 
   drawGauge(speed);
 
-  delay(5);  // update rate
+  delay(15);  // update rate
 }
 
 
@@ -325,7 +351,7 @@ void drawDigitalValue(float speed) {
   //gaugeSprite.fillRect(x0, y0, boxWidth, boxHeight, COLOR_DIGITAL_BG);
   // Digital speed value – font size 2
   gaugeSprite.setTextColor(COLOR_DIGITAL);  //, COLOR_DIGITAL_BG);  // KK
-  gaugeSprite.setTextFont(1);   // use internal fonts
+  gaugeSprite.setTextFont(1);               // use internal fonts
   gaugeSprite.setTextSize(DIGITAL_TEXT_SIZE);
   boxHeight = gaugeSprite.fontHeight();
   boxWidth = gaugeSprite.textWidth("1234");  //find 4 digit width
@@ -345,9 +371,13 @@ void drawDigitalValue(float speed) {
 
   // "km/h" label – also font size 2
   gaugeSprite.setTextColor(COLOR_DIGITAL_TITLE);  // KK
-
-  gaugeSprite.setFreeFont(TITLE_FONT);    // use freefont
+#ifdef TFT_DISPLAY_1P8
+  //gaugeSprite.setFreeFont(TITLE_FONT);  // use freefont
+  gaugeSprite.setTextFont(TITLE_FONT);
+#else
+  gaugeSprite.setFreeFont(TITLE_FONT);  // use freefont
   //gaugeSprite.setTextFont(TITLE_FONT);
+#endif
   gaugeSprite.setTextSize(1);
 
   gaugeSprite.setTextDatum(TC_DATUM);
