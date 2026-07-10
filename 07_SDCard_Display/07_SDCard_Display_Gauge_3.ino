@@ -5,6 +5,8 @@
 #include <SD.h>
 #include <TFT_eSPI.h>
 
+// Need to comment off #define MY_ILI9488 in User_Setup.h
+//#define TFT_DISPLAY_1P8
 
 #ifdef VSPI_PIN
 #define SD_SCLK_PIN 4
@@ -16,8 +18,10 @@
 #define SD_MOSI_PIN 11
 #endif
 
+#ifndef TFT_DISPLAY_1P8
 #define SD_CS_PIN 7
 #define SD_FREQUENCY 16000000  // 16MHz or 4MHz
+#endif
 
 #ifdef VSPI_PIN
 SPIClass sdSPI(VSPI);
@@ -28,10 +32,36 @@ SPIClass sdSPI(HSPI);
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite gauge = TFT_eSprite(&tft);  // Canvas buffer to prevent flicker
 
+#define ALARM_BANNER
+
+
 // =========================================================================
 // 1. RESOLUTION RECONFIGURATION PANEL (SETS BOTH SCREEN & SPRITE LAYOUT)
 // =========================================================================
 // Simply change these parameters to adapt instantly to your physical display.
+#ifdef TFT_DISPLAY_1P8
+const int SCREEN_WIDTH = 128;   // e.g., 240 for 240x240, 320 for standard landscape
+const int SCREEN_HEIGHT = 160;  // e.g., 240 for 240x240, 240 for standard landscape
+
+// Size of the square gauge widget box. RAM calculation footprint:
+// 240x240 pixels * 2 bytes (16-bit color) = ~115 KB (Perfect safe fit for ESP32)
+const int G_SIZE = 120;
+const int CENTER = G_SIZE / 2;  // Middle relative origin offset (120)
+const int RADIUS = 50;          // Base tracking perimeter outer bounds
+#define TITLE_FONT 2
+#define VALUE_FONT 2
+#define UNIT_FONT 1
+#define OFFSET_TITLE -5
+#define OFFSET_VALUE 15
+#define OFFSET_UNIT 25
+
+#ifdef ALARM_BANNER
+#define BANNER_W 40
+#define BANNER_H 9
+#define BANNER_Y CENTER - 28
+#endif
+
+#else
 const int SCREEN_WIDTH = 320;   // e.g., 240 for 240x240, 320 for standard landscape
 const int SCREEN_HEIGHT = 240;  // e.g., 240 for 240x240, 240 for standard landscape
 
@@ -40,7 +70,20 @@ const int SCREEN_HEIGHT = 240;  // e.g., 240 for 240x240, 240 for standard lands
 const int G_SIZE = 240;
 const int CENTER = G_SIZE / 2;  // Middle relative origin offset (120)
 const int RADIUS = 105;         // Base tracking perimeter outer bounds
+#define TITLE_FONT 4
+#define VALUE_FONT 6
+#define UNIT_FONT 2
+#define OFFSET_TITLE -30
+#define OFFSET_VALUE 30
+#define OFFSET_UNIT 60
 
+#ifdef ALARM_BANNER
+#define BANNER_W 80
+#define BANNER_H 18
+#define BANNER_Y CENTER - 72
+#endif
+
+#endif
 // =========================================================================
 // 2. USER DEFINABLE CONFIGURATION MATRIX
 // =========================================================================
@@ -72,7 +115,11 @@ float currentValue = RANGE_MIN;
 float targetValue = RANGE_MIN;
 void simulateSensorData();
 
-
+#ifdef ALARM_BANNER
+// Alarm State Variables
+bool flashState = false;          // Toggles for blinking effects
+unsigned long lastFlashTime = 0;  // Controls blink interval timer
+#endif
 
 
 void setup() {
@@ -90,14 +137,18 @@ void setup() {
   Serial.println("TFT ready...");
   tft.println("TFT ready...");
 
-  tft.setRotation(1);  // Lock to native horizontal viewing orientation
+#ifdef TFT_DISPLAY_1P8
+  tft.setRotation(0);  // Lock to native horizontal viewing orientation
+#else
+  tft.setRotation(1);           // Lock to native horizontal viewing orientation
+#endif
   tft.fillScreen(COLOR_BG);
 
   // Initialize and assign hardware buffer space blocks
   gauge.createSprite(G_SIZE, G_SIZE);
   gauge.setPivot(CENTER, CENTER);  // Bind rotation matrices to internal center anchors
 
-
+#ifndef TFT_DISPLAY_1P8
 
   // Explicitly bind SPI to your SPI pins BEFORE SD.begin()
   // SPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN);
@@ -119,6 +170,7 @@ void setup() {
   uint64_t cardSize = SD.cardSize() / (1024 * 1024);
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
   //tft.printf("Size: %lluMB", cardSize);
+#endif
 }
 
 void loop() {
@@ -137,6 +189,10 @@ void loop() {
   float currentAngle = START_ANG + (progressPct * (END_ANG - START_ANG));
 
   // 1. DYNAMIC COLOR EVALUATION THRESHOLD LOGIC
+#ifdef ALARM_BANNER
+  const char* alarmStatusText = "NORMAL";
+  uint16_t alarmBoxColor = 0x1C05;  // Muted dark green container
+#endif
   uint16_t activeDynamicColor = FRESH_MINT;
   if (currentValue >= CRITICAL_THRES) {
     activeDynamicColor = DANGER_CRIMSON;
@@ -149,7 +205,9 @@ void loop() {
   drawGaugeTrack(progressPct, activeDynamicColor);
   drawModernNeedle(currentAngle, activeDynamicColor);
   drawTypography(activeDynamicColor);
-
+#ifdef ALARM_BANNER
+  drawAlarmBanner(alarmStatusText, alarmBoxColor);
+#endif
   // 3. ZERO-FLICKER SCREEN INJECTION PUSH
   // Center math balances alignment completely independent of what screen limits are specified above
   int xOffset = (SCREEN_WIDTH - G_SIZE) / 2;
@@ -167,7 +225,7 @@ void drawAnalogTicks() {
   for (int i = 0; i < totalTicks; i++) {
     float currentTickAngle = START_ANG + (i * angleStep);
     float rad = (currentTickAngle - 90.0) * DEG_TO_RAD;  // Phase correction step
-                                                         //    float rad = (currentTickAngle - 0.0) * DEG_TO_RAD;  // Phase correction step
+//  float rad = (currentTickAngle - 0.0) * DEG_TO_RAD;  // Phase correction step
 
     // Polar coordinate resolution conversion transformations
     float cosRad = cos(rad);
@@ -251,22 +309,42 @@ void drawTypography(uint16_t dynamicColor) {
 
   // Contextual Sub-header Metadata
   gauge.setTextColor(0x8410, COLOR_CARD);  // Muted silver gray alpha
-  gauge.drawString(GAUGE_TITLE, CENTER, CENTER - 30, 4);
+  gauge.drawString(GAUGE_TITLE, CENTER, CENTER + OFFSET_TITLE, TITLE_FONT);
 
   // Main Digital Core Readout
   gauge.setTextColor(COLOR_WHITE, COLOR_CARD);
   char valBuffer[10];
-  dtostrf(currentValue, 4, 1, valBuffer);               // Standard string format parsing safely with 1 floating decimal point
-  gauge.drawString(valBuffer, CENTER, CENTER + 30, 6);  // Renders using robust built-in High-Contrast Font 6
+  dtostrf(currentValue, 4, 1, valBuffer);                                  // Standard string format parsing safely with 1 floating decimal point
+  gauge.drawString(valBuffer, CENTER, CENTER + OFFSET_VALUE, VALUE_FONT);  // Renders using robust built-in High-Contrast Font 6
 
   // Responsive Unit Badge Footer Box
-  int textWidth = gauge.textWidth(UNIT_TEXT, 2) + 12;
-  int boxHeight = 16;
-  gauge.fillRoundRect(CENTER - (textWidth / 2), CENTER + 60, textWidth, boxHeight, 4, COLOR_BG);
+  int textWidth = gauge.textWidth(UNIT_TEXT, UNIT_FONT) + 12;
+  int boxHeight = gauge.fontHeight(UNIT_FONT);  // 16;
+  gauge.fillRoundRect(CENTER - (textWidth / 2), CENTER + OFFSET_UNIT, textWidth, boxHeight, 4, COLOR_BG);
 
   gauge.setTextColor(dynamicColor, COLOR_BG);  // Unit color changes dynamically to provide crisp context states
-  gauge.drawString(UNIT_TEXT, CENTER, CENTER + 68, 2);
+  gauge.drawString(UNIT_TEXT, CENTER, CENTER + OFFSET_UNIT + boxHeight / 2, UNIT_FONT);
 }
+
+#ifdef ALARM_BANNER
+// Renders the dedicated contextual Alarm banner component at the top of the dial module box
+void drawAlarmBanner(const char* statusText, uint16_t bannerColor) {
+  gauge.setTextDatum(MC_DATUM);
+
+  // Outer pill containment graphic
+  gauge.fillRoundRect(CENTER - (BANNER_W / 2), BANNER_Y, BANNER_W, BANNER_H, 9, bannerColor);
+
+  // Typography inner overlay print
+  // Text flips contrast directly over bright active alarm conditions for clear safety warning layouts
+  uint16_t textColor = (currentValue >= CRITICAL_THRES && flashState) ? COLOR_WHITE : COLOR_WHITE;
+  if (currentValue < WARNING_THRES) textColor = FRESH_MINT;  // Green matching text when stable
+  if (currentValue >= WARNING_THRES && currentValue < CRITICAL_THRES) textColor = ALERT_AMBER;
+
+  gauge.setTextColor(textColor, bannerColor);
+  gauge.drawString(statusText, CENTER, BANNER_Y + (BANNER_H / 2) + 1, 1);  // Font 1 (Small / clean proportional styling)
+}
+
+#endif
 
 // Basic simulated sine sweep engine mirroring genuine sensor fluctuations over execution intervals
 void simulateSensorData() {
