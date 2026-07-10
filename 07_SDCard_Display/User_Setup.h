@@ -11,7 +11,7 @@
 // User defined information reported by "Read_User_Setup" test & diagnostics example
 
 // uncomment this for 3.5" ILI9488 Display, for 1.8" ST7735S Display remove this line
-//#define MY_ILI9488
+#define MY_ILI9488
 
 // Comment out to use HSPI port/SPI2
 //#define USE_VSPI_PORT     // Use FSPI port/SPI3 for TFT Display
