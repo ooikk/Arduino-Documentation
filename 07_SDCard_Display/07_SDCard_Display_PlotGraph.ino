@@ -9,9 +9,14 @@
 #include <TFT_eSPI.h>
 TFT_eSPI tft = TFT_eSPI();
 
-#define USE_SPRITE_ROTATE    // for Y-axis title
+//#define USE_TFT_DISPLAY
+
 #include "plot_graph.h"
 TFT_eSprite chartSprite(&tft);  // sprite object, not a pointer
+
+// Max memory/heap 420*310*2 = 260,400
+#define CHART_W 200  //420
+#define CHART_H 160  //310
 
 #ifdef VSPI_PIN
 #define SD_SCLK_PIN 4
@@ -107,9 +112,11 @@ void setup() {
   for (int i = 0; i < 200; i++) data3[i] = 3 + i * 0.1;
   for (int i = 0; i < 200; i++) data4[i] = 8 + 4 * sin(i * 0.3) * cos(i * 0.05);
 
+#ifndef USE_TFT_DISPLAY
   // Create a sprite the size of your chart area
-  chartSprite.createSprite(200, 150);  // e.g., top‑left quarter
-  chartSprite.fillScreen(TFT_BLACK);   // clear sprite background if needed
+  chartSprite.createSprite(CHART_W, CHART_H);  // e.g., top‑left quarter
+  chartSprite.fillScreen(TFT_BLACK);           // clear sprite background if needed
+#endif
   Serial.printf("Free 8-bit heap: %u\n", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 }
 
@@ -140,9 +147,10 @@ void loop() {
   for (idx = 0; idx < 200; idx++)
     data2[idx] = 5.0f * cos(phase + 2 * M_PI * idx / 100);  // 100 -> 2 cycles
 
+#ifndef USE_TFT_DISPLAY
   // Call plotGraph using the SPRITE as the "display"
-  plotGraph(chartSprite, 0, 0, 200, 160, data1, 200);
-
+  //plotGraph(chartSprite, 0, 0, CHART_W, CHART_H, data1, 200);
+  plotGraph(chartSprite, 0, 0, CHART_W, CHART_H, data1, 200);
   // Push the finished sprite to the display at (0,0)
   chartSprite.pushSprite(0, 0);
 
@@ -150,33 +158,36 @@ void loop() {
 
 
   // Call plotGraph using the SPRITE as the "display"
-  plotGraph(chartSprite, 0, 0, 200, 160, data2, 200);
+  plotGraph(chartSprite, 0, 0, CHART_W, CHART_H, data2, 200);
 
   // Push the finished sprite to the display at (0,0)
-  chartSprite.pushSprite(230, 0);
+  chartSprite.pushSprite(CHART_W, 0);
 
   // chartSprite.deleteSprite();  // free RAM if you recreate each time
 
   // Call plotGraph using the SPRITE as the "display"
-  plotGraph(chartSprite, 0, 0, 200, 160, data3, 200);
+  plotGraph(chartSprite, 0, 0, CHART_W, CHART_H, data3, 200);
 
   // Push the finished sprite to the display at (0,0)
-  chartSprite.pushSprite(0, 160);
+  chartSprite.pushSprite(0, CHART_H);
 
-    // Call plotGraph using the SPRITE as the "display"
-  plotGraph(chartSprite, 0, 0, 200, 160, data4, 200);
+  // Call plotGraph using the SPRITE as the "display"
+  plotGraph(chartSprite, 0, 0, CHART_W, CHART_H, data4, 200);
 
   // Push the finished sprite to the display at (0,0)
-  chartSprite.pushSprite(230, 160);
+  chartSprite.pushSprite(CHART_W, CHART_H);
 
+
+#else
+
+  // plot directly to the screen, image will be flicky
+  // need to comment out this above #define USE_SPRITE_ROTATE
+  plotGraph(tft, 10, 0, tft.width() - 20, tft.height(), data1, 200);
+#endif
 
   phase += 5.0 * DEG2RAD;
   if (phase > 2 * M_PI) phase = 0.0;
 
-  // plot directly to the screen, image will be flicky
-  // need to comment out this above #define USE_SPRITE_ROTATE
-  //plotGraph(tft, 0, 0, tft.width(), tft.height(), data1, 200);
-
   delay(50);
- // waitForSerial();
+  // waitForSerial();
 }

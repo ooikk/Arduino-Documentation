@@ -34,10 +34,10 @@
 
 // ------------------------------------------------------------
 // COLOURS
-#define BACKGROUND_COLOR TFT_BLACK
+#define BACKGROUND_COLOR 0x31ed  // TFT_BLACK
 #define AXIS_COLOR TFT_WHITE
-#define GRID_MAJOR_COLOR TFT_DARKGREY
-#define GRID_MINOR_COLOR TFT_LIGHTGREY
+#define GRID_MAJOR_COLOR TFT_LIGHTGREY
+#define GRID_MINOR_COLOR TFT_DARKGREY
 #define DATA_LINE_COLOR TFT_RED
 #define TEXT_COLOR TFT_WHITE
 
@@ -138,12 +138,12 @@ static void drawDataLine(TFT_eSPI &display,
 //  MAIN PLOTTING FUNCTION
 // =============================================================================
 
-#ifdef USE_SPRITE_ROTATE
-void plotGraph(TFT_eSprite &display,
+#ifdef USE_TFT_DISPLAY
+void plotGraph(TFT_eSPI &display,
                int chartX, int chartY, int chartW, int chartH,
                float yData[], int dataSize) {
 #else
-void plotGraph(TFT_eSPI &display,
+void plotGraph(TFT_eSprite &display,
                int chartX, int chartY, int chartW, int chartH,
                float yData[], int dataSize) {
 #endif
@@ -198,36 +198,59 @@ void plotGraph(TFT_eSPI &display,
   th = display.fontHeight(AXIS_LABEL_FONT);
   int xLabelX = plotLeft + (plotWidth - tw) / 2;
   int xLabelY = chartY + chartH - MARGIN_BOTTOM / 2 - th / 2;
-  display.setCursor(xLabelX, xLabelY);
-  display.print(X_AXIS_TITLE);
+  //display.setCursor(xLabelX, xLabelY);
+  //display.print(X_AXIS_TITLE);
+  display.drawString(X_AXIS_TITLE, xLabelX, xLabelY);  // fills whole sprite
 
-#ifdef USE_SPRITE_ROTATE
+
   // Y axis label (vertical, rotated)
   // Measure text size (horizontal orientation)
   tw = display.textWidth(Y_AXIS_TITLE, AXIS_LABEL_FONT);
+  //tw = display.textWidth(String(Y_AXIS_TITLE) + " ", AXIS_LABEL_FONT);
   th = display.fontHeight(AXIS_LABEL_FONT);
 
+/*
+  uint8_t currentTextFont = display.textfont;
+  uint8_t currentTextSize = display.textsize;
+  display.setCursor(20, 20);
+  display.printf("X:%d %d ", currentTextFont,currentTextSize);
+*/
   // Create a sprite exactly big enough for the text
   TFT_eSprite yAxisTitle(&display);  // 'display' is your TFT or main sprite
   //TFT_eSprite yAxisTitle(&tft);  // 'display' is your TFT or main sprite
   yAxisTitle.createSprite(tw, th);
+  yAxisTitle.fillSprite(BACKGROUND_COLOR);
   yAxisTitle.setTextFont(AXIS_LABEL_FONT);
+  yAxisTitle.setTextSize(display.textsize); // inherit Display/ X-axis text size
+
+/*
+  currentTextFont = yAxisTitle.textfont;
+  currentTextSize = yAxisTitle.textsize;
+  //yAxisTitle.setTextFont(currentTextFont);
+  display.printf("Y:%d %d", currentTextFont, currentTextSize);
+*/
+
   yAxisTitle.setTextColor(TEXT_COLOR, BACKGROUND_COLOR);
   yAxisTitle.drawString(Y_AXIS_TITLE, 0, 0);  // fills whole sprite
+  //yAxisTitle.setCursor(0, 0);
+  //yAxisTitle.print(Y_AXIS_TITLE);      // last character may not print
 
   // Where on screen should the centre of the rotated label appear?
-  int16_t centerX = chartX + MARGIN_LEFT / 2 - tw / 3;  // horizontal middle of left margin
-  int16_t centerY = plotTop + plotHeight / 2;// - th / 2;  // vertical middle of the plot area
+  int16_t centerX = chartX + th / 2;           //+ MARGIN_LEFT / 2 - tw / 3;  // horizontal middle of left margin
+  int16_t centerY = plotTop + plotHeight / 2;  // - th / 2;  // vertical middle of the plot area
   yAxisTitle.setPivot(tw / 2, th / 2);
 
   display.setPivot(centerX, centerY);
   // Pivot = centre of the sprite
   // Push rotated by 270° (reads top‑to‑bottom) or 90° (bottom‑to‑top)
+#ifdef USE_TFT_DISPLAY
+  yAxisTitle.pushRotated(270, BACKGROUND_COLOR);
+#else
   yAxisTitle.pushRotated(&display, 270, BACKGROUND_COLOR);
+#endif
   yAxisTitle.deleteSprite();  // free memory if you no longer need it
 
-#else
-
+  /*
 // We draw character by character, each below the previous.
     const char* yTitle = Y_AXIS_TITLE;
     int len = strlen(yTitle);
@@ -245,7 +268,7 @@ void plotGraph(TFT_eSPI &display,
         display.setCursor(xPos, startY + i * charHeight);
         display.print(yTitle[i]);
     }
-#endif
+*/
 
 
   // ---------- 4. AXIS BOX ----------
