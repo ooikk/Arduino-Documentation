@@ -451,21 +451,24 @@ void loop() {
 |	Directory Navigation	|	rewindDirectory()	|	dir.rewindDirectory();	|	Resets the file pointer back to the first file in a directory, allowing you to iterate over it again.	|
 |	Information	|	name()	|	Serial.println(entry.name());	|	Returns the name of a file or directory as a character array (string).	|
 
+Refer to SD library for more details:      
+https://docs.arduino.cc/libraries/sd/
+
 **write() and print() functions**        
 In the context of Arduino and the SD.h library (and serial communication), the difference between *write()* and *print()* comes down to Raw Binary Data vs. Human-Readable Text.     
 1. write() (Raw Bytes)
-write() takes the exact binary representation of the data and dumps it directly into the file. It does not format or convert the data into text.     
+write() takes the exact binary representation of the data and dumps it directly into the file. It does not format or convert the data into text.
 - Best for: Binary files, saving memory, writing arrays of bytes, sensor data, images, or audio.
 - How it works: If you tell it to write the number 255, it writes exactly 1 byte (0xFF in hex). If you write an integer 1000, it writes 2 bytes (or 4, depending on the board).     
-- Syntax:     
+- Syntax:
   - file.write(myByte); (Writes a single byte)
   - file.write(myArray, arrayLength); (Writes an array of bytes)     
 
 3. print() (Formatted Text / ASCII)
-print() takes your data, converts it into human-readable ASCII characters (text), and then writes those characters to the file.     
+print() takes your data, converts it into human-readable ASCII characters (text), and then writes those characters to the file.
 - Best for: Text files, CSV logs, configuration files, data that needs to be read by a human or imported into Excel.
 - How it works: If you tell it to print the number 255, it converts it to the text characters '2', '5', and '5'. This takes 3 bytes of space, not 1. If you print 1000, it takes 4 bytes.     
-- Syntax:     
+- Syntax:
   - file.print(255); (Writes the text "255")
   - file.print(255, HEX); (Writes the text "FF")
   - file.print(3.14159, 2); (Writes the text "3.14" - limits to 2 decimal places)     
