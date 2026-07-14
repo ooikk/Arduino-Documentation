@@ -551,7 +551,256 @@ if (test) {
 ```
 **More Examples:**
 
+**Write to a file:**      
+```
+/**
+ * Writes an ASCII/Text file to the SD card.
+ * 
+ * @param filename The name/path of the file (e.g., "data.txt")
+ * @param textData The text data to write (passed by reference to save memory)
+ * @param append   If true, adds data to the end. If false, overwrites the file.
+ * @return true if successful, false otherwise.
+ */
+bool writeTextFile(const String& filename, const String& textData, bool append) {
 
+/*  
+  if (!SD.begin(SD_CS_PIN)) {  // Replace 4 with your CS pin
+    Serial.println("Error: SD card not initialized.");
+    return false;
+  }
+  */
+
+  // If overwrite is requested, delete the existing file first
+  if (!append) {
+    if (SD.exists(filename)) {
+      if (!SD.remove(filename)) {
+        Serial.println("Error: Failed to delete existing file.");
+        return false;
+      }
+    }
+  }
+
+  File file = SD.open(filename, FILE_WRITE);
+  if (!file) {
+    Serial.println("Error: Could not create/open text file.");
+    return false;
+  }
+
+  size_t written = file.print(textData);
+  file.close();
+
+  if (written != textData.length()) {
+    Serial.println("Error: Partial write detected. Card may be full.");
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Writes a Binary file to the SD card.
+ * 
+ * @param filename The name/path of the file (e.g., "data.bin")
+ * @param binData  Pointer to the byte array containing binary data
+ * @param dataSize The number of bytes to write from the array
+ * @param append   If true, adds data to the end. If false, overwrites the file.
+ * @return true if successful, false otherwise.
+ */
+bool writeBinFile(const String& filename, const uint8_t* binData, size_t dataSize, bool append) {
+/*
+  if (!SD.begin(SD_CS_PIN)) {
+    Serial.println("Error: SD card not initialized.");
+    return false;
+  }
+  */
+  // If overwrite is requested, delete the existing file first
+  if (!append) {
+    if (SD.exists(filename)) {
+      if (!SD.remove(filename)) {
+        Serial.println("Error: Failed to delete existing file.");
+        return false;
+      }
+    }
+  }
+
+  File file = SD.open(filename, FILE_WRITE);
+  if (!file) {
+    Serial.println("Error: Could not create/open binary file.");
+    return false;
+  }
+
+  size_t written = file.write(binData, dataSize);
+  file.close();
+
+  if (written != dataSize) {
+    Serial.println("Error: Partial write detected. Card may be full.");
+    return false;
+  }
+
+  return true;
+}
+
+  // ==========================================
+  // 1. Testing Text File (Write, Append, Overwrite)
+  // ==========================================
+  Serial.println("\n--- Testing Text File ---");
+  
+  // Create new file and write first line
+  writeTextFile("/log.txt", "Line 1: Hello World!\n", false);
+  Serial.println("Wrote initial text.");
+
+  // Append to the file
+  writeTextFile("/log.txt", "Line 2: Appended data.\n", true);
+  Serial.println("Appended text.");
+
+  // Overwrite the file (This will erase Line 1 and Line 2)
+  writeTextFile("/log.txt", "Line 1: File was overwritten!\n", false);
+  Serial.println("Overwrote text file.");
+
+  // ==========================================
+  // 2. Testing Binary File (Write and Append)
+  // ==========================================
+  Serial.println("\n--- Testing Binary File ---");
+  
+  // Create some dummy binary data
+  uint8_t dataBlock1[] = {0xDE, 0xAD, 0xBE, 0xEF};
+  uint8_t dataBlock2[] = {0xCA, 0xFE, 0xBA, 0xBE};
+
+  // Write first block (overwrite mode, creates new file)
+  if (writeBinFile("/sensor.bin", dataBlock1, sizeof(dataBlock1), false)) {
+    Serial.println("Wrote initial binary block.");
+  }
+
+  // Append second block
+  if (writeBinFile("/sensor.bin", dataBlock2, sizeof(dataBlock2), true)) {
+    Serial.println("Appended second binary block.");
+  }
+  
+  // Overwrite the binary file with just the second block
+  if (writeBinFile("/sensor.bin", dataBlock2, sizeof(dataBlock2), false)) {
+    Serial.println("Overwrote binary file.");
+  }
+```
+⚠️ Important Note on Overwriting in Arduino:       
+In the standard Arduino SD.h library, the FILE_WRITE mode is hardcoded to append data. To overwrite a file, the most reliable method is to delete the existing file first using SD.remove() before opening it in write mode.     
+
+Key Design Choices:     
+1. Return Type (bool): File operations can fail (e.g., SD card full, bad sector, write error). Returning a boolean allows your main code to check if the write was actually successful.
+2. Pass by Reference (const String&): For the text function, passing the string by const reference prevents the Arduino from creating an unnecessary copy of the string in memory, which is crucial for preventing memory fragmentation on low-RAM boards.
+3. Verification: The functions check the return value of file.print() and file.write(). If the SD card becomes full halfway through writing, the function will catch it and return false.
+
+**Read from a file:**     
+
+```
+/**
+ * Reads an ASCII/Text file from the SD card.
+ * 
+ * @param filename The name/path of the file (e.g., "data.txt")
+ * @return A String containing the text data.
+ */
+String readTextFile(String filename) {
+  String content = "";
+
+  // Open the file for reading
+  File file = SD.open(filename, FILE_READ);
+
+  if (file) {
+    // Read the file character by character
+    while (file.available()) {
+      content += (char)file.read();
+    }
+    file.close();
+  } else {
+    Serial.print("Error: Could not open text file ");
+    Serial.println(filename);
+  }
+
+  return content;
+}
+
+/**
+ * Reads a Binary file from the SD card.
+ * 
+ * @param filename The name/path of the file (e.g., "data.bin")
+ * @param outSize Reference variable to store the size of the returned array.
+ * @return A dynamically allocated uint8_t array. 
+ *         IMPORTANT: You must call free() on this array when done to prevent memory leaks!
+ */
+uint8_t* readBinFile(String filename, size_t& outSize) {
+  outSize = 0;
+
+  // Open the file for reading
+  File file = SD.open(filename, FILE_READ);
+
+  if (file) {
+    // Get the total size of the file
+    size_t fileSize = file.size();
+
+    // Dynamically allocate memory for the binary data
+    uint8_t* buffer = (uint8_t*)malloc(fileSize);
+
+    if (buffer != NULL) {
+      // Read the entire file into the buffer
+      size_t bytesRead = file.read(buffer, fileSize);
+
+      if (bytesRead == fileSize) {
+        outSize = fileSize;  // Update the size reference
+      } else {
+        Serial.println("Error: Could not read the entire binary file.");
+        free(buffer);
+        buffer = NULL;
+      }
+    } else {
+      Serial.println("Error: Memory allocation failed for binary file.");
+    }
+
+    file.close();
+    return buffer;
+
+  } else {
+    Serial.print("Error: Could not open binary file ");
+    Serial.println(filename);
+    return NULL;
+  }
+}
+
+
+// --- 1. Test Reading Text File ---
+  Serial.println("\n--- Reading Text File ---");
+  String textData = readTextFile("/example.txt");
+  
+  if (textData.length() > 0) {
+    Serial.println("Text Content:");
+    Serial.println(textData);
+  }
+
+  // --- 2. Test Reading Binary File ---
+  Serial.println("\n--- Reading Binary File ---");
+  size_t binSize = 0;
+  uint8_t* binData = readBinFile("/example.bin", binSize);
+  
+  if (binData != NULL && binSize > 0) {
+    Serial.print("Binary file size: ");
+    Serial.print(binSize);
+    Serial.println(" bytes");
+    
+    // Print the first 10 bytes as an example
+    Serial.print("First bytes: ");
+    for (size_t i = 0; i < min((size_t)10, binSize); i++) {
+      Serial.print(binData[i], HEX);
+      Serial.print(" ");
+    }
+    Serial.println();
+
+    // CRITICAL: Free the dynamically allocated memory!
+    free(binData); 
+    binData = NULL;
+  }
+```
+⚠️ Important Memory Notes for Arduino:     
+1. Binary File Memory Management: Because readBinFile uses malloc() to create the array, the memory is allocated on the heap. You must call free(binData) when you are completely done using the array, otherwise, your Arduino will run out of memory (Memory Leak).     
+2. Text File Memory Fragmentation: The String class in Arduino can cause memory fragmentation if used heavily or with very large files. If you are reading a massive text file on a memory-constrained board (like an Arduino Uno), it is better to process the text line-by-line inside the while(file.available()) loop rather than appending it all to a single String.
+3. File Paths: Ensure your filenames include the extension (e.g., "log.txt", "sensor_data.bin"). If your files are inside a folder, use the full path (e.g., "folder/data.txt"). Note that the standard Arduino SD.h library requires folder names to be 8.3 format (max 8 characters for the name, max 3 for the extension).     
 
 
 ## Display RGB565 Image    
