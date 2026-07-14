@@ -476,7 +476,7 @@ Imagine you have an integer variable: int myValue = 12345;
 |	-	|	-	|	-	|	-	|	-	|
 |	write()	|	file.write((uint8_t*)&myValue, 2);	|	0x39 0x30 (Raw binary)	|	2 Bytes	|	Gibberish symbols (e.g., 90)	|
 |	print()	|	file.print(myValue);	|	0x31 0x32 0x33 0x34 0x35 (ASCII for "12345")	|	5 Bytes	|	12345	|
-<img width="1384" height="179" alt="image" src="https://github.com/user-attachments/assets/811f46ac-b21f-4997-ac47-0c1a4d2341e5" />
+
 
 
 ## Sample code to access the SD Card
