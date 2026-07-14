@@ -10,13 +10,15 @@
 TFT_eSPI tft = TFT_eSPI();
 
 //#define USE_TFT_DISPLAY
-
 #include "plot_graph.h"
-TFT_eSprite chartSprite(&tft);  // sprite object, not a pointer
 
+#ifndef USE_TFT_DISPLAY
+TFT_eSprite chartSprite(&tft);  // sprite object, not a pointer
 // Max memory/heap 420*310*2 = 260,400
-#define CHART_W 200  //420
+#define CHART_W 240  //420
 #define CHART_H 160  //310
+#endif
+
 
 #ifdef VSPI_PIN
 #define SD_SCLK_PIN 4
@@ -102,7 +104,8 @@ void setup() {
 #ifdef TFT_DISPLAY_1P8
 
 #else
-  tft.setRotation(1);  // Adjust rotation as needed
+tft.setRotation(1);  // Adjust rotation as needed
+tft.fillScreen(TFT_BLACK);
 #endif
 
 
@@ -135,7 +138,7 @@ void waitForSerial() {
 
 void loop() {
   // Simulate incoming live data – update one element
-  static int idx = 0;
+  static int idx = 0, idx_3 = 0, idx_4 = 0;
   static float phase = 0.0;
 
   for (idx = 0; idx < 200; idx++) {
@@ -166,13 +169,13 @@ void loop() {
   // chartSprite.deleteSprite();  // free RAM if you recreate each time
 
   // Call plotGraph using the SPRITE as the "display"
-  plotGraph(chartSprite, 0, 0, CHART_W, CHART_H, data3, 200);
+  plotGraph(chartSprite, 0, 0, CHART_W, CHART_H, data3, idx_3);
 
   // Push the finished sprite to the display at (0,0)
   chartSprite.pushSprite(0, CHART_H);
 
   // Call plotGraph using the SPRITE as the "display"
-  plotGraph(chartSprite, 0, 0, CHART_W, CHART_H, data4, 200);
+  plotGraph(chartSprite, 0, 0, CHART_W, CHART_H, data4, idx_4);
 
   // Push the finished sprite to the display at (0,0)
   chartSprite.pushSprite(CHART_W, CHART_H);
@@ -182,11 +185,17 @@ void loop() {
 
   // plot directly to the screen, image will be flicky
   // need to comment out this above #define USE_SPRITE_ROTATE
-  plotGraph(tft, 10, 0, tft.width() - 20, tft.height(), data1, 200);
+  //plotGraph(tft, 0, 0, tft.width(), tft.height(), data1, 200);
+  plotGraph(tft, 0, 0, tft.width(), tft.height(), data4, idx_4);
 #endif
 
   phase += 5.0 * DEG2RAD;
   if (phase > 2 * M_PI) phase = 0.0;
+
+  idx_3 += 1;
+  if (idx_3 > 200) idx_3 = 0;
+  idx_4 += 2;
+  if (idx_4 > 200) idx_4 = 0;
 
   delay(50);
   // waitForSerial();

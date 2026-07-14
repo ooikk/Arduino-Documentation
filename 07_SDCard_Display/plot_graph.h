@@ -9,10 +9,17 @@
 // =============================================================================
 
 // Margins inside each chart's outer rectangle
-#define MARGIN_LEFT 50
+#ifdef USE_TFT_DISPLAY
+#define MARGIN_LEFT 75
 #define MARGIN_RIGHT 10
-#define MARGIN_TOP 40
-#define MARGIN_BOTTOM 30
+#define MARGIN_TOP 30
+#define MARGIN_BOTTOM 50
+#else
+#define MARGIN_LEFT 40    //50
+#define MARGIN_RIGHT 20   //10
+#define MARGIN_TOP 20     //40
+#define MARGIN_BOTTOM 30  //30
+#endif
 
 // ------------------------------------------------------------
 // AXIS SCALING MODE
@@ -35,7 +42,7 @@
 // ------------------------------------------------------------
 // COLOURS
 #define BACKGROUND_COLOR 0x31ed  // TFT_BLACK
-#define AXIS_COLOR TFT_WHITE
+#define AXIS_COLOR TFT_SILVER    //TFT_WHITE
 #define GRID_MAJOR_COLOR TFT_LIGHTGREY
 #define GRID_MINOR_COLOR TFT_DARKGREY
 #define DATA_LINE_COLOR TFT_RED
@@ -123,6 +130,7 @@ static void drawDataLine(TFT_eSPI &display,
     if (x != prevX) {
       if (prevX != -1) {
         display.drawLine(prevX, prevY, x, y, color);
+        //display.drawWideLine(prevX, prevY, x, y, 2, color);
       }
       prevX = x;
       prevY = y;
@@ -142,16 +150,28 @@ static void drawDataLine(TFT_eSPI &display,
 void plotGraph(TFT_eSPI &display,
                int chartX, int chartY, int chartW, int chartH,
                float yData[], int dataSize) {
-#else
-void plotGraph(TFT_eSprite &display,
-               int chartX, int chartY, int chartW, int chartH,
-               float yData[], int dataSize) {
-#endif
 
   if (dataSize < 1) return;
 
   // --- Clear only this chart's outer rectangle ---
-  display.fillRect(chartX, chartY, chartW, chartH, BACKGROUND_COLOR);
+  //display.fillRect(chartX, chartY, chartW, chartH, BACKGROUND_COLOR);
+  display.fillRect(chartX + display.fontHeight(AXIS_LABEL_FONT) -6, chartY + MARGIN_TOP - 4, chartW, chartH, BACKGROUND_COLOR);
+
+#else
+void plotGraph(TFT_eSprite &display,
+               int chartX, int chartY, int chartW, int chartH,
+               float yData[], int dataSize) {
+
+  if (dataSize < 1) return;
+
+  // --- Clear only this chart's outer rectangle ---
+  //display.fillRect(chartX, chartY, chartW, chartH, BACKGROUND_COLOR);
+  display.fillRect(0, 0, chartW, chartH, BACKGROUND_COLOR);
+
+#endif
+
+
+
 
   // --- Calculate inner plotting area ---
   int plotLeft = chartX + MARGIN_LEFT;
@@ -160,6 +180,8 @@ void plotGraph(TFT_eSprite &display,
   int plotBottom = chartY + chartH - MARGIN_BOTTOM;
   int plotWidth = plotRight - plotLeft;
   int plotHeight = plotBottom - plotTop;
+
+  //display.fillRect(plotLeft-1, plotTop-1, plotWidth+4, plotHeight+4, BACKGROUND_COLOR);
 
   // ---------- 1. DATA RANGES ----------
   float xMin = X_MIN_AUTO ? 0.0f : X_MIN_VALUE;
@@ -197,7 +219,8 @@ void plotGraph(TFT_eSprite &display,
   tw = display.textWidth(X_AXIS_TITLE, AXIS_LABEL_FONT);
   th = display.fontHeight(AXIS_LABEL_FONT);
   int xLabelX = plotLeft + (plotWidth - tw) / 2;
-  int xLabelY = chartY + chartH - MARGIN_BOTTOM / 2 - th / 2;
+  //int xLabelY = plotBottom + MARGIN_BOTTOM / 2 - th / 2;
+  int xLabelY = chartY + chartH - th;
   //display.setCursor(xLabelX, xLabelY);
   //display.print(X_AXIS_TITLE);
   display.drawString(X_AXIS_TITLE, xLabelX, xLabelY);  // fills whole sprite
@@ -209,7 +232,7 @@ void plotGraph(TFT_eSprite &display,
   //tw = display.textWidth(String(Y_AXIS_TITLE) + " ", AXIS_LABEL_FONT);
   th = display.fontHeight(AXIS_LABEL_FONT);
 
-/*
+  /*
   uint8_t currentTextFont = display.textfont;
   uint8_t currentTextSize = display.textsize;
   display.setCursor(20, 20);
@@ -221,9 +244,9 @@ void plotGraph(TFT_eSprite &display,
   yAxisTitle.createSprite(tw, th);
   yAxisTitle.fillSprite(BACKGROUND_COLOR);
   yAxisTitle.setTextFont(AXIS_LABEL_FONT);
-  yAxisTitle.setTextSize(display.textsize); // inherit Display/ X-axis text size
+  yAxisTitle.setTextSize(display.textsize);  // inherit Display/ X-axis text size
 
-/*
+  /*
   currentTextFont = yAxisTitle.textfont;
   currentTextSize = yAxisTitle.textsize;
   //yAxisTitle.setTextFont(currentTextFont);
@@ -236,8 +259,8 @@ void plotGraph(TFT_eSprite &display,
   //yAxisTitle.print(Y_AXIS_TITLE);      // last character may not print
 
   // Where on screen should the centre of the rotated label appear?
-  int16_t centerX = chartX + th / 2;           //+ MARGIN_LEFT / 2 - tw / 3;  // horizontal middle of left margin
-  int16_t centerY = plotTop + plotHeight / 2;  // - th / 2;  // vertical middle of the plot area
+  int16_t centerX = chartX + th / 2;           // horizontal middle of left margin
+  int16_t centerY = plotTop + plotHeight / 2;  // vertical middle of the plot area
   yAxisTitle.setPivot(tw / 2, th / 2);
 
   display.setPivot(centerX, centerY);
