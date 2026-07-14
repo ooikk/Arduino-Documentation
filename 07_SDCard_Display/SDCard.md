@@ -431,7 +431,7 @@ void loop() {
 |	--------------	|	--------------	|	----------------------------------------------------	|	---------------------------------------------------------	|
 |	Initialization	|	begin(csPin)	|	if (!SD.begin(4)) { Serial.println("Init failed!"); }	|	Initializes the SD card library. Must be called first, before any other SD card functions. Returns true on success.	|
 |	File/Directory Info	|	exists(path)	|	if (SD.exists("/data.txt")) { Serial.println("File found"); }	|	Checks if a file or directory exists on the SD card.	|
-|	File/Directory Info	|	open(path, mode)	|	File dataFile = SD.open("/data.txt", FILE_WRITE);	|	Opens a file for reading/writing. Must be called before you can read or write to a file. Returns a File object or false on failure.	|
+|	File/Directory Info	|	open(path, mode)	|	File dataFile = SD.open("/data.txt", FILE_WRITE);	|	Opens a file for reading/writing. Must be called before you can read (FILE_READ) or write (FILE_WRITE) to a file. Returns a File object or false on failure.	|
 |	File/Directory Info	|	remove(path)	|	if (SD.exists("/unwanted.txt")) { SD.remove("/unwanted.txt"); }	|	Deletes a file from the SD card. It's recommended to check if the file exists first using SD.exists().	|
 |	File/Directory Info	|	mkdir(path)	|	SD.mkdir("/newFolder/subFolder");	|	Creates a directory. Can also create intermediate directories if they don't exist.	|
 |	File/Directory Info	|	rmdir(path)	|	SD.rmdir("/emptyFolder");	|	Removes an empty directory. The directory must be empty before calling this.	|
