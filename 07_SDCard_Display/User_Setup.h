@@ -264,7 +264,8 @@
 
 #if   defined (MY_ILI9488)
 #define TOUCH_CS 8     // Chip select pin (T_CS) of touch screen
-//#define TOUCH_DRIVER 0x2046 // Explicitly tell the library it is an XPT2046
+#define TOUCH_DRIVER 0x2046 // Explicitly tell the library it is an XPT2046
+//#define TOUCH_IRQ 39     // Optional: Your Touch IRQ pin (enables fast hardware checking)
 #endif
 
 //#define TFT_WR 22    // Write strobe for modified Raspberry Pi TFT only
