@@ -51,7 +51,7 @@
 // Only define one driver, the other ones must be commented out
 // #define ILI9341_DRIVER       // Generic driver for common displays
 //#define ILI9341_2_DRIVER     // Alternative ILI9341 driver, see https://github.com/Bodmer/TFT_eSPI/issues/1172
-#if   !defined (MY_ILI9488)
+#ifndef MY_ILI9488
 #define ST7735_DRIVER      // Define additional parameters below for this display
 #endif
 
@@ -93,7 +93,7 @@
 // #define M5STACK
 
 // For ILI9488, TFT_WIDTH and TFT_HEIGHT are defined under ILI9488_Defines.h
-#if   !defined (MY_ILI9488)
+#ifndef MY_ILI9488
 // For ST7789, ST7735, ILI9163 and GC9A01 ONLY, define the pixel width and height in portrait orientation
 // #define TFT_WIDTH  80
  #define TFT_WIDTH  128
@@ -113,7 +113,7 @@
 // e.g. colours wrong, mirror images, or stray pixels at the edges.
 // Comment out ALL BUT ONE of these options for a ST7735 display driver, save this
 // this User_Setup file, then rebuild and upload the sketch to the board again:
-#if   !defined (MY_ILI9488)
+#ifndef MY_ILI9488
 // #define ST7735_INITB
 // #define ST7735_GREENTAB
 // #define ST7735_GREENTAB2
@@ -264,7 +264,8 @@
 
 #if   defined (MY_ILI9488)
 #define TOUCH_CS 8     // Chip select pin (T_CS) of touch screen
-//#define TOUCH_DRIVER 0x2046 // Explicitly tell the library it is an XPT2046
+#define TOUCH_DRIVER 0x2046 // Explicitly tell the library it is an XPT2046
+//#define TOUCH_IRQ 39     // Optional: Your Touch IRQ pin (enables fast hardware checking)
 #endif
 
 //#define TFT_WR 22    // Write strobe for modified Raspberry Pi TFT only
@@ -432,3 +433,19 @@
 // so changing it here has no effect
 
 // #define SUPPORT_TRANSACTIONS
+
+/*
+#ifdef MY_ILI9488
+    #pragma message "***** ILI9488_DRIVER *****"
+#else
+	#pragma message "***** ST7735_DRIVER *****"
+    //#error "MY_ILI9488 not defined – check placement"
+#endif
+
+#ifdef USE_VSPI_PORT
+    #pragma message "***** USE_FSPI_PORT *****"
+#else
+	#pragma message "***** USE_HSPI_PORT *****"
+    //#error "MY_ILI9488 not defined – check placement"
+#endif
+*/
