@@ -54,11 +54,11 @@ enum Direction {
   DIR_LEFT,
   DIR_RIGHT,
   CIRCLE,
-  HOME
+  GOOGLE
 };
 
 // Define the array of directions
-Direction label2[] = { DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT, CIRCLE, HOME };
+Direction label2[] = { DIR_UP, DIR_DOWN, DIR_LEFT, DIR_RIGHT, CIRCLE, GOOGLE };
 
 #define Google_TRANSPARENT_COLOR 0xffff
 #include "google1.h"
@@ -155,7 +155,7 @@ struct ButtonIcon {
         t.fillCircle(dx + dw / 2, dy + dh / 2, dw / 2, fill);
         t.drawCircle(dx + dw / 2, dy + dh / 2, dw / 2, OUTLINE_COLOR);
         break;
-      case HOME:
+      case GOOGLE:
         t.setSwapBytes(true);
         if (pressed) {
           t.fillRect(dx, dy, dw, dh, fill);
@@ -303,7 +303,7 @@ void handleTouch() {
       case CIRCLE:
         inputBuffer += "Direction Circle";
         break;
-      case HOME:
+      case GOOGLE:
         inputBuffer += "Google Icon";
         break;
     }
