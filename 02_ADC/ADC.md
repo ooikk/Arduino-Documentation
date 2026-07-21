@@ -116,7 +116,7 @@ For high-speed background sampling, the ESP32 Arduino core offers a continuous D
   - pins[]: Array of GPIO pins to measure.
   - pins_count: Number of pins in the array.
   - conversions_per_pin: Samples taken per pin per conversion cycle.
-  - sampling_freq_hz: Sampling rate in Hertz (e.g., 20000 for 20kHz).
+  - sampling_freq_hz: Sampling rate in Hertz (e.g., 20000 for 20kHz, up to 80kHz).
   - userFunc: Callback function triggered when a batch buffer fills.
 - ```bool analogContinuousStart()```        
   Starts background DMA conversion.       
