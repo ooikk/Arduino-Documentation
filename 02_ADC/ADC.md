@@ -109,6 +109,9 @@ void setup() {
   - Parameters: pin – The GPIO pin number.
   - Returns: Calibrated voltage value in millivolts (mV).       
 
+*Note:* Standard analogRead() functions are designed for single, on-demand readings and are relatively slow (typically ~1–5 kHz sampling rate).     
+
+
 **Continuous Sampling / DMA API (High Speed)**     
 For high-speed background sampling, the ESP32 Arduino core offers a continuous DMA-backed API:       
 - ```bool analogContinuous(uint8_t pins[], size_t pins_count, uint32_t conversions_per_pin, uint32_t sampling_freq_hz, void (*userFunc)(void))```       
@@ -116,7 +119,7 @@ For high-speed background sampling, the ESP32 Arduino core offers a continuous D
   - pins[]: Array of GPIO pins to measure.
   - pins_count: Number of pins in the array.
   - conversions_per_pin: Samples taken per pin per conversion cycle.
-  - sampling_freq_hz: Sampling rate in Hertz (e.g., 20000 for 20kHz, up to 80kHz).
+  - sampling_freq_hz: Sampling rate in Hertz (e.g., 20000 for 20kHz, up to 83kHz).
   - userFunc: Callback function triggered when a batch buffer fills.
 - ```bool analogContinuousStart()```        
   Starts background DMA conversion.       
@@ -128,6 +131,7 @@ For high-speed background sampling, the ESP32 Arduino core offers a continuous D
 *Important Limitations for ESP32-S3:*
 - ADC1 Only: Continuous/DMA mode is hardwired only to ADC1 (GPIO 1 to GPIO 10). You cannot use ADC2 pins (GPIO 11-20) for continuous sampling.
 - Resolution: In continuous mode, the supported resolutions are typically 9-bit, 10-bit, 11-bit, or 12-bit. (13-bit is not supported in the standard continuous wrapper).
+- To use Continuous Sampling (DMA) on the ESP32-S3, you must use the Arduino-ESP32 Core version 3.0.0 or newer. Compilation Errors: If you see errors like "analogContinuous was not declared", you are using an outdated version of the ESP32 Board Package. Go to Tools > Board > Boards Manager, search for "esp32", and update to version 3.0.0 or higher.     
 
 
 ## Code Implementation & Setup Guide     
@@ -215,6 +219,91 @@ void loop() {
   delay(500);
 }
 ```
+**Continuous ADC / DMA API**      
+In continuous mode, the ADC hardware runs autonomously in the background via DMA. An Interrupt Service Routine (ISR) callback notifies your program when a set number of samples is ready, allowing the CPU to perform other tasks in loop() without blocking.      
+```
+#include <Arduino.h>
+
+// Define ADC1 pins for ESP32-S3 (Continuous mode ONLY supports ADC1 pins: GPIO 1 to 10)
+uint8_t adc_pins[] = {1, 2, 3, 4}; 
+uint8_t adc_pins_count = sizeof(adc_pins) / sizeof(uint8_t);
+
+// Number of raw conversions per pin taken per cycle (averaged automatically by the driver)
+#define CONVERSIONS_PER_PIN 10 
+
+// Target sampling frequency in Hz
+#define SAMPLING_FREQ_HZ    20000 
+
+// ISR Flag to indicate a DMA conversion batch has completed
+volatile bool conversion_done = false;
+
+// Buffer pointer structure supplied by the driver
+adc_continuous_result_t *result = NULL;
+
+// Interrupt Service Routine triggered when DMA buffer fills
+void ARDUINO_ISR_ATTR adcCallback() {
+  conversion_done = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial && millis() < 2000); // Wait for Serial Monitor
+
+  // 1. (Optional) Set Resolution (9 to 12 bits, default is 12)
+  analogContinuousSetWidth(12);
+
+  // 2. (Optional) Set Attenuation for continuous mode (default ADC_11db / ADC_12db)
+  analogContinuousSetAtten(ADC_11db);
+
+  // 3. Configure the Continuous ADC Peripheral:
+  //    (Pins array, Pin count, Conversions per pin, Sample rate, ISR callback)
+  if (analogContinuous(adc_pins, adc_pins_count, CONVERSIONS_PER_PIN, SAMPLING_FREQ_HZ, &adcCallback)) {
+    Serial.println("ADC Continuous DMA initialized successfully!");
+    
+    // 4. Start the continuous conversions in the background
+    analogContinuousStart();
+  } else {
+    Serial.println("Failed to initialize ADC Continuous mode!");
+  }
+}
+
+void loop() {
+  // Check if the ISR flagged new data from DMA
+  if (conversion_done) {
+    conversion_done = false; // Reset flag
+
+    // Read the processed results into the result buffer pointer (timeout: 0 ms)
+    if (analogContinuousRead(&result, 0)) {
+      
+      // Optionally pause sampling while processing or printing heavy tasks
+      analogContinuousStop();
+
+      Serial.println("----------------------------------------");
+      for (int i = 0; i < adc_pins_count; i++) {
+        Serial.printf("GPIO %2d -> Raw Average: %4d | Calibrated Voltage: %4d mV\n", 
+                      result[i].pin, 
+                      result[i].avg_read_raw, 
+                      result[i].avg_read_mvolts);
+      }
+
+      delay(1000); // Pause briefly for Serial readable output
+
+      // Resume continuous sampling
+      analogContinuousStart();
+    }
+  }
+
+  // CPU is free to execute other non-blocking tasks here
+}
+```
+**How It Works**    
+1. Hardware Selection: Continuous mode only supports ADC1 pins (GPIO 1 through GPIO 10 on the ESP32-S3). ADC2 pins cannot be used for continuous background sampling.
+2. ```ARDUINO_ISR_ATTR``` Callback: The ```adcCallback()``` function runs inside an Interrupt Service Routine context when the hardware DMA engine finishes collecting a chunk of samples. It sets ```conversion_done = true``` so main execution logic knows new data is ready.
+3. ```adc_continuous_result_t``` Structure: The ```analogContinuousRead()``` function populates an array of structures containing:
+   - ```result[i].pin```: The GPIO pin number.
+   - ```result[i].channel```: Internal ADC channel number.
+   - ```result[i].avg_read_raw```: The hardware-averaged raw 12-bit value.
+   - ```result[i].avg_read_mvolts```: The hardware-averaged value automatically converted into factory-calibrated millivolts.
 
 
 ## References     
