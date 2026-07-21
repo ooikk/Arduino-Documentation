@@ -337,6 +337,8 @@ If you copy-paste that code into a blank .ino file in the standard Arduino IDE, 
 
 ## References     
 
+https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-adc.h?spm=a2ty_o01.29997173.0.0.2c1855fb5LgL0s&file=esp32-hal-adc.h
+
 https://docs.espressif.com/projects/arduino-esp32/en/latest/api/adc.html     
 
 https://www.oceanlabz.in/esp32-analog-input/
