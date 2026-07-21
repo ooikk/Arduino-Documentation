@@ -125,6 +125,93 @@ For high-speed background sampling, the ESP32 Arduino core offers a continuous D
 - ```bool analogContinuousStop()```        
   Stops continuous sampling.        
 
+## Code Implementation & Setup Guide     
+- Pin Selection: Always use ADC1 pins (GPIO 1-10) if you are using Wi-Fi or Bluetooth. If you must use ADC2 (GPIO 11-20), ensure Wi-Fi is completely disabled.     
+  - ADC2 + Wi-Fi Conflict: If your code uses WiFi.begin() and you try to read from GPIO 11-20, analogRead() will return 0 or fail. Always use GPIO 1-10 for analog reads in wireless projects.
+- Voltage Limits: The ESP32-S3 is a 3.3V device. **Never apply more than 3.3V to an ADC pin**, or you will destroy the microcontroller. With the default 11dB attenuation, the maximum readable voltage is roughly 3.1V.
+- Noise: The ESP32 ADC can be noisy. If you need high precision, take multiple readings in code and average them, or use the analogReadMilliVolts() function which applies internal calibration.
+- Non-linearity: The ESP32-S3 ADC is slightly non-linear at the very bottom (near 0V) and very top (near 3.1V) of its range. If your application requires extreme precision, use software calibration or map the usable range (e.g., 150 to 3900) to your expected physical values.
+
+## Example code
+
+**Reading a Potentiometer**
+```
+// Define the ADC pin (Using GPIO 1, which is ADC1_CH0)
+const int adcPin = 1; 
+
+void setup() {
+  // Initialize Serial Monitor
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("ESP32-S3 ADC Example");
+
+  // 1. Set ADC Resolution (Default is 12-bit, max value 4095)
+  analogReadResolution(12); 
+  
+  // 2. Set Attenuation (Default is 11dB, allows reading up to ~3.1V)
+  // Options: ADC_0db, ADC_2_5db, ADC_6db, ADC_11db
+  analogSetAttenuation(ADC_11db); 
+  
+  // Optional: Set attenuation for a specific pin only
+  // analogSetPinAttenuation(adcPin, ADC_11db);
+}
+
+void loop() {
+  // Read the raw analog value (0 - 4095 for 12-bit)
+  int rawValue = analogRead(adcPin);
+  
+  // Read the calibrated voltage in millivolts
+  int voltageMV = analogReadMilliVolts(adcPin);
+  
+  // Calculate voltage in Volts (float)
+  float voltageV = voltageMV / 1000.0;
+
+  // Print results to Serial Monitor
+  Serial.print("Raw ADC Value: ");
+  Serial.print(rawValue);
+  Serial.print("\t | Voltage: ");
+  Serial.print(voltageMV);
+  Serial.print(" mV (");
+  Serial.print(voltageV, 3);
+  Serial.println(" V)");
+
+  // Wait before next reading
+  delay(500); 
+}
+```
+
+**Low-Noise Averaging Example**
+```
+const int adcPin = 4;
+const int numSamples = 16; // Number of samples for moving average
+
+void setup() {
+  Serial.begin(115200);
+  analogReadResolution(12);
+  analogSetAttenuation(ADC_11db);
+}
+
+uint32_t getSmoothedVoltageMV(int pin) {
+  uint32_t totalMV = 0;
+  for (int i = 0; i < numSamples; i++) {
+    totalMV += analogReadMilliVolts(pin);
+    delayMicroseconds(100); // Brief delay between samples
+  }
+  return totalMV / numSamples;
+}
+
+void loop() {
+  uint32_t avgVoltageMV = getSmoothedVoltageMV(adcPin);
+  
+  Serial.print("Smoothed Voltage: ");
+  Serial.print(avgVoltageMV / 1000.0, 3);
+  Serial.println(" V");
+
+  delay(500);
+}
+```
+
+
 ## References     
 
 https://docs.espressif.com/projects/arduino-esp32/en/latest/api/adc.html     
