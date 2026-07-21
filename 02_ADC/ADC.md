@@ -305,6 +305,23 @@ void loop() {
    - ```result[i].avg_read_raw```: The hardware-averaged raw 12-bit value.
    - ```result[i].avg_read_mvolts```: The hardware-averaged value automatically converted into factory-calibrated millivolts.
 
+## Why #include <Arduino.h>?      
+Including ```#include <Arduino.h>``` is a fundamental best practice in C/C++ development for microcontrollers, though its necessity depends slightly on how and where you are writing your code.      
+Here is exactly why it is there and what it does:     
+1. It is the "Master" Header File     
+Arduino.h is the central header file for the Arduino core. It contains the declarations for all standard Arduino functions (Serial, delay, digitalWrite, analogRead), standard data types (uint8_t, uint16_t), and essential macros. Without it, the compiler wouldn't know what Serial.println or uint8_t means.
+2. The Arduino IDE "Magic" (Why you might think it's optional)     
+If you are writing code in a standard .ino file in the Arduino IDE, the IDE actually automatically prepends #include <Arduino.h> to your code behind the scenes before sending it to the compiler. Because of this "magic," many beginners never see it and assume it isn't needed.
+3. Why it was explicitly included in the example     
+Even though the Arduino IDE adds it automatically to .ino files, explicitly including it is highly recommended (and sometimes strictly required) for several reasons:
+- PlatformIO / Advanced IDEs: If you use PlatformIO, VS Code, or Eclipse, your code is often compiled as standard .cpp (C++) files, not .ino files. The IDE "magic" does not happen here. If #include <Arduino.h> is missing, the code will immediately fail to compile with errors like "Serial was not declared in this scope".
+- Multi-file Projects: If you split your code into separate .h and .cpp files (e.g., sensor.cpp), you must include Arduino.h in those files to access Arduino functions.
+- ESP32-Specific Macros: The example code uses ARDUINO_ISR_ATTR. This is an ESP32-specific macro that tells the compiler to place the Interrupt Service Routine in fast IRAM memory. This macro is defined within the ESP32 Arduino core headers, which are loaded alongside or via Arduino.h.
+- Code Portability: Explicitly stating your dependencies makes the code robust. If you copy-paste the code into a different environment or rename the file extension, it will still compile without modification.      
+
+**Summary**     
+If you copy-paste that code into a blank .ino file in the standard Arduino IDE, you could technically delete #include <Arduino.h> and it would still compile. However, leaving it in is a professional best practice that guarantees the code will work everywhere, prevents weird compilation errors in advanced setups, and makes the code's dependencies perfectly clear.
+
 
 ## References     
 
