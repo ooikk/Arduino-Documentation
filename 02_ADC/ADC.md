@@ -61,7 +61,6 @@ ADC_0db              0 mV ~ 950 mV
 ADC_2_5db            0 mV ~ 1250 mV
 ADC_6db              0 mV ~ 1750 mV
 ADC_11db             0 mV ~ 3100 mV
-ADC_ATTENDB_MAX      
 ``` 
 **How to Set the Attenuation in Arduino IDE**       
 ```
@@ -95,8 +94,7 @@ void setup() {
     - ADC_2_5db: Full-scale voltage approx. 0 to 1250 mV
     - ADC_6db: Full-scale voltage approx. 0 to 1750 mV
     - ADC_11db (or ADC_12db depending on core version): Full-scale voltage approx. 0 to 3100 mV
-    - ADC_ATTENDB_MAX     
-- ```void analogSetPinAttenuation(uint8_t pin, adc_attenuation_t attenuation)```        
+ - ```void analogSetPinAttenuation(uint8_t pin, adc_attenuation_t attenuation)```        
   Sets the attenuation for a specific pin rather than applying it globally.
   - Parameters: pin – GPIO pin number, attenuation – One of the four attenuation options listed above.  
 
