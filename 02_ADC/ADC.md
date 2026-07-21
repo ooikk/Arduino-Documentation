@@ -13,7 +13,7 @@ The ESP32-S3 features two independent SAR (Successive Approximation Register) AD
 
 ## Conceptual Block Diagram     
 
-<img width="1083" height="677" alt="image" src="https://github.com/user-attachments/assets/e2276f97-02b5-44e7-aa06-64f704933997" />
+<img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/e2276f97-02b5-44e7-aa06-64f704933997" />
 
 **Architecture Highlights**    
 - **Analog Domain:** Receives inputs into SARADC1 and SARADC2 blocks.
@@ -93,17 +93,12 @@ void setup() {
 - analogSetPinAttenuation(pin, attenuation): Sets the attenuation for a specific pin.
 
 **Reading Functions**
-- analogRead(pin): Reads the analog value from the specified GPIO. Returns an integer based on the configured resolution.
-- analogReadMilliVolts(pin): Reads the pin and returns the calculated voltage in millivolts (mV). Highly recommended for accurate voltage readings.
-
 - uint16_t analogRead(uint8_t pin)
-  Reads the raw analog value from the specified GPIO pin.
-  Parameters:
+  Reads the raw analog value from the specified GPIO pin. Parameters:     
   - pin – The GPIO pin number (e.g., 4 for GPIO4 / ADC1_CH3).
   - Returns: Raw integer scaled according to the current resolution (default 0 to 4095 for 12-bit).
 - uint32_t analogReadMilliVolts(uint8_t pin)
-  Reads the raw ADC value and automatically applies factory eFuse calibration to calculate real millivolts.
-  Parameters:
+  Reads the raw ADC value and automatically applies factory eFuse calibration to calculate real millivolts. Parameters:      
   - pin – The GPIO pin number.
   - Returns: Calibrated voltage value in millivolts (mV).       
 
