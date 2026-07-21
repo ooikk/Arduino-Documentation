@@ -125,6 +125,11 @@ For high-speed background sampling, the ESP32 Arduino core offers a continuous D
 - ```bool analogContinuousStop()```        
   Stops continuous sampling.        
 
+*Important Limitations for ESP32-S3:*
+- ADC1 Only: Continuous/DMA mode is hardwired only to ADC1 (GPIO 1 to GPIO 10). You cannot use ADC2 pins (GPIO 11-20) for continuous sampling.
+- Resolution: In continuous mode, the supported resolutions are typically 9-bit, 10-bit, 11-bit, or 12-bit. (13-bit is not supported in the standard continuous wrapper).
+
+
 ## Code Implementation & Setup Guide     
 - Pin Selection: Always use ADC1 pins (GPIO 1-10) if you are using Wi-Fi or Bluetooth. If you must use ADC2 (GPIO 11-20), ensure Wi-Fi is completely disabled.     
   - ADC2 + Wi-Fi Conflict: If your code uses WiFi.begin() and you try to read from GPIO 11-20, analogRead() will return 0 or fail. Always use GPIO 1-10 for analog reads in wireless projects.
