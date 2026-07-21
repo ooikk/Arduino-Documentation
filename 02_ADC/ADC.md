@@ -188,6 +188,18 @@ void loop() {
   delay(500); 
 }
 ```
+Convert ADC to actual unit such as resistance:      
+```
+ // Read the raw analog value (0 - 4095 for 12-bit)
+  int rawValue = analogRead(adcPin);
+  // map(value, fromLow, fromHigh, toLow, toHigh)
+  long resistance = map(rawValue, 0, 4095, 0, 10000);  //map to resistance
+  long resistance_Scale = rawValue*10000/4095;
+ // Print results to Serial Monitor
+  Serial.printf("Resistance %d ohm\n", resistance);
+  Serial.printf("Resistance (scaled) %d ohm\n", resistance_Scale);  
+```
+
 
 **Low-Noise Averaging Example**
 ```
