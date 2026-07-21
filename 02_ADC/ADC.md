@@ -84,25 +84,47 @@ void setup() {
 ## Arduino IDE API Functions
 
 **Configuration Functions**   
-- analogReadResolution(bits): Sets the resolution. Default is 12 (0-4095). Can be set to 9, 10, 11, 12, or 13.
-- analogSetAttenuation(attenuation): Sets the input voltage range for all ADC pins.
-  - ADC_0db: ~0 - 750mV
-  - ADC_2_5db: ~0 - 1050mV
-  - ADC_6db: ~0 - 1300mV
-  - ADC_11db: ~0 - 3100mV (Default, covers most 3.3V logic)
-- analogSetPinAttenuation(pin, attenuation): Sets the attenuation for a specific pin.
+- void analogReadResolution(uint8_t bits)       
+  Sets the bit-width of the value returned by analogRead().
+  - Parameters: bits – Resolution in bits (Range: 1 to 16, Default: 12).
+  - Note: The ESP32-S3 hardware ADC operates natively at 12-bit resolution. Values outside 12-bit are bit-shifted up or down.
+- void analogSetAttenuation(adc_attenuation_t attenuation)       
+  Sets the voltage attenuation globally across all ADC pins.
+  - Parameters:
+    - ADC_0db: Full-scale voltage approx. 0 to 950 mV
+    - ADC_2_5db: Full-scale voltage approx. 0 to 1250 mV
+    - ADC_6db: Full-scale voltage approx. 0 to 1750 mV
+    - ADC_11db (or ADC_12db depending on core version): Full-scale voltage approx. 0 to 3100 mV
+- void analogSetPinAttenuation(uint8_t pin, adc_attenuation_t attenuation)       
+  Sets the attenuation for a specific pin rather than applying it globally.
+  - Parameters: pin – GPIO pin number, attenuation – One of the four attenuation options listed above.  
+
 
 **Reading Functions**
 - uint16_t analogRead(uint8_t pin)
-  Reads the raw analog value from the specified GPIO pin. Parameters:     
-  - pin – The GPIO pin number (e.g., 4 for GPIO4 / ADC1_CH3).
+  Reads the raw analog value from the specified GPIO pin.
+  - Parameters: pin – The GPIO pin number (e.g., 4 for GPIO4 / ADC1_CH3).
   - Returns: Raw integer scaled according to the current resolution (default 0 to 4095 for 12-bit).
 - uint32_t analogReadMilliVolts(uint8_t pin)
-  Reads the raw ADC value and automatically applies factory eFuse calibration to calculate real millivolts. Parameters:      
-  - pin – The GPIO pin number.
+  Reads the raw ADC value and automatically applies factory eFuse calibration to calculate real millivolts.
+  - Parameters: pin – The GPIO pin number.
   - Returns: Calibrated voltage value in millivolts (mV).       
 
-
+**Continuous Sampling / DMA API (High Speed)**     
+For high-speed background sampling, the ESP32 Arduino core offers a continuous DMA-backed API:
+- bool analogContinuous(uint8_t pins[], size_t pins_count, uint32_t conversions_per_pin, uint32_t sampling_freq_hz, void (*userFunc)(void))
+  Configures multi-pin continuous DMA sampling.
+  - pins[]: Array of GPIO pins to measure.
+  - pins_count: Number of pins in the array.
+  - conversions_per_pin: Samples taken per pin per conversion cycle.
+  - sampling_freq_hz: Sampling rate in Hertz (e.g., 20000 for 20kHz).
+  - userFunc: Callback function triggered when a batch buffer fills.
+- bool analogContinuousStart()
+  Starts background DMA conversion.
+- bool analogContinuousRead(adc_continuous_data_t **buffer, uint32_t timeout_ms)
+  Populates the target buffer pointer with the continuous sample results.
+- bool analogContinuousStop()
+  Stops continuous sampling.        
 
 ## References     
 
