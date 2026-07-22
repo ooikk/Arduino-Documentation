@@ -16,6 +16,7 @@ If you are searching for ESP32 timer tutorials online, be careful. The Arduino c
   *(e.g., timerBegin(0, 80, true) -> Timer 0, prescaler 80, count up).* Do not use this if you are on a modern Arduino core.
 - The Modern API (v2.x & v3.x): Uses direct frequency in Hertz. The prescaler is calculated automatically under the hood.
   *(e.g., timerBegin(1000000) -> Sets the timer to tick at 1,000,000 Hz / 1 MHz).*     
+
 *The rest of this guide focuses on the Modern API, which is standard for current Arduino IDE installations.*     
 
 **3. Core Functions of the Modern Timer API**     
