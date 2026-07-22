@@ -337,7 +337,7 @@ These APIs help you determine why the board woke up and which specific pin or pa
 
 |	Function	|	Description	|
 |	-	|	-	|
-|	esp_sleep_get_wakeup_cause()	|	Returns esp_sleep_wakeup_cause_t indicating the wake trigger (e.g., ESP_SLEEP_WAKEUP_TIMER, ESP_SLEEP_WAKEUP_EXT0, ESP_SLEEP_WAKEUP_TOUCH).	|
+|	esp_sleep_get_wakeup_cause()	|	Returns esp_sleep_wakeup_cause_t indicating the wake trigger (e.g., ESP_SLEEP_WAKEUP_TIMER, ESP_SLEEP_WAKEUP_EXT0, ESP_SLEEP_WAKEUP_TOUCHPAD).	|
 |	esp_sleep_get_ext1_wakeup_status()	|	Returns a uint64_t bitmask indicating which specific GPIO(s) triggered an EXT1 wakeup.	|
 |	esp_sleep_get_touchpad_wakeup_status()	|	Returns touch_pad_t indicating which capacitive touch pad triggered the wakeup.	|
 
