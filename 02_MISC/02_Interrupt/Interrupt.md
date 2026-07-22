@@ -231,7 +231,7 @@ void IRAM_ATTR handleButtonPress() {
 
 ## 2. Hardware Timer Interrupts     
 
-The ESP32-S3 contains 4 internal 64-bit hardware timers. Using the modern Arduino ESP32 Core v3.x API (timerBegin), you can create non-blocking, microsecond-accurate periodic interrupts.     
+The ESP32-S3 contains 4 internal 54-bit hardware timers. Using the modern Arduino ESP32 Core v3.x API (timerBegin), you can create non-blocking, microsecond-accurate periodic interrupts.     
 
 Use Case: Blinking an LED without delay(), reading sensors at exact intervals, or creating a precise system clock.
 ```
