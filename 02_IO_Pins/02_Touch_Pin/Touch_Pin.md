@@ -60,7 +60,7 @@ void touchAttachInterruptArg(uint8_t pin, void (*userFunc)(void *), void *arg, t
 - userFunc: Function signature must accept a void* argument: ```void myISR(void *arg)```
 - arg: Pointer to data (variable, struct, or class object) passed directly to the ISR.     
 
-```touchDetachInterrupt()``: Disables touch interrupt capabilities on the designated pin.
+```touchDetachInterrupt()```: Disables touch interrupt capabilities on the designated pin.
 ```
 void touchDetachInterrupt(uint8_t pin);
 ```      
