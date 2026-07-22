@@ -467,7 +467,7 @@ Summary Rule of Thumb:
 |	-	|	-	|	-	|	-	|
 |	detachInterrupt(pin)	|	ESP32-specific	|	Low (No bounds check)	|	Not recommended for portable code	|
 |	detachInterrupt(digitalPinToInterrupt(pin))	|	Universal (Uno, Mega, ESP32, STM32)	|	High (Validates pin limit)	|	Recommended Standard	|
-<img width="1668" height="145" alt="image" src="https://github.com/user-attachments/assets/690876e2-b00a-4120-83da-281cecdcd17b" />
+
 
 
    
