@@ -443,6 +443,35 @@ void loop() {
 }
 ```
 
+## Why digitalPinToInterrupt(interruptPin)?     
+Using ```detachInterrupt(digitalPinToInterrupt(interruptPin))``` instead of just ```detachInterrupt(interruptPin)``` comes down to portability, Arduino API standards, and hardware-abstraction safety.  
+1. Cross-Board Compatibility (The Main Reason)
+   On original 8-bit AVR boards (like the Arduino Uno), physical pin numbers and interrupt vector numbers do not match:
+   - Digital Pin 2 maps to Interrupt Channel 0 (INT0).
+   - Digital Pin 3 maps to Interrupt Channel 1 (INT1).     
+   On an Uno, if you passed raw 2 into ```attachInterrupt(2, ...)``` or ```detachInterrupt(2)```, you were actually trying to configure Pin 4 (Interrupt channel 2), leading to silent bugs. The macro ```digitalPinToInterrupt(pin)``` translates a board's physical pin number into its internal interrupt channel.     
+2. How it Behaves on ESP32 / ESP32-S3     
+   On the ESP32 architecture, every GPIO pin can act as a hardware interrupt, so internal GPIO numbers map directly to interrupt channels.      
+   In the official ESP32 Arduino Core source, ```digitalPinToInterrupt()``` is defined as a passthrough macro with bounds checking:
+   ```
+   #define digitalPinToInterrupt(p) (((uint8_t)(p) < SOC_GPIO_PIN_COUNT) ? (p) : -1)
+   ```     
+  - Safety Catch: If a pin doesn't exist or isn't capable of interrupts on the ESP32-S3 (or if an out-of-range integer is passed), digitalPinToInterrupt() returns -1 (invalid), preventing hardware configuration crashes.
+  - Direct Pass-through: If the pin is valid, it simply evaluates directly to p.
+3. Pin-Remapping Variants (e.g., Arduino Nano ESP32)     
+Certain boards use board-variant mapping matrices. For instance, on the Arduino Nano ESP32, the label written on the silkscreen (e.g., D2) does not equal ESP32 GPIO 2.   
+Wrapping your variable in ```digitalPinToInterrupt(pin)``` ensures that if the core needs to resolve a board-specific header alias down to the physical silicon GPIO, it gets translated safely.
+
+Summary Rule of Thumb:      
+|	Syntax	|	Portability	|	Safety	|	Recommendation	|
+|	-	|	-	|	-	|	-	|
+|	detachInterrupt(pin)	|	ESP32-specific	|	Low (No bounds check)	|	Not recommended for portable code	|
+|	detachInterrupt(digitalPinToInterrupt(pin))	|	Universal (Uno, Mega, ESP32, STM32)	|	High (Validates pin limit)	|	Recommended Standard	|
+<img width="1668" height="145" alt="image" src="https://github.com/user-attachments/assets/690876e2-b00a-4120-83da-281cecdcd17b" />
+
+
+   
+
 ## References
 
 https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-gpio.h
