@@ -150,7 +150,7 @@ void loop() {
 ```
 
 **Key Highlights of This Approach**     
-- ```void* arg``` Casting: Inside ```handleTouchArg(void* arg)```, we cast ``(TouchButton*)arg``` back to our data type. This grants full access to the specific struct's properties (pin, name, wasTouched).
+- ```void* arg``` Casting: Inside ```handleTouchArg(void* arg)```, we cast ```(TouchButton*)arg``` back to our data type. This grants full access to the specific struct's properties (pin, name, wasTouched).
 - Zero Code Duplication: Instead of writing ```handleButtonA()``` and ```handleButtonB()``` separately, a single ISR dynamically identifies which physical pad was pressed based on the pointer passed into ```touchAttachInterruptArg()```.
 
 ## Reference    
