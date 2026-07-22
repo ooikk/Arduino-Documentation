@@ -151,7 +151,33 @@ void loop() {
 
 **Key Highlights of This Approach**     
 - ```void* arg``` Casting: Inside ```handleTouchArg(void* arg)```, we cast ```(TouchButton*)arg``` back to our data type. This grants full access to the specific struct's properties (pin, name, wasTouched).
-- Zero Code Duplication: Instead of writing ```handleButtonA()``` and ```handleButtonB()``` separately, a single ISR dynamically identifies which physical pad was pressed based on the pointer passed into ```touchAttachInterruptArg()```.
+- Zero Code Duplication: Instead of writing ```handleButtonA()``` and ```handleButtonB()``` separately, a single ISR dynamically identifies which physical pad was pressed based on the pointer passed into ```touchAttachInterruptArg()```.      
+
+**vTaskDelay(pdMS_TO_TICKS(10))**     
+
+The line ```vTaskDelay(pdMS_TO_TICKS(10));``` is a FreeRTOS API call used on ESP32 microcontrollers to pause execution for a specific duration without wasting CPU cycles.     
+
+Breakdown of Each Component     
+1. ```vTaskDelay(...)```
+- What it does: Pauses the current FreeRTOS task and yields control back to the operating system's task scheduler.
+- How it works: Instead of freezing the processor core, it places the current task into a Blocked state for a specified number of system ticks.
+- Why it matters: While your task is blocked, the ESP32 CPU core is completely freed up to run other tasks (like Wi-Fi, background processing, or internal system maintenance) or go into an idle/power-saving state.     
+
+2. ```pdMS_TO_TICKS(10)```
+- What it does: Converts time in milliseconds (10 ms) into FreeRTOS system ticks.
+- Why it's necessary: FreeRTOS measures time in internal clock counts called ticks, not milliseconds. The length of a single tick depends on the system setting configTICK_RATE_HZ.
+  - On ESP32 (where configTICK_RATE_HZ is typically set to 1000 Hz), 1 tick = 1 ms.
+  - However, using pdMS_TO_TICKS(10) ensures your code remains portable and rate-independent across different platforms or FreeRTOS configuration tweaks.     
+
+```vTaskDelay()``` vs. Standard ```delay()```      
+In the ESP32 Arduino Core, ```delay(10)``` is actually an inline wrapper around ```vTaskDelay(pdMS_TO_TICKS(10))```! However, using ```vTaskDelay()``` directly offers distinct advantages:      
+|	Feature	|	```vTaskDelay(pdMS_TO_TICKS(10));```	|	```delay(10);```	|
+|	-	|	-	|	-	|
+|	Execution	|	Non-blocking (Yields CPU to other tasks)	|	Non-blocking on ESP32, but blocking on standard 8-bit Arduinos	|
+|	API Origin	|	Native FreeRTOS Real-Time OS	|	Standard Arduino Framework	|
+|	Context	|	Preferred inside FreeRTOS custom tasks (```xTaskCreate```)	|	Standard for simple Arduino ```loop()``` code	|
+
+
 
 ## Reference    
 
