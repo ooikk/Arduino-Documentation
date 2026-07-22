@@ -150,3 +150,6 @@ While you can set the timer frequency up to 80MHz, doing so means the 64-bit cou
 - **Don't use Timers for PWM:**     
 If your goal is to dim an LED or control a motor speed, do not use general-purpose hardware timers. Use the LEDC (LED Control) peripheral via ledcAttach() and ledcWrite(), which is specifically hardware-optimized for PWM on the ESP32-S3. 
 
+## References     
+
+https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-timer.h
