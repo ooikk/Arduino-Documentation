@@ -209,6 +209,26 @@ void loop() {
 }
 ```
 
+**Debouncing**      
+When dealing with mechanical buttons, it is common to encounter noise or “bounce” when the button is pressed or released. This can cause multiple interrupts to be triggered for a single button press. Debouncing can be handled in software by adding a small delay or by using a timer.     
+
+Example of Software Debouncing:     
+```
+void IRAM_ATTR handleButtonPress() {
+ 
+  static unsigned long lastInterruptTime = 0;
+ 
+  unsigned long interruptTime = millis();
+  if (interruptTime - lastInterruptTime > 200) {  // 200 ms debounce time
+    buttonPressed = true;
+  }
+  lastInterruptTime = interruptTime;
+ 
+}
+
+```
+
+
 ## 2. Hardware Timer Interrupts     
 
 The ESP32-S3 contains 4 internal 64-bit hardware timers. Using the modern Arduino ESP32 Core v3.x API (timerBegin), you can create non-blocking, microsecond-accurate periodic interrupts.     
