@@ -4,7 +4,7 @@ The ESP32-S3 offers five primary power modes: **Active**, **Modem-Sleep**, **Lig
 
 Here is a breakdown of how each sleep mode behaves, what stays powered on, and the exact Arduino IDE code to implement them.     
 
-**Overview of Sleep Modes**    
+**Overview of Sleep Modes**       
 
 |	Sleep Mode	     |	CPU Status	     |	Wi-Fi / Bluetooth	     |	RTC Memory	     |	Power Consumption (Approx.)	     |	Typical Use Case	     |
 |	-	     |	-	     |	-	     |	-	     |	-	     |	-	     |
@@ -295,7 +295,7 @@ This extra power draw is usually caused by:
    ```
 ## Sleep mode API     
 
-1. Entering Sleep Modes
+**1. Entering Sleep Modes**     
 |	Function	|	Description	|
 |	-	|	-	|
 |	esp_deep_sleep_start()	|	Enters Deep Sleep (or Hibernation, if power domains were disabled). The main CPU, digital peripherals, and RAM are powered off. Waking up causes a system reboot.	|
