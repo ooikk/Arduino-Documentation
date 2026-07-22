@@ -10,7 +10,7 @@ The ESP32-S3 contains 4 general-purpose 54-bit hardware timers organized into tw
 - Timer Group 0: Timer 0, Timer 1
 - Timer Group 1: Timer 0, Timer 1         
 
-2^{64}      
+2$^{64}$      
 
 Each timer operates as an independent counter driven by selectable clock sources:
 - APB_CLK (Advanced Peripheral Bus Clock): Default 80 MHz clock source.
