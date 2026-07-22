@@ -293,6 +293,8 @@ This extra power draw is usually caused by:
    esp_deep_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF); // Optional: if you don't need RTC slow mem
    esp_deep_sleep_start();
    ```
+## Sleep mode API     
+
 
 ## Reference      
 
