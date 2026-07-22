@@ -56,7 +56,7 @@ Light Sleep example (Timer Wakeup), the code pauses at the sleep function and re
 ```
 #include "esp_sleep.h"
 
-#define uS_TO_S_FACTOR 1000000ULL  // Conversion factor for micro seconds to seconds
+#define uS_TO_S_FACTOR 1000000ULL  // Conversion factor for micro seconds to seconds, ULL -> Unsigned Long Long, 64-bit unsigned integer
 #define TIME_TO_SLEEP  3           // Time ESP32 will go to sleep (in seconds)
 
 void setup() {
