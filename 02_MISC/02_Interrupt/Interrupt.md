@@ -119,7 +119,7 @@ void touchAttachInterrupt(uint8_t pin, void (*userFunc)(void), uint16_t threshol
 void touchDetachInterrupt(uint8_t pin);
 ```
      
-**4. Interrupt State Management & Safety Macros**
+**4. Interrupt State Management & Safety Macros**     
 Functions and macros used to prevent concurrency issues or race conditions between the main code thread and an ISR.      
 
 ```noInterrupts() / interrupts()```: Globally pause and resume interrupt execution across the microcontroller.     
