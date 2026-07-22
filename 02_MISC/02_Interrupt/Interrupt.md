@@ -13,6 +13,30 @@ When writing Interrupt Service Routines (ISRs) on the ESP32-S3:
 - **Keep ISRs Short:** Avoid lengthy logic, non-reentrant calls like delay(), or direct Serial.print() inside the ISR. Set a flag or use a queue/semaphore instead.  
 - **Use Spinlocks for shared data**: Because the ESP32-S3 is dual-core, use portMUX_TYPE to protect shared variables from being corrupted if the ISR and main loop run simultaneously on different cores.     
 
+## ARDUINO_ISR_ATTR and IRAM_ATTR     
+In the context of ESP32 development, ARDUINO_ISR_ATTR and IRAM_ATTR achieve the exact same mechanical result, but they come from different abstraction layers.     
+
+The Fundamental Difference:     
+
+|	Attribute	|	IRAM_ATTR	|	ARDUINO_ISR_ATTR
+|	-	|	-	|	-
+|	Origin	|	ESP-IDF (Espressif's native C/C++ SDK)	|	Arduino ESP32 Core (Wrapper built on top of ESP-IDF)
+|	Primary Scope	|	Used for any function/variable forced into IRAM	|	Specifically used for Interrupt Service Routines (ISRs)
+|	Portability	|	Compatible with pure ESP-IDF and Arduino IDE	|	Preferred semantic standard inside the Arduino API
+|	Under the Hood	|	__attribute__((section(".iram1." ...)))	|	Evaluates directly to IRAM_ATTR via macro
+
+**Why Do We Put Functions in IRAM?**     
+By default, ESP32 compiles code into standard Flash Memory (IROM).     
+When an interrupt fires, the CPU halts what it’s doing and immediately executes the Interrupt Service Routine (ISR). If that ISR is stored in Flash:
+- The CPU has to retrieve the code via the Flash MMU cache.
+- If there is a cache miss, or if Flash memory is currently busy write-blocking (e.g., saving preferences or using Wi-Fi), the ISR will experience a delay or crash.     
+
+Marking a function with either attribute forces the compiler to store the ISR directly in the ESP32-S3's Internal Fast Static RAM (IRAM), guaranteeing ultra-low latency execution.     
+**Which One Should You Use?**      
+- Use ```ARDUINO_ISR_ATTR``` if you are writing standard Arduino IDE sketches for ESP32. It signals clear intent that the function is explicitly an ISR.
+- Use ```IRAM_ATTR``` if you are writing cross-platform C/C++ code that might be compiled directly under ESP-IDF or if you are placing non-ISR performance-critical functions into RAM.       
+
+
 ## 1. GPIO / External Hardware Interrupts      
 These are triggered by a change in the state of a standard GPIO pin (e.g., a button press). You can trigger them on ```RISING```, ```FALLING```, ```CHANGE```, ```LOW```, or ```HIGH``` states.      
 Use Case: Reading physical buttons, rotary encoders, or external sensor alerts.
