@@ -1,6 +1,6 @@
 # Sleep Mode    
 
-The ESP32-S3 offers four primary power modes: **Active**, **Modem-Sleep**, **Light Sleep**, and **Deep Sleep**. When writing code in the Arduino IDE, you will most frequently work with **Light Sleep** and **Deep Sleep**, as these give you direct control over drastic power reductions.     
+The ESP32-S3 offers five primary power modes: **Active**, **Modem-Sleep**, **Light Sleep**, **Deep Sleep** and **Hibernation**. When writing code in the Arduino IDE, you will most frequently work with **Light Sleep** and **Deep Sleep**, as these give you direct control over drastic power reductions.     
 
 Here is a breakdown of how each sleep mode behaves, what stays powered on, and the exact Arduino IDE code to implement them.     
 
