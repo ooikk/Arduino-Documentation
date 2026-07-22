@@ -39,7 +39,7 @@ Here is a detailed breakdown of how hardware timers work on the ESP32-S3 within 
 **1. ESP32-S3 Hardware Timer Architecture**     
 Unlike simpler microcontrollers (like the Arduino Uno) that might only have two 16-bit timers, the ESP32-S3 is equipped with a highly capable timer subsystem:     
 - Quantity: It has four general-purpose hardware timers.
-- Bit-width: They are 64-bit timers, meaning they can count up to 2^64 - 1 before overflowing, which is practically infinite for human-scale timeframes.
+- Bit-width: They are 64-bit timers, meaning they can count up to  $2^{64} - 1$  before overflowing, which is practically infinite for human-scale timeframes.
 - Grouping: They are divided into two Timer Groups (Group 0 and Group 1), each containing two timers (Timer 0 and Timer 1).
 - Clock Source: They are driven by the APB (Advanced Peripheral Bus) clock, which typically runs at 80 MHz.         
 
