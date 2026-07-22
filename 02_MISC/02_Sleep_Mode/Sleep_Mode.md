@@ -371,11 +371,43 @@ Use these APIs to selectively power off internal domains to tune power consumpti
 - ESP_PD_OPTION_AUTO: Allow the system to automatically decide based on active wake sources.
 
 **6. Keeping Pin States & Internal Memory Active**          
+
+**GPIO Hold & Isolation**     
 |	Function	|	Description	|
 |	-	|	-	|
-|	gpio_hold_en(gpio_num_t gpio_num)	|	Holds the GPIO state (HIGH or LOW) during Deep Sleep. Prevents floating output pins.	|
-|	gpio_hold_dis(gpio_num_t gpio_num)	|	Releases the GPIO hold after waking up.	|
-|	esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON)	|	Forces RTC Slow Memory to remain powered in Deep Sleep so variables declared with RTC_DATA_ATTR retain their data.	|
+|	gpio_hold_en(gpio_num_t gpio_num)	|	Holds the current state (HIGH, LOW, or pull-up/down) of a single GPIO pin during Deep Sleep. Prevents floating output signals to connected hardware.	|
+|	gpio_hold_dis(gpio_num_t gpio_num)	|	Releases the pin lock after the system wakes up, returning control back to standard GPIO routines.	|
+|	gpio_deep_sleep_hold_en()	|	Globally enables GPIO hold functionality across all configured pins during Deep Sleep.	|
+|	gpio_deep_sleep_hold_dis()	|	Globally disables GPIO hold functionality during Deep Sleep.	|
+|	esp_sleep_config_gpio_isolate()	|	Isolates digital GPIOs during sleep to prevent current leakage (floating pins drawing unexpected power).	|
+
+**Memory Retention**     
+|	Function	|	Description	|
+|	-	|	-	|
+|	RTC_DATA_ATTR (Macro)	|	Modifier for global variables (e.g., RTC_DATA_ATTR int counter = 0;). Stores the variable in RTC Slow Memory so its value persists across Deep Sleep reboots.	|
+|	RTC_FAST_ATTR (Macro)	|	Modifier for placing code routines or variables into RTC Fast Memory, allowing rapid access immediately upon waking.	|
+|	esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON)	|	Forces RTC Slow Memory to stay powered in Deep Sleep (enabled by default unless modified for Hibernation).	|
+
+
+**7. Advanced Sleep Configuration & Optimization**     
+These auxiliary functions let you fine-tune UART behavior, sleep timing, and sub-system execution prior to sleeping.     
+
+**Subsystem & Peripheral Management**    
+|	Function	|	Description	|
+|	-	|	-	|
+|	esp_sleep_set_flash_use_usleep(bool enable)	|	Enables or disables fast flash memory power-down during Light Sleep to save additional microamps.	|
+|	esp_sleep_pd_config(...)	|	Dynamically changes power options (ESP_PD_OPTION_ON, ESP_PD_OPTION_OFF, ESP_PD_OPTION_AUTO) for specific internal domains like ESP_PD_DOMAIN_XTAL or ESP_PD_DOMAIN_VDDSDIO.	|
+
+**UART Handling Control**       
+|	Function	|	Description	|
+|	-	|	-	|
+|	esp_sleep_set_uart_handling_mode(esp_sleep_uart_handling_mode_t mode)	|	Controls how UART TX/RX buffers are processed before entering sleep.	|
+
+**UART Handling Modes (esp_sleep_uart_handling_mode_t)**      
+- ESP_SLEEP_AUTO_FLUSH_SUSPEND_UART: Default option. Flushes TX buffers before Deep Sleep and suspends during Light Sleep.
+- ESP_SLEEP_ALWAYS_FLUSH_UART: Waits until all queued data in the serial buffer is transmitted before entering sleep.
+- ESP_SLEEP_ALWAYS_SUSPEND_UART: Suspends transmission mid-frame; resumes upon wake if the UART domain remained powered.
+- ESP_SLEEP_ALWAYS_DISCARD_UART: Immediately drops unsent buffer data for faster sleep entry.       
 
 
 
