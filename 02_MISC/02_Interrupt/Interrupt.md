@@ -36,6 +36,115 @@ Marking a function with either attribute forces the compiler to store the ISR di
 - Use ```ARDUINO_ISR_ATTR``` if you are writing standard Arduino IDE sketches for ESP32. It signals clear intent that the function is explicitly an ISR.
 - Use ```IRAM_ATTR``` if you are writing cross-platform C/C++ code that might be compiled directly under ESP-IDF or if you are placing non-ISR performance-critical functions into RAM.       
 
+## API references     
+
+**1. GPIO External Interrupt Functions**     
+Used to trigger an interrupt when a physical pin changes state.      
+
+```attachInterrupt()```: Attaches an ISR callback to a specific GPIO pin.      
+```
+void attachInterrupt(uint8_t pin, void (*userFunc)(void), int mode);
+```
+- pin: The GPIO pin number (or digitalPinToInterrupt(pin)).
+- userFunc: The name of your ISR function.
+- mode: The trigger condition (RISING, FALLING, CHANGE, LOW, HIGH).     
+
+```attachInterruptArg()```: Attaches an ISR callback to a GPIO pin while allowing custom arguments to be passed into the callback function.  
+```
+void attachInterruptArg(uint8_t pin, void (*userFunc)(void*), void* arg, int mode);
+```
+- arg: A void pointer to pass custom parameters/structs to the ISR.
+
+
+```detachInterrupt()```: Disables and detaches the interrupt handler from a given GPIO pin.      
+```
+void detachInterrupt(uint8_t pin);
+```
+- pin: The GPIO pin to detach.     
+
+**2. Hardware Timer Interrupt Functions**     
+These functions control the hardware timers available on the ESP32.     
+```timerBegin()```: Initializes a hardware timer with a given frequency.     
+```
+hw_timer_t* timerBegin(uint32_t frequency);
+```
+- frequency: Timer tick frequency in Hz (e.g., 1000000 sets 1 tick = 1 microsecond).
+- Returns: Pointer handle to the timer object (hw_timer_t*).      
+
+```timerAttachInterrupt()```: Binds an ISR callback function to a designated hardware timer.      
+```
+void timerAttachInterrupt(hw_timer_t* timer, void (*userFunc)(void));
+```
+- timer: The timer object pointer created by timerBegin().
+- userFunc: Pointer to the function to execute when the alarm triggers.   
+
+```timerDetachInterrupt()```: Detaches the interrupt callback from a running timer.       
+```
+void timerDetachInterrupt(hw_timer_t* timer);
+```
+
+```timerAlarm()```: Configures the threshold at which the timer triggers an interrupt.    
+```
+void timerAlarm(hw_timer_t* timer, uint64_t alarm_value, bool autoreload, uint64_t reload_count);
+```
+- alarm_value: Trigger threshold in timer ticks.
+- autoreload: true for periodic/repeating timer, false for one-shot.
+- reload_count: Number of auto-reloads (0 for unlimited repeats).     
+
+```timerStart()``` / ```timerStop()``` / ```timerRestart()```: Manually control the run state of a timer.      
+```
+void timerStart(hw_timer_t* timer);
+void timerStop(hw_timer_t* timer);
+void timerRestart(hw_timer_t* timer); // Resets counter value back to zero
+```
+
+```timerEnd()```: Stops the hardware timer and frees up the memory resource.     
+```
+void timerEnd(hw_timer_t* timer);
+```
+
+**3. Capacitive Touch Interrupt Functions**      
+Touch-capable GPIO pins can fire an interrupt when human touch is detected.       
+
+```touchAttachInterrupt()```:Attaches an ISR to a capacitive touch pin that triggers when capacitance drops below a set threshold.    
+```
+void touchAttachInterrupt(uint8_t pin, void (*userFunc)(void), uint16_t threshold);
+```
+- pin: Touch-capable GPIO pin number.
+- userFunc: Callback function executed on touch detection.
+- threshold: Sensitivity limit (triggers when touchRead(pin) drops below or meets this value).    
+
+```touchDetachInterrupt()```: Disables touch interrupt capabilities on the specified pin.      
+```
+void touchDetachInterrupt(uint8_t pin);
+```
+     
+**4. Interrupt State Management & Safety Macros**
+Functions and macros used to prevent concurrency issues or race conditions between the main code thread and an ISR.      
+
+```noInterrupts() / interrupts()```: Globally pause and resume interrupt execution across the microcontroller.     
+```
+noInterrupts(); // Disables all maskable interrupts (creates a critical section)
+// ... performs sensitive read/write of a variable shared with an ISR ...
+interrupts();   // Re-enables interrupts
+```     
+**Critical Section Macros (portMUX_TYPE)**      
+For dual-core ESP32 chips, noInterrupts() is often not enough because another core can still modify memory. The ESP32 task-spinlock functions lock access across both cores:     
+
+```
+portMUX_TYPE myMutex = portMUX_INITIALIZER_UNLOCKED;
+
+// Enter critical section (disables interrupts on calling core & locks mutex)
+taskENTER_CRITICAL(&myMutex);
+// ... safely edit shared variable ...
+taskEXIT_CRITICAL(&myMutex);
+```
+```
+// Inside an ISR context (use FromISR variant)
+taskENTER_CRITICAL_ISR(&myMutex);
+// ... manipulate shared hardware state ...
+taskEXIT_CRITICAL_ISR(&myMutex);
+```
 
 ## 1. GPIO / External Hardware Interrupts      
 These are triggered by a change in the state of a standard GPIO pin (e.g., a button press). You can trigger them on ```RISING```, ```FALLING```, ```CHANGE```, ```LOW```, or ```HIGH``` states.      
@@ -333,3 +442,12 @@ void loop() {
   // Main loop remains completely unblocked
 }
 ```
+
+## References
+
+https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-gpio.h
+
+https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-timer.h
+
+https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-matrix.h
+
