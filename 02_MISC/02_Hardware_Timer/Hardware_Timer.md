@@ -22,15 +22,18 @@ If you are searching for ESP32 timer tutorials online, be careful. The Arduino c
 **3. Core Functions of the Modern Timer API**     
 **Initialization and Cleanup**     
 - ```hw_timer_t * timerBegin(uint32_t frequency)```: Initializes a timer and sets its ticking frequency in Hz. The maximum frequency is usually 80,000,000 (80 MHz), and the minimum is 1 Hz. It returns a pointer to the timer object.
-- ```void timerEnd(hw_timer_t *timer)```: Stops and deallocates the timer.
+- ```void timerEnd(hw_timer_t *timer)```: Stops and deallocates the timer.     
+
 **Interrupt Management**     
 - ```void timerAttachInterrupt(hw_timer_t *timer, void (*fn)(void))```: Binds your Interrupt Service Routine (ISR) to the timer. When the timer hits the alarm value, this function is called.
 - ```void timerDetachInterrupt(hw_timer_t *timer)```: Removes the ISR from the timer.     
+
 **Alarm Configuration (The Trigger)**      
 - ```void timerAlarm(hw_timer_t *timer, uint64_t alarm_value, bool autoreload, uint64_t reload_count)```:
   - alarm_value: The number of ticks at which the interrupt should fire. (If frequency is 1MHz, an alarm value of 1,000,000 equals 1 second).
   - autoreload: If true, the timer automatically resets and starts counting again after firing. If false, it fires once and stops.
-  - reload_count: The value the timer resets to after firing (usually 0).
+  - reload_count: The value the timer resets to after firing (usually 0).     
+
 **Control and Reading**    
 - ```void timerStart(hw_timer_t *timer)``` / ```void timerStop(hw_timer_t *timer)```: Pauses or resumes the timer without deleting its configuration.
 - ```uint64_t timerRead(hw_timer_t *timer)```: Reads the current tick count of the timer.
