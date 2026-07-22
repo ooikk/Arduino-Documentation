@@ -65,7 +65,7 @@ void touchAttachInterruptArg(uint8_t pin, void (*userFunc)(void *), void *arg, t
 void touchDetachInterrupt(uint8_t pin);
 ```      
 **2. Status & Configuration Functions**      
-```touchInterruptGetLastStatus()``` *(ESP32-S2 & ESP32-S3 specific)* :Checks if the touch pin is currently actively touched.      
+```touchInterruptGetLastStatus()``` *(ESP32-S2 & ESP32-S3 specific)* : Checks if the touch pin is currently actively touched.      
 ```
 bool touchInterruptGetLastStatus(uint8_t pin);
 ```
@@ -87,6 +87,71 @@ void touchSleepWakeUpEnable(uint8_t pin, touch_value_t threshold);
 - pin: Touch pin designated as wake-up source.
 - threshold: Capacitance threshold that triggers a wake-up event.     
 
+## Sample code: touchAttachInterruptArg()      
+
+
+Passing custom arguments into an interrupt handler is useful when you want to reuse a single ISR function across multiple touch pads without writing duplicate code for each pin.       
+
+Code Example: Managing Multiple Touch Pads with a Single ISR:      
+```
+#include <Arduino.h>
+
+// 1. Define a struct to hold custom parameters for each touch pad
+struct TouchButton {
+  uint8_t pin;
+  const char* name;
+  volatile bool wasTouched;
+};
+
+// Instantiating parameters for two separate touch buttons
+// Note: ESP32-S3 Touch GPIOs include 1 to 14 (e.g., GPIO 4 and GPIO 5)
+TouchButton buttonA = {4, "Button A (GPIO 4)", false};
+TouchButton buttonB = {5, "Button B (GPIO 5)", false};
+
+// Threshold setting: S3 readings INCREASE when touched
+// Adjust based on your touchRead() baseline (e.g., baseline ~30,000 -> set threshold to ~50,000)
+const touch_value_t TOUCH_THRESHOLD = 50000; 
+
+// 2. Multi-purpose ISR accepting a void pointer argument
+void ARDUINO_ISR_ATTR handleTouchArg(void* arg) {
+  // Cast the generic void pointer back to our struct type
+  TouchButton* btn = (TouchButton*)arg;
+  btn->wasTouched = true; // Mark the specific button struct as touched
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.println("Initializing Touch Interrupts with Custom Arguments...");
+
+  // 3. Attach touch interrupts and pass addresses of button structs as arguments
+  touchAttachInterruptArg(buttonA.pin, handleTouchArg, &buttonA, TOUCH_THRESHOLD);
+  touchAttachInterruptArg(buttonB.pin, handleTouchArg, &buttonB, TOUCH_THRESHOLD);
+}
+
+void loop() {
+  // Check Button A flag
+  if (buttonA.wasTouched) {
+    buttonA.wasTouched = false; // Reset flag
+    Serial.print("Interrupt Fired on: ");
+    Serial.println(buttonA.name);
+  }
+
+  // Check Button B flag
+  if (buttonB.wasTouched) {
+    buttonB.wasTouched = false; // Reset flag
+    Serial.print("Interrupt Fired on: ");
+    Serial.println(buttonB.name);
+  }
+
+  vTaskDelay(pdMS_TO_TICKS(10)); // Yield to prevent watchdog triggers
+}
+```
+
+**Key Highlights of This Approach**     
+- ```void* arg``` Casting: Inside ```handleTouchArg(void* arg)```, we cast ``(TouchButton*)arg``` back to our data type. This grants full access to the specific struct's properties (pin, name, wasTouched).
+- Zero Code Duplication: Instead of writing ```handleButtonA()``` and ```handleButtonB()``` separately, a single ISR dynamically identifies which physical pad was pressed based on the pointer passed into ```touchAttachInterruptArg()```.
 
 ## Reference    
 
