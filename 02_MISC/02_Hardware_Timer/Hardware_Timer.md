@@ -17,6 +17,7 @@ If you are searching for ESP32 timer tutorials online, be careful. The Arduino c
 - The Modern API (v2.x & v3.x): Uses direct frequency in Hertz. The prescaler is calculated automatically under the hood.
   *(e.g., timerBegin(1000000) -> Sets the timer to tick at 1,000,000 Hz / 1 MHz).*     
 *The rest of this guide focuses on the Modern API, which is standard for current Arduino IDE installations.*     
+
 **3. Core Functions of the Modern Timer API**     
 **Initialization and Cleanup**     
 - ```hw_timer_t * timerBegin(uint32_t frequency)```: Initializes a timer and sets its ticking frequency in Hz. The maximum frequency is usually 80,000,000 (80 MHz), and the minimum is 1 Hz. It returns a pointer to the timer object.
@@ -33,6 +34,7 @@ If you are searching for ESP32 timer tutorials online, be careful. The Arduino c
 - ```void timerStart(hw_timer_t *timer)``` / ```void timerStop(hw_timer_t *timer)```: Pauses or resumes the timer without deleting its configuration.
 - ```uint64_t timerRead(hw_timer_t *timer)```: Reads the current tick count of the timer.
 - ```void timerWrite(hw_timer_t *timer, uint64_t val)```: Manually forces the timer to a specific tick value.     
+
 **4. Code Example: Modern Hardware Timer**     
 This example configures a timer to trigger an interrupt exactly every 1 second (1,000,000 microseconds at a 1MHz frequency).
 ```
