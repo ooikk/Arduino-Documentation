@@ -500,3 +500,9 @@ https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-tim
 
 https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-matrix.h
 
+https://www.oceanlabz.in/esp32-interrupt-timers/
+
+https://www.luisllamas.es/esp32-interrupciones-hardware/
+
+https://randomnerdtutorials.com/esp32-pir-motion-sensor-interrupts-timers/
+
