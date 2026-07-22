@@ -8,7 +8,8 @@ Unlike simpler microcontrollers (like the Arduino Uno) that might only have two 
 - Quantity: It has four general-purpose hardware timers.
 - Bit-width: They are 64-bit timers, meaning they can count up to 2^64 - 1 before overflowing, which is practically infinite for human-scale timeframes.
 - Grouping: They are divided into two Timer Groups (Group 0 and Group 1), each containing two timers (Timer 0 and Timer 1).
-- Clock Source: They are driven by the APB (Advanced Peripheral Bus) clock, which typically runs at 80 MHz.        
+- Clock Source: They are driven by the APB (Advanced Peripheral Bus) clock, which typically runs at 80 MHz.         
+
 **2. The Arduino API: A Major Shift (Important!)**     
 If you are searching for ESP32 timer tutorials online, be careful. The Arduino core for ESP32 underwent a massive API rewrite in version 2.0.0 (and further refined in 3.0.0) to align closer to the underlying Espressif ESP-IDF.     
 - The Legacy API (v1.x - Deprecated): Used prescalers and raw ticks.
