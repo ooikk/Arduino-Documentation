@@ -317,6 +317,82 @@ void loop() {
    - ```result[i].avg_read_raw```: The hardware-averaged raw 12-bit value.
    - ```result[i].avg_read_mvolts```: The hardware-averaged value automatically converted into factory-calibrated millivolts.
 
+
+**What happen if the adc_conversion_done is true but did not call analogContinuousRead() in time**      
+ 
+The ADC hardware hardware and DMA engine will keep running autonomously at your configured sampling frequency, regardless of whether your code reads ```conversion_done``` or ```calls analogContinuousRead()``` in time.      
+Here is what happens under the hood when your application code falls behind:     
+1. The Ring Buffer Queue Fills Up
+The ESP32-S3 driver uses a FreeRTOS Ring Buffer behind the scenes to hold incoming DMA data blocks:
+- Every time a DMA frame fills up, the hardware ISR fires, pushes the frame into the internal ring buffer, and triggers your callback function (```adcCallback```).
+- If your CPU is busy with other tasks and doesn't clear the buffer by calling ```analogContinuousRead()```, the ring buffer simply accumulates these incoming frames.      
+
+2. What Happens When the Buffer Overflows?       
+If the CPU takes too long and the ring buffer reaches full capacity:
+- Hardware keeps sampling: The ADC hardware and DMA controller do not stop sampling or crash.
+- Oldest Data Drop / Buffer Overwrite: The internal driver will begin dropping frames or overwriting unread DMA buffers to make room for new incoming ADC data.
+- ```analogContinuousRead()``` Failure: When your code does eventually get around to calling ```analogContinuousRead()```, the function will return false or drop frames, indicating that an internal overflow occurred and data was lost.     
+
+**When you finally call ```analogContinuousRead()```**      
+It retrieves data sequentially FIFO-style (First-In, First-Out) from the internal ring buffer.
+It returns the oldest unread batch of samples—meaning the data taken immediately after your last read—not the absolute latest real-time frame.      
+
+**What Happens in Different Scenarios**
+1. Scenario A: CPU Keeps Up with Sampling     
+If your CPU processes data quickly, the ring buffer only ever holds 1 batch of data at a time.
+- Result: The oldest unread data is effectively the newest data.     
+
+2. Scenario B: CPU Lags Behind (Data Backlog)       
+If your application code gets delayed (e.g., spending 500 ms in a delay or performing heavy calculations), the ADC hardware keeps writing new DMA blocks into the internal ring buffer.       
+```
+       [ Read 1 ]  --->  [ Frame 2 ] ---> [ Frame 3 ] ---> [ Latest Frame ]
+  (Last read data)      (Oldest Unread)                    (Just sampled)
+                               ^
+                       analogContinuousRead()
+                        pulls from HERE
+```
+**When you finally call ```analogContinuousRead()```**:     
+- It returns Frame 2 (the frame collected right after your previous read).
+- The internal buffer pointer moves forward to Frame 3.
+- You are now reading historical data, lag behind real-time, and will continue working through the backlog until the buffer is cleared or overflows.      
+
+**How to Guarantee You Always Get the Latest Data**      
+If your application requires real-time measurements (e.g., reacting instantly to a sensor spike) rather than a complete, gapless historical stream:
+1. Drain the Buffer in a Loop
+  To clear out any queued-up historical data and reach the newest sample, read in a loop until the buffer is empty:
+```
+adc_continuous_result_t *latest_result = NULL;
+adc_continuous_result_t *temp_result = NULL;
+
+// Keep reading until analogContinuousRead returns false (buffer empty)
+while (analogContinuousRead(&temp_result, 0)) {
+    latest_result = temp_result; // Retain the most recent valid frame
+}
+
+if (latest_result != NULL) {
+    // latest_result now holds the absolute newest sample frame
+}
+```
+2. Stop and Restart the ADC (Flush Hardware Buffer)       
+If you only need periodic real-time snapshots (e.g., taking a reading once every 2 seconds without caring about the time in between):     
+```
+// 1. Stop continuous sampling to halt DMA writes
+analogContinuousStop();
+
+// 2. Start sampling fresh
+analogContinuousStart();
+
+// 3. Wait briefly for a new frame to be captured
+delay(10); 
+
+// 4. Read the fresh frame
+adc_continuous_result_t *result = NULL;
+if (analogContinuousRead(&result, 0)) {
+    // This is guaranteed to be fresh real-time data
+}
+```
+
+
 ## Why #include <Arduino.h>?      
 Including ```#include <Arduino.h>``` is a fundamental best practice in C/C++ development for microcontrollers, though its necessity depends slightly on how and where you are writing your code.      
 Here is exactly why it is there and what it does:     
