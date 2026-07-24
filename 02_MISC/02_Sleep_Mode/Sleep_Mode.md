@@ -229,6 +229,119 @@ void loop() {
 }
 ```
 
+**Deep Sleep Example D: EXT1 Wake-up with Multiple Buttons**        
+In this example, we will configure GPIO 2 and GPIO 3 as wake-up sources. The ESP32-S3 will wake up if ANY of the buttons are pressed (pulled HIGH).     
+```
+#include "esp_sleep.h"
+#include "driver/rtc_io.h"
+
+// Define the RTC-capable GPIO pins to use for wake-up
+// On ESP32-S3, RTC GPIOs are typically GPIO 0 through GPIO 21
+#define BUTTON_1_PIN GPIO_NUM_2
+#define BUTTON_2_PIN GPIO_NUM_3
+
+// Variable to keep track of boot count (survives deep sleep)
+RTC_DATA_ATTR int bootCount = 0;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000); // Give serial monitor time to connect
+
+  bootCount++;
+  Serial.printf("Boot number: %d\n", bootCount);
+
+  // 1. Check the wake-up cause
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+  
+  if (wakeup_reason == ESP_SLEEP_WAKEUP_EXT1) {
+    Serial.println("Woke up from EXT1 GPIO Wake-up!");
+  } else {
+    Serial.println("First boot or woke up from another source.");
+  }
+
+  // ---------------------------------------------------------
+  // 2. CONFIGURE THE WAKE_MASK
+  // ---------------------------------------------------------
+  // The wake_mask is a 64-bit integer. We use bitwise shift (1ULL << pin) 
+  // to set the specific bit for each GPIO we want to use.
+  // We combine them using the bitwise OR operator (|).
+  
+  uint64_t wake_mask = (1ULL << BUTTON_1_PIN) | (1ULL << BUTTON_2_PIN);
+  
+  Serial.printf("Wake mask calculated: 0x%llx\n", wake_mask);
+
+  // ---------------------------------------------------------
+  // 3. CONFIGURE RTC GPIOs (CRITICAL FOR ESP32-S3)
+  // ---------------------------------------------------------
+  // For Deep Sleep, standard pinMode() does NOT work. 
+  // You MUST configure the pins using the rtc_gpio API.
+  
+  // Configure Button 1
+  rtc_gpio_init(BUTTON_1_PIN);
+  rtc_gpio_set_direction(BUTTON_1_PIN, RTC_GPIO_MODE_INPUT_ONLY);
+  rtc_gpio_pulldown_en(BUTTON_1_PIN); // Pull down so it reads LOW until pressed
+  rtc_gpio_pullup_dis(BUTTON_1_PIN);  // Disable pull-up
+
+  // Configure Button 2
+  rtc_gpio_init(BUTTON_2_PIN);
+  rtc_gpio_set_direction(BUTTON_2_PIN, RTC_GPIO_MODE_INPUT_ONLY);
+  rtc_gpio_pulldown_en(BUTTON_2_PIN); 
+  rtc_gpio_pullup_dis(BUTTON_2_PIN);  
+
+  // ---------------------------------------------------------
+  // 4. ENABLE EXT1 WAKE-UP
+  // ---------------------------------------------------------
+  // Mode options:
+  // ESP_EXT1_WAKEUP_ANY_HIGH: Wakes if ANY pin in the mask goes HIGH
+  // ESP_EXT1_WAKEUP_ALL_LOW:  Wakes if ALL pins in the mask go LOW
+  
+  esp_err_t err = esp_sleep_enable_ext1_wakeup(wake_mask, ESP_EXT1_WAKEUP_ANY_HIGH);
+  
+  if (err == ESP_OK) {
+    Serial.println("EXT1 Wake-up enabled successfully.");
+  } else {
+    Serial.println("Failed to enable EXT1 wake-up!");
+  }
+
+  Serial.println("Going to Deep Sleep... Press Button 1 OR Button 2 to wake up.");
+  delay(100); // Allow serial to flush
+
+  // ---------------------------------------------------------
+  // 5. ENTER DEEP SLEEP
+  // ---------------------------------------------------------
+  esp_deep_sleep_start();
+}
+
+void loop() {
+  // This code will never be reached because the chip resets 
+  // and starts from setup() every time it wakes up from Deep Sleep.
+}
+```
+
+**Breakdown of the Key Concepts**     
+1. Understanding the wake_mask
+   The wake_mask is a uint64_t (64-bit unsigned integer).
+   - Bit 0 represents GPIO 0.
+   - Bit 1 represents GPIO 1.
+   - Bit 21 represents GPIO 21.
+   
+   To turn on the "wake-up" feature for GPIO 2, you shift the number 1 to the left by 2 positions: 1ULL << 2 (which equals binary 100, or decimal 4).     
+   To include GPIO 3 as well, you shift 1 left by 3: 1ULL << 3 (binary 1000, decimal 8).
+   You combine them using the bitwise OR | operator: 4 | 8 = 12 (binary 1100).
+   Note: Always use 1ULL (Unsigned Long Long) instead of just 1. If you use 1 << 20, it might overflow a standard 32-bit integer and fail to set the higher bits correctly.      
+2. Understanding the mode Parameter
+   The second parameter dictates the logic for the mask:
+   - ```ESP_EXT1_WAKEUP_ANY_HIGH```: The chip wakes up if at least one of the GPIOs in the mask goes HIGH. (Used in the example above; pressing either button wakes the chip).
+   - ```ESP_EXT1_WAKEUP_ALL_LOW```: The chip wakes up only if all of the GPIOs in the mask go LOW simultaneously. (Useful for scenarios where you need a specific combination of switches to be closed to wake the device).     
+3. The ESP32-S3 "Gotcha": RTC GPIO Initialization
+   This is the #1 reason EXT1 wake-up fails on the ESP32-S3.     
+   When the chip goes into Deep Sleep, the main digital GPIO matrix is powered off. The wake-up logic is handled by the separate, ultra-low-power RTC controller.    
+   Therefore, you cannot use ```pinMode(pin, INPUT)``` or ```digitalRead()```. You must explicitly tell the RTC controller to take over the pin using:
+   - ```rtc_gpio_init()```
+   - ```rtc_gpio_set_direction()```
+   - ```rtc_gpio_pulldown_en()``` or ```rtc_gpio_pullup_en()``` (Crucial: if you don't enable internal pull resistors, the pins will "float" and cause the ESP32 to wake up randomly or draw massive amounts of current while sleeping).       
+
+
 ## 4. Hibernation     
 
 Hibernation is a specialized subset of Deep Sleep. In this mode, even the RTC peripherals are powered down. Only the RTC slow memory is kept alive.     
@@ -311,11 +424,11 @@ This extra power draw is usually caused by:
   
 
 **External GPIO Pins**      
-- ```esp_sleep_enable_ext0_wakeup(gpio_num_t gpio_num, int level)```
+- ```esp_err_t esp_sleep_enable_ext0_wakeup(gpio_num_t gpio_num, int level)```
   - Configures a single RTC GPIO pin (gpio_num) to wake the chip when it reaches a specific logic level (0 for LOW, 1 for HIGH). Works in Deep and Light Sleep.
-- ```esp_sleep_enable_ext1_wakeup(uint64_t mask, esp_sleep_ext1_wakeup_mode_t mode)```
-  - Uses a bitmask to configure multiple RTC GPIO pins. mode can be ESP_EXT1_WAKEUP_ANY_HIGH or ESP_EXT1_WAKEUP_ALL_LOW. Works in Deep and Light Sleep.
-- ```esp_sleep_enable_gpio_wakeup()```
+- ```esp_err_t esp_sleep_enable_ext1_wakeup(uint64_t wake_mask, int mode)```
+  - Uses a bitmask to configure multiple RTC GPIO pins. mode can be ESP_EXT1_WAKEUP_ANY_HIGH or ESP_EXT1_WAKEUP_ALL_LOW. Works in Deep and Light Sleep. See "Deep Sleep Example D" above.
+- ```esp_err_t esp_sleep_enable_gpio_wakeup(void)```
   - Enables GPIO wakeup for Light Sleep only. Allows non-RTC GPIOs to wake the chip while standard digital peripherals are paused.	
 - ```gpio_wakeup_enable(gpio_num_t gpio_num, gpio_int_type_t intr_type)```
   - Configures a specific GPIO pin for Light Sleep wakeup (e.g., GPIO_INTR_LOW_LEVEL or GPIO_INTR_HIGH_LEVEL).	  
@@ -452,6 +565,80 @@ Requires: ```#include "driver/rtc_io.h"```
   - Enables internal pull-down or pull-up resistors. Crucial for preventing floating pins from causing accidental wake-ups.
 - ```esp_err_t rtc_gpio_hold_en(gpio_num_t gpio_num) / rtc_gpio_hold_dis(...)```
   - Holds the GPIO state during deep sleep. Useful if you need to keep an external sensor powered on or off while the ESP32-S3 is asleep.      
+
+**esp_err_t**       
+In the ESP32 ecosystem (ESP-IDF and the underlying C code for the Arduino core), esp_err_t is the standard data type used for returning error codes from functions.     
+It is essentially a typedef (alias) for a 32-bit signed integer (int32_t).      
+Whenever you call an ESP-IDF API function (like esp_sleep_enable_timer_wakeup() or esp_wifi_init()), it will return an esp_err_t to tell you if the operation succeeded or failed.       
+
+1. The Values of esp_err_t     
+Unlike some C conventions where 0 means false/failure, in the ESP-IDF framework:     
+- 0 means SUCCESS.
+- Any non-zero value means an ERROR.      
+The most common predefined error codes are defined in esp_err.h:   
+
+|	Constant Name	|	Value	|	Meaning	|
+|	-	|	-	|	-	|
+|	ESP_OK	|	0x000	|	Success. The function executed perfectly.	|
+|	ESP_FAIL	|	0x001	|	Generic failure or unspecified error.	|
+|	ESP_ERR_NO_MEM	|	0x101	|	Out of memory (RAM or PSRAM).	|
+|	ESP_ERR_INVALID_ARG	|	0x102	|	Invalid argument passed to the function (e.g., wrong GPIO pin).	|
+|	ESP_ERR_INVALID_STATE	|	0x103	|	The ESP32 is in the wrong state for this function to run.	|
+|	ESP_ERR_INVALID_SIZE	|	0x104	|	Size argument is invalid.	|
+|	ESP_ERR_NOT_FOUND	|	0x105	|	Requested resource or setting was not found.	|
+|	ESP_ERR_NOT_SUPPORTED	|	0x106	|	The feature is not supported on this specific chip/mode.	|
+|	ESP_ERR_TIMEOUT	|	0x107	|	Operation timed out.	|
+
+2. How to Use esp_err_t in Code     
+You should always capture the return value of ESP-IDF functions and check it. Here is the standard pattern:
+```
+#include "esp_err.h"
+#include "esp_sleep.h"
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Call an ESP-IDF function and store the result in an esp_err_t variable
+  esp_err_t err = esp_sleep_enable_timer_wakeup(5000000); // 5 seconds
+
+  // Check if it succeeded
+  if (err == ESP_OK) {
+    Serial.println("Timer wake-up configured successfully!");
+  } else {
+    Serial.println("Failed to configure timer wake-up!");
+  }
+}
+
+void loop() {}
+```
+
+3. Pro-Tip: Debugging with esp_err_to_name()      
+When a function fails, just printing "Error" isn't very helpful. The ESP-IDF provides a built-in function called esp_err_to_name() which converts the numeric esp_err_t code into a human-readable string (like "ESP_ERR_INVALID_ARG").     
+Here is how you use it for powerful debugging:
+```
+#include "esp_err.h"
+#include "esp_sleep.h"
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Let's intentionally pass an invalid GPIO pin to trigger an error
+  // (Assuming GPIO 99 doesn't exist on the ESP32-S3)
+  esp_err_t err = esp_sleep_enable_ext0_wakeup(GPIO_NUM_99, HIGH);
+
+  if (err != ESP_OK) {
+    // Print the exact error name!
+    Serial.printf("Function failed with error: %s\n", esp_err_to_name(err));
+  }
+}
+
+void loop() {}
+```
+
+Output in Serial Monitor:     
+```
+Function failed with error: ESP_ERR_INVALID_ARG
+```
 
 
 ## Reference      
