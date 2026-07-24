@@ -567,9 +567,9 @@ Requires: ```#include "driver/rtc_io.h"```
   - Holds the GPIO state during deep sleep. Useful if you need to keep an external sensor powered on or off while the ESP32-S3 is asleep.      
 
 **esp_err_t**       
-In the ESP32 ecosystem (ESP-IDF and the underlying C code for the Arduino core), esp_err_t is the standard data type used for returning error codes from functions.     
+In the ESP32 ecosystem (ESP-IDF and the underlying C code for the Arduino core), ```esp_err_t``` is the standard data type used for returning error codes from functions.     
 It is essentially a typedef (alias) for a 32-bit signed integer (int32_t).      
-Whenever you call an ESP-IDF API function (like esp_sleep_enable_timer_wakeup() or esp_wifi_init()), it will return an esp_err_t to tell you if the operation succeeded or failed.       
+Whenever you call an ESP-IDF API function (like ```esp_sleep_enable_timer_wakeup()``` or ```esp_wifi_init()```), it will return an ```esp_err_t``` to tell you if the operation succeeded or failed.       
 
 1. The Values of esp_err_t     
 Unlike some C conventions where 0 means false/failure, in the ESP-IDF framework:     
@@ -579,17 +579,17 @@ The most common predefined error codes are defined in esp_err.h:
 
 |	Constant Name	|	Value	|	Meaning	|
 |	-	|	-	|	-	|
-|	ESP_OK	|	0x000	|	Success. The function executed perfectly.	|
-|	ESP_FAIL	|	0x001	|	Generic failure or unspecified error.	|
-|	ESP_ERR_NO_MEM	|	0x101	|	Out of memory (RAM or PSRAM).	|
-|	ESP_ERR_INVALID_ARG	|	0x102	|	Invalid argument passed to the function (e.g., wrong GPIO pin).	|
-|	ESP_ERR_INVALID_STATE	|	0x103	|	The ESP32 is in the wrong state for this function to run.	|
-|	ESP_ERR_INVALID_SIZE	|	0x104	|	Size argument is invalid.	|
-|	ESP_ERR_NOT_FOUND	|	0x105	|	Requested resource or setting was not found.	|
-|	ESP_ERR_NOT_SUPPORTED	|	0x106	|	The feature is not supported on this specific chip/mode.	|
-|	ESP_ERR_TIMEOUT	|	0x107	|	Operation timed out.	|
+|	```ESP_OK```	|	0x000	|	Success. The function executed perfectly.	|
+|	```ESP_FAIL```	|	0x001	|	Generic failure or unspecified error.	|
+|	```ESP_ERR_NO_MEM```	|	0x101	|	Out of memory (RAM or PSRAM).	|
+|	```ESP_ERR_INVALID_ARG```	|	0x102	|	Invalid argument passed to the function (e.g., wrong GPIO pin).	|
+|	```ESP_ERR_INVALID_STATE```	|	0x103	|	The ESP32 is in the wrong state for this function to run.	|
+|	```ESP_ERR_INVALID_SIZE```	|	0x104	|	Size argument is invalid.	|
+|	```ESP_ERR_NOT_FOUND```	|	0x105	|	Requested resource or setting was not found.	|
+|	```ESP_ERR_NOT_SUPPORTED```	|	0x106	|	The feature is not supported on this specific chip/mode.	|
+|	```ESP_ERR_TIMEOUT```	|	0x107	|	Operation timed out.	|
 
-2. How to Use esp_err_t in Code     
+2. How to Use ```esp_err_t``` in Code     
 You should always capture the return value of ESP-IDF functions and check it. Here is the standard pattern:
 ```
 #include "esp_err.h"
@@ -612,8 +612,8 @@ void setup() {
 void loop() {}
 ```
 
-3. Pro-Tip: Debugging with esp_err_to_name()      
-When a function fails, just printing "Error" isn't very helpful. The ESP-IDF provides a built-in function called esp_err_to_name() which converts the numeric esp_err_t code into a human-readable string (like "ESP_ERR_INVALID_ARG").     
+3. Pro-Tip: Debugging with ```esp_err_to_name()```          
+When a function fails, just printing "Error" isn't very helpful. The ESP-IDF provides a built-in function called ```esp_err_to_name()``` which converts the numeric ```esp_err_t``` code into a human-readable string (like "```ESP_ERR_INVALID_ARG```").     
 Here is how you use it for powerful debugging:
 ```
 #include "esp_err.h"
@@ -637,7 +637,7 @@ void loop() {}
 
 Output in Serial Monitor:     
 ```
-Function failed with error: ESP_ERR_INVALID_ARG
+Function failed with error: ```ESP_ERR_INVALID_ARG```      
 ```
 
 
