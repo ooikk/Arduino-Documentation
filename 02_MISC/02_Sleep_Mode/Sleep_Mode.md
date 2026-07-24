@@ -296,119 +296,125 @@ This extra power draw is usually caused by:
 ## Sleep mode API     
 
 **1. Entering Sleep Modes**     
-- ```esp_deep_sleep_start()```
+- ```void esp_deep_sleep_start(void)```
   - Enters Deep Sleep (or Hibernation, if power domains were disabled). The main CPU, digital peripherals, and RAM are powered off. Waking up causes a system reboot.
-- ```esp_light_sleep_start()```
+- ```esp_err_t esp_light_sleep_start(void)```
   - Enters Light Sleep. CPU clock is gated, but RAM remains intact. Execution resumes on the next line of code upon wakeup.
-- ```esp_deep_sleep(uint64_t time_in_us)```
+- ```void esp_deep_sleep(uint64_t time_in_us)```
   Helper function that configures a timer wakeup source and enters Deep Sleep in a single call.     
 
 **2. Wakeup Source Configuration**      
 
 **Timer**     
-|	Function	|	Description	|
-|	-	|	-	|
-|	esp_sleep_enable_timer_wakeup(uint64_t time_in_us)	|	Sets an RTC timer to wake the ESP32-S3 after time_in_us microseconds. Works in both Light and Deep Sleep.	|
+- ```esp_err_t esp_sleep_enable_timer_wakeup(uint64_t time_in_us)```
+  -Sets an RTC timer to wake the ESP32-S3 after time_in_us microseconds. Works in both Light and Deep Sleep.
+  
 
 **External GPIO Pins**      
-|	Function	|	Description	|
-|	-	|	-	|
-|	esp_sleep_enable_ext0_wakeup(gpio_num_t gpio_num, int level)	|	Configures a single RTC GPIO pin (gpio_num) to wake the chip when it reaches a specific logic level (0 for LOW, 1 for HIGH). Works in Deep and Light Sleep.	|
-|	esp_sleep_enable_ext1_wakeup(uint64_t mask, esp_sleep_ext1_wakeup_mode_t mode)	|	Uses a bitmask to configure multiple RTC GPIO pins. mode can be ESP_EXT1_WAKEUP_ANY_HIGH or ESP_EXT1_WAKEUP_ALL_LOW. Works in Deep and Light Sleep.	|
-|	esp_sleep_enable_gpio_wakeup()	|	Enables GPIO wakeup for Light Sleep only. Allows non-RTC GPIOs to wake the chip while standard digital peripherals are paused.	|
-|	gpio_wakeup_enable(gpio_num_t gpio_num, gpio_int_type_t intr_type)	|	Configures a specific GPIO pin for Light Sleep wakeup (e.g., GPIO_INTR_LOW_LEVEL or GPIO_INTR_HIGH_LEVEL).	|
+- ```esp_sleep_enable_ext0_wakeup(gpio_num_t gpio_num, int level)```
+  - Configures a single RTC GPIO pin (gpio_num) to wake the chip when it reaches a specific logic level (0 for LOW, 1 for HIGH). Works in Deep and Light Sleep.
+- ```esp_sleep_enable_ext1_wakeup(uint64_t mask, esp_sleep_ext1_wakeup_mode_t mode)```
+  - Uses a bitmask to configure multiple RTC GPIO pins. mode can be ESP_EXT1_WAKEUP_ANY_HIGH or ESP_EXT1_WAKEUP_ALL_LOW. Works in Deep and Light Sleep.
+- ```esp_sleep_enable_gpio_wakeup()```
+  - Enables GPIO wakeup for Light Sleep only. Allows non-RTC GPIOs to wake the chip while standard digital peripherals are paused.	
+- ```gpio_wakeup_enable(gpio_num_t gpio_num, gpio_int_type_t intr_type)```
+  - Configures a specific GPIO pin for Light Sleep wakeup (e.g., GPIO_INTR_LOW_LEVEL or GPIO_INTR_HIGH_LEVEL).	  
 
 **Touch & Peripherals**        
-|	Function	|	Description	|
-|	-	|	-	|
-|	esp_sleep_enable_touchpad_wakeup()	|	Enables capacitive touch sensors as a wakeup trigger. Works in Deep and Light Sleep (Note: disabled in Hibernation).	|
-|	esp_sleep_enable_ulp_wakeup()	|	Configures the ULP (Ultra-Low-Power) co-processor to wake the main CPUs. Works in Deep and Light Sleep.	|
-|	esp_sleep_enable_uart_wakeup(int uart_num)	|	Configures a UART interface (e.g., UART0 or UART1) to wake the chip when incoming serial data is received. Works in Light Sleep only.	|
+- ```esp_sleep_enable_touchpad_wakeup()```
+  - Enables capacitive touch sensors as a wakeup trigger. Works in Deep and Light Sleep (Note: disabled in Hibernation).	  
+- ```esp_sleep_enable_ulp_wakeup()```
+  - Configures the ULP (Ultra-Low-Power) co-processor to wake the main CPUs. Works in Deep and Light Sleep.   
+- ```esp_sleep_enable_uart_wakeup(int uart_num)```
+  - Configures a UART interface (e.g., UART0 or UART1) to wake the chip when incoming serial data is received. Works in Light Sleep only.	   
 
 **3. Disabling Wakeup Sources**     
 If you need to clear previously set wakeup triggers before entering sleep:      
 
-|	Function	|	Description	|
-|	-	|	-	|
-|	esp_sleep_disable_wakeup_source(esp_sleep_source_t source)	|	Disables a specific wakeup source (e.g., ESP_SLEEP_WAKEUP_TIMER, ESP_SLEEP_WAKEUP_EXT0).	|
-|	gpio_wakeup_disable(gpio_num_t gpio_num)	|	Disables Light Sleep GPIO wakeup on a specific pin.	|
+- ```esp_sleep_disable_wakeup_source(esp_sleep_source_t source)```
+  - Disables a specific wakeup source (e.g., ESP_SLEEP_WAKEUP_TIMER, ESP_SLEEP_WAKEUP_EXT0).	 
+- ```gpio_wakeup_disable(gpio_num_t gpio_num)```
+  - Disables Light Sleep GPIO wakeup on a specific pin.	  
 
 **4. Querying Wakeup Status**      
 These APIs help you determine why the board woke up and which specific pin or pad triggered the wake event.    
 
-|	Function	|	Description	|
-|	-	|	-	|
-|	esp_sleep_get_wakeup_cause()	|	Returns esp_sleep_wakeup_cause_t indicating the wake trigger (e.g., ESP_SLEEP_WAKEUP_TIMER, ESP_SLEEP_WAKEUP_EXT0, ESP_SLEEP_WAKEUP_TOUCHPAD).	|
-|	esp_sleep_get_ext1_wakeup_status()	|	Returns a uint64_t bitmask indicating which specific GPIO(s) triggered an EXT1 wakeup.	|
-|	esp_sleep_get_touchpad_wakeup_status()	|	Returns touch_pad_t indicating which capacitive touch pad triggered the wakeup.	|
+- ```esp_sleep_get_wakeup_cause()```
+  - Returns esp_sleep_wakeup_cause_t indicating the wake trigger (e.g., ESP_SLEEP_WAKEUP_TIMER, ESP_SLEEP_WAKEUP_EXT0, ESP_SLEEP_WAKEUP_TOUCHPAD).	 
+- ```esp_sleep_get_ext1_wakeup_status()```
+  - Returns a uint64_t bitmask indicating which specific GPIO(s) triggered an EXT1 wakeup.	 
+- ```esp_sleep_get_touchpad_wakeup_status()```
+  - Returns touch_pad_t indicating which capacitive touch pad triggered the wakeup.	 
 
 **Wakeup Cause Enum Reference (esp_sleep_wakeup_cause_t)**     
-- ESP_SLEEP_WAKEUP_UNDEFINED: Not caused by sleep (e.g., standard cold boot / reset button).
-- ESP_SLEEP_WAKEUP_EXT0: External signal using RTC_IO (single pin).
-- ESP_SLEEP_WAKEUP_EXT1: External signal using RTC_CNTL (multiple pins).
-- ESP_SLEEP_WAKEUP_TIMER: RTC timer expired.
-- ESP_SLEEP_WAKEUP_TOUCHPAD: Touch sensor triggered.
-- ESP_SLEEP_WAKEUP_ULP: ULP co-processor triggered.
-- ESP_SLEEP_WAKEUP_GPIO: Light Sleep GPIO trigger.
-- ESP_SLEEP_WAKEUP_UART: Light Sleep UART incoming data trigger.
+- ```ESP_SLEEP_WAKEUP_UNDEFINED```: Not caused by sleep (e.g., standard cold boot / reset button).
+- ```ESP_SLEEP_WAKEUP_EXT0```: External signal using RTC_IO (single pin).
+- ```ESP_SLEEP_WAKEUP_EXT1```: External signal using RTC_CNTL (multiple pins).
+- ```ESP_SLEEP_WAKEUP_TIMER```: RTC timer expired.
+- ```ESP_SLEEP_WAKEUP_TOUCHPAD```: Touch sensor triggered.
+- ```ESP_SLEEP_WAKEUP_ULP```: ULP co-processor triggered.
+- ```ESP_SLEEP_WAKEUP_GPIO```: Light Sleep GPIO trigger.
+- ```ESP_SLEEP_WAKEUP_UART```: Light Sleep UART incoming data trigger.
 
 **5. Power Domain & Hibernation Management**      
 Use these APIs to selectively power off internal domains to tune power consumption down to Hibernation levels (~2.5 µA).      
 
-|	Function	|	Description	|
-|	-	|	-	|
-|	esp_sleep_pd_config(esp_sleep_pd_domain_t domain, esp_sleep_pd_option_t option)	|	Configures whether a power domain stays powered during sleep.	|
+- ```esp_sleep_pd_config(esp_sleep_pd_domain_t domain, esp_sleep_pd_option_t option)```
+  - Configures whether a power domain stays powered during sleep.	  
 
 **Power Domains (esp_sleep_pd_domain_t)**      
-- ESP_PD_DOMAIN_RTC_PERIPH: RTC I/O, touch, and low-power peripherals.
-- ESP_PD_DOMAIN_RTC_SLOW_MEM: RTC SLOW memory (used for ULP or RTC_DATA_ATTR).
-- ESP_PD_DOMAIN_RTC_FAST_MEM: RTC FAST memory.
-- ESP_PD_DOMAIN_XTAL: Crystal oscillator domain.
-- ESP_PD_DOMAIN_VDDSDIO: Power supply domain for internal flash/PSRAM.       
+- ```ESP_PD_DOMAIN_RTC_PERIPH```: RTC I/O, touch, and low-power peripherals.
+- ```ESP_PD_DOMAIN_RTC_SLOW_MEM```: RTC SLOW memory (used for ULP or RTC_DATA_ATTR).
+- ```ESP_PD_DOMAIN_RTC_FAST_MEM```: RTC FAST memory.
+- ```ESP_PD_DOMAIN_XTAL```: Crystal oscillator domain.
+- ```ESP_PD_DOMAIN_VDDSDIO```: Power supply domain for internal flash/PSRAM.       
 
 **Power Options (esp_sleep_pd_option_t)**     
-- ESP_PD_OPTION_OFF: Power down the domain during sleep.
-- ESP_PD_OPTION_ON: Keep the domain powered during sleep.
-- ESP_PD_OPTION_AUTO: Allow the system to automatically decide based on active wake sources.
+- ```ESP_PD_OPTION_OFF```: Power down the domain during sleep.
+- ```ESP_PD_OPTION_ON```: Keep the domain powered during sleep.
+- ```ESP_PD_OPTION_AUTO```: Allow the system to automatically decide based on active wake sources.
 
 **6. Keeping Pin States & Internal Memory Active**          
 
 **GPIO Hold & Isolation**     
-|	Function	|	Description	|
-|	-	|	-	|
-|	gpio_hold_en(gpio_num_t gpio_num)	|	Holds the current state (HIGH, LOW, or pull-up/down) of a single GPIO pin during Deep Sleep. Prevents floating output signals to connected hardware.	|
-|	gpio_hold_dis(gpio_num_t gpio_num)	|	Releases the pin lock after the system wakes up, returning control back to standard GPIO routines.	|
-|	gpio_deep_sleep_hold_en()	|	Globally enables GPIO hold functionality across all configured pins during Deep Sleep.	|
-|	gpio_deep_sleep_hold_dis()	|	Globally disables GPIO hold functionality during Deep Sleep.	|
-|	esp_sleep_config_gpio_isolate()	|	Isolates digital GPIOs during sleep to prevent current leakage (floating pins drawing unexpected power).	|
+- ```gpio_hold_en(gpio_num_t gpio_num)```
+  - Holds the current state (HIGH, LOW, or pull-up/down) of a single GPIO pin during Deep Sleep. Prevents floating output signals to connected hardware.	 
+- ```gpio_hold_dis(gpio_num_t gpio_num)```
+  - Releases the pin lock after the system wakes up, returning control back to standard GPIO routines.	 
+- ```gpio_deep_sleep_hold_en()```
+  - Globally enables GPIO hold functionality across all configured pins during Deep Sleep.	 
+- ```gpio_deep_sleep_hold_dis()```
+  - Globally disables GPIO hold functionality during Deep Sleep.	 
+- ```esp_sleep_config_gpio_isolate()```
+  - Isolates digital GPIOs during sleep to prevent current leakage (floating pins drawing unexpected power).	 
 
 **Memory Retention**     
-|	Function	|	Description	|
-|	-	|	-	|
-|	RTC_DATA_ATTR (Macro)	|	Modifier for global variables (e.g., RTC_DATA_ATTR int counter = 0;). Stores the variable in RTC Slow Memory so its value persists across Deep Sleep reboots.	|
-|	RTC_FAST_ATTR (Macro)	|	Modifier for placing code routines or variables into RTC Fast Memory, allowing rapid access immediately upon waking.	|
-|	esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON)	|	Forces RTC Slow Memory to stay powered in Deep Sleep (enabled by default unless modified for Hibernation).	|
+- ```RTC_DATA_ATTR``` (Macro)
+  - Modifier for global variables (e.g., RTC_DATA_ATTR int counter = 0;). Stores the variable in RTC Slow Memory so its value persists across Deep Sleep reboots.	 
+- ```RTC_FAST_ATTR``` (Macro)
+  - Modifier for placing code routines or variables into RTC Fast Memory, allowing rapid access immediately upon waking.	 
+- ```esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON)```
+  - Forces RTC Slow Memory to stay powered in Deep Sleep (enabled by default unless modified for Hibernation).	 
 
 
 **7. Advanced Sleep Configuration & Optimization**     
 These auxiliary functions let you fine-tune UART behavior, sleep timing, and sub-system execution prior to sleeping.     
 
 **Subsystem & Peripheral Management**    
-|	Function	|	Description	|
-|	-	|	-	|
-|	esp_sleep_set_flash_use_usleep(bool enable)	|	Enables or disables fast flash memory power-down during Light Sleep to save additional microamps.	|
-|	esp_sleep_pd_config(...)	|	Dynamically changes power options (ESP_PD_OPTION_ON, ESP_PD_OPTION_OFF, ESP_PD_OPTION_AUTO) for specific internal domains like ESP_PD_DOMAIN_XTAL or ESP_PD_DOMAIN_VDDSDIO.	|
+- ```esp_sleep_set_flash_use_usleep(bool enable)```
+  - Enables or disables fast flash memory power-down during Light Sleep to save additional microamps.	  
+- ```esp_sleep_pd_config(...)```
+  - Dynamically changes power options (```ESP_PD_OPTION_ON```, ```ESP_PD_OPTION_OFF```, ```ESP_PD_OPTION_AUTO```) for specific internal domains like ```ESP_PD_DOMAIN_XTAL``` or ```ESP_PD_DOMAIN_VDDSDIO```.	 
 
 **UART Handling Control**       
-|	Function	|	Description	|
-|	-	|	-	|
-|	esp_sleep_set_uart_handling_mode(esp_sleep_uart_handling_mode_t mode)	|	Controls how UART TX/RX buffers are processed before entering sleep.	|
+- ```esp_sleep_set_uart_handling_mode(esp_sleep_uart_handling_mode_t mode)```
+  - Controls how UART TX/RX buffers are processed before entering sleep.	 
 
 **UART Handling Modes (esp_sleep_uart_handling_mode_t)**      
-- ESP_SLEEP_AUTO_FLUSH_SUSPEND_UART: Default option. Flushes TX buffers before Deep Sleep and suspends during Light Sleep.
-- ESP_SLEEP_ALWAYS_FLUSH_UART: Waits until all queued data in the serial buffer is transmitted before entering sleep.
-- ESP_SLEEP_ALWAYS_SUSPEND_UART: Suspends transmission mid-frame; resumes upon wake if the UART domain remained powered.
-- ESP_SLEEP_ALWAYS_DISCARD_UART: Immediately drops unsent buffer data for faster sleep entry.       
+- ```ESP_SLEEP_AUTO_FLUSH_SUSPEND_UART```: Default option. Flushes TX buffers before Deep Sleep and suspends during Light Sleep.
+- ```ESP_SLEEP_ALWAYS_FLUSH_UART```: Waits until all queued data in the serial buffer is transmitted before entering sleep.
+- ```ESP_SLEEP_ALWAYS_SUSPEND_UART```: Suspends transmission mid-frame; resumes upon wake if the UART domain remained powered.
+- ```ESP_SLEEP_ALWAYS_DISCARD_UART```: Immediately drops unsent buffer data for faster sleep entry.       
 
 **8. Automatic Light Sleep & Power Management (PM) APIs**       
 If you want the ESP32-S3 to automatically enter Light Sleep whenever the CPU is idle (without explicitly calling esp_light_sleep_start()), you use the Power Management APIs.     
