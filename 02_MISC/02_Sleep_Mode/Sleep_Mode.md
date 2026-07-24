@@ -434,11 +434,11 @@ This extra power draw is usually caused by:
   - Configures a specific GPIO pin for Light Sleep wakeup (e.g., GPIO_INTR_LOW_LEVEL or GPIO_INTR_HIGH_LEVEL).	  
 
 **Touch & Peripherals**        
-- ```esp_sleep_enable_touchpad_wakeup()```
+- ```esp_err_t esp_sleep_enable_touchpad_wakeup(void)```
   - Enables capacitive touch sensors as a wakeup trigger. Works in Deep and Light Sleep (Note: disabled in Hibernation).	  
-- ```esp_sleep_enable_ulp_wakeup()```
+- ```esp_err_t esp_sleep_enable_ulp_wakeup(void)```
   - Configures the ULP (Ultra-Low-Power) co-processor to wake the main CPUs. Works in Deep and Light Sleep.   
-- ```esp_sleep_enable_uart_wakeup(int uart_num)```
+- ```esp_err_t esp_sleep_enable_uart_wakeup(int uart_num)```
   - Configures a UART interface (e.g., UART0 or UART1) to wake the chip when incoming serial data is received. Works in Light Sleep only.	   
 
 **3. Disabling Wakeup Sources**     
@@ -452,11 +452,11 @@ If you need to clear previously set wakeup triggers before entering sleep:
 **4. Querying Wakeup Status**      
 These APIs help you determine why the board woke up and which specific pin or pad triggered the wake event.    
 
-- ```esp_sleep_get_wakeup_cause()```
+- ```esp_sleep_wakeup_cause_t esp_sleep_get_wakeup_cause(void)```
   - Returns esp_sleep_wakeup_cause_t indicating the wake trigger (e.g., ESP_SLEEP_WAKEUP_TIMER, ESP_SLEEP_WAKEUP_EXT0, ESP_SLEEP_WAKEUP_TOUCHPAD).	 
-- ```esp_sleep_get_ext1_wakeup_status()```
+- ```uint64_t esp_sleep_get_ext1_wakeup_status(void)```
   - Returns a uint64_t bitmask indicating which specific GPIO(s) triggered an EXT1 wakeup.	 
-- ```esp_sleep_get_touchpad_wakeup_status()```
+- ```int esp_sleep_get_touchpad_wakeup_status(void)```
   - Returns touch_pad_t indicating which capacitive touch pad triggered the wakeup.	 
 
 **Wakeup Cause Enum Reference (esp_sleep_wakeup_cause_t)**     
@@ -472,7 +472,7 @@ These APIs help you determine why the board woke up and which specific pin or pa
 **5. Power Domain & Hibernation Management**      
 Use these APIs to selectively power off internal domains to tune power consumption down to Hibernation levels (~2.5 µA).      
 
-- ```esp_sleep_pd_config(esp_sleep_pd_domain_t domain, esp_sleep_pd_option_t option)```
+- ```esp_err_t esp_sleep_pd_config(esp_sleep_pd_domain_t domain, esp_sleep_pd_option_t option)```
   - Configures whether a power domain stays powered during sleep.	  
 
 **Power Domains (esp_sleep_pd_domain_t)**      
