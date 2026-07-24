@@ -452,6 +452,14 @@ Requires: ```#include "driver/rtc_io.h"```
 
 https://github.com/espressif/esp-idf/blob/master/components/esp_hw_support/include/esp_sleep.h
 
+https://github.com/espressif/esp-idf/blob/master/components/esp_pm/include/esp_pm.h
+
+https://github.com/espressif/esp-idf/blob/master/components/esp_driver_gpio/include/driver/rtc_io.h
+
+https://github.com/espressif/esp-idf/blob/master/components/bt/include/esp32/include/esp_bt.h
+
+https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_wifi.h
+
 https://www.oceanlabz.in/esp32-deep-sleep/
 
 https://www.luisllamas.es/esp32-consumo-energia/
