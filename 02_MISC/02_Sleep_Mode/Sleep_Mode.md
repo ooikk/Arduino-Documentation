@@ -296,11 +296,12 @@ This extra power draw is usually caused by:
 ## Sleep mode API     
 
 **1. Entering Sleep Modes**     
-|	Function	|	Description	|
-|	-	|	-	|
-|	esp_deep_sleep_start()	|	Enters Deep Sleep (or Hibernation, if power domains were disabled). The main CPU, digital peripherals, and RAM are powered off. Waking up causes a system reboot.	|
-|	esp_light_sleep_start()	|	Enters Light Sleep. CPU clock is gated, but RAM remains intact. Execution resumes on the next line of code upon wakeup.	|
-|	esp_deep_sleep(uint64_t time_in_us)	|	Helper function that configures a timer wakeup source and enters Deep Sleep in a single call.	|
+- ```esp_deep_sleep_start()```
+  - Enters Deep Sleep (or Hibernation, if power domains were disabled). The main CPU, digital peripherals, and RAM are powered off. Waking up causes a system reboot.
+- ```esp_light_sleep_start()```
+  - Enters Light Sleep. CPU clock is gated, but RAM remains intact. Execution resumes on the next line of code upon wakeup.
+- ```esp_deep_sleep(uint64_t time_in_us)```
+  Helper function that configures a timer wakeup source and enters Deep Sleep in a single call.     
 
 **2. Wakeup Source Configuration**      
 
