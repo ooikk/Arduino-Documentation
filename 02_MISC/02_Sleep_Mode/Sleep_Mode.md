@@ -409,7 +409,42 @@ These auxiliary functions let you fine-tune UART behavior, sleep timing, and sub
 - ESP_SLEEP_ALWAYS_SUSPEND_UART: Suspends transmission mid-frame; resumes upon wake if the UART domain remained powered.
 - ESP_SLEEP_ALWAYS_DISCARD_UART: Immediately drops unsent buffer data for faster sleep entry.       
 
+**8. Automatic Light Sleep & Power Management (PM) APIs**       
+If you want the ESP32-S3 to automatically enter Light Sleep whenever the CPU is idle (without explicitly calling esp_light_sleep_start()), you use the Power Management APIs.     
+Requires: ```#include "esp_pm.h"```     
 
+- ```esp_err_t esp_pm_configure(const esp_pm_config_t *config)```    
+  - Enables automatic light sleep and Dynamic Frequency Scaling (DFS). You pass a struct defining max/min CPU frequencies and whether to enable light_sleep_enable = true.
+- ```esp_err_t esp_pm_lock_create(esp_pm_lock_type_t lock_type, int arg, const char *name, esp_pm_lock_handle_t *out_handle)```
+  - Creates a "lock" to prevent the chip from entering automatic light sleep or dropping CPU frequency while a specific task is running.
+- ```esp_err_t esp_pm_lock_acquire(esp_pm_lock_handle_t handle)```
+  - Acquires the lock (prevents auto-sleep / lowers CPU freq).
+- ```esp_err_t esp_pm_lock_release(esp_pm_lock_handle_t handle)```
+  - Releases the lock (allows auto-sleep / CPU freq scaling).
+- ```esp_err_t esp_pm_lock_delete(esp_pm_lock_handle_t handle)```
+  - Deletes the lock object to free memory.
+**9. Modem Sleep APIs (Wi-Fi & Bluetooth)**      
+Modem sleep is managed by the wireless stacks, not the core sleep API. It turns off the Wi-Fi/BT radio between beacons to save power while staying connected.      
+Requires: ```#include "esp_wifi.h"``` and ```#include "esp_bt.h"```     
+- ```esp_err_t esp_wifi_set_ps(wifi_ps_type_t type)```
+  - Configures Wi-Fi power save.
+  - WIFI_PS_NONE: Modem always on (highest power).
+  - WIFI_PS_MIN_MODEM: Modem sleeps between DTIM beacons (default, moderate power).
+  - WIFI_PS_MAX_MODEM: Modem sleeps between all beacons (lowest power, higher latency).
+- ```esp_err_t esp_bt_sleep_enable(void)```
+  - (Note: Usually handled automatically by the BT stack when initialized, but available if needed).
+
+**10. Crucial ESP32-S3 RTC GPIO APIs**     
+For the ESP32-S3, if you want to use GPIOs for Deep Sleep wake-up (ext0 / ext1), you cannot use standard pinMode() or digitalRead(). You must configure them as RTC GPIOs first.      
+Requires: ```#include "driver/rtc_io.h"```      
+- ```esp_err_t rtc_gpio_init(gpio_num_t gpio_num)```
+  - Initializes a GPIO as an RTC GPIO (required before using it for deep sleep wake).
+- ```esp_err_t rtc_gpio_set_direction(gpio_num_t gpio_num, rtc_gpio_mode_t mode)```
+  - Sets the direction. Use RTC_GPIO_MODE_INPUT_ONLY for wake-up buttons.
+- ```esp_err_t rtc_gpio_pulldown_en(gpio_num_t gpio_num) / rtc_gpio_pullup_en(...)```
+  - Enables internal pull-down or pull-up resistors. Crucial for preventing floating pins from causing accidental wake-ups.
+- ```esp_err_t rtc_gpio_hold_en(gpio_num_t gpio_num) / rtc_gpio_hold_dis(...)```
+  - Holds the GPIO state during deep sleep. Useful if you need to keep an external sensor powered on or off while the ESP32-S3 is asleep.      
 
 
 ## Reference      
