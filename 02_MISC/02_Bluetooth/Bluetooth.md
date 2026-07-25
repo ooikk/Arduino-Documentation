@@ -11,7 +11,12 @@ The ESP32-S3 is a highly integrated, low-power Wi-Fi and Bluetooth System-on-Chi
 - Long Range: Supports the Coded PHY (125 kbps and 500 kbps), significantly increasing the communication range (up to 1km in ideal open environments).
 - Advertising Extensions: Allows for larger advertising payloads and better filtering.
 - Bluetooth Mesh: Supports BLE Mesh networking for controlling large numbers of devices (e.g., smart lighting).
-- Dual-Core Architecture: The Bluetooth radio and baseband are handled by the chip's dedicated hardware, freeing up the dual Xtensa LX7 CPU cores for your application logic.     
+- Dual-Core Architecture: The Bluetooth radio and baseband are handled by the chip's dedicated hardware, freeing up the dual Xtensa LX7 CPU cores for your application logic.
+
+For detail BLE for ESP32 Arduino Core:     
+https://github.com/espressif/arduino-esp32/tree/master/libraries/BLE     
+
+
 ## 2. Arduino IDE Ecosystem & Libraries      
 To use Bluetooth in the Arduino IDE, you must have the ESP32 board package by Espressif installed via the Boards Manager.
 There are two primary libraries for BLE on the ESP32-S3:      
@@ -20,7 +25,9 @@ There are two primary libraries for BLE on the ESP32-S3:
 
 **Library**     
 - ```BLEDevice.h```: Built-in, official Espressif BLE library for creating GATT servers, clients, and advertising packets.
-- ```NimBLEDevice.h```: NimBLE-Arduino by h2zero. https://github.com/h2zero/NimBLE-Arduino      
+  https://github.com/espressif/arduino-esp32/blob/master/libraries/BLE/src/BLEDevice.h      
+- ```NimBLEDevice.h```: NimBLE-Arduino by h2zero. https://github.com/h2zero/NimBLE-Arduino
+  https://github.com/h2zero/NimBLE-Arduino/blob/master/src/NimBLEDevice.h      
   The gold standard for Bluetooth Low Energy development on the ESP32 and ESP32-S3 within the Arduino ecosystem.     
   Here is why it is highly recommended over the default BLEDevice (Bluedroid) library:
   1. Dramatically Lower Resource Usage
