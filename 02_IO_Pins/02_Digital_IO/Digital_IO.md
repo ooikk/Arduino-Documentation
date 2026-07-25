@@ -22,13 +22,13 @@ The ESP32-S3 is highly flexible. Using the standard Arduino framework, a GPIO pi
 - **INPUT_PULLDOWN**: The pin is configured as an input but activate an internal resistor connected to ground.
 
 **Internal IO Pad**     
-<img width="689" height="609" alt="image" src="https://github.com/user-attachments/assets/e2099815-e54e-4510-a207-bba9c6132f1f" />      
+<img style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/e2099815-e54e-4510-a207-bba9c6132f1f" />      
 
-**Key Elements of the GPIO Circuit:***     
-- Internal Pull-Up ($R_{PU}$): An internal $\sim45\text{ k}\Omega$ resistor connected to $3.3\text{V}$ that can be enabled via software (INPUT_PULLUP).
-- Internal Pull-Down ($R_{PD}$): An internal $\sim45\text{ k}\Omega$ resistor connected to $0\text{V}/\text{GND}$ that can be enabled via software (INPUT_PULLDOWN).
-- Schmitt Trigger / Input Buffer: Converts the analog voltage level at the pin into a clean $0$ or $1$ digital signal for digitalRead().
-- Output PMOS / NMOS Transistors: Drive the pin to $3.3\text{V}$ (HIGH) or $0\text{V}$ (LOW) when configured as an OUTPUT.      
+**Key Elements of the GPIO Circuit:**     
+- **Internal Pull-Up ($R_{PU}$)**: An internal $\sim45\text{ k}\Omega$ resistor connected to $3.3\text{V}$ that can be enabled via software (INPUT_PULLUP).
+- **Internal Pull-Down ($R_{PD}$)**: An internal $\sim45\text{ k}\Omega$ resistor connected to $0\text{V}/\text{GND}$ that can be enabled via software (INPUT_PULLDOWN).
+- **Schmitt Trigger / Input Buffer**: Converts the analog voltage level at the pin into a clean $0$ or $1$ digital signal for digitalRead().
+- **Output PMOS / NMOS Transistors**: Drive the pin to $3.3\text{V}$ (HIGH) or $0\text{V}$ (LOW) when configured as an OUTPUT.      
 
 
 ## GPIO Pins for user     
