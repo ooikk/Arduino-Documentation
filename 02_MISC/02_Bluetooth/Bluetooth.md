@@ -20,7 +20,7 @@ There are two primary libraries for BLE on the ESP32-S3:
 
 **Library**     
 - ```BLEDevice.h```: Built-in, official Espressif BLE library for creating GATT servers, clients, and advertising packets.
-- ```NimBLEDevice.h```: NimBLE-Arduino by h2zero. https://github.com/h2zero/NimBLE-Arduino
+- ```NimBLEDevice.h```: NimBLE-Arduino by h2zero. https://github.com/h2zero/NimBLE-Arduino      
   The gold standard for Bluetooth Low Energy development on the ESP32 and ESP32-S3 within the Arduino ecosystem.     
   Here is why it is highly recommended over the default BLEDevice (Bluedroid) library:
   1. Dramatically Lower Resource Usage
