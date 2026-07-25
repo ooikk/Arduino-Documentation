@@ -488,3 +488,5 @@ https://www.luisllamas.es/esp32-bluetooth-low-energy-ble/
 https://randomnerdtutorials.com/esp32-bluetooth-low-energy-ble-arduino-ide/
 
 https://deepbluembedded.com/esp32-bluetooth-classic-with-arduino-complete-guide/
+
+https://www.bluetooth.com/learn-about-bluetooth/tech-overview/
