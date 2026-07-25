@@ -58,4 +58,18 @@ Core Classes & Methods:
 - ```BLECharacteristic::setValue()``` / ```getValue()``` - Reads or sets the underlying data string or byte array.
 - ```BLECharacteristic::notify()``` - Pushes data to connected clients/ Sends an immediate update to connected clients without them having to re-read.
 
-      
+
+
+# Reference      
+
+https://randomnerdtutorials.com/esp32-bluetooth-low-energy-ble-arduino-ide/
+
+https://www.oceanlabz.in/esp32-bluetooth-low-energy-ble/
+
+https://www.oceanlabz.in/esp32-esp-now/
+
+https://www.luisllamas.es/esp32-bluetooth-low-energy-ble/
+
+https://randomnerdtutorials.com/esp32-bluetooth-low-energy-ble-arduino-ide/
+
+https://deepbluembedded.com/esp32-bluetooth-classic-with-arduino-complete-guide/
