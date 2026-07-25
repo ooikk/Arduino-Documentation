@@ -58,7 +58,335 @@ Core Classes & Methods:
 - ```BLECharacteristic::setValue()``` / ```getValue()``` - Reads or sets the underlying data string or byte array.
 - ```BLECharacteristic::notify()``` - Pushes data to connected clients/ Sends an immediate update to connected clients without them having to re-read.
 
+## 4. Application Examples     
 
+**Example 1: ESP32-S3 BLE Server (Send Data to Smartphone)**     
+This example sets up the ESP32-S3 as a server that advertises a custom service. You can read the characteristic value using a smartphone app like nRF Connect or LightBlue.
+```
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEServer.h>
+
+// Unique 128-bit UUIDs generated for custom Service and Characteristic
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+BLECharacteristic *pCharacteristic;
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println("Starting BLE Server...");
+
+  // 1. Initialize BLE Device
+  BLEDevice::init("ESP32-S3_BLE_Demo");
+
+  // 2. Create BLE Server
+  BLEServer *pServer = BLEDevice::createServer();
+
+  // 3. Create BLE Service
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // 4. Create BLE Characteristic with READ and WRITE properties
+  pCharacteristic = pService->createCharacteristic(
+                      CHARACTERISTIC_UUID,
+                      BLECharacteristic::PROPERTY_READ |
+                      BLECharacteristic::PROPERTY_WRITE |
+                      BLECharacteristic::PROPERTY_NOTIFY
+                    );
+
+  // Set initial value
+  pCharacteristic->setValue("Hello from ESP32-S3!");
+
+  // 5. Start Service
+  pService->start();
+
+  // 6. Start Advertising so nearby devices can discover it
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06);  // functions for iPhone connection helpers
+  pAdvertising->setMinPreferred(0x12);
+  BLEDevice::startAdvertising();
+
+  Serial.println("BLE Server is up and advertising!");
+}
+
+void loop() {
+  // Update value dynamically every 3 seconds
+  static uint32_t counter = 0;
+  counter++;
+
+  String payload = "Sensor Reading: " + String(counter);
+  pCharacteristic->setValue(payload.c_str());
+  pCharacteristic->notify(); // Push notification to connected clients
+
+  delay(3000);
+}
+```
+**Example 2: ESP32-S3 BLE Server Callbacks (Receive Commands)**
+To react when a central device (like a smartphone) sends a command to the ESP32-S3, attach a Characteristic Callback:
+```
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+
+#define SERVICE_UUID        "19b10000-e8f2-537e-4f6c-d104768a1214"
+#define CHARACTERISTIC_UUID "19b10001-e8f2-537e-4f6c-d104768a1214"
+
+const int LED_PIN = 2; // Built-in LED on many S3 boards
+
+// Custom Callback Class to handle Incoming Data
+class MyCallbacks: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) override {
+      std::string value = pCharacteristic->getValue();
+
+      if (value.length() > 0) {
+        Serial.print("Received Value: ");
+        for (int i = 0; i < value.length(); i++) {
+          Serial.print(value[i]);
+        }
+        Serial.println();
+
+        // Control an onboard LED based on incoming character
+        if (value[0] == '1') {
+          digitalWrite(LED_PIN, HIGH);
+          Serial.println("LED turned ON");
+        } else if (value[0] == '0') {
+          digitalWrite(LED_PIN, LOW);
+          Serial.println("LED turned OFF");
+        }
+      }
+    }
+};
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+
+  BLEDevice::init("ESP32-S3_Control");
+  BLEServer *pServer = BLEDevice::createServer();
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  BLECharacteristic *pCharacteristic = pService->createCharacteristic(
+                                         CHARACTERISTIC_UUID,
+                                         BLECharacteristic::PROPERTY_READ |
+                                         BLECharacteristic::PROPERTY_WRITE
+                                       );
+
+  // Attach callback listener
+  pCharacteristic->setCallbacks(new MyCallbacks());
+  pCharacteristic->setValue("Send 1 or 0");
+
+  pService->start();
+
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  BLEDevice::startAdvertising();
+
+  Serial.println("Waiting for smartphone write commands...");
+}
+
+void loop() {
+  delay(1000);
+}
+```
+
+**Example 3: BLE Peripheral (Server) - Smart Sensor / LED Control**     
+This example creates a BLE Server that exposes a Service with two Characteristics: one to read a simulated sensor value, and one to write data to control an LED.
+```
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
+
+// Define UUIDs for Service and Characteristics
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define SENSOR_CHAR_UUID    "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define LED_CHAR_UUID       "d5875406-fa50-4bfa-982a-152586b0251b"
+
+BLECharacteristic *pSensorCharacteristic;
+bool deviceConnected = false;
+
+// Server Callbacks to track connection status
+class MyServerCallbacks: public BLEServerCallbacks {
+    void onConnect(BLEServer* pServer) {
+      deviceConnected = true;
+      Serial.println("Client Connected");
+    };
+
+    void onDisconnect(BLEServer* pServer) {
+      deviceConnected = false;
+      Serial.println("Client Disconnected");
+      // Restart advertising
+      BLEDevice::startAdvertising(); 
+    }
+};
+
+// Callback for when the Client writes to the LED Characteristic
+class LEDCallback: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) {
+      std::string value = pCharacteristic->getValue();
+      if (value.length() > 0) {
+        Serial.print("LED State Received: ");
+        Serial.println(value.c_str());
+        // Control your GPIO here based on value
+        if (value[0] == '1') {
+          Serial.println("Turning LED ON");
+        } else {
+          Serial.println("Turning LED OFF");
+        }
+      }
+    }
+};
+
+void setup() {
+  Serial.begin(115200);
+  
+  // 1. Initialize BLE
+  BLEDevice::init("ESP32-S3_SmartDevice");
+  
+  // 2. Create BLE Server
+  BLEServer *pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+  
+  // 3. Create BLE Service
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+  
+  // 4. Create Sensor Characteristic (Read & Notify)
+  pSensorCharacteristic = pService->createCharacteristic(
+                                         SENSOR_CHAR_UUID,
+                                         BLECharacteristic::PROPERTY_READ |
+                                         BLECharacteristic::PROPERTY_NOTIFY
+                                       );
+  pSensorCharacteristic->addDescriptor(new BLE2902()); // Required for Notify
+  
+  // 5. Create LED Characteristic (Write)
+  BLECharacteristic *pLedCharacteristic = pService->createCharacteristic(
+                                          LED_CHAR_UUID,
+                                          BLECharacteristic::PROPERTY_WRITE
+                                        );
+  pLedCharacteristic->setCallbacks(new LEDCallback());
+  
+  // 6. Start the Service and Advertising
+  pService->start();
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  pAdvertising->setMinPreferred(0x06);
+  BLEDevice::startAdvertising();
+  
+  Serial.println("BLE Server is running. Waiting for connections...");
+}
+
+void loop() {
+  if (deviceConnected) {
+    // Simulate reading a sensor and updating the characteristic
+    int sensorValue = random(0, 100); 
+    pSensorCharacteristic->setValue(sensorValue);
+    pSensorCharacteristic->notify();
+    Serial.print("Notified Sensor Value: ");
+    Serial.println(sensorValue);
+    
+    delay(2000); // Update every 2 seconds
+  }
+  delay(10);
+}
+```
+
+**Example 4: BLE Central (Client) - Scanning and Reading**      
+This example turns the ESP32-S3 into a Central device that scans for a specific BLE peripheral, connects to it, and reads a characteristic.
+```
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEClient.h>
+
+// UUID of the device we want to connect to (e.g., a specific heart rate monitor)
+#define TARGET_DEVICE_NAME "My_BLE_Sensor" 
+#define TARGET_SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define TARGET_CHAR_UUID    "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+BLEClient* pClient;
+bool connected = false;
+
+// Scan Callbacks
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+    void onResult(BLEAdvertisedDevice advertisedDevice) {
+      // Check if the scanned device is our target
+      if (advertisedDevice.haveName() && advertisedDevice.getName() == TARGET_DEVICE_NAME) {
+        Serial.print("Target found! Address: ");
+        Serial.println(advertisedDevice.getAddress().toString().c_str());
+        
+        // Stop scanning once found
+        BLEDevice::getScan()->stop();
+        
+        // Connect to the device
+        connectToServer(advertisedDevice.getAddress());
+      }
+    }
+};
+
+void connectToServer(BLEAddress pAddress) {
+  pClient = BLEDevice::createClient();
+  Serial.println("Connecting to target...");
+  
+  if (pClient->connect(pAddress)) {
+    Serial.println("Connected!");
+    connected = true;
+    
+    // Obtain the remote service
+    BLERemoteService* pRemoteService = pClient->getService(TARGET_SERVICE_UUID);
+    if (pRemoteService != nullptr) {
+      // Obtain the remote characteristic
+      BLERemoteCharacteristic* pRemoteCharacteristic = pRemoteService->getCharacteristic(TARGET_CHAR_UUID);
+      
+      if (pRemoteCharacteristic != nullptr && pRemoteCharacteristic->canRead()) {
+        // Read the value
+        std::string value = pRemoteCharacteristic->readValue();
+        Serial.print("Read Value: ");
+        Serial.println(value.c_str());
+      }
+    }
+  } else {
+    Serial.println("Failed to connect.");
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  BLEDevice::init("ESP32-S3_Central");
+  
+  BLEScan* pBLEScan = BLEDevice::getScan();
+  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+  pBLEScan->setActiveScan(true); // Active scan uses more power, but gets results faster
+  pBLEScan->start(10, false); // Scan for 10 seconds
+  
+  Serial.println("Scanning for BLE devices...");
+}
+
+void loop() {
+  if (connected) {
+    // You can periodically read/write to the server here
+    delay(2000);
+  } else {
+    delay(1000);
+  }
+}
+```
+
+**Optimization Tip**: If you encounter SRAM memory limitations or high battery draw, replace the standard #include <BLEDevice.h> with the NimBLE-Arduino library (#include <NimBLEDevice.h>). It shares a virtually identical syntax while cutting RAM usage by ~50% and Flash memory usage by over ~100KB.     
+
+
+## 5. Pro-Tips for ESP32-S3 Bluetooth Development     
+1. Switch to NimBLE for Production:
+   The standard BLEDevice library uses the Bluedroid stack, which consumes a lot of RAM. If you are using the ESP32-S3 (which has 512KB SRAM and often PSRAM), it will work fine, but for optimal performance, install the NimBLE-Arduino library via the Library Manager. The API is nearly identical, but it is vastly more memory-efficient.
+2. Antenna Considerations:
+   The ESP32-S3 has excellent RF performance, but it is highly dependent on the module's antenna design. If using a bare chip, ensure your PCB antenna or external IPEX connector is properly impedance-matched (50 ohms).
+3. Use PSRAM:
+   If you are running Wi-Fi and BLE simultaneously, or using complex BLE profiles, enable PSRAM in the Arduino IDE Tools menu (Tools -> PSRAM -> "OPI PSRAM" or "QSPI PSRAM" depending on your specific S3 module). This prevents memory allocation failures.
+4. Handling UUIDs:
+   For custom applications, always use 128-bit UUIDs (like the ones in the examples) to avoid collisions with standard Bluetooth SIG profiles (which use 16-bit UUIDs like 0x180A).
+5. Deep Sleep:
+   The ESP32-S3 can retain BLE connectivity (specifically for advertising or maintaining a connection) while in Deep Sleep, provided you configure the ULP (Ultra Low Power) coprocessor and RTC memory correctly. This is ideal for battery-powered BLE beacons.
 
 # Reference      
 
