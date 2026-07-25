@@ -283,8 +283,8 @@ const int LED_PIN = 2; // Built-in LED on many S3 boards
 // Custom Callback Class to handle Incoming Data
 class MyCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) override {
-      std::string value = pCharacteristic->getValue();
-
+      //std::string value = pCharacteristic->getValue();
+      String value = pCharacteristic->getValue();
       if (value.length() > 0) {
         Serial.print("Received Value: ");
         for (int i = 0; i < value.length(); i++) {
