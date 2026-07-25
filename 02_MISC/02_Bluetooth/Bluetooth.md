@@ -454,23 +454,6 @@ This example turns the ESP32-S3 into a Central device that scans for a specific 
 BLEClient* pClient;
 bool connected = false;
 
-// Scan Callbacks
-class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
-    void onResult(BLEAdvertisedDevice advertisedDevice) {
-      // Check if the scanned device is our target
-      if (advertisedDevice.haveName() && advertisedDevice.getName() == TARGET_DEVICE_NAME) {
-        Serial.print("Target found! Address: ");
-        Serial.println(advertisedDevice.getAddress().toString().c_str());
-        
-        // Stop scanning once found
-        BLEDevice::getScan()->stop();
-        
-        // Connect to the device
-        connectToServer(advertisedDevice.getAddress());
-      }
-    }
-};
-
 void connectToServer(BLEAddress pAddress) {
   pClient = BLEDevice::createClient();
   Serial.println("Connecting to target...");
@@ -487,7 +470,8 @@ void connectToServer(BLEAddress pAddress) {
       
       if (pRemoteCharacteristic != nullptr && pRemoteCharacteristic->canRead()) {
         // Read the value
-        std::string value = pRemoteCharacteristic->readValue();
+        //std::string value = pRemoteCharacteristic->readValue();
+        String value = pRemoteCharacteristic->readValue();
         Serial.print("Read Value: ");
         Serial.println(value.c_str());
       }
@@ -496,6 +480,23 @@ void connectToServer(BLEAddress pAddress) {
     Serial.println("Failed to connect.");
   }
 }
+
+// Scan Callbacks
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+    void onResult(BLEAdvertisedDevice advertisedDevice) {
+      // Check if the scanned device is our target
+      if (advertisedDevice.haveName() && advertisedDevice.getName() == TARGET_DEVICE_NAME) {
+        Serial.print("Target found! Address: ");
+        Serial.println(advertisedDevice.getAddress().toString().c_str());
+        
+        // Stop scanning once found
+        BLEDevice::getScan()->stop();
+        
+        // Connect to the device
+        connectToServer(advertisedDevice.getAddress());
+      }
+    }
+};
 
 void setup() {
   Serial.begin(115200);
