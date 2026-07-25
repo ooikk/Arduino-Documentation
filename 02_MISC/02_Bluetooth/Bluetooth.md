@@ -370,7 +370,8 @@ class MyServerCallbacks: public BLEServerCallbacks {
 // Callback for when the Client writes to the LED Characteristic
 class LEDCallback: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
-      std::string value = pCharacteristic->getValue();
+      //std::string value = pCharacteristic->getValue();
+      String value = pCharacteristic->getValue();
       if (value.length() > 0) {
         Serial.print("LED State Received: ");
         Serial.println(value.c_str());
