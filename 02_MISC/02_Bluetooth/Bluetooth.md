@@ -148,7 +148,7 @@ Many companies generate one random 32-bit (8-character) hex number for their com
 ## 5. Application Examples     
 
 **Example 1: ESP32-S3 BLE Server (Send Data to Smartphone)**     
-This example sets up the ESP32-S3 as a server that advertises a custom service. You can read the characteristic value using a smartphone app like nRF Connect or LightBlue.
+This example sets up the ESP32-S3 as a server that advertises a custom service. You can read the characteristic value using a smartphone app like nRF Connect, Arduino Bluetooth Controller or LightBlue.
 ```
 #include <BLEDevice.h>
 #include <BLEUtils.h>
