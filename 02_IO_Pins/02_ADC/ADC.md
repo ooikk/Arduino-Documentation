@@ -128,10 +128,10 @@ For high-speed background sampling, the ESP32 Arduino core offers a continuous D
 - ```bool analogContinuousStop()```        
   Stops continuous sampling.        
 
-**about ```timeout_ms```**     
+**About ```timeout_ms```**     
 In ```analogContinuousRead(&tempResult, timeout)```, the timeout parameter defines how many milliseconds the function will block (wait) for data if the ring buffer is currently empty.      
 1. timeout = 0 (Non-blocking / Immediate Return)      
-Passing 0 tells the driver: "Check the buffer right now. If data is ready, give it to me; if not, return false immediately."
+Passing 0 tells the driver: "Check the buffer right now. If data is ready, give it to me; if not, return false immediately."      
 - Behavior: It does not halt execution at all.
 - Best Used For:     
   - Draining the buffer in a loop: (e.g., while (```analogContinuousRead(&temp, 0))```). You keep reading until it returns false, which guarantees the buffer is completely empty and you have cleared out old historical samples.
