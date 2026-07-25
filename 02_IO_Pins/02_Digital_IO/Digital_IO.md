@@ -9,6 +9,10 @@ Unlike analog pins that process a continuous range of voltages, digital pins ope
 
 When configured as an **output**, the pin acts as a switch to apply 3.3V or 0V to a component (like turning an LED on or off). When configured as an **input**, the pin reads whether an external component is applying 3.3V or 0V to it (like detecting a button press).
 
+**Architecture of IO MUX, RTC IO MUX, and GPIO Matrix**      
+<img width="1064" height="848" alt="image" src="https://github.com/user-attachments/assets/86625741-b333-4891-ab43-59ce794aecab" />
+
+
 **Pin Modes Configuration**    
 The ESP32-S3 is highly flexible. Using the standard Arduino framework, a GPIO pin can be configured into four primary modes using the **pinMode()** function:
 
@@ -16,6 +20,16 @@ The ESP32-S3 is highly flexible. Using the standard Arduino framework, a GPIO pi
 - **INPUT**: The pin is set to sample the incoming voltage. It has high impedance, meaning it draws almost no current from the circuit it is measuring. In this state, the pin is "floating" and can randomly flip between HIGH and LOW if left unconnected.
 - **INPUT_PULLUP**: The pin is configured as an input but activates an internal resistor connected to 3.3V. This prevents the pin from floating, ensuring it reads HIGH by default until an external switch pulls it down to LOW (Ground).
 - **INPUT_PULLDOWN**: The pin is configured as an input but activate an internal resistor connected to ground.
+
+**Internal IO Pad**     
+<img width="689" height="609" alt="image" src="https://github.com/user-attachments/assets/e2099815-e54e-4510-a207-bba9c6132f1f" />      
+
+**Key Elements of the GPIO Circuit:***     
+- Internal Pull-Up ($R_{PU}$): An internal $\sim45\text{ k}\Omega$ resistor connected to $3.3\text{V}$ that can be enabled via software (INPUT_PULLUP).
+- Internal Pull-Down ($R_{PD}$): An internal $\sim45\text{ k}\Omega$ resistor connected to $0\text{V}/\text{GND}$ that can be enabled via software (INPUT_PULLDOWN).
+- Schmitt Trigger / Input Buffer: Converts the analog voltage level at the pin into a clean $0$ or $1$ digital signal for digitalRead().
+- Output PMOS / NMOS Transistors: Drive the pin to $3.3\text{V}$ (HIGH) or $0\text{V}$ (LOW) when configured as an OUTPUT.      
+
 
 ## GPIO Pins for user     
 
