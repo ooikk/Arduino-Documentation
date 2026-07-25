@@ -116,7 +116,7 @@ You can generate a random, statistically unique 128-bit UUID using several metho
 3. Case Sensitivity: UUID strings in Arduino are generally case-insensitive, but it is standard convention to write them in lowercase hex characters.
 
 **Manually Generate UUID**     
-Random UUID generators are actually not helpful since it always return random numbers. Yhe good news is: For custom applications, you do not need a random generator at all. You are the "authority" of your own project's UUID space. The only rule for custom 128-bit UUIDs is that they must be unique to your specific application so they don't clash with other devices.         
+Random UUID generators are actually not helpful since it always return random numbers. The good news is: For custom applications, you do not need a random generator at all. You are the "authority" of your own project's UUID space. The only rule for custom 128-bit UUIDs is that they must be unique to your specific application so they don't clash with other devices.         
 Manually crafting them to share a common base and only differ at the end is actually a highly recommended best practice. It makes your code infinitely easier to read, debug, and organize.     
 **Here is easy ways to generate this pattern:**     
 The "Copy-Paste & Tweak" (Easiest)     
