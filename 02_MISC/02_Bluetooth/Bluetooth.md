@@ -29,7 +29,7 @@ Even though the broadcast and mesh network setups are possible to implement, the
 **GATT**     
 GATT stands for Generic Attributes and it defines a hierarchical data structure that is exposed to connected BLE devices. This means that GATT defines the way that two BLE devices send and receive standard messages. Understanding this hierarchy is important because it will make it easier to understand how to use BLE with the ESP32.     
 
-<img width="75" height="auto" alt="image" src="https://github.com/user-attachments/assets/a7d17de1-37f9-4052-a8a2-8ab96932db45" />
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a7d17de1-37f9-4052-a8a2-8ab96932db45" />
 
 
 - Profile: standard collection of services for a specific use case;
