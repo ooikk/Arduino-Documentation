@@ -31,6 +31,7 @@ NOTE: Reset the Server after starting the clients
 
 #define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define SERVER_NAME "ESP32 BLE Server Example"
 
 // 1. DECLARE THE POINTER GLOBALLY so both setup() and loop() can see it
 BLECharacteristic *pCharacteristic;
@@ -39,7 +40,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Starting BLE work!");
 
-  if (!BLEDevice::init("ESP32 BLE Server Example")) {
+  if (!BLEDevice::init(SERVER_NAME)) {
     Serial.println("BLE initialization failed!");
     return;
   }
