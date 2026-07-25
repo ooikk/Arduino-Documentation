@@ -17,7 +17,7 @@ The ESP32-S3 is a highly integrated, low-power Wi-Fi and Bluetooth System-on-Chi
 **BLE Server and Client**     
 With Bluetooth Low Energy, there are two types of devices: the server and the client. The ESP32 can act either as a client or as a server.      
 The server advertises its existence, so it can be found by other devices, and contains the data that the client can read. The client scans the nearby devices, and when it finds the server it is looking for, it establishes a connection and listens for incoming data. This is called point-to-point communication.         
-<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b39454a3-c17a-4935-b0b2-9d8fe458f945" />
+<img width="100%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b39454a3-c17a-4935-b0b2-9d8fe458f945" />
 
 
 
