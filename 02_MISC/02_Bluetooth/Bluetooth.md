@@ -17,7 +17,55 @@ The ESP32-S3 is a highly integrated, low-power Wi-Fi and Bluetooth System-on-Chi
 **BLE Server and Client**     
 With Bluetooth Low Energy, there are two types of devices: the server and the client. The ESP32 can act either as a client or as a server.      
 The server advertises its existence, so it can be found by other devices, and contains the data that the client can read. The client scans the nearby devices, and when it finds the server it is looking for, it establishes a connection and listens for incoming data. This is called point-to-point communication.         
-<img width="100%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b39454a3-c17a-4935-b0b2-9d8fe458f945" />
+
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b39454a3-c17a-4935-b0b2-9d8fe458f945" />
+
+
+As mentioned previously, BLE also supports broadcast mode and mesh network:    
+- Broadcast mode: the server transmits data to many clients that are connected;
+- Mesh network: all the devices are connected, this is a many to many connection.     
+Even though the broadcast and mesh network setups are possible to implement, they were developed very recently, so there aren’t many examples implemented for the ESP32 at this moment.
+
+**GATT**     
+GATT stands for Generic Attributes and it defines a hierarchical data structure that is exposed to connected BLE devices. This means that GATT defines the way that two BLE devices send and receive standard messages. Understanding this hierarchy is important because it will make it easier to understand how to use BLE with the ESP32.     
+
+<img width="50" height="auto" alt="image" src="https://github.com/user-attachments/assets/ce0edbb7-0de5-4d65-9aff-e7f74244c140" />
+
+- Profile: standard collection of services for a specific use case;
+- Service: collection of related information, like sensor readings, battery level, heart rate, etc. ;
+- Characteristic: it is where the actual data is saved on the hierarchy (value);
+- Descriptor: metadata about the data;
+- Properties: describe how the characteristic value can be interacted with. For example: read, write, notify, broadcast, indicate, etc.     
+
+In our example, we’ll create a service with two characteristics. One for the temperature and another for the humidity. The actual temperature and humidity readings are saved on the value under their characteristics. Each characteristic has the notify property, so that it notifies the client whenever the values change.
+
+**UUID**     
+Each service, characteristic, and descriptor have a UUID (Universally Unique Identifier). A UUID is a unique 128-bit (16 bytes) number. For example:     
+```55072829-bc9e-4c53-938a-74a6d4c78776```      
+
+See **What is a UUID in Bluetooth Low Energy (BLE)** for details.     
+
+**BLE Service**     
+
+The top level of the hierarchy is a profile, which is composed of one or more services. Usually, a BLE device contains more than one service.     
+
+Every service contains at least one characteristic, or can also reference other services. A service is simply a collection of information, like sensor readings, for example.     
+
+There are predefined services for several types of data defined by the SIG (Bluetooth Special Interest Group) like: Battery Level, Blood Pressure, Heart Rate, Weight Scale, etc. [You can check here other defined services](https://www.bluetooth.com/specifications/assigned-numbers/).     
+
+**BLE Characteristic**     
+The characteristic is always owned by a service, and it is where the actual data is contained in the hierarchy (value). The characteristic always has two attributes: characteristic declaration (that provides metadata about the data) and the characteristic value.     
+Additionally, the characteristic value can be followed by descriptors, which further expand on the metadata contained in the characteristic declaration.    
+The properties describe how the characteristic value can be interacted with. Basically, it contains the operations and procedures that can be used with the characteristic:     
+- Broadcast
+- Read
+- Write without response
+- Write
+- Notify
+- Indicate
+- Authenticated Signed Writes
+- Extended Properties
+
 
 
 
