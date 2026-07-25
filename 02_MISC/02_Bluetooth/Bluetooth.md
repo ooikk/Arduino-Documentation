@@ -378,7 +378,7 @@ class LEDCallback: public BLECharacteristicCallbacks {
         // Control your GPIO here based on value
         if (value[0] == '1') {
           Serial.println("Turning LED ON");
-        } else {
+        } else if (value[0] == '0') {
           Serial.println("Turning LED OFF");
         }
       }
