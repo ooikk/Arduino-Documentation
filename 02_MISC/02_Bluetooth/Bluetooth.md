@@ -72,6 +72,8 @@ In the BLE hierarchy, UUIDs are assigned to three things:
 - Service UUID: Groups related data together (e.g., a "Heart Rate Service" or a "Custom Sensor Service").
 - Characteristic UUID: The actual data point (e.g., "Heart Rate Measurement" or "LED Control State").
 - Descriptor UUID: Metadata about the characteristic (e.g., 0x2902 is the standard UUID for a Client Characteristic Configuration Descriptor, which allows Notifications).     
+
+
 **How Do We Get UUID Values?**     
 There are two ways to get UUIDs, depending on whether you are building a standard device or a custom one.     
 
