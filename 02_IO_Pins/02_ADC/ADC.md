@@ -128,10 +128,10 @@ For high-speed background sampling, the ESP32 Arduino core offers a continuous D
 - ```bool analogContinuousStop()```        
   Stops continuous sampling.        
 
-*about ```timeout_ms```*     
+**about ```timeout_ms```**     
 In ```analogContinuousRead(&tempResult, timeout)```, the timeout parameter defines how many milliseconds the function will block (wait) for data if the ring buffer is currently empty.      
 1. timeout = 0 (Non-blocking / Immediate Return)      
-Passing 0 tells the driver: "Check the buffer right now. If data is ready, give it to me; if not, return false immediately."     
+Passing 0 tells the driver: "Check the buffer right now. If data is ready, give it to me; if not, return false immediately."
 - Behavior: It does not halt execution at all.
 - Best Used For:     
   - Draining the buffer in a loop: (e.g., while (```analogContinuousRead(&temp, 0))```). You keep reading until it returns false, which guarantees the buffer is completely empty and you have cleared out old historical samples.
@@ -146,7 +146,7 @@ Passing 20 tells the driver: "If data is ready right now, give it to me immediat
   - Dedicated processing loops or FreeRTOS tasks: Instead of burning CPU cycles constantly checking conversion_done flags or using ```delay()```, ```analogContinuousRead(&tempResult, 20)``` handles both the waiting and the reading in one clean, CPU-friendly call.
   - Extremely CPU-efficient (task yields while waiting).      
 
-*Important Limitations for ESP32-S3:*
+**Important Limitations for ESP32-S3:**     
 - ADC1 Only: Continuous/DMA mode is hardwired only to ADC1 (GPIO 1 to GPIO 10). You cannot use ADC2 pins (GPIO 11-20) for continuous sampling.
 - Resolution: In continuous mode, the supported resolutions are typically 9-bit, 10-bit, 11-bit, or 12-bit. (13-bit is not supported in the standard continuous wrapper).
 - To use Continuous Sampling (DMA) on the ESP32-S3, you must use the Arduino-ESP32 Core version 3.0.0 or newer. Compilation Errors: If you see errors like "analogContinuous was not declared", you are using an outdated version of the ESP32 Board Package. Go to Tools > Board > Boards Manager, search for "esp32", and update to version 3.0.0 or higher.     
