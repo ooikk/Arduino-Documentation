@@ -223,7 +223,7 @@ void setup() {
   Serial.println("Starting BLE Server...");
 
   // 1. Initialize BLE Device
-  BLEDevice::init("ESP32-S3_BLE_Demo");
+  BLEDevice::init("ESP32-S3_BLE_Example_1");
 
   // 2. Create BLE Server
   BLEServer *pServer = BLEDevice::createServer();
@@ -308,7 +308,7 @@ void setup() {
   Serial.begin(115200);
   pinMode(LED_PIN, OUTPUT);
 
-  BLEDevice::init("ESP32-S3_Control");
+  BLEDevice::init("ESP32-S3_Example_2");
   BLEServer *pServer = BLEDevice::createServer();
   BLEService *pService = pServer->createService(SERVICE_UUID);
 
@@ -388,7 +388,7 @@ void setup() {
   Serial.begin(115200);
   
   // 1. Initialize BLE
-  BLEDevice::init("ESP32-S3_SmartDevice");
+  BLEDevice::init("ESP32-S3_Example_3");
   
   // 2. Create BLE Server
   BLEServer *pServer = BLEDevice::createServer();
@@ -498,7 +498,7 @@ void connectToServer(BLEAddress pAddress) {
 
 void setup() {
   Serial.begin(115200);
-  BLEDevice::init("ESP32-S3_Central");
+  BLEDevice::init("ESP32-S3_Example_4");
   
   BLEScan* pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
