@@ -537,6 +537,10 @@ void loop() {
 
 https://randomnerdtutorials.com/esp32-bluetooth-low-energy-ble-arduino-ide/
 
+https://randomnerdtutorials.com/esp32-ble-server-client/
+
+https://randomnerdtutorials.com/esp32-web-bluetooth/
+
 https://www.oceanlabz.in/esp32-bluetooth-low-energy-ble/
 
 https://www.oceanlabz.in/esp32-esp-now/
