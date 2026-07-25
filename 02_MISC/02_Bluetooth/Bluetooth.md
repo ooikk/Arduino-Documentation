@@ -130,7 +130,7 @@ void loop() {
   delay(3000);
 }
 ```
-**Example 2: ESP32-S3 BLE Server Callbacks (Receive Commands)**
+**Example 2: ESP32-S3 BLE Server Callbacks (Receive Commands)**     
 To react when a central device (like a smartphone) sends a command to the ESP32-S3, attach a Characteristic Callback:
 ```
 #include <BLEDevice.h>
