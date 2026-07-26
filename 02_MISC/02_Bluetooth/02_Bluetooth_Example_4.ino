@@ -1,8 +1,10 @@
 /*
-  Example 4: BLE Central (Client) - Heart Rate Monitor Receiver (Fixed)
+  Example 4: BLE Central (Client) - Heart Rate Monitor Receiver 
   UPDATED for ESP32 Core v3.x continuous scanning and reconnection.
   Run Example 3 in another ESP32 to simulate heart beat monitor
 */
+
+
 
 #include <BLEDevice.h>
 #include <BLEUtils.h>
@@ -10,17 +12,22 @@
 #include <BLEScan.h>             
 #include <BLEAdvertisedDevice.h> 
 
-#define TARGET_DEVICE_NAME  "ESP32-S3_Example_3" 
+#define TARGET_DEVICE_NAME  "ESP32-S3_Example_3" \
+
+// Below UUID must match Server or Example 3
 #define TARGET_SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define TARGET_CHAR_UUID    "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+#define TARGET_LED_CHAR_UUID "d5875406-fa50-4bfa-982a-152586b0251b"
 
 BLEClient* pClient = nullptr;
-BLERemoteCharacteristic* pRemoteCharacteristic = nullptr;
+BLERemoteCharacteristic* pRemoteCharacteristic = nullptr;    // Notify characteristic
+BLERemoteCharacteristic* pRemoteLedCharacteristic = nullptr; // Write characteristic
 BLEScan* pBLEScan = nullptr;
 
 bool connected = false;
 bool doConnect = false;
 BLEAdvertisedDevice* myDevice = nullptr;
+unsigned long lastCmdTime = 0;
 
 // Notification Callback
 static void notifyCallback(
@@ -34,11 +41,11 @@ static void notifyCallback(
     value += (char)pData[i];
   }
   
-  Serial.print("❤️ Heart Rate Received (Notify): ");
+  Serial.print("❤️ Sensor Data Received (Notify): ");
   Serial.println(value);
 }
 
-// Client Callbacks (Only updates flags)
+// Client Callbacks
 class MyClientCallbacks : public BLEClientCallbacks {
   void onConnect(BLEClient* pClient) override {
     Serial.println("✅ Connected to Server!");
@@ -53,7 +60,6 @@ class MyClientCallbacks : public BLEClientCallbacks {
 // Scan Callbacks
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) override {
-    // Match by Name OR Service UUID for robust detection
     if ((advertisedDevice.haveName() && advertisedDevice.getName() == TARGET_DEVICE_NAME) ||
         (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(BLEUUID(TARGET_SERVICE_UUID)))) {
         
@@ -79,6 +85,7 @@ bool connectToServer() {
     return false;
   }
   
+  // 1. Get Service
   BLERemoteService* pRemoteService = pClient->getService(BLEUUID(TARGET_SERVICE_UUID));
   if (pRemoteService == nullptr) {
     Serial.println("❌ Failed to find service UUID.");
@@ -86,16 +93,26 @@ bool connectToServer() {
     return false;
   }
 
+  // 2. Get Sensor Notify Characteristic
   pRemoteCharacteristic = pRemoteService->getCharacteristic(BLEUUID(TARGET_CHAR_UUID));
   if (pRemoteCharacteristic == nullptr) {
-    Serial.println("❌ Failed to find characteristic UUID.");
+    Serial.println("❌ Failed to find sensor characteristic UUID.");
     pClient->disconnect();
     return false;
   }
 
+  // Register for notifications
   if (pRemoteCharacteristic->canNotify()) {
     pRemoteCharacteristic->registerForNotify(notifyCallback);
-    Serial.println("✅ Registered for Notifications! Waiting for data...");
+    Serial.println("✅ Registered for Notifications!");
+  }
+
+  // 3. Get LED Write Characteristic
+  pRemoteLedCharacteristic = pRemoteService->getCharacteristic(BLEUUID(TARGET_LED_CHAR_UUID));
+  if (pRemoteLedCharacteristic == nullptr) {
+    Serial.println("⚠️ Warning: Failed to find LED write characteristic UUID.");
+  } else {
+    Serial.println("✅ Found LED write characteristic!");
   }
 
   connected = true;
@@ -104,15 +121,13 @@ bool connectToServer() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Starting Heart Rate Client...");
+  Serial.println("Starting BLE Client...");
   
   BLEDevice::init("ESP32-S3_Example_4");
   
   pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
   
-  // Set timing parameters in 0.625ms units
-  // 160 * 0.625ms = 100ms interval, 128 * 0.625ms = 80ms window
   pBLEScan->setInterval(160);
   pBLEScan->setWindow(128);
   pBLEScan->setActiveScan(true);
@@ -121,7 +136,7 @@ void setup() {
 }
 
 void loop() {
-  // 1. Found server -> Connect
+  // 1. Connect logic
   if (doConnect) {
     if (!connectToServer()) {
       Serial.println("❌ Connection attempt failed. Retrying scan...");
@@ -129,13 +144,24 @@ void loop() {
     doConnect = false;
   }
 
-  // 2. Disconnected -> Keep Scanning continuously
+  // 2. Scan vs Connected operations
   if (!connected && !doConnect) {
     Serial.println("🔍 Scanning for BLE Server...");
-    pBLEScan->start(5, false); // Scan for 5 seconds per cycle
+    pBLEScan->start(5, false);
     pBLEScan->clearResults();
     delay(1000);
   } else {
-    delay(1000); // Connected: Notifications handled automatically by callback
+    // Connected: Send write commands every 5 seconds
+    if (connected && pRemoteLedCharacteristic != nullptr && pRemoteLedCharacteristic->canWrite() && ((millis() - lastCmdTime) > 5000)) {
+      int cmdValue = random(0, 5); 
+      String cmdStr = String(cmdValue);
+      
+      pRemoteLedCharacteristic->writeValue(cmdStr.c_str());
+      Serial.print("📤 Sent command to Server: ");
+      Serial.println(cmdStr);
+      
+      lastCmdTime = millis();
+    }
+    delay(1000);
   }
 }
