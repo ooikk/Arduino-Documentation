@@ -629,7 +629,7 @@ void loop() {
    The ESP32-S3 can retain BLE connectivity (specifically for advertising or maintaining a connection) while in Deep Sleep, provided you configure the ULP (Ultra Low Power) coprocessor and RTC memory correctly. This is ideal for battery-powered BLE beacons.
 
 ## 7. Sending/ Receiving Multiple Commands     
-In BLE development, both approaches are widely used, but creating separate BLE characteristics for distinct hardware subsystems is considered the standard GATT best practice.     
+In BLE development, both "Separate Characteristics" and "Single Command Pipe" approaches are widely used, but creating separate BLE characteristics for distinct hardware subsystems is considered the standard GATT best practice.     
 
 Here is a breakdown of how the two approaches compare, when to use each, and how to structure them cleanly.     
 
