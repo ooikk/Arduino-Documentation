@@ -812,34 +812,46 @@ On your ESP32-S3 Client (or smartphone app), build the JSON document, serialize 
 
 Example Helper Functions for Client:       
 ```
-#include <ArduinoJson.h>
+// Assuming pRemoteCmdChar is declared globally at top of sketch
 
-// Helper to send LED state
-void sendLedCommand(BLERemoteCharacteristic* pChar, bool turnOn) {
+void sendLedCommand(bool turnOn) {
+  if (pRemoteCmdChar == nullptr || !pRemoteCmdChar->canWrite()) return;
+
   JsonDocument doc;
   doc["target"] = "led";
   doc["state"]  = turnOn ? 1 : 0;
 
   String payload;
-  serializeJson(doc, payload); // Converts to {"target":"led","state":1}
+  serializeJson(doc, payload);
 
-  pChar->writeValue(payload.c_str());
+  // Uses global pointer directly
+  pRemoteCmdChar->writeValue(payload.c_str());
   Serial.printf("📤 Sent: %s\n", payload.c_str());
 }
 
-// Helper to send Motor speed
-void sendMotorCommand(BLERemoteCharacteristic* pChar, int speed) {
+void sendMotorCommand(int speed) {
+  if (pRemoteCmdChar == nullptr || !pRemoteCmdChar->canWrite()) return;
+
   JsonDocument doc;
   doc["target"] = "motor";
   doc["speed"]  = speed;
 
   String payload;
-  serializeJson(doc, payload); // Converts to {"target":"motor","speed":180}
+  serializeJson(doc, payload);
 
-  pChar->writeValue(payload.c_str());
+  // Uses global pointer directly
+  pRemoteCmdChar->writeValue(payload.c_str());
   Serial.printf("📤 Sent: %s\n", payload.c_str());
 }
 ```
+
+Then in your loop(), calling them becomes cleaner:    
+```
+sendLedCommand(true);     // Turns LED on
+sendMotorCommand(180);    // Sets motor speed to 180
+```
+
+
 **3. Example Payloads & Behavior**     
 ```
 Action                  Sent JSON Payload              Server Reaction
