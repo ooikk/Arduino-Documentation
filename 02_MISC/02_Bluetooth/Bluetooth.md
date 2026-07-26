@@ -812,100 +812,32 @@ On your ESP32-S3 Client (or smartphone app), build the JSON document, serialize 
 
 Example Helper Functions for Client:       
 ```
-/*
-  ESP32-S3 BLE Server - JSON Command Pipe
-  Parses incoming JSON objects to route actions to specific hardware modules.
-*/
+#include <ArduinoJson.h>
 
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <ArduinoJson.h> // ArduinoJson v7+
+// Helper to send LED state
+void sendLedCommand(BLERemoteCharacteristic* pChar, bool turnOn) {
+  JsonDocument doc;
+  doc["target"] = "led";
+  doc["state"]  = turnOn ? 1 : 0;
 
-#define SERVICE_UUID      "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define COMMAND_CHAR_UUID "d5875406-fa50-4bfa-982a-152586b0251b"
+  String payload;
+  serializeJson(doc, payload); // Converts to {"target":"led","state":1}
 
-const int LED_PIN   = 2;  // Onboard LED
-const int MOTOR_PIN = 4;  // PWM pin for Motor driver
-
-// Custom Callback to parse incoming JSON
-class JsonCommandCallback: public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic *pCharacteristic) override {
-      String jsonPayload = pCharacteristic->getValue(); // ESP32 Core v3.x returns String
-
-      if (jsonPayload.length() == 0) return;
-
-      Serial.print("📥 Raw JSON Received: ");
-      Serial.println(jsonPayload);
-
-      // Allocate JSON document (ArduinoJson v7)
-      JsonDocument doc;
-      DeserializationError error = deserializeJson(doc, jsonPayload);
-
-      if (error) {
-        Serial.print("❌ JSON Parsing failed: ");
-        Serial.println(error.c_str());
-        return;
-      }
-
-      // Read the "target" string key
-      const char* target = doc["target"];
-      if (!target) {
-        Serial.println("⚠️ Invalid command: Missing 'target' field");
-        return;
-      }
-
-      // --- ROUTE COMMANDS BASED ON TARGET ---
-      
-      // 1. LED Command: {"target":"led", "state":1}
-      if (strcmp(target, "led") == 0) {
-        int state = doc["state"] | 0; // Default to 0 if missing
-        digitalWrite(LED_PIN, state ? HIGH : LOW);
-        Serial.printf("💡 LED set to %s\n", state ? "ON" : "OFF");
-      } 
-      
-      // 2. Motor Command: {"target":"motor", "speed":180}
-      else if (strcmp(target, "motor") == 0) {
-        int speed = doc["speed"] | 0; // PWM value: 0 to 255
-        speed = constrain(speed, 0, 255);
-        analogWrite(MOTOR_PIN, speed);
-        Serial.printf("⚙️ Motor speed set to %d / 255\n", speed);
-      } 
-      
-      // 3. Unknown Target
-      else {
-        Serial.printf("⚠️ Unknown target system: %s\n", target);
-      }
-    }
-};
-
-void setup() {
-  Serial.begin(115200);
-  pinMode(LED_PIN, OUTPUT);
-  pinMode(MOTOR_PIN, OUTPUT);
-
-  BLEDevice::init("ESP32-S3_JSON_Server");
-  BLEServer *pServer = BLEDevice::createServer();
-  BLEService *pService = pServer->createService(SERVICE_UUID);
-
-  // Command Characteristic with Write permissions
-  BLECharacteristic *pCmdChar = pService->createCharacteristic(
-                                  COMMAND_CHAR_UUID,
-                                  BLECharacteristic::PROPERTY_WRITE
-                                );
-
-  pCmdChar->setCallbacks(new JsonCommandCallback());
-  pService->start();
-
-  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-  pAdvertising->addServiceUUID(SERVICE_UUID);
-  BLEDevice::startAdvertising();
-
-  Serial.println("BLE Server is ready! Send JSON write payloads.");
+  pChar->writeValue(payload.c_str());
+  Serial.printf("📤 Sent: %s\n", payload.c_str());
 }
 
-void loop() {
-  delay(1000);
+// Helper to send Motor speed
+void sendMotorCommand(BLERemoteCharacteristic* pChar, int speed) {
+  JsonDocument doc;
+  doc["target"] = "motor";
+  doc["speed"]  = speed;
+
+  String payload;
+  serializeJson(doc, payload); // Converts to {"target":"motor","speed":180}
+
+  pChar->writeValue(payload.c_str());
+  Serial.printf("📤 Sent: %s\n", payload.c_str());
 }
 ```
 **3. Example Payloads & Behavior**     
