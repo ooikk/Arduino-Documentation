@@ -628,7 +628,297 @@ void loop() {
 5. Deep Sleep:
    The ESP32-S3 can retain BLE connectivity (specifically for advertising or maintaining a connection) while in Deep Sleep, provided you configure the ULP (Ultra Low Power) coprocessor and RTC memory correctly. This is ideal for battery-powered BLE beacons.
 
-# 7. Reference      
+## 7. Sending/ Receiving Multiple Commands     
+In BLE development, both approaches are widely used, but creating separate BLE characteristics for distinct hardware subsystems is considered the standard GATT best practice.     
+
+Here is a breakdown of how the two approaches compare, when to use each, and how to structure them cleanly.     
+
+**Approach 1: Separate Characteristics (Recommended for GATT)**       
+In true Bluetooth LE design, Characteristics represent attributes/subsystems (e.g., LED state, Motor speed, Battery level).
+
+Why this is the best practice:     
+- Clean Code: Separate callback handlers (or if/else checks per characteristic) keep logic decoupled.
+- Semantic & Tool Friendly: In debugging apps like nRF Connect, you can inspect or control the LED without affecting the motor.
+- Granular Types & Permissions: The LED might only need PROPERTY_WRITE for a 0/1 boolean, while the motor might need PROPERTY_WRITE + PROPERTY_READ for speed control (0–255 PWM).
+```
+// Separate Characteristics under the SAME Service
+#define LED_CHAR_UUID   "d5875406-fa50-4bfa-982a-152586b0251b"
+#define MOTOR_CHAR_UUID "e6986517-gb61-5cgb-093b-262697c1362c"
+
+// Unified or separate callbacks
+class CommandCallback: public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *pChar) override {
+    String val = pChar->getValue();
+    
+    // Check which characteristic received the data
+    if (pChar->getUUID().equals(BLEUUID(LED_CHAR_UUID))) {
+      digitalWrite(LED_PIN, val[0] == '1' ? HIGH : LOW);
+    } 
+    else if (pChar->getUUID().equals(BLEUUID(MOTOR_CHAR_UUID))) {
+      int speed = val.toInt(); // e.g. "255"
+      analogWrite(MOTOR_PIN, speed);
+    }
+  }
+};
+```
+**Approach 2: Single Command Pipe ("Serial/Stream" Style)**     
+If you have dozens of minor commands (or a terminal-like interface), creating 20+ characteristics creates memory overhead and bloats your service definition. In this case, multiplexing over a single Command Characteristic makes sense.
+
+Instead of raw string parsing like "L1" and "M255" (which gets tricky when parsing multi-digit numbers or floats), use one of two structured patterns:
+
+**Option A: Binary Protocol (Fastest & Lightest)**       
+Send fixed binary byte arrays rather than ASCII strings:     
+```
+Byte 0 (Device ID)     Byte 1 (Action / Command)    Byte 2+ (Payload / Value)
+0x01 (LED)             0x01 (ON) / 0x00 (OFF)       —
+0x02 (Motor)           0x01 (Set Speed)             0xFE (Speed = 254)
+```
+```
+class CommandPipeCallback: public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic *pChar) override {
+    uint8_t* data = pChar->getData();
+    size_t len = pChar->getLength();
+
+    if (len < 2) return; // Invalid packet
+
+    uint8_t targetDevice = data[0]; // 0x01 = LED, 0x02 = Motor
+    uint8_t command      = data[1]; // Action
+
+    switch (targetDevice) {
+      case 0x01: // LED
+        digitalWrite(LED_PIN, command ? HIGH : LOW);
+        break;
+      case 0x02: // Motor
+        if (len >= 3) analogWrite(MOTOR_PIN, data[2]); // Byte 2 is speed
+        break;
+    }
+  }
+};
+```
+**Option B: JSON Payload (Human-Readable)**        
+If memory isn't tight and you use ArduinoJson: send {"target":"motor", "speed":180}.      
+**Summary Recommendation**     
+For a project with 2–6 distinct controls (LEDs, relays, motors, sensors), use Separate Characteristics.
+
+If you plan to build a general-purpose serial terminal or dynamic command processor, use a Single Command Pipe with binary opcodes.       
+
+## 8. JSON Payload    
+Using a JSON Payload over a single BLE characteristic gives you a clean, human-readable command interface. It allows you to expand your hardware commands (adding LEDs, motors, buzzers, etc.) without having to redesign your BLE GATT structure every time.
+
+Prerequisite: Install the ArduinoJson library (v7 or later) via the Arduino IDE Library Manager (Tools > Manage Libraries... -> Search [ArduinoJson](https://arduinojson.org/?utm_source=meta&utm_medium=library.properties)).      
+
+**1. Server Code (Receiver & Parser)**     
+The server listens on a single "Command Characteristic" (PROPERTY_WRITE). When data arrives, it parses the JSON object and routes actions based on the "target" field.      
+```
+/*
+  ESP32-S3 BLE Server - JSON Command Pipe
+  Parses incoming JSON objects to route actions to specific hardware modules.
+*/
+
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <ArduinoJson.h> // ArduinoJson v7+
+
+#define SERVICE_UUID      "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define COMMAND_CHAR_UUID "d5875406-fa50-4bfa-982a-152586b0251b"
+
+const int LED_PIN   = 2;  // Onboard LED
+const int MOTOR_PIN = 4;  // PWM pin for Motor driver
+
+// Custom Callback to parse incoming JSON
+class JsonCommandCallback: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) override {
+      String jsonPayload = pCharacteristic->getValue(); // ESP32 Core v3.x returns String
+
+      if (jsonPayload.length() == 0) return;
+
+      Serial.print("📥 Raw JSON Received: ");
+      Serial.println(jsonPayload);
+
+      // Allocate JSON document (ArduinoJson v7)
+      JsonDocument doc;
+      DeserializationError error = deserializeJson(doc, jsonPayload);
+
+      if (error) {
+        Serial.print("❌ JSON Parsing failed: ");
+        Serial.println(error.c_str());
+        return;
+      }
+
+      // Read the "target" string key
+      const char* target = doc["target"];
+      if (!target) {
+        Serial.println("⚠️ Invalid command: Missing 'target' field");
+        return;
+      }
+
+      // --- ROUTE COMMANDS BASED ON TARGET ---
+      
+      // 1. LED Command: {"target":"led", "state":1}
+      if (strcmp(target, "led") == 0) {
+        int state = doc["state"] | 0; // Default to 0 if missing
+        digitalWrite(LED_PIN, state ? HIGH : LOW);
+        Serial.printf("💡 LED set to %s\n", state ? "ON" : "OFF");
+      } 
+      
+      // 2. Motor Command: {"target":"motor", "speed":180}
+      else if (strcmp(target, "motor") == 0) {
+        int speed = doc["speed"] | 0; // PWM value: 0 to 255
+        speed = constrain(speed, 0, 255);
+        analogWrite(MOTOR_PIN, speed);
+        Serial.printf("⚙️ Motor speed set to %d / 255\n", speed);
+      } 
+      
+      // 3. Unknown Target
+      else {
+        Serial.printf("⚠️ Unknown target system: %s\n", target);
+      }
+    }
+};
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(MOTOR_PIN, OUTPUT);
+
+  BLEDevice::init("ESP32-S3_JSON_Server");
+  BLEServer *pServer = BLEDevice::createServer();
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // Command Characteristic with Write permissions
+  BLECharacteristic *pCmdChar = pService->createCharacteristic(
+                                  COMMAND_CHAR_UUID,
+                                  BLECharacteristic::PROPERTY_WRITE
+                                );
+
+  pCmdChar->setCallbacks(new JsonCommandCallback());
+  pService->start();
+
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  BLEDevice::startAdvertising();
+
+  Serial.println("BLE Server is ready! Send JSON write payloads.");
+}
+
+void loop() {
+  delay(1000);
+}
+```
+
+**2. Client Code Snippet (Transmitter)**     
+On your ESP32-S3 Client (or smartphone app), build the JSON document, serialize it into a string, and send it over the BLE connection.
+
+Example Helper Functions for Client:       
+```
+/*
+  ESP32-S3 BLE Server - JSON Command Pipe
+  Parses incoming JSON objects to route actions to specific hardware modules.
+*/
+
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <ArduinoJson.h> // ArduinoJson v7+
+
+#define SERVICE_UUID      "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define COMMAND_CHAR_UUID "d5875406-fa50-4bfa-982a-152586b0251b"
+
+const int LED_PIN   = 2;  // Onboard LED
+const int MOTOR_PIN = 4;  // PWM pin for Motor driver
+
+// Custom Callback to parse incoming JSON
+class JsonCommandCallback: public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic *pCharacteristic) override {
+      String jsonPayload = pCharacteristic->getValue(); // ESP32 Core v3.x returns String
+
+      if (jsonPayload.length() == 0) return;
+
+      Serial.print("📥 Raw JSON Received: ");
+      Serial.println(jsonPayload);
+
+      // Allocate JSON document (ArduinoJson v7)
+      JsonDocument doc;
+      DeserializationError error = deserializeJson(doc, jsonPayload);
+
+      if (error) {
+        Serial.print("❌ JSON Parsing failed: ");
+        Serial.println(error.c_str());
+        return;
+      }
+
+      // Read the "target" string key
+      const char* target = doc["target"];
+      if (!target) {
+        Serial.println("⚠️ Invalid command: Missing 'target' field");
+        return;
+      }
+
+      // --- ROUTE COMMANDS BASED ON TARGET ---
+      
+      // 1. LED Command: {"target":"led", "state":1}
+      if (strcmp(target, "led") == 0) {
+        int state = doc["state"] | 0; // Default to 0 if missing
+        digitalWrite(LED_PIN, state ? HIGH : LOW);
+        Serial.printf("💡 LED set to %s\n", state ? "ON" : "OFF");
+      } 
+      
+      // 2. Motor Command: {"target":"motor", "speed":180}
+      else if (strcmp(target, "motor") == 0) {
+        int speed = doc["speed"] | 0; // PWM value: 0 to 255
+        speed = constrain(speed, 0, 255);
+        analogWrite(MOTOR_PIN, speed);
+        Serial.printf("⚙️ Motor speed set to %d / 255\n", speed);
+      } 
+      
+      // 3. Unknown Target
+      else {
+        Serial.printf("⚠️ Unknown target system: %s\n", target);
+      }
+    }
+};
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(MOTOR_PIN, OUTPUT);
+
+  BLEDevice::init("ESP32-S3_JSON_Server");
+  BLEServer *pServer = BLEDevice::createServer();
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  // Command Characteristic with Write permissions
+  BLECharacteristic *pCmdChar = pService->createCharacteristic(
+                                  COMMAND_CHAR_UUID,
+                                  BLECharacteristic::PROPERTY_WRITE
+                                );
+
+  pCmdChar->setCallbacks(new JsonCommandCallback());
+  pService->start();
+
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  BLEDevice::startAdvertising();
+
+  Serial.println("BLE Server is ready! Send JSON write payloads.");
+}
+
+void loop() {
+  delay(1000);
+}
+```
+**3. Example Payloads & Behavior**     
+```
+Action                  Sent JSON Payload              Server Reaction
+Turn LED On             {"target":"led","state":1}     Sets LED_PIN to HIGH.
+Turn LED Off            {"target":"led","state":0}     Sets LED_PIN to LOW.
+Set Motor Speed (Half)  {"target":"motor","speed":128} Drives PWM on MOTOR_PIN at 50% duty cycle.
+Stop Motor              {"target":"motor","speed":0}   Drives PWM on MOTOR_PIN to 0.
+```
+
+
+## 9. Reference      
 
 https://randomnerdtutorials.com/esp32-bluetooth-low-energy-ble-arduino-ide/
 
