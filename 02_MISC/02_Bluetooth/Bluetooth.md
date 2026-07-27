@@ -1738,9 +1738,11 @@ When the transmission reaches the Central Hub, you will see all accumulated tele
 
 Unlike custom broadcast hacks, official Bluetooth SIG Mesh includes a native feature for battery-powered devices called Friendship.     
 In an ESP-BLE-MESH network, a Low Power Node (LPN) pairs with a mains-powered Friend Node. The Friend Node stays awake $100\%$ of the time to act as a "mailbox," storing all incoming mesh messages intended for the LPN. The LPN spends most of its time in deep sleep, waking up briefly to query its Friend, download queued messages, transmit its sensor readings, and go back to sleep.     
-⚠️ Framework Requirement: Official ESP-BLE-MESH with full LPN/Friendship feature support requires ESP-IDF (Espressif IoT Development Framework v4.4+ or v5.x) or PlatformIO configured with the ESP-IDF framework. Standard Arduino BLE libraries only implement GATT/GAP, not the full Bluetooth Mesh protocol stack.     
+⚠️ Framework Requirement: Official ESP-BLE-MESH with full LPN/Friendship feature support requires ESP-IDF (Espressif IoT Development Framework v4.4+ or v5.x) or PlatformIO configured with the ESP-IDF framework. Standard Arduino BLE libraries only implement GATT/GAP, not the full Bluetooth Mesh protocol stack.      
+
 
 1. How Friendship Works (The Handshake & Poll)
+
 ```
 Friend Node (Always Awake)                       Low Power Node (LPN)
        │                                                   │
@@ -1761,6 +1763,8 @@ Friend Node (Always Awake)                       Low Power Node (LPN)
   2. Buffering: When other nodes in the mesh send data to the LPN, the Friend Node intercepts and buffers the packets in its local RAM.
   3. Polling: When the LPN wakes up from sleep, it sends a Friend Poll. The Friend Node responds immediately with any stored messages.
   4. Sleep: If no messages remain in the queue, the LPN returns to deep sleep.     
+
+
 
 2. Setting Up the Friend Node (Mains Powered)     
 The Friend Node needs sufficient RAM allocated to buffer messages for one or more LPNs.     
@@ -1825,6 +1829,8 @@ void app_main(void) {
     }
 }
 ```
+
+
 3. Setting Up the Low Power Node (LPN)    
 The LPN configures its timing constraints (how fast it expects replies and how long it sleeps between polls) and initiates the Friendship request.
 
@@ -1890,6 +1896,8 @@ void on_lpn_wakeup(void) {
     esp_ble_mesh_lpn_poll();
 }
 ```
+
+
 4. Key Parameters Comparison     
 ```
 Parameter       Recommended Value                What It Controls
@@ -1898,6 +1906,7 @@ rx_delay        10 ms - 50 ms                    Delay between LPN transmitting 
                                                  Saves power by keeping the radio off during processing.
 min_queue_num   2 - 8 packets                    Minimum queue depth the Friend Node must promise to allocate for this LPN.
 ```
+
 
 5. Provisioning the Mesh     
 Before an LPN and Friend Node can communicate, both devices must be provisioned into the same Bluetooth Mesh network:
