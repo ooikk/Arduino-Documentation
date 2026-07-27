@@ -1507,7 +1507,7 @@ struct MeshPayload {
   NodeReading readings[MAX_CHAIN_NODES];  // 3 * 7 = 21 bytes
 };                                        // Payload Total = 22 bytes
 ```
-*Total Manufacturer Data = $2\text{ bytes}$ Header (\xFF\xFF) + $22\text{ bytes}$ Payload = $24\text{ bytes}$ (Well within the $31\text{-byte}$ BLE limit).*     
+*Total Manufacturer Data = 2 bytes Header (\xFF\xFF) + 22 bytes Payload = 24 bytes (Well within the 31-byte BLE limit).*     
 
 **Unified Multi-Hop Code for ESP32-S3**          
 This single codebase supports all three node roles. Set NODE_ROLE at the top of the file before uploading to each board.      
