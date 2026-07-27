@@ -1759,10 +1759,10 @@ Friend Node (Always Awake)                       Low Power Node (LPN)
        │                                                   │
 ```
 
-  a. Establishment: The LPN broadcasts a Friend Request packet with its required queue size and polling parameters. Nearby Friend Nodes respond with a Friend Offer. The LPN selects the best offer and establishes a Friendship.
-  b. Buffering: When other nodes in the mesh send data to the LPN, the Friend Node intercepts and buffers the packets in its local RAM.
-  c. Polling: When the LPN wakes up from sleep, it sends a Friend Poll. The Friend Node responds immediately with any stored messages.
-  d. Sleep: If no messages remain in the queue, the LPN returns to deep sleep.     
+  - Establishment: The LPN broadcasts a Friend Request packet with its required queue size and polling parameters. Nearby Friend Nodes respond with a Friend Offer. The LPN selects the best offer and establishes a Friendship.
+  - Buffering: When other nodes in the mesh send data to the LPN, the Friend Node intercepts and buffers the packets in its local RAM.
+  - Polling: When the LPN wakes up from sleep, it sends a Friend Poll. The Friend Node responds immediately with any stored messages.
+  - Sleep: If no messages remain in the queue, the LPN returns to deep sleep.     
 
 
 
