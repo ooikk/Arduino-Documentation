@@ -1213,7 +1213,7 @@ void setup() {
   // 4. Start Broadcasting
   pAdvertising->start();
   Serial.printf("📡 Broadcasting sensor data for %d seconds...\n", BROADCAST_TIME_MS / 1000);
-
+  Serial.printf("Temp: %.2f°C | Hum: %.2f%% | Server Boot: %u\n", data.temperature, data.humidity, data.bootCount);
   delay(BROADCAST_TIME_MS);
 
   // 5. Stop Advertising and Enter Deep Sleep
