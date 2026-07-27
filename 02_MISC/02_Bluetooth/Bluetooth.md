@@ -205,6 +205,10 @@ Many companies generate one random 32-bit (8-character) hex number for their com
 
 ## 5. Application Examples     
 
+**Basic steps to setup ESP32 BLE Server**      
+Setting up a GATT BLE Server on the ESP32-S3 follows a strict initialization sequence. The core architecture relies on the standard Bluetooth GATT hierarchy: Device $\rightarrow$ Server $\rightarrow$ Service $\rightarrow$ Characteristic $\rightarrow$ Advertising.Here are the standard steps using the Arduino ESP32 BLE framework (BLEDevice.h):1.1. Initialize the BLE Stack:Device Name Setup.Assign a broadcast name to your ESP32-S3 and initialize the underlying Bluetooth hardware stack.
+
+
 **Example 1: ESP32-S3 BLE Server (Send Data to Smartphone)**     
 This example sets up the ESP32-S3 as a server that advertises a custom service. You can read the characteristic value using a smartphone app like nRF Connect, Arduino Bluetooth Controller or LightBlue.
 ```
