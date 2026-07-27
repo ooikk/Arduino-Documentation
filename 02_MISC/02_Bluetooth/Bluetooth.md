@@ -208,27 +208,23 @@ Many companies generate one random 32-bit (8-character) hex number for their com
 **Basic steps to setup ESP32 BLE Server**      
 Setting up a GATT BLE Server on the ESP32-S3 follows a strict initialization sequence. The core architecture relies on the standard Bluetooth GATT hierarchy: Device $\rightarrow$ Server $\rightarrow$ Service $\rightarrow$ Characteristic $\rightarrow$ Advertising.     
 Here are the standard steps using the Arduino ESP32 BLE framework (BLEDevice.h):     
-1. Initialize the BLE Stack:
-   Device Name Setup.     
+1. Initialize the BLE Stack: Device Name Setup.          
    Assign a broadcast name to your ESP32-S3 and initialize the underlying Bluetooth hardware stack.
    ```
    BLEDevice::init("ESP32-S3_BLE_Server");
    ```
-2. Instantiate the BLE Server:
-   Server Creation.
+2. Instantiate the BLE Server: Server Creation.       
    Create the primary BLE Server object. This acts as the root container for services and handles connection/disconnection event callbacks.
    ```
    BLEServer *pServer = BLEDevice::createServer();
    // Optional: pServer->setCallbacks(new MyServerCallbacks());
    ```      
-3. Create the GATT Service:
-   Service Definition.
+3. Create the GATT Service: Service Definition.       
    Define a service using a unique 128-bit UUID to logically group your sensor or control characteristics.
    ```
    BLEService *pService = pServer->createService(SERVICE_UUID);
    ```
-4. Add Characteristics & Descriptors:
-   Data Endpoints.
+4. Add Characteristics & Descriptors: Data Endpoints.       
    Instantiate characteristics inside your service with specific access permissions (Read, Write, Notify). If enabling notifications, attach the standard 2902 Client Characteristic Configuration Descriptor.
    ```
    BLECharacteristic *pCharacteristic = pService->createCharacteristic(
@@ -240,14 +236,12 @@ Here are the standard steps using the Arduino ESP32 BLE framework (BLEDevice.h):
    pCharacteristic->addDescriptor(new BLE2902());
    ```
 
-5. Start the Service:
-   Memory Activation.
+5. Start the Service: Memory Activation.       
    Start the service to allocate its characteristics and make them active in memory.
    ```
    pService->start();
    ```      
-6. Configure & Start Advertising:
-   Broadcasting.
+6. Configure & Start Advertising: Broadcasting.       
    Attach your Service UUID to the advertising payload so central devices (such as a Web BLE client or smartphone) can discover your ESP32-S3, then start broadcasting.
    ```
    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
