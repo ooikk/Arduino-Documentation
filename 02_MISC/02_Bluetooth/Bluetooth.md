@@ -1916,6 +1916,7 @@ Before an LPN and Friend Node can communicate, both devices must be provisioned 
   - Assign matching Publish/Subscribe addresses (e.g., bind both to Group Address 0xC000).
   - Call ```esp_ble_mesh_lpn_enable()``` on the LPN. The LPN will automatically discover the Friend Node, negotiate friendship, and start duty-cycling sleep.
 
+Refer to [Espressif ESP-BLE-MESH](https://www.espressif.com/en/products/sdks/esp-idf/esp-ble-mesh) for more details.
 
 ## 12. Reference      
 
