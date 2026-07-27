@@ -1413,6 +1413,62 @@ Instead of forcing a device into AP mode (where users have to disconnect their p
 - Use a mobile app to send Wi-Fi SSIDs, passwords, API keys, or calibration parameters via BLE characteristics.
 - Once provisioned, the ESP32 saves credentials to NVS (Non-Volatile Storage), shuts down the BLE radio to conserve power, and connects to Wi-Fi.    
 
+**Multi-node relay - BLE Mesh Networks**       
+Beacons mode code can not be used with the exact code as-is, because of one fundamental physics constraint: a node in deep sleep cannot hear radio broadcasts.   
+
+If a relay node is sleeping when a sensor node transmits, that broadcast is lost in the air.     
+
+However, you can adapt this architecture into a Low-Power Mesh/Relay Network using one of two strategies:       
+**Strategy 1**: Network-Wide Synchronized Wake Windows (All Nodes Sleep)      
+If all nodes must run on battery, every node in the mesh must share the exact same 30-minute sleep schedule so they wake up together in a synchronized 5-second window.      
+```
+ Time: 00:00:00                00:00:02                00:00:04                            00:00:05
+ [ Leaf Node 1 ] -----------(Broadcasts)---------> [ Relay Node 2 ]
+                                                   (Appends data &
+                                                    Re-broadcasts) ----(Broadcasts)----> [ Central Node ]
+ [ All Nodes Sleep for 30 Minutes ] ------------------------------------------------------------------->
+```
+How to Modify the Payload for Multi-Hop Relaying      
+To make the code relay messages, you expand the SensorPayload structure so a single advertisement packet can carry readings from multiple hops or identify the originator:     
+```
+struct NodeData {
+  uint8_t nodeId;
+  float temperature;
+  float humidity;
+};
+
+// Fixed array inside the manufacturer payload
+struct MeshPayload {
+  uint8_t hopCount;           // Number of times relayed
+  uint8_t totalReadings;      // How many node data blocks are packed
+  NodeData readings[3];       // Supports up to 3 hops within the 31-byte BLE limit
+};
+```
+Relay Node Logic (during the awake window):     
+1. Listen: Wake up and listen for $2\text{ seconds}$ for incoming packets from upstream leaf nodes.
+2. Append: If Node 2 receives a payload from Node 1, it appends its own NodeData to the array and increments hopCount.
+3. Re-broadcast: Node 2 advertises the updated combined payload for $2\text{ seconds}$ so the Central Node (or next relay) can pick it up.
+4. Sleep: All nodes return to deep sleep for 30 minutes.     
+
+**Strategy 2**: ESP-BLE-MESH (Standard SIG Mesh with LPNs)      
+If you want a standard, scalable mesh (dozens of nodes over large distances), use the official Bluetooth SIG Mesh standard built into the ESP32 framework (ESP-BLE-MESH).     
+Bluetooth Mesh solves power consumption using Low Power Nodes (LPN) and Friend Nodes:      
+```
+Node Type             Power Mode                 Role
+Sensor Node (LPN)     Deep Sleep (~10µA)         Wakes up, sends sensor reading directly to its assigned "Friend",
+                                                 and goes right back to sleep.
+Relay Node (Friend)   Mains Powered (Always On)  Stays awake 24/7. Buffers messages for sleeping LPNs and relays
+                                                 messages hop-by-hop back to the Central Node.
+```
+Comparison: Custom Sync Relay vs. Official BLE Mesh     
+```
+Feature                   Synchronized Custom Beacons                         Official ESP-BLE-MESH  
+Relay Power Requirements  Battery Powered (Deep Sleep allowed)                Mains Powered / Always Awake
+Implementation Complexity Simple extension of our existing code               Moderate to High (Requires Mesh Provisioning)
+Max Network Size          Small (3–5 nodes per branch)                        Large (Up to 32,767 nodes)
+Payload Size              Restricted to $31\text{ bytes}$ advertising packet  Segmented packets (up to 384 bytes)
+```
+
 ## 12. Reference      
 
 https://randomnerdtutorials.com/esp32-bluetooth-low-energy-ble-arduino-ide/
