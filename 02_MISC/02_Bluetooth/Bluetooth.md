@@ -1146,9 +1146,209 @@ Change below variable to match the server settings, in this example we use Examp
     var sensorCharacteristic= 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 ```
 
+## 10. Connectionless Broadcaster/Observer Pattern (Beacons)       
+To achieve ultra-low power consumption on both devices without missing broadcasts, avoid traditional BLE connections. Connection handshakes take time, exchange multiple packets, and waste battery on both ends.
+
+Instead, use a Connectionless Broadcaster/Observer Pattern (Beacons) combined with a Sliding Sync Window.      
+
+**Key Architectural Concepts**     
+1. Connectionless Broadcasting     
+   - Server: Wakes up, reads sensors, embeds data directly into the BLE Advertisement Payload (Manufacturer Data), advertises continuously for 2–3 seconds, and goes straight back to deep sleep.
+   - Client: Wakes up, scans for the payload, extracts the data, and deep sleeps until the next expected window.      
+2. Overcoming RTC Clock Drift     
+   The ESP32’s internal RTC oscillator drifts by roughly 1% to 3% over time due to temperature fluctuations. Over 30 minutes ($1,800\text{ seconds}$), a 1% drift equals 18 seconds of offset.      
+   To ensure you never miss a message:
+   - The client wakes up 20 seconds early (Safety Margin).
+   - The client starts scanning. Once it catches the advertisement, it immediately recalculates the exact time remaining until the next 30-minute mark and goes back to sleep.
+   - Self-Correcting Sync: Because the client resynchronizes its sleep timer on every received packet, clock drift never accumulates across cycles.
+
+**1. Server Code (Broadcaster)**     
+The server wakes up every 30 minutes, broadcasts its sensor payload in advertisement data for 3 seconds, and sleeps.
+```
+/* ESP32-S3 BLE Server - Ultra Low Power Broadcaster */
+#include <NimBLEDevice.h>
+
+#define SLEEP_DURATION_SEC  1800 // 30 Minutes
+#define BROADCAST_TIME_MS   3000 // 3 Seconds
+
+struct SensorPayload {
+  float temperature;
+  float humidity;
+  uint32_t bootCount;
+};
+
+RTC_DATA_ATTR uint32_t bootCount = 0;
+
+void setup() {
+  bootCount++;
+  
+  // 1. Read Sensors (Simulated here)
+  SensorPayload data;
+  data.temperature = 24.5;
+  data.humidity = 60.2;
+  data.bootCount = bootCount;
+
+  // 2. Initialize NimBLE
+  NimBLEDevice::init("ESP32_Sensor");
+  NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
+
+  // 3. Pack data into Manufacturer Data (0xFFFF = Test Company ID)
+  NimBLEAdvertisementData advertData;
+  std::string payloadStr((char*)&data, sizeof(data));
+  advertData.setManufacturerData("\xFF\xFF" + payloadStr);
+  
+  pAdvertising->setAdvertisementData(advertData);
+  pAdvertising->start();
+
+  // 4. Broadcast for 3 seconds then turn off radio
+  delay(BROADCAST_TIME_MS);
+  pAdvertising->stop();
+  NimBLEDevice::deinit(true);
+
+  // 5. Enter Deep Sleep
+  esp_sleep_enable_timer_wakeup((uint64_t)SLEEP_DURATION_SEC * 1000000ULL);
+  esp_deep_sleep_start();
+}
+
+void loop() {}
+```
+**2. Client Code (Observer with Self-Sync)**     
+The client uses RTC_DATA_ATTR memory to retain its synchronization state across deep sleep resets.     
+```
+/* ESP32-S3 BLE Client - Synchronized Low Power Observer */
+#include <NimBLEDevice.h>
+
+#define CYCLE_INTERVAL_SEC  1800    // Target: 30 minutes
+#define SAFETY_MARGIN_SEC   20      // Wake 20s early to catch drift
+#define SCAN_TIMEOUT_SEC    45      // Timeout if server missed
+
+// RTC Memory persists across deep sleep
+RTC_DATA_ATTR bool isSynced = false;
+
+bool dataReceived = false;
+unsigned long scanStartMillis = 0;
+
+struct SensorPayload {
+  float temperature;
+  float humidity;
+  uint32_t bootCount;
+};
+
+class ScanCallbacks : public NimBLEScanCallbacks {
+  void onResult(const NimBLEAdvertisedDevice* advertisedDevice) override {
+    if (advertisedDevice->haveManufacturerData()) {
+      std::string mData = advertisedDevice->getManufacturerData();
+      
+      // Check for our 2-byte header (\xFF\xFF) + payload size
+      if (mData.length() == (2 + sizeof(SensorPayload))) {
+        SensorPayload data;
+        memcpy(&data, mData.data() + 2, sizeof(SensorPayload));
+
+        Serial.println("✅ Broadcast Captured!");
+        Serial.printf("Temp: %.2f°C | Hum: %.2f%% | Server Boot: %u\n", 
+                      data.temperature, data.humidity, data.bootCount);
+
+        dataReceived = true;
+        NimBLEDevice::getScan()->stop();
+      }
+    }
+  }
+};
+
+void setup() {
+  Serial.begin(115200);
+  scanStartMillis = millis();
+
+  NimBLEDevice::init("ESP32_Observer");
+  NimBLEScan* pScan = NimBLEDevice::getScan();
+  pScan->setScanCallbacks(new ScanCallbacks());
+  pScan->setActiveScan(false); // Passive scanning saves power
+
+  if (!isSynced) {
+    Serial.println("⚠️ Unsynced! Scanning continuously until first broadcast...");
+    pScan->start(0, false); // Scan indefinitely on first boot
+  } else {
+    Serial.println("🔍 Synced wake-up! Scanning for server broadcast...");
+    pScan->start(SCAN_TIMEOUT_SEC * 1000, false);
+  }
+
+  // Handle Scan Outcome
+  if (dataReceived) {
+    isSynced = true;
+    
+    // Calculate sleep time: (30 min) - (Safety Margin)
+    // Subtracting the seconds spent awake in this scan window guarantees exact alignment
+    uint64_t awakeTimeSec = (millis() - scanStartMillis) / 1000;
+    uint64_t sleepTimeSec = CYCLE_INTERVAL_SEC - SAFETY_MARGIN_SEC;
+
+    Serial.printf("😴 Sleeping for %llu seconds to hit next window...\n", sleepTimeSec);
+    
+    NimBLEDevice::deinit(true);
+    esp_sleep_enable_timer_wakeup(sleepTimeSec * 1000000ULL);
+    esp_deep_sleep_start();
+
+  } else {
+    // Missed the broadcast (Interference or drift exceeded margin)
+    Serial.println("❌ Broadcast missed! Resetting sync...");
+    isSynced = false; // Force continuous scan on next boot to re-lock sync
+    
+    NimBLEDevice::deinit(true);
+    esp_sleep_enable_timer_wakeup(5 * 1000000ULL); // Retry quickly
+    esp_deep_sleep_start();
+  }
+}
+
+void loop() {}
+```
+
+**Timing & Energy Budget Comparison***      
+```
+Metric              Continuous Scanning Client     Synchronized Deep-Sleep Client
+Active Scan Time    30 minutes (1800s)             ~20 seconds per 30 minutes
+Current Draw        ~40mA continuous               ~40mA for 20s, ~10µA for 1780s
+Power Reduction     Baseline                       ~98.8% energy savings
+```
+**Safety Recovery Strategy**    
+If a broadcast is missed due to wireless interference:
+- The client scan times out after 45 seconds.
+- It sets isSynced = false and goes to sleep for 5 seconds.
+- On the next boot, it stays awake scanning continuously until it catches the next 30-minute transmission, instantly restoring lock-step synchronization.
+
+**BLE Advertising (Beaconing)**     
+The low-power example omitted UUIDs because it isn't using GATT (Generic Attribute Profile) at all. Instead, it uses raw connectionless BLE Advertising (Beaconing).     
+
+Here is why that batters for code structure and battery life:     
+
+1. UUIDs belong to GATT Databases     
+In standard BLE, UUIDs are used to label services and characteristics inside a GATT database (like pServer->createService(SERVICE_UUID)).     
+When a client connects, it queries the GATT server using those UUIDs to figure out where to read or write data. In the low-power beacon example, the server never creates a GATT server or establishes a connection, so there is no GATT database to attach a Service UUID to.     
+2. The 31-Byte Advertising Limit     
+BLE advertisement packets have a strict maximum size of 31 bytes.
+```
+Field Type            Header Overhead    Payload ID Size       Space Remaining for Data
+128-bit Service UUID  2 bytes            16 bytes (UUID)       13 bytes left
+Manufacturer Data     2 bytes            2 bytes (Company ID)  27 bytes left
+```
+
+A standard 128-bit UUID consumes over half of your entire broadcast budget ($18\text{ bytes}$ total). By skipping the 128-bit UUID and using setManufacturerData(), you save $14\text{ bytes}$ of packet space—allowing you to pack multiple sensor values, battery levels, or timestamps into a single transmission.     
+3. How the Client Filters Packets Without a UUID     
+Instead of filtering by a Service UUID, the client filters by the 2-byte Company ID and data length:     
+```
+// Check if packet contains Manufacturer Data
+if (advertisedDevice->haveManufacturerData()) {
+  std::string mData = advertisedDevice->getManufacturerData();
+  
+  // Filter by matching Company ID (\xFF\xFF) + expected struct size
+  if (mData.length() == (2 + sizeof(SensorPayload)) && mData[0] == 0xFF && mData[1] == 0xFF) {
+    // Valid broadcast found! Decode payload...
+  }
+}
+```
+*Note: 0xFFFF is the standard Bluetooth SIG ID designated for testing/development. For commercial products, companies register a unique 2-byte ID with the Bluetooth SIG (e.g., 0x004C for Apple, 0x00E0 for Google).*
 
 
-## 10. Reference      
+
+## 11. Reference      
 
 https://randomnerdtutorials.com/esp32-bluetooth-low-energy-ble-arduino-ide/
 
