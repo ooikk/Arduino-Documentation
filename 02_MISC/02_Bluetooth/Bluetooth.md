@@ -1413,7 +1413,7 @@ Instead of forcing a device into AP mode (where users have to disconnect their p
 - Use a mobile app to send Wi-Fi SSIDs, passwords, API keys, or calibration parameters via BLE characteristics.
 - Once provisioned, the ESP32 saves credentials to NVS (Non-Volatile Storage), shuts down the BLE radio to conserve power, and connects to Wi-Fi.    
 
-**Multi-node relay - BLE Mesh Networks**       
+**Multi-node relay**       
 Beacons mode code can not be used with the exact code as-is, because of one fundamental physics constraint: a node in deep sleep cannot hear radio broadcasts.   
 
 If a relay node is sleeping when a sensor node transmits, that broadcast is lost in the air.     
@@ -1468,6 +1468,273 @@ Implementation Complexity Simple extension of our existing code               Mo
 Max Network Size          Small (3–5 nodes per branch)                        Large (Up to 32,767 nodes)
 Payload Size              Restricted to $31\text{ bytes}$ advertising packet  Segmented packets (up to 384 bytes)
 ```
+
+**Multi-node relay: Strategy 1 - Slot-Based Time-Division Multiplexing (TDM)**      
+
+To build a multi-hop relay network with battery-powered nodes, we use Slot-Based Time-Division Multiplexing (TDM).     
+Because deep-sleeping nodes cannot hear radio signals, each node in the chain is assigned a specific time slot within a shared $20\text{-second}$ test cycle (which you can easily scale up to 30 minutes in production).      
+Network Slot Architecture     
+```
+Time (s):  0s         3s         6s                     20s
+           |----------|----------|-----------------------|
+Node 1     [Broadcast]-----------> (Deep Sleep 17s) ----->
+(Leaf)     (Payload: N1)
+
+Node 2                [Scan &    [Broadcast]-------------> (Deep Sleep 14s) ----->
+(Relay)               Receive]   (Payload: N1 + N2)
+
+Node 3                           [Scan & Receive] --------> (Process / Push to Cloud)
+(Sink)                           (Payload: N1 + N2)
+```
+1. Slot 1 ($0\text{s} - 3\text{s}$): Node 1 (Leaf) wakes up, packs its sensor reading into a BLE advertisement, and broadcasts for $3\text{ seconds}$.
+2. Slot 2 ($2\text{s} - 6\text{s}$): Node 2 (Relay) wakes up slightly early, scans for Node 1, appends its own reading to the payload array, and re-broadcasts the combined data for $3\text{ seconds}$.
+3. Slot 3 ($5\text{s} - 9\text{s}$): Node 3 (Central Sink) scans, receives the full chain payload (Node 1 + Node 2 data), and processes or uploads it via Wi-Fi/MQTT.
+
+The $31\text{-Byte}$ Multi-Hop Payload Structure     
+We pack multiple node readings into a single raw advertising packet without exceeding BLE's $31\text{-byte}$ limit:      
+```
+#define MAX_CHAIN_NODES 3
+
+struct NodeReading {
+  uint8_t nodeId;      // 1 byte
+  int16_t tempC100;    // 2 bytes (Temperature * 100)
+  uint16_t hum100;     // 2 bytes (Humidity * 100)
+  uint16_t bootCount;  // 2 bytes
+};                     // Total = 7 bytes per node
+
+struct MeshPayload {
+  uint8_t readingCount;                   // 1 byte (Number of valid readings)
+  NodeReading readings[MAX_CHAIN_NODES];  // 3 * 7 = 21 bytes
+};                                        // Payload Total = 22 bytes
+```
+*Total Manufacturer Data = $2\text{ bytes}$ Header (\xFF\xFF) + $22\text{ bytes}$ Payload = $24\text{ bytes}$ (Well within the $31\text{-byte}$ BLE limit).*     
+
+**Unified Multi-Hop Code for ESP32-S3**          
+This single codebase supports all three node roles. Set NODE_ROLE at the top of the file before uploading to each board.      
+```
+/*
+  ESP32-S3 NimBLE v2.x Synchronized Multi-Hop Relay
+  Configurable via NODE_ROLE macro:
+    - ROLE_LEAF    (Node 1: Battery Sensor)
+    - ROLE_RELAY   (Node 2: Battery Relay)
+    - ROLE_CENTRAL (Node 3: Mains Powered or Synced Sink)
+*/
+
+#include <NimBLEDevice.h>
+
+// --- ROLE CONFIGURATION ---
+#define ROLE_LEAF    1
+#define ROLE_RELAY   2
+#define ROLE_CENTRAL 3
+
+#define NODE_ROLE    ROLE_RELAY   // 👈 CHANGE THIS FOR EACH BOARD (ROLE_LEAF, ROLE_RELAY, or ROLE_CENTRAL)
+#define THIS_NODE_ID 2            // Node 1 for Leaf, Node 2 for Relay, Node 3 for Central
+
+// --- TIMING CONFIGURATION (20-Second Test Cycle) ---
+#define CYCLE_INTERVAL_SEC  20     // Total cycle period (Set to 1803 for 30-min prod)
+#define BROADCAST_TIME_MS   3000   // Duration each node advertises (ms)
+#define SCAN_TIMEOUT_MS     5000   // Duration relay/sink scans for upstream data (ms)
+#define SAFETY_MARGIN_SEC   2      // Early wake-up window (seconds)
+
+#define MAX_CHAIN_NODES     3
+
+// Data Structures
+struct NodeReading {
+  uint8_t nodeId;
+  int16_t tempC100;
+  uint16_t hum100;
+  uint16_t bootCount;
+};
+
+struct MeshPayload {
+  uint8_t readingCount;
+  NodeReading readings[MAX_CHAIN_NODES];
+};
+
+RTC_DATA_ATTR bool isSynced = false;
+RTC_DATA_ATTR uint32_t localBootCount = 0;
+
+MeshPayload currentPayload;
+bool dataReceived = false;
+
+// Scan Callbacks
+class MeshScanCallbacks : public NimBLEScanCallbacks {
+  void onResult(const NimBLEAdvertisedDevice* advertisedDevice) override {
+    if (advertisedDevice->haveManufacturerData()) {
+      std::string mData = advertisedDevice->getManufacturerData();
+      
+      // Filter by Company ID (\xFF\xFF) + MeshPayload structure size
+      if (mData.length() == (2 + sizeof(MeshPayload))) {
+        if ((uint8_t)mData[0] == 0xFF && (uint8_t)mData[1] == 0xFF) {
+          memcpy(&currentPayload, mData.data() + 2, sizeof(MeshPayload));
+          dataReceived = true;
+          NimBLEDevice::getScan()->stop(); // Stop scanning on valid packet
+        }
+      }
+    }
+  }
+};
+
+void appendLocalSensorData(MeshPayload& payload) {
+  if (payload.readingCount >= MAX_CHAIN_NODES) return;
+
+  // Simulated Sensor Data
+  NodeReading myData;
+  myData.nodeId = THIS_NODE_ID;
+  myData.tempC100 = (int16_t)((23.5 + (THIS_NODE_ID * 0.5)) * 100);
+  myData.hum100 = (uint16_t)((55.0 + (THIS_NODE_ID * 2.0)) * 100);
+  myData.bootCount = localBootCount;
+
+  payload.readings[payload.readingCount] = myData;
+  payload.readingCount++;
+}
+
+void broadcastPayload(const MeshPayload& payload) {
+  NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
+  NimBLEAdvertisementData advertData;
+  
+  std::string payloadStr((char*)&payload, sizeof(payload));
+  advertData.setManufacturerData("\xFF\xFF" + payloadStr);
+  
+  pAdvertising->setAdvertisementData(advertData);
+  pAdvertising->start();
+  
+  Serial.printf("📡 Node %d Broadcasting %d reading(s) for %d ms...\n", 
+                THIS_NODE_ID, payload.readingCount, BROADCAST_TIME_MS);
+  
+  delay(BROADCAST_TIME_MS);
+  pAdvertising->stop();
+}
+
+void printChainData(const MeshPayload& payload) {
+  Serial.println("\n============================================");
+  Serial.printf("📥 CENTRAL SINK RECEIVED MULTI-HOP DATA (%d nodes):\n", payload.readingCount);
+  for (uint8_t i = 0; i < payload.readingCount; i++) {
+    Serial.printf("   ├─ Node ID %d: Temp = %.2f°C | Hum = %.2f%% | Boot = %u\n",
+                  payload.readings[i].nodeId,
+                  payload.readings[i].tempC100 / 100.0,
+                  payload.readings[i].hum100 / 100.0,
+                  payload.readings[i].bootCount);
+  }
+  Serial.println("============================================\n");
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  localBootCount++;
+
+  Serial.printf("\n🚀 Node %d Started (Role: %s) | Boot #%u\n", 
+                THIS_NODE_ID, 
+                NODE_ROLE == ROLE_LEAF ? "LEAF" : (NODE_ROLE == ROLE_RELAY ? "RELAY" : "CENTRAL SINK"),
+                localBootCount);
+
+  NimBLEDevice::init("");
+  memset(&currentPayload, 0, sizeof(MeshPayload));
+
+  // ----------------------------------------------------
+  // ROLE 1: LEAF NODE (Originator)
+  // ----------------------------------------------------
+  if (NODE_ROLE == ROLE_LEAF) {
+    appendLocalSensorData(currentPayload);
+    broadcastPayload(currentPayload);
+
+    uint64_t sleepSec = CYCLE_INTERVAL_SEC;
+    Serial.printf("😴 Leaf sleeping for %llu seconds...\n\n", sleepSec);
+    
+    NimBLEDevice::deinit(true);
+    esp_sleep_enable_timer_wakeup(sleepSec * 1000000ULL);
+    esp_deep_sleep_start();
+  }
+
+  // ----------------------------------------------------
+  // ROLE 2: RELAY NODE (Intermediate)
+  // ----------------------------------------------------
+  else if (NODE_ROLE == ROLE_RELAY) {
+    NimBLEScan* pScan = NimBLEDevice::getScan();
+    pScan->setScanCallbacks(new MeshScanCallbacks());
+    pScan->setActiveScan(false);
+
+    if (!isSynced) {
+      Serial.println("⚠️ Relay Unsynced! Continuous scan for Leaf packet...");
+      pScan->start(0, false);
+    } else {
+      Serial.println("🔍 Relay Synced! Scanning window for Leaf packet...");
+      pScan->start(SCAN_TIMEOUT_MS, false);
+    }
+
+    // Yield CPU while NimBLE processes incoming packets
+    while (pScan->isScanning() && !dataReceived) {
+      delay(10);
+    }
+
+    if (dataReceived) {
+      isSynced = true;
+      Serial.println("✅ Upstream packet captured! Appending local data...");
+      
+      appendLocalSensorData(currentPayload);
+      broadcastPayload(currentPayload);
+
+      int64_t calculatedSleep = (int64_t)CYCLE_INTERVAL_SEC - (int64_t)SAFETY_MARGIN_SEC;
+      if (calculatedSleep < 1) calculatedSleep = 1;
+
+      Serial.printf("😴 Relay sleeping for %lld seconds...\n\n", calculatedSleep);
+      
+      NimBLEDevice::deinit(true);
+      esp_sleep_enable_timer_wakeup((uint64_t)calculatedSleep * 1000000ULL);
+      esp_deep_sleep_start();
+    } else {
+      Serial.println("❌ Upstream scan missed/timed out! Resetting sync...");
+      isSynced = false;
+      
+      NimBLEDevice::deinit(true);
+      esp_sleep_enable_timer_wakeup(2 * 1000000ULL); // Retry sync in 2s
+      esp_deep_sleep_start();
+    }
+  }
+
+  // ----------------------------------------------------
+  // ROLE 3: CENTRAL SINK (Gateway)
+  // ----------------------------------------------------
+  else if (NODE_ROLE == ROLE_CENTRAL) {
+    NimBLEScan* pScan = NimBLEDevice::getScan();
+    pScan->setScanCallbacks(new MeshScanCallbacks());
+    pScan->setActiveScan(false);
+
+    Serial.println("📡 Central Hub scanning for incoming chain payloads...");
+    pScan->start(0, false); // Continuous scanning mode
+
+    while (true) {
+      if (dataReceived) {
+        printChainData(currentPayload);
+        
+        // Reset state and resume scanning for next cycle
+        dataReceived = false;
+        memset(&currentPayload, 0, sizeof(MeshPayload));
+        pScan->start(0, false);
+      }
+      delay(100);
+    }
+  }
+}
+
+void loop() {}
+```
+Testing & Deployment Guide      
+- Board 1 (Leaf): Set NODE_ROLE to ROLE_LEAF and THIS_NODE_ID to 1. Flash the board.
+- Board 2 (Relay): Set NODE_ROLE to ROLE_RELAY and THIS_NODE_ID to 2. Flash the board.
+- Board 3 (Central Sink): Set NODE_ROLE to ROLE_CENTRAL and THIS_NODE_ID to 3. Flash the board.
+
+Central Hub Output:     
+When the transmission reaches the Central Hub, you will see all accumulated telemetry printed in a single payload:     
+```
+============================================
+📥 CENTRAL SINK RECEIVED MULTI-HOP DATA (2 nodes):
+   ├─ Node ID 1: Temp = 24.00°C | Hum = 57.00% | Boot = 14
+   ├─ Node ID 2: Temp = 24.50°C | Hum = 59.00% | Boot = 14
+============================================
+```
+
 
 ## 12. Reference      
 
