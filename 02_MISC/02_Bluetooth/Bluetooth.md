@@ -1740,7 +1740,7 @@ Unlike custom broadcast hacks, official Bluetooth SIG Mesh includes a native fea
 In an ESP-BLE-MESH network, a Low Power Node (LPN) pairs with a mains-powered Friend Node. The Friend Node stays awake $100\%$ of the time to act as a "mailbox," storing all incoming mesh messages intended for the LPN. The LPN spends most of its time in deep sleep, waking up briefly to query its Friend, download queued messages, transmit its sensor readings, and go back to sleep.     
 ⚠️ Framework Requirement: Official ESP-BLE-MESH with full LPN/Friendship feature support requires ESP-IDF (Espressif IoT Development Framework v4.4+ or v5.x) or PlatformIO configured with the ESP-IDF framework. Standard Arduino BLE libraries only implement GATT/GAP, not the full Bluetooth Mesh protocol stack.      
 
-
+- test
 1. How Friendship Works (The Handshake & Poll)
 
 ```
