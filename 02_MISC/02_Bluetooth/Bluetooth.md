@@ -249,7 +249,62 @@ Here are the standard steps using the Arduino ESP32 BLE framework (BLEDevice.h):
    pAdvertising->setScanResponse(true);
    BLEDevice::startAdvertising();
    ```
+**Basic steps to setup ESP32 BLE Client**     
+Setting up a GATT BLE Client (Central) on the ESP32 using the stock BLEDevice.h library follows the reverse flow of a Server: Initialize Stack $\rightarrow$ Scan for Devices $\rightarrow$ Connect to Server $\rightarrow$ Discover Services & Characteristics $\rightarrow$ Read/Write/Subscribe.     
+Here are the basic steps to implement a BLE Client:      
+1. Initialize the BLE Stack: Device Setup.      
+   Initialize the underlying BLE stack as a central client device. Unlike a server, a client does not require a public broadcast name.     
+   ```
+   BLEDevice::init("");
+   ```
+2. Configure & Start BLE Scanner: Device Discovery.     
+   Get the scanner instance, attach an advertised device callback class to process incoming broadcasts, set active scanning, and initiate a scan window.
+   ```
+   BLEScan* pBLEScan = BLEDevice::getScan();
+   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+   pBLEScan->setInterval(1349);
+   pBLEScan->setWindow(449);
+   pBLEScan->setActiveScan(true); // Active scanning requests scan response packets
+   pBLEScan->start(5, false);     // Scan for 5 seconds
+   ```
    
+3. Target Server Identification: Advertised Device Callback.       
+   Inside your ```MyAdvertisedDeviceCallbacks::onResult()``` function, check incoming advertisement packets for your target Service UUID or Device Name. Once matched, save a pointer to the device and stop scanning.     
+   ```
+   if (advertisedDevice.haveServiceUUID() && 
+    advertisedDevice.isAdvertisingService(SERVICE_UUID)) {
+   BLEDevice::getScan()->stop();
+   myDevice = new BLEAdvertisedDevice(advertisedDevice);
+   doConnect = true; // Set flag to connect in loop()
+   }
+   ```     
+4. Connect to GATT Server: Establish Peer Connection.     
+   Instantiate a BLEClient object, attach optional connection state callbacks, and connect directly to the target BLEAdvertisedDevice.     
+   ```
+   BLEClient* pClient = BLEDevice::createClient();
+   pClient->connect(myDevice); // Returns true if connection succeeds
+   ```     
+5. Discover Remote Services & Characteristics: GATT Tree Mapping.     
+   Query the connected server to retrieve handles for your target Service UUID and its associated Remote Characteristics.     
+   ```
+   BLERemoteService* pRemoteService = pClient->getService(SERVICE_UUID);
+   BLERemoteCharacteristic* pSensorChar  = pRemoteService->getCharacteristic(SENSOR_CHAR_UUID);
+   BLERemoteCharacteristic* pControlChar = pRemoteService->getCharacteristic(CONTROL_CHAR_UUID);
+   ```
+6. Read, Write & Subscribe to Notifications: Data Exchange.       
+   Perform GATT operations on the server: write data to control characteristics, read value buffers, or register a callback function to receive asynchronous notifications.      
+   ```
+   // Write command payload to server
+   if (pControlChar->canWrite()) {
+   pControlChar->writeValue("1");
+   }
+   // Subscribe to incoming notifications
+   if (pSensorChar->canNotify()) {
+   pSensorChar->registerForNotify(notifyCallback);
+   }
+   ```
+
+
 
 **Example 1: ESP32-S3 BLE Server (Send Data to Smartphone)**     
 This example sets up the ESP32-S3 as a server that advertises a custom service. You can read the characteristic value using a smartphone app like nRF Connect, Arduino Bluetooth Controller or LightBlue.
