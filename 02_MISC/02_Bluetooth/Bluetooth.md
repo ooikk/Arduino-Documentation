@@ -1241,20 +1241,18 @@ The client uses RTC_DATA_ATTR memory to retain its synchronization state across 
 
 #ifdef TEST_MODE
 
-#define CYCLE_INTERVAL_SEC  10    // Target: 30 minutes
+#define CYCLE_INTERVAL_SEC  13     // Target: 30 minutes
 #define SAFETY_MARGIN_SEC   2      // Wake 20s early to catch drift
-#define SCAN_TIMEOUT_SEC    4      // Timeout if server missed
+#define SCAN_TIMEOUT_MS     6000   // Timeout if server missed
 
 #else
 #define CYCLE_INTERVAL_SEC  1800    // Target: 30 minutes
 #define SAFETY_MARGIN_SEC   20      // Wake 20s early to catch drift
-#define SCAN_TIMEOUT_SEC    45      // Timeout if server missed
+#define SCAN_TIMEOUT_MS     45000   // Timeout if server missed
 #endif
 
 RTC_DATA_ATTR bool isSynced = false;
-
 bool dataReceived = false;
-unsigned long scanStartMillis = 0;
 
 struct SensorPayload {
   float temperature;
@@ -1267,7 +1265,6 @@ class ScanCallbacks : public NimBLEScanCallbacks {
     if (advertisedDevice->haveManufacturerData()) {
       std::string mData = advertisedDevice->getManufacturerData();
       
-      // Check for 2-byte header (\xFF\xFF) + payload size
       if (mData.length() == (2 + sizeof(SensorPayload))) {
         if ((uint8_t)mData[0] == 0xFF && (uint8_t)mData[1] == 0xFF) {
           SensorPayload data;
@@ -1287,53 +1284,46 @@ class ScanCallbacks : public NimBLEScanCallbacks {
 
 void setup() {
   Serial.begin(115200);
-  delay(1000); // Give serial monitor time to connect after wake-up
-  
-  scanStartMillis = millis();
+  delay(1000);
 
   NimBLEDevice::init("ESP32_Observer");
   NimBLEScan* pScan = NimBLEDevice::getScan();
   pScan->setScanCallbacks(new ScanCallbacks());
-  pScan->setActiveScan(false); // Passive scan saves power
+  pScan->setActiveScan(false);
 
   if (!isSynced) {
     Serial.println("⚠️ Unsynced! Scanning continuously until first broadcast...");
-    pScan->start(0, false); // 0 = Scan continuously until stopped
+    pScan->start(0, false); // 0 = Scan indefinitely in background
   } else {
     Serial.println("🔍 Synced wake-up! Scanning for server broadcast...");
-    pScan->start(SCAN_TIMEOUT_SEC * 1000, false);
+    pScan->start(SCAN_TIMEOUT_MS, false); // Pass milliseconds!
   }
 
-  // --- FIX: WAIT LOOP FOR ASYNCHRONOUS SCAN ---
-  unsigned long timeoutMs = isSynced ? (SCAN_TIMEOUT_SEC * 1000) : 0;
-  
+  // Active wait loop for both continuous (0) and windowed (6000ms) scans
   while (pScan->isScanning() && !dataReceived) {
-    delay(10); // Yield CPU to let FreeRTOS & NimBLE task process incoming BLE packets
-    
-    // Safety timeout check when running synced
-    if (timeoutMs > 0 && (millis() - scanStartMillis >= timeoutMs)) {
-      pScan->stop();
-      break;
-    }
+    delay(10); // Yield CPU to let NimBLE process background packets
   }
-  // --------------------------------------------
 
   // Handle Scan Outcome
-// Handle Scan Outcome
   if (dataReceived) {
     isSynced = true;
     
-    // Safety check to prevent negative underflow
     int64_t calculatedSleep = (int64_t)CYCLE_INTERVAL_SEC - (int64_t)SAFETY_MARGIN_SEC;
-    if (calculatedSleep < 1) {
-      calculatedSleep = 1; // Fallback to 1s minimum during short test modes
-    }
+    if (calculatedSleep < 1) calculatedSleep = 1;
     
     uint64_t sleepTimeSec = (uint64_t)calculatedSleep;
     Serial.printf("😴 Sleeping for %llu seconds until next window...\n\n", sleepTimeSec);
     
     NimBLEDevice::deinit(true);
     esp_sleep_enable_timer_wakeup(sleepTimeSec * 1000000ULL);
+    esp_deep_sleep_start();
+
+  } else {
+    Serial.println("\n❌ Broadcast missed or timed out! Resetting sync...");
+    isSynced = false;
+    
+    NimBLEDevice::deinit(true);
+    esp_sleep_enable_timer_wakeup(2 * 1000000ULL);
     esp_deep_sleep_start();
   }
 }
