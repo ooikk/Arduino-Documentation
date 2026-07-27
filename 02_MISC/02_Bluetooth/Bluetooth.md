@@ -1910,11 +1910,11 @@ min_queue_num   2 - 8 packets                    Minimum queue depth the Friend 
 
 5. Provisioning the Mesh     
 Before an LPN and Friend Node can communicate, both devices must be provisioned into the same Bluetooth Mesh network:
-  1. Use an app like nRF Mesh (iOS/Android) or an ESP32 configured as a Mesh Provisioner.
-  2. Provision the Friend Node first so it is alive on the mesh.
-  3. Provision the LPN.
-  4. Assign matching Publish/Subscribe addresses (e.g., bind both to Group Address 0xC000).
-  5. Call ```esp_ble_mesh_lpn_enable()``` on the LPN. The LPN will automatically discover the Friend Node, negotiate friendship, and start duty-cycling sleep.
+  - Use an app like nRF Mesh (iOS/Android) or an ESP32 configured as a Mesh Provisioner.
+  - Provision the Friend Node first so it is alive on the mesh.
+  - Provision the LPN.
+  - Assign matching Publish/Subscribe addresses (e.g., bind both to Group Address 0xC000).
+  - Call ```esp_ble_mesh_lpn_enable()``` on the LPN. The LPN will automatically discover the Friend Node, negotiate friendship, and start duty-cycling sleep.
 
 
 ## 12. Reference      
