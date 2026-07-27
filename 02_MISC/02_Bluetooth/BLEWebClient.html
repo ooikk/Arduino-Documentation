@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32-S3 BLE Dashboard</title>
+  <style>
+    /* ==========================================================================
+       1. CSS VARIABLES & THEMING
+       ========================================================================== */
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --accent-purple: #a855f7;
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --transition: all 0.25s ease-in-out;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 24px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ==========================================================================
+       2. HEADER & CONNECTION BAR
+       ========================================================================== */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .brand-title h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-title p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .connection-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background-color: rgba(239, 68, 68, 0.15);
+      color: var(--accent-red);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      transition: var(--transition);
+    }
+
+    .status-badge.connected {
+      background-color: rgba(34, 197, 94, 0.15);
+      color: var(--accent-green);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: currentColor;
+    }
+
+    /* ==========================================================================
+       3. BUTTON & INPUT STYLES
+       ========================================================================== */
+    .btn {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: none;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary { background: var(--accent-blue); color: #0f172a; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-danger { background: var(--accent-red); color: white; }
+    .btn-danger:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn-success { background: var(--accent-green); color: #0f172a; }
+    .btn-success:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    input[type="text"], input[type="number"] {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      outline: none;
+      width: 100%;
+      transition: var(--transition);
+    }
+
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-color: var(--accent-blue);
+    }
+
+    /* Toggle Switch */
+    .switch-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: var(--card-border);
+      transition: .3s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider { background-color: var(--accent-blue); }
+    input:checked + .slider:before { transform: translateX(24px); }
+    input:disabled + .slider { opacity: 0.4; cursor: not-allowed; }
+
+    /* ==========================================================================
+       4. GRID & DASHBOARD CARDS
+       ========================================================================== */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      height: 100%;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 10px;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* GATT Info Panel - Spans full width */
+    .gatt-info {
+      grid-column: 1 / -1;
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    .gatt-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      font-size: 0.82rem;
+    }
+
+    .gatt-item {
+      background: rgba(15, 23, 42, 0.4);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .gatt-label {
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .gatt-value {
+      font-family: monospace;
+      color: var(--accent-blue);
+      word-break: break-all;
+    }
+
+    /* Sensor Value Display */
+    .sensor-display {
+      text-align: center;
+      padding: 20px 12px;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(56, 189, 248, 0.1);
+    }
+
+    .sensor-value {
+      font-size: 3rem;
+      font-weight: 800;
+      color: var(--accent-blue);
+      line-height: 1.1;
+      font-family: monospace;
+      transition: var(--transition);
+    }
+
+    .sensor-timestamp {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .input-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* ==========================================================================
+       5. EXPANSION PATCH HOLDERS
+       ========================================================================== */
+    .patch-holder {
+      border: 2px dashed var(--card-border);
+      background: rgba(15, 23, 42, 0.2);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 180px;
+      height: 100%;
+      text-align: center;
+      gap: 8px;
+      transition: var(--transition);
+    }
+
+    .patch-holder:hover {
+      border-color: var(--accent-purple);
+      background: rgba(168, 85, 247, 0.03);
+    }
+
+    .patch-icon {
+      font-size: 1.8rem;
+      opacity: 0.6;
+    }
+
+    .patch-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--accent-purple);
+    }
+
+    .patch-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      max-width: 260px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand-title">
+      <h1>ESP32-S3 BLE Dashboard</h1>
+      <p>Real-Time GATT Telemetry & Control Interface</p>
+    </div>
+    
+    <div class="connection-controls">
+      <div id="statusBadge" class="status-badge">
+        <span class="status-dot"></span>
+        <span id="statusText">Disconnected</span>
+      </div>
+      <button id="connectBtn" class="btn btn-primary">Connect BLE</button>
+      <button id="disconnectBtn" class="btn btn-danger" disabled>Disconnect</button>
+    </div>
+  </header>
+
+  <!-- DASHBOARD GRID -->
+  <div class="dashboard-grid">
+
+    <!-- GATT METADATA (Spans full width) -->
+    <div class="card gatt-info">
+      <div class="card-header">
+        <span class="card-title">⚙️ Active GATT Characteristics</span>
+      </div>
+      <div class="gatt-list">
+        <div class="gatt-item">
+          <span class="gatt-label">Target Device Name</span>
+          <span class="gatt-value" id="gattDeviceName">ESP32-S3_Example_3</span>
+        </div>
+        <div class="gatt-item">
+          <span class="gatt-label">Primary Service UUID</span>
+          <span class="gatt-value" id="gattServiceUuid">4fafc201-1fb5-459e-8fcc-c5c9c331914b</span>
+        </div>
+        <div class="gatt-item">
+          <span class="gatt-label">Sensor Characteristic (Notify)</span>
+          <span class="gatt-value" id="gattSensorUuid">beb5483e-36e1-4688-b7f5-ea07361b26a8</span>
+        </div>
+        <div class="gatt-item">
+          <span class="gatt-label">Control Characteristic (Write)</span>
+          <span class="gatt-value" id="gattControlUuid">d5875406-fa50-4bfa-982a-152586b0251b</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ROW 1 ================= -->
+    <!-- ROW 1 / COL 1: LIVE SENSOR MONITOR -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📊 Live Sensor Monitor</span>
+      </div>
+      
+      <div class="sensor-display">
+        <div id="sensorValue" class="sensor-value">--</div>
+        <div id="sensorTimestamp" class="sensor-timestamp">Awaiting data stream...</div>
+      </div>
+      
+      <p style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+        Receiving active notifications from ESP32-S3 Server.
+      </p>
+    </div>
+
+    <!-- ROW 1 / COL 2: STATE TOGGLE SWITCH  -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">🎛️ State Toggle</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+        <span style="font-size: 0.9rem; font-weight: 500;">GPIO / LED Toggle</span>
+        <div class="switch-container">
+          <label class="switch">
+            <input type="checkbox" id="toggleSwitch" disabled>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-muted);">
+        Toggles binary HIGH (1) / LOW (0) state.
+      </p>
+    </div>
+	
+    <!-- ================= ROW 2 ================= -->
+    <!-- ROW 2 / COL 1: DIRECT COMMANDS -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">⚡ Direct Commands</span>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 4px;">
+        <button id="btnOn" class="btn btn-success" style="flex: 1;" disabled>Turn ON (1)</button>
+        <button id="btnOff" class="btn btn-danger" style="flex: 1;" disabled>Turn OFF (0)</button>
+      </div>
+      <p style="font-size: 0.8rem; color: var(--text-muted);">
+        Sends discrete pulse action commands.
+      </p>
+    </div>
+
+    <!-- ROW 2 / COL 2: CUSTOM PAYLOAD SENDER -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">✉️ Custom Payload</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="input-group">
+          <input type="text" id="customInput" placeholder="e.g. 180 or JSON" disabled>
+          <button id="btnSendCustom" class="btn btn-primary" disabled>Send</button>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted);">
+          Last Sent Payload: <span id="lastSentText" style="color: var(--accent-blue); font-family: monospace;">None</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= ROW 3 ================= -->
+    <!-- ROW 3 / COL 1: EXPANSION PATCH SLOT 1 -->
+    <div class="patch-holder" id="sensorPatchHolder">
+      <div class="patch-icon">🧩</div>
+      <div class="patch-title">[ Expansion Patch Slot 1 ]</div>
+      <div class="patch-desc">Reserved for future sensor telemetry (e.g., BME280 Humidity, Pressure, or IMU graph).</div>
+    </div>
+    <!-- ROW 3 / COL 2: EXPANSION PATCH SLOT 2 -->
+    <div class="patch-holder" id="actuatorPatchHolder">
+      <div class="patch-icon">⚙️</div>
+      <div class="patch-title">[ Expansion Patch Slot 2 ]</div>
+      <div class="patch-desc">Reserved for future actuators (e.g., PWM Motor Slider, Servo Controller, or Relay group).</div>
+    </div>
+
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    const BLE_CONFIG = {
+      deviceName: 'ESP32-S3_Example_3',
+      serviceUUID: '4fafc201-1fb5-459e-8fcc-c5c9c331914b',
+      sensorCharUUID: 'beb5483e-36e1-4688-b7f5-ea07361b26a8',
+      controlCharUUID: 'd5875406-fa50-4bfa-982a-152586b0251b'
+    };
+
+    let bleDevice = null;
+    let gattServer = null;
+    let primaryService = null;
+    let sensorCharacteristic = null;
+    let controlCharacteristic = null;
+
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const statusBadge = document.getElementById('statusBadge');
+    const statusText = document.getElementById('statusText');
+    const sensorValueDisplay = document.getElementById('sensorValue');
+    const sensorTimestamp = document.getElementById('sensorTimestamp');
+    
+    const toggleSwitch = document.getElementById('toggleSwitch');
+    const btnOn = document.getElementById('btnOn');
+    const btnOff = document.getElementById('btnOff');
+    const customInput = document.getElementById('customInput');
+    const btnSendCustom = document.getElementById('btnSendCustom');
+    const lastSentText = document.getElementById('lastSentText');
+
+    connectBtn.addEventListener('click', connectBLE);
+    disconnectBtn.addEventListener('click', disconnectBLE);
+
+    btnOn.addEventListener('click', () => sendControlCommand('1'));
+    btnOff.addEventListener('click', () => sendControlCommand('0'));
+
+    toggleSwitch.addEventListener('change', (e) => {
+      sendControlCommand(e.target.checked ? '1' : '0');
+    });
+
+    btnSendCustom.addEventListener('click', () => {
+      const val = customInput.value.trim();
+      if (val !== '') sendControlCommand(val);
+    });
+
+    async function connectBLE() {
+      if (!navigator.bluetooth) {
+        alert("Web Bluetooth API is not supported in this browser. Please use Google Chrome or Microsoft Edge.");
+        return;
+      }
+
+      try {
+        console.log("Initializing Bluetooth connection...");
+        
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ name: BLE_CONFIG.deviceName }],
+          optionalServices: [BLE_CONFIG.serviceUUID]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+        statusText.textContent = "Connecting...";
+        gattServer = await bleDevice.gatt.connect();
+
+        primaryService = await gattServer.getPrimaryService(BLE_CONFIG.serviceUUID);
+
+        sensorCharacteristic = await primaryService.getCharacteristic(BLE_CONFIG.sensorCharUUID);
+        sensorCharacteristic.addEventListener('characteristicvaluechanged', handleSensorNotification);
+        await sensorCharacteristic.startNotifications();
+
+        controlCharacteristic = await primaryService.getCharacteristic(BLE_CONFIG.controlCharUUID);
+
+        setConnectedUIState(true);
+        console.log("✅ Successfully connected to ESP32-S3 BLE Server");
+
+      } catch (error) {
+        console.error("❌ BLE Connection Error: ", error);
+        setConnectedUIState(false);
+      }
+    }
+
+    async function disconnectBLE() {
+      if (gattServer && gattServer.connected) {
+        if (sensorCharacteristic) {
+          try {
+            await sensorCharacteristic.stopNotifications();
+          } catch(e) { console.log(e); }
+        }
+        gattServer.disconnect();
+      }
+    }
+
+    function onDisconnected() {
+      console.warn("⚠️ Device disconnected!");
+      setConnectedUIState(false);
+    }
+
+    function handleSensorNotification(event) {
+      const valueBuffer = event.target.value;
+      const decodedString = new TextDecoder().decode(valueBuffer);
+      
+      sensorValueDisplay.textContent = decodedString;
+      sensorTimestamp.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+      onFutureSensorDataReceived(decodedString);
+    }
+
+    async function sendControlCommand(payloadString) {
+      if (!controlCharacteristic) {
+        alert("Not connected to BLE device.");
+        return;
+      }
+
+      try {
+        const encodedData = new TextEncoder().encode(payloadString);
+        await controlCharacteristic.writeValue(encodedData);
+
+        lastSentText.textContent = payloadString;
+        
+        if (payloadString === '1') toggleSwitch.checked = true;
+        if (payloadString === '0') toggleSwitch.checked = false;
+
+        console.log(`📤 Sent command: "${payloadString}"`);
+
+      } catch (error) {
+        console.error("❌ Write Error: ", error);
+      }
+    }
+
+    function setConnectedUIState(isConnected) {
+      if (isConnected) {
+        statusBadge.classList.add('connected');
+        statusText.textContent = `Connected (${bleDevice.name})`;
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+
+        toggleSwitch.disabled = false;
+        btnOn.disabled = false;
+        btnOff.disabled = false;
+        customInput.disabled = false;
+        btnSendCustom.disabled = false;
+      } else {
+        statusBadge.classList.remove('connected');
+        statusText.textContent = "Disconnected";
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+
+        toggleSwitch.disabled = true;
+        btnOn.disabled = true;
+        btnOff.disabled = true;
+        customInput.disabled = true;
+        btnSendCustom.disabled = true;
+
+        sensorValueDisplay.textContent = "--";
+        sensorTimestamp.textContent = "Awaiting data stream...";
+      }
+    }
+
+    function onFutureSensorDataReceived(data) {
+      // Hook for future features
+    }
+  </script>
+</body>
+</html>
