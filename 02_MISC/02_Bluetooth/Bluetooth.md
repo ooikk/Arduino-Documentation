@@ -1241,7 +1241,7 @@ The client uses RTC_DATA_ATTR memory to retain its synchronization state across 
 
 #ifdef TEST_MODE
 
-#define CYCLE_INTERVAL_SEC  13     // Target: 30 minutes
+#define CYCLE_INTERVAL_SEC  13     // Sleep + Broadcast time. Target: 30 minutes
 #define SAFETY_MARGIN_SEC   2      // Wake 20s early to catch drift
 #define SCAN_TIMEOUT_MS     6000   // Timeout if server missed
 
