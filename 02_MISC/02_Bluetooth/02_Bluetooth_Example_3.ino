@@ -87,7 +87,7 @@ void setup() {
 void loop() {
   if (deviceConnected) {
     // Simulate reading a sensor and updating the characteristic
-    int sensorValue = random(0, 100);
+    int sensorValue = random(0, 255);
     //pSensorCharacteristic->setValue(sensorValue);
     String payload = String(sensorValue);
     pSensorCharacteristic->setValue(payload.c_str());  // ✅ Sends "42" as ASCII text
