@@ -1734,6 +1734,178 @@ When the transmission reaches the Central Hub, you will see all accumulated tele
    ├─ Node ID 2: Temp = 24.50°C | Hum = 59.00% | Boot = 14
 ============================================
 ```
+**Multi-node relay: Strategy 2 - ESP-BLE-MESH**      
+
+Unlike custom broadcast hacks, official Bluetooth SIG Mesh includes a native feature for battery-powered devices called Friendship.     
+In an ESP-BLE-MESH network, a Low Power Node (LPN) pairs with a mains-powered Friend Node. The Friend Node stays awake $100\%$ of the time to act as a "mailbox," storing all incoming mesh messages intended for the LPN. The LPN spends most of its time in deep sleep, waking up briefly to query its Friend, download queued messages, transmit its sensor readings, and go back to sleep.     
+⚠️ Framework Requirement: Official ESP-BLE-MESH with full LPN/Friendship feature support requires ESP-IDF (Espressif IoT Development Framework v4.4+ or v5.x) or PlatformIO configured with the ESP-IDF framework. Standard Arduino BLE libraries only implement GATT/GAP, not the full Bluetooth Mesh protocol stack.     
+
+1. How Friendship Works (The Handshake & Poll)
+```
+Friend Node (Always Awake)                       Low Power Node (LPN)
+       │                                                   │
+       │<───────────── Friend Request ─────────────────────│ (LPN wakes up)
+       │────────────── Friend Offer ──────────────────────>│
+       │<───────────── Friend Poll ────────────────────────│
+       │────────────── Friend Update (Friendship EST) ────>│
+       │                                                   │
+   [ Stores messages                                   [ Goes to Deep
+    in Mailbox Queue ]                                    Sleep ]
+       │                                                   │
+       │<───────────── Friend Poll ────────────────────────│ (Wakes up every 30m)
+       │────────────── Deliver Queued Messages ───────────>│
+       │                                                   │
+```
+
+  1. Establishment: The LPN broadcasts a Friend Request packet with its required queue size and polling parameters. Nearby Friend Nodes respond with a Friend Offer. The LPN selects the best offer and establishes a Friendship.
+  2. Buffering: When other nodes in the mesh send data to the LPN, the Friend Node intercepts and buffers the packets in its local RAM.
+  3. Polling: When the LPN wakes up from sleep, it sends a Friend Poll. The Friend Node responds immediately with any stored messages.
+  4. Sleep: If no messages remain in the queue, the LPN returns to deep sleep.     
+
+2. Setting Up the Friend Node (Mains Powered)     
+The Friend Node needs sufficient RAM allocated to buffer messages for one or more LPNs.     
+
+```sdkconfig``` Settings for Friend Node     
+In your ESP-IDF project, enable Mesh and the Friend feature via ```menuconfig```:      
+```
+Component config --->
+  ESP-BLE-MESH Support --->
+    [*] Enable BLE Mesh node
+    [*] Enable BLE Mesh Friend feature
+        (10) Maximum number of LPNs supported
+        (16) Subscriptions list size per LPN
+        (8)  Queue size per LPN
+```
+Friend Node Code Structure (ESP-IDF)      
+```
+#include "esp_ble_mesh_defs.h"
+#include "esp_ble_mesh_common_api.h"
+#include "esp_ble_mesh_networking_api.h"
+
+// Define elements and features
+static esp_ble_mesh_element_t elements[] = {
+    ESP_BLE_MESH_ELEMENT(0, ESP_BLE_MESH_MODEL_NONE, ESP_BLE_MESH_MODEL_NONE),
+};
+
+static esp_ble_mesh_comp_t composition = {
+    .cid = 0x02E5, // Espressif Company ID
+    .elements = elements,
+    .element_count = ARRAY_SIZE(elements),
+};
+
+// Callback to handle Friendship events on the Friend Node
+static void ble_mesh_friend_cb(esp_ble_mesh_friend_cb_event_t event,
+                               esp_ble_mesh_friend_cb_param_t *param) {
+    switch (event) {
+    case ESP_BLE_MESH_FRIEND_ESTABLISH_EVT:
+        ESP_LOGI("FRIEND", "Friendship established with LPN address: 0x%04x", 
+                 param->friend_establish.lpn_addr);
+        break;
+    case ESP_BLE_MESH_FRIEND_TERMINATE_EVT:
+        ESP_LOGW("FRIEND", "Friendship terminated with LPN address: 0x%04x", 
+                 param->friend_terminate.lpn_addr);
+        break;
+    default:
+        break;
+    }
+}
+
+void app_main(void) {
+    // 1. Initialize NVS and Bluetooth Controller
+    // ... (Standard ESP-IDF Bluetooth init) ...
+
+    // 2. Register Friend Callback
+    esp_ble_mesh_register_friend_callback(ble_mesh_friend_cb);
+
+    // 3. Enable BLE Mesh Stack with FRIEND feature flag
+    esp_err_t err = esp_ble_mesh_init(&provision, &composition);
+    if (err == ESP_OK) {
+        // Friend feature is active and listening for LPN requests
+        ESP_LOGI("MESH", "Friend Node Initialized!");
+    }
+}
+```
+3. Setting Up the Low Power Node (LPN)    
+The LPN configures its timing constraints (how fast it expects replies and how long it sleeps between polls) and initiates the Friendship request.
+
+```sdkconfig``` Settings for LPN     
+```
+Component config --->
+  ESP-BLE-MESH Support --->
+    [*] Enable BLE Mesh node
+    [*] Enable BLE Mesh Low Power Node feature
+        (1) Auto-enable LPN feature after provisioning
+        (100) Min receive delay (ms)
+        (1000) Poll timeout (100ms units) -> 100 seconds
+```
+LPN Code Structure (ESP-IDF)     
+```
+#include "esp_ble_mesh_defs.h"
+#include "esp_ble_mesh_common_api.h"
+#include "esp_ble_mesh_lpn_api.h"
+
+// Configurable Friendship Request Parameters
+static esp_ble_mesh_lpn_param_t lpn_param = {
+    .min_queue_num = 2,      // Min messages Friend must buffer for us
+    .poll_timeout  = 18000,  // Max time between polls (18000 * 100ms = 30 minutes)
+    .rx_delay      = 100,    // Time (ms) LPN waits before opening receiver after polling
+    .poll_interval = 3000,   // Default polling interval during active setup (ms)
+};
+
+// Callback to handle LPN events
+static void ble_mesh_lpn_cb(esp_ble_mesh_lpn_cb_event_t event,
+                            esp_ble_mesh_lpn_cb_param_t *param) {
+    switch (event) {
+    case ESP_BLE_MESH_LPN_ESTABLISH_COMP_EVT:
+        if (param->lpn_establish_comp.err_code == 0) {
+            ESP_LOGI("LPN", "Friendship established with Friend: 0x%04x",
+                     param->lpn_establish_comp.friend_addr);
+            
+            // Friendship is ready! Safe to enter deep sleep now.
+        } else {
+            ESP_LOGE("LPN", "Friendship establishment failed!");
+        }
+        break;
+        
+    case ESP_BLE_MESH_LPN_TERMINATE_COMP_EVT:
+        ESP_LOGW("LPN", "Friendship terminated.");
+        break;
+
+    default:
+        break;
+    }
+}
+
+void setup_lpn(void) {
+    // 1. Register LPN callback
+    esp_ble_mesh_register_lpn_callback(ble_mesh_lpn_cb);
+
+    // 2. Enable LPN feature & search for nearby Friend Nodes
+    esp_ble_mesh_lpn_enable();
+}
+
+// Function called after waking up from deep sleep
+void on_lpn_wakeup(void) {
+    // Poll the Friend for buffered messages
+    esp_ble_mesh_lpn_poll();
+}
+```
+4. Key Parameters Comparison     
+```
+Parameter       Recommended Value                What It Controls
+poll_timeout    18000(1,800 seconds = 30 min)    Max time the LPN can sleep before the Friend considers the friendship dead and drops the queue.
+rx_delay        10 ms - 50 ms                    Delay between LPN transmitting a Poll and opening its receiver window.
+                                                 Saves power by keeping the radio off during processing.
+min_queue_num   2 - 8 packets                    Minimum queue depth the Friend Node must promise to allocate for this LPN.
+```
+
+5. Provisioning the Mesh     
+Before an LPN and Friend Node can communicate, both devices must be provisioned into the same Bluetooth Mesh network:
+  1. Use an app like nRF Mesh (iOS/Android) or an ESP32 configured as a Mesh Provisioner.
+  2. Provision the Friend Node first so it is alive on the mesh.
+  3. Provision the LPN.
+  4. Assign matching Publish/Subscribe addresses (e.g., bind both to Group Address 0xC000).
+  5. Call ```esp_ble_mesh_lpn_enable()``` on the LPN. The LPN will automatically discover the Friend Node, negotiate friendship, and start duty-cycling sleep.
 
 
 ## 12. Reference      
