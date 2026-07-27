@@ -1168,8 +1168,14 @@ The server wakes up every 30 minutes, broadcasts its sensor payload in advertise
 /* ESP32-S3 BLE Server - Ultra Low Power Broadcaster */
 #include <NimBLEDevice.h>
 
-#define SLEEP_DURATION_SEC  1800 // 30 Minutes
-#define BROADCAST_TIME_MS   3000 // 3 Seconds
+#define TEST_MODE
+
+#ifdef TEST_MODE
+#define SLEEP_DURATION_SEC 10 // 10 seconds
+#else
+#define SLEEP_DURATION_SEC  1800 // 30 mins interval
+#endif
+#define BROADCAST_TIME_MS   3000 // Broadcast for 3 seconds
 
 struct SensorPayload {
   float temperature;
@@ -1180,49 +1186,71 @@ struct SensorPayload {
 RTC_DATA_ATTR uint32_t bootCount = 0;
 
 void setup() {
+  Serial.begin(115200);
+  delay(1000); // Give ESP32-S3 USB Serial time to connect
+
   bootCount++;
-  
-  // 1. Read Sensors (Simulated here)
+  Serial.println("\n=================================");
+  Serial.printf("📡 ESP32-S3 Broadcaster Woke Up! Boot #%u\n", bootCount);
+
+  // 1. Prepare Payload Data
   SensorPayload data;
-  data.temperature = 24.5;
-  data.humidity = 60.2;
+  data.temperature = 24.5 + (random(-10, 10) / 10.0);
+  data.humidity = 60.0 + (random(-20, 20) / 10.0);
   data.bootCount = bootCount;
 
   // 2. Initialize NimBLE
   NimBLEDevice::init("ESP32_Sensor");
   NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
 
-  // 3. Pack data into Manufacturer Data (0xFFFF = Test Company ID)
+  // 3. Construct Manufacturer Data Payload
   NimBLEAdvertisementData advertData;
   std::string payloadStr((char*)&data, sizeof(data));
   advertData.setManufacturerData("\xFF\xFF" + payloadStr);
-  
+
   pAdvertising->setAdvertisementData(advertData);
+
+  // 4. Start Broadcasting
   pAdvertising->start();
+  Serial.printf("📡 Broadcasting sensor data for %d seconds...\n", BROADCAST_TIME_MS / 1000);
 
-  // 4. Broadcast for 3 seconds then turn off radio
   delay(BROADCAST_TIME_MS);
-  pAdvertising->stop();
-  NimBLEDevice::deinit(true);
 
-  // 5. Enter Deep Sleep
+  // 5. Stop Advertising and Enter Deep Sleep
+  pAdvertising->stop();
+  Serial.printf("😴 Going to deep sleep for %d seconds...\n", SLEEP_DURATION_SEC);
+  Serial.println("=================================\n");
+
   esp_sleep_enable_timer_wakeup((uint64_t)SLEEP_DURATION_SEC * 1000000ULL);
   esp_deep_sleep_start();
 }
 
-void loop() {}
+void loop() {
+  // Deep sleep resets the CPU, so loop() is never reached
+}
+
 ```
 **2. Client Code (Observer with Self-Sync)**     
 The client uses RTC_DATA_ATTR memory to retain its synchronization state across deep sleep resets.     
 ```
 /* ESP32-S3 BLE Client - Synchronized Low Power Observer */
+
 #include <NimBLEDevice.h>
 
+#define TEST_MODE
+
+#ifdef TEST_MODE
+
+#define CYCLE_INTERVAL_SEC  10    // Target: 30 minutes
+#define SAFETY_MARGIN_SEC   2      // Wake 20s early to catch drift
+#define SCAN_TIMEOUT_SEC    4      // Timeout if server missed
+
+#else
 #define CYCLE_INTERVAL_SEC  1800    // Target: 30 minutes
 #define SAFETY_MARGIN_SEC   20      // Wake 20s early to catch drift
 #define SCAN_TIMEOUT_SEC    45      // Timeout if server missed
+#endif
 
-// RTC Memory persists across deep sleep
 RTC_DATA_ATTR bool isSynced = false;
 
 bool dataReceived = false;
@@ -1239,17 +1267,19 @@ class ScanCallbacks : public NimBLEScanCallbacks {
     if (advertisedDevice->haveManufacturerData()) {
       std::string mData = advertisedDevice->getManufacturerData();
       
-      // Check for our 2-byte header (\xFF\xFF) + payload size
+      // Check for 2-byte header (\xFF\xFF) + payload size
       if (mData.length() == (2 + sizeof(SensorPayload))) {
-        SensorPayload data;
-        memcpy(&data, mData.data() + 2, sizeof(SensorPayload));
+        if ((uint8_t)mData[0] == 0xFF && (uint8_t)mData[1] == 0xFF) {
+          SensorPayload data;
+          memcpy(&data, mData.data() + 2, sizeof(SensorPayload));
 
-        Serial.println("✅ Broadcast Captured!");
-        Serial.printf("Temp: %.2f°C | Hum: %.2f%% | Server Boot: %u\n", 
-                      data.temperature, data.humidity, data.bootCount);
+          Serial.println("\n✅ Broadcast Captured!");
+          Serial.printf("Temp: %.2f°C | Hum: %.2f%% | Server Boot: %u\n", 
+                        data.temperature, data.humidity, data.bootCount);
 
-        dataReceived = true;
-        NimBLEDevice::getScan()->stop();
+          dataReceived = true;
+          NimBLEDevice::getScan()->stop();
+        }
       }
     }
   }
@@ -1257,48 +1287,59 @@ class ScanCallbacks : public NimBLEScanCallbacks {
 
 void setup() {
   Serial.begin(115200);
+  delay(1000); // Give serial monitor time to connect after wake-up
+  
   scanStartMillis = millis();
 
   NimBLEDevice::init("ESP32_Observer");
   NimBLEScan* pScan = NimBLEDevice::getScan();
   pScan->setScanCallbacks(new ScanCallbacks());
-  pScan->setActiveScan(false); // Passive scanning saves power
+  pScan->setActiveScan(false); // Passive scan saves power
 
   if (!isSynced) {
     Serial.println("⚠️ Unsynced! Scanning continuously until first broadcast...");
-    pScan->start(0, false); // Scan indefinitely on first boot
+    pScan->start(0, false); // 0 = Scan continuously until stopped
   } else {
     Serial.println("🔍 Synced wake-up! Scanning for server broadcast...");
     pScan->start(SCAN_TIMEOUT_SEC * 1000, false);
   }
 
+  // --- FIX: WAIT LOOP FOR ASYNCHRONOUS SCAN ---
+  unsigned long timeoutMs = isSynced ? (SCAN_TIMEOUT_SEC * 1000) : 0;
+  
+  while (pScan->isScanning() && !dataReceived) {
+    delay(10); // Yield CPU to let FreeRTOS & NimBLE task process incoming BLE packets
+    
+    // Safety timeout check when running synced
+    if (timeoutMs > 0 && (millis() - scanStartMillis >= timeoutMs)) {
+      pScan->stop();
+      break;
+    }
+  }
+  // --------------------------------------------
+
   // Handle Scan Outcome
+// Handle Scan Outcome
   if (dataReceived) {
     isSynced = true;
     
-    // Calculate sleep time: (30 min) - (Safety Margin)
-    // Subtracting the seconds spent awake in this scan window guarantees exact alignment
-    uint64_t awakeTimeSec = (millis() - scanStartMillis) / 1000;
-    uint64_t sleepTimeSec = CYCLE_INTERVAL_SEC - SAFETY_MARGIN_SEC;
-
-    Serial.printf("😴 Sleeping for %llu seconds to hit next window...\n", sleepTimeSec);
+    // Safety check to prevent negative underflow
+    int64_t calculatedSleep = (int64_t)CYCLE_INTERVAL_SEC - (int64_t)SAFETY_MARGIN_SEC;
+    if (calculatedSleep < 1) {
+      calculatedSleep = 1; // Fallback to 1s minimum during short test modes
+    }
+    
+    uint64_t sleepTimeSec = (uint64_t)calculatedSleep;
+    Serial.printf("😴 Sleeping for %llu seconds until next window...\n\n", sleepTimeSec);
     
     NimBLEDevice::deinit(true);
     esp_sleep_enable_timer_wakeup(sleepTimeSec * 1000000ULL);
-    esp_deep_sleep_start();
-
-  } else {
-    // Missed the broadcast (Interference or drift exceeded margin)
-    Serial.println("❌ Broadcast missed! Resetting sync...");
-    isSynced = false; // Force continuous scan on next boot to re-lock sync
-    
-    NimBLEDevice::deinit(true);
-    esp_sleep_enable_timer_wakeup(5 * 1000000ULL); // Retry quickly
     esp_deep_sleep_start();
   }
 }
 
 void loop() {}
+
 ```
 
 **Timing & Energy Budget Comparison***      
