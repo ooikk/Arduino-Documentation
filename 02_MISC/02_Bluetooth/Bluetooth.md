@@ -1411,8 +1411,7 @@ Unlike point-to-point client/server BLE, ESP-BLE-MESH enables thousands of nodes
 6. Secure Device Provisioning      
 Instead of forcing a device into AP mode (where users have to disconnect their phone from Wi-Fi to log into a 192.168.4.1 captive portal), use BLE for initial setup:      
 - Use a mobile app to send Wi-Fi SSIDs, passwords, API keys, or calibration parameters via BLE characteristics.
-- Once provisioned, the ESP32 saves credentials to NVS (Non-Volatile Storage), shuts down the BLE radio to conserve power, and connects to Wi-Fi.
-- 
+- Once provisioned, the ESP32 saves credentials to NVS (Non-Volatile Storage), shuts down the BLE radio to conserve power, and connects to Wi-Fi.    
 
 ## 12. Reference      
 
