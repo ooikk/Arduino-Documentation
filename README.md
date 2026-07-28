@@ -9,8 +9,15 @@ Store all link related to Arduino
    Install **esp32 (by Espressif Systems)**
    https://github.com/espressif/arduino-esp32   
 5. Go to **Tools > Board** and select **ESP32S3 Dev Module**
-6. Connect the ESP32S3 Dev Module to your computer using a USB cable. Then, go to **Tools > Port** and select the COM port that the ESP32S3 Dev Module is connected to.
-7. If you have trouble to connect to computer, identify the driver for your ESP32S3:<br>
+6. Go to **Tools >** Select the Configure Settings. Configure the following critical settings in the Tools menu:
+   - **USB CDC On Boot**: ```Enabled``` (Crucial! If disabled, the Serial Monitor will not work over the native USB port).
+   - **Flash Mode**: ```QIO 80MHz```
+   - **Flash Size**: ```16MB```
+   - **PSRAM**: ```OPI PSRAM``` (if your board has Octal SPI PSRAM) or ```Disabled```.
+   - **Upload Mode**: ```UART0 / Hardware CDC``` (or ```USB-OTG(TinyUSB)``` if using the TinyUSB stack).
+   - **USB Mode**: ```Hardware CDC and JTAG```.      
+7. Connect the ESP32S3 Dev Module to your computer using a USB cable. Then, go to **Tools > Port** and select the COM port that the ESP32S3 Dev Module is connected to.
+8. If you have trouble to connect to computer, identify the driver for your ESP32S3:<br>
    (a) CH343P Driver (Used by your new ESP32-S3 board), click the link for CH343SER.EXE: https://www.wch-ic.com/downloads/CH343SER_EXE.html<br>
    (b) CP2102 Driver (Used by older/standard ESP32 boards), click the link for "CP210x Universal Windows Driver": https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads<br>
 
