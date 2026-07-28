@@ -1638,6 +1638,7 @@ void setup() {
   if (NODE_ROLE == ROLE_LEAF) {
     appendLocalSensorData(currentPayload);
     broadcastPayload(currentPayload);
+    printChainData(currentPayload);
 
     uint64_t sleepSec = CYCLE_INTERVAL_SEC;
     Serial.printf("😴 Leaf sleeping for %llu seconds...\n\n", sleepSec);
@@ -1674,7 +1675,7 @@ void setup() {
       
       appendLocalSensorData(currentPayload);
       broadcastPayload(currentPayload);
-
+      printChainData(currentPayload);
       int64_t calculatedSleep = (int64_t)CYCLE_INTERVAL_SEC - (int64_t)SAFETY_MARGIN_SEC;
       if (calculatedSleep < 1) calculatedSleep = 1;
 
