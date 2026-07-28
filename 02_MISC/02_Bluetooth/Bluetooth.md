@@ -1522,21 +1522,22 @@ This single codebase supports all three node roles. Set NODE_ROLE at the top of 
 
 #include <NimBLEDevice.h>
 
+
 // --- ROLE CONFIGURATION ---
-#define ROLE_LEAF    1
-#define ROLE_RELAY   2
+#define ROLE_LEAF 1
+#define ROLE_RELAY 2
 #define ROLE_CENTRAL 3
 
-#define NODE_ROLE    ROLE_RELAY   // 👈 CHANGE THIS FOR EACH BOARD (ROLE_LEAF, ROLE_RELAY, or ROLE_CENTRAL)
-#define THIS_NODE_ID 2            // Node 1 for Leaf, Node 2 for Relay, Node 3 for Central
+#define NODE_ROLE ROLE_CENTRAL  // 👈 CHANGE THIS FOR EACH BOARD (ROLE_LEAF, ROLE_RELAY, or ROLE_CENTRAL)
+#define THIS_NODE_ID 3          // Node 1 for Leaf, Node 2 for Relay, Node 3 for Central
 
 // --- TIMING CONFIGURATION (20-Second Test Cycle) ---
-#define CYCLE_INTERVAL_SEC  20     // Total cycle period (Set to 1803 for 30-min prod)
-#define BROADCAST_TIME_MS   3000   // Duration each node advertises (ms)
-#define SCAN_TIMEOUT_MS     5000   // Duration relay/sink scans for upstream data (ms)
-#define SAFETY_MARGIN_SEC   2      // Early wake-up window (seconds)
+#define CYCLE_INTERVAL_SEC 20   // Total cycle period (Set to 1803 for 30-min prod)
+#define BROADCAST_TIME_MS 3000  // Duration each node advertises (ms)
+#define SCAN_TIMEOUT_MS 5000    // Duration relay/sink scans for upstream data (ms)
+#define SAFETY_MARGIN_SEC 2     // Early wake-up window (seconds)
 
-#define MAX_CHAIN_NODES     3
+#define MAX_CHAIN_NODES 3
 
 // Data Structures
 struct NodeReading {
@@ -1562,13 +1563,18 @@ class MeshScanCallbacks : public NimBLEScanCallbacks {
   void onResult(const NimBLEAdvertisedDevice* advertisedDevice) override {
     if (advertisedDevice->haveManufacturerData()) {
       std::string mData = advertisedDevice->getManufacturerData();
-      
-      // Filter by Company ID (\xFF\xFF) + MeshPayload structure size
+
       if (mData.length() == (2 + sizeof(MeshPayload))) {
         if ((uint8_t)mData[0] == 0xFF && (uint8_t)mData[1] == 0xFF) {
-          memcpy(&currentPayload, mData.data() + 2, sizeof(MeshPayload));
-          dataReceived = true;
-          NimBLEDevice::getScan()->stop(); // Stop scanning on valid packet
+          MeshPayload tempPayload;
+          memcpy(&tempPayload, mData.data() + 2, sizeof(MeshPayload));
+
+          // 🎯 ONLY capture if readingCount >= 2 (Node 2 has appended its data)
+          if (tempPayload.readingCount >= 2) {
+            memcpy(&currentPayload, &tempPayload, sizeof(MeshPayload));
+            dataReceived = true;
+            NimBLEDevice::getScan()->stop();  // Stop scanner ONLY when Node 2 data arrives
+          }
         }
       }
     }
@@ -1592,16 +1598,16 @@ void appendLocalSensorData(MeshPayload& payload) {
 void broadcastPayload(const MeshPayload& payload) {
   NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
   NimBLEAdvertisementData advertData;
-  
+
   std::string payloadStr((char*)&payload, sizeof(payload));
   advertData.setManufacturerData("\xFF\xFF" + payloadStr);
-  
+
   pAdvertising->setAdvertisementData(advertData);
   pAdvertising->start();
-  
-  Serial.printf("📡 Node %d Broadcasting %d reading(s) for %d ms...\n", 
+
+  Serial.printf("📡 Node %d Broadcasting %d reading(s) for %d ms...\n",
                 THIS_NODE_ID, payload.readingCount, BROADCAST_TIME_MS);
-  
+
   delay(BROADCAST_TIME_MS);
   pAdvertising->stop();
 }
@@ -1624,8 +1630,8 @@ void setup() {
   delay(1000);
   localBootCount++;
 
-  Serial.printf("\n🚀 Node %d Started (Role: %s) | Boot #%u\n", 
-                THIS_NODE_ID, 
+  Serial.printf("\n🚀 Node %d Started (Role: %s) | Boot #%u\n",
+                THIS_NODE_ID,
                 NODE_ROLE == ROLE_LEAF ? "LEAF" : (NODE_ROLE == ROLE_RELAY ? "RELAY" : "CENTRAL SINK"),
                 localBootCount);
 
@@ -1638,11 +1644,13 @@ void setup() {
   if (NODE_ROLE == ROLE_LEAF) {
     appendLocalSensorData(currentPayload);
     broadcastPayload(currentPayload);
+
+    // Display Payload
     printChainData(currentPayload);
 
     uint64_t sleepSec = CYCLE_INTERVAL_SEC;
     Serial.printf("😴 Leaf sleeping for %llu seconds...\n\n", sleepSec);
-    
+
     NimBLEDevice::deinit(true);
     esp_sleep_enable_timer_wakeup(sleepSec * 1000000ULL);
     esp_deep_sleep_start();
@@ -1672,24 +1680,26 @@ void setup() {
     if (dataReceived) {
       isSynced = true;
       Serial.println("✅ Upstream packet captured! Appending local data...");
-      
+
       appendLocalSensorData(currentPayload);
       broadcastPayload(currentPayload);
+      // Display Payload
       printChainData(currentPayload);
+
       int64_t calculatedSleep = (int64_t)CYCLE_INTERVAL_SEC - (int64_t)SAFETY_MARGIN_SEC;
       if (calculatedSleep < 1) calculatedSleep = 1;
 
       Serial.printf("😴 Relay sleeping for %lld seconds...\n\n", calculatedSleep);
-      
+
       NimBLEDevice::deinit(true);
       esp_sleep_enable_timer_wakeup((uint64_t)calculatedSleep * 1000000ULL);
       esp_deep_sleep_start();
     } else {
       Serial.println("❌ Upstream scan missed/timed out! Resetting sync...");
       isSynced = false;
-      
+
       NimBLEDevice::deinit(true);
-      esp_sleep_enable_timer_wakeup(2 * 1000000ULL); // Retry sync in 2s
+      esp_sleep_enable_timer_wakeup(2 * 1000000ULL);  // Retry sync in 2s
       esp_deep_sleep_start();
     }
   }
@@ -1702,14 +1712,26 @@ void setup() {
     pScan->setScanCallbacks(new MeshScanCallbacks());
     pScan->setActiveScan(false);
 
-    Serial.println("📡 Central Hub scanning for incoming chain payloads...");
-    pScan->start(0, false); // Continuous scanning mode
+    Serial.println("📡 Central Hub scanning for incoming Node 2 chain payloads...");
+    pScan->start(0, false);  // Continuous scanning mode
+
+    uint32_t lastProcessedBoot = 0;
 
     while (true) {
       if (dataReceived) {
-        printChainData(currentPayload);
-        
-        // Reset state and resume scanning for next cycle
+        // Retrieve Node 2's boot count (index 1 = Node 2)
+        uint16_t node2Boot = currentPayload.readings[1].bootCount;
+
+        // Deduplicate: Only process if this is a new broadcast cycle
+        if (node2Boot != lastProcessedBoot) {
+          printChainData(currentPayload);
+          lastProcessedBoot = node2Boot;
+        }
+
+        // Wait out the remainder of Node 2's 3-second broadcast window
+        delay(BROADCAST_TIME_MS);
+
+        // Reset state and resume scanning for the next cycle
         dataReceived = false;
         memset(&currentPayload, 0, sizeof(MeshPayload));
         pScan->start(0, false);
