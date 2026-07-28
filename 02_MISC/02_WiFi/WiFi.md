@@ -28,7 +28,7 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 **Station (STA) Mode APIs**     
 |	Function	|	Description	|
 |	-	|	-	|
-|  WiFi.mode(WIFI_STA) | Sets mode to Station. |
+|  ```WiFi.mode(WIFI_STA)``` | Sets mode to Station. |
 |	WiFi.begin(ssid, password)	|	Connects to a Wi-Fi network.	|
 |	WiFi.status()	|	Returns connection status (e.g., WL_CONNECTED, WL_DISCONNECTED).	|
 |	WiFi.isConnected()	|	Returns true if connected to an AP.	|
