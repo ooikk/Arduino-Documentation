@@ -29,32 +29,32 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 |	Function	|	Description	|
 |	-	|	-	|
 |  ```WiFi.mode(WIFI_STA)``` | Sets mode to Station. |
-|	WiFi.begin(ssid, password)	|	Connects to a Wi-Fi network.	|
-|	WiFi.status()	|	Returns connection status (e.g., WL_CONNECTED, WL_DISCONNECTED).	|
-|	WiFi.isConnected()	|	Returns true if connected to an AP.	|
-|	WiFi.localIP()	|	Returns the IP address (IPv4) assigned to the ESP32.	|
-|	WiFi.macAddress()	|	Returns the MAC address of the ESP32.	|
-|	WiFi.RSSI()	|	Returns the signal strength in dBm of the connected network.	|
-|	WiFi.disconnect()	|	Disconnects from the current Wi-Fi network.	|
-|	WiFi.setAutoReconnect(bool)	|	Enables/disables automatic reconnection.	|
+|	```WiFi.begin(ssid, password)```	|	Connects to a Wi-Fi network.	|
+|	```WiFi.status()```	|	Returns connection status (e.g., WL_CONNECTED, WL_DISCONNECTED).	|
+|	```WiFi.isConnected()```	|	Returns true if connected to an AP.	|
+|	```WiFi.localIP()```	|	Returns the IP address (IPv4) assigned to the ESP32.	|
+|	```WiFi.macAddress()```	|	Returns the MAC address of the ESP32.	|
+|	```WiFi.RSSI()```	|	Returns the signal strength in dBm of the connected network.	|
+|	```WiFi.disconnect()```	|	Disconnects from the current Wi-Fi network.	|
+|	```WiFi.setAutoReconnect(bool)```	|	Enables/disables automatic reconnection.	|
 
 **Access Point (AP) Mode APIs**    
 |	Function	|	Description	|
 |	-	|	-	|
-| WiFi.mode(WIFI_AP) | Sets mode to Access Point. |
-|	WiFi.softAP(ssid, pass, ch, [hide], [max])	|	Starts an Access Point. ch=channel, hide=hidden SSID, max=max clients.	|
-|	WiFi.softAPIP()	|	Returns the IP address of the ESP32 in AP mode (usually 192.168.4.1).	|
-|	WiFi.softAPmacAddress()	|	Returns the MAC address of the SoftAP.	|
-|	WiFi.softAPgetStationNum()	|	Returns the number of devices currently connected to the SoftAP.	|
-|  WiFi.softAPgetConnectedStations() |  Returns count of connected clients. |
-|	WiFi.softAPdisconnect(wifi_off)	|	Disconnects all clients and shuts down the SoftAP.	|
+|  ```WiFi.mode(WIFI_AP)``` | Sets mode to Access Point. |
+|	```WiFi.softAP(ssid, pass, ch, [hide], [max])```	|	Starts an Access Point. ch=channel, hide=hidden SSID, max=max clients.	|
+|	```WiFi.softAPIP()```	|	Returns the IP address of the ESP32 in AP mode (usually 192.168.4.1).	|
+|	```WiFi.softAPmacAddress()```	|	Returns the MAC address of the SoftAP.	|
+|	```WiFi.softAPgetStationNum()```	|	Returns the number of devices currently connected to the SoftAP.	|
+|  ```WiFi.softAPgetConnectedStations()``` |  Returns count of connected clients. |
+|	```WiFi.softAPdisconnect(wifi_off)```	|	Disconnects all clients and shuts down the SoftAP.	|
 
 **Network Scanning APIs**
 |	Function	|	Description	|
 |	-	|	-	|
-|	WiFi.scanNetworks()	|	Scans for available networks. Returns the number of networks found.	|
-|	WiFi.SSID(index)	|	Returns the SSID of the network at the scanned index.	|
-|	WiFi.RSSI(index)	|	Returns the signal strength in dBm of the network at the scanned index.	|
+|	```WiFi.scanNetworks()```	|	Scans for available networks. Returns the number of networks found.	|
+|	```WiFi.SSID(index)```	|	Returns the SSID of the network at the scanned index.	|
+|	```WiFi.RSSI(index)```	|	Returns the signal strength in dBm of the network at the scanned index.	|
 
 
 
