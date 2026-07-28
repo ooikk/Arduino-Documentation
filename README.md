@@ -112,7 +112,7 @@ LM1117 Linear low drop 3.3V 800mA voltage regulator:
 
 <img width="627" height="611" alt="image" src="https://github.com/user-attachments/assets/ed28a01f-c33a-4fa7-aed1-7380aa46385e" />
 
-# ESP32-S3 Hardweare Information      
+# ESP32-S3 Hardware Information      
 Here is the complete Arduino code to extract and print all available hardware information from your ESP32-S3.     
 This script uses the built-in esp32-hal library functions to read the chip's physical properties, memory allocations, and unique identifiers.     
 ```
