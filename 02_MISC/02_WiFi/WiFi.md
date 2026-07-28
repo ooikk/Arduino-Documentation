@@ -19,4 +19,48 @@ The ESP32-S3 can operate in several distinct Wi-Fi modes, which can be used indi
 4. **Wi-Fi Sniffer (Promiscuous) Mode**: The ESP32-S3 can capture raw 802.11 Wi-Fi packets in the air without connecting to any network. Used for packet analysis and security research.     
    Use Case: Network analysis, packet sniffing, presence detection.
 5. **ESP-NOW**: Espressif’s proprietary, connectionless peer-to-peer protocol using raw Wi-Fi frames.     
-   Use Case: Low-power sensor networks, ultra-fast board-to-board communication.     
+   Use Case: Low-power sensor networks, ultra-fast board-to-board communication.
+
+## Core Wi-Fi API Reference     
+Include the Wi-Fi library at the top of your sketch: ```#include <WiFi.h>```     
+https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h     
+
+**Station (STA) Mode APIs**     
+|	Function	|	Description	|
+|	-	|	-	|
+|  WiFi.mode(WIFI_STA) | Sets mode to Station. |
+|	WiFi.begin(ssid, password)	|	Connects to a Wi-Fi network.	|
+|	WiFi.status()	|	Returns connection status (e.g., WL_CONNECTED, WL_DISCONNECTED).	|
+|	WiFi.isConnected()	|	Returns true if connected to an AP.	|
+|	WiFi.localIP()	|	Returns the IP address (IPv4) assigned to the ESP32.	|
+|	WiFi.macAddress()	|	Returns the MAC address of the ESP32.	|
+|	WiFi.RSSI()	|	Returns the signal strength in dBm of the connected network.	|
+|	WiFi.disconnect()	|	Disconnects from the current Wi-Fi network.	|
+|	WiFi.setAutoReconnect(bool)	|	Enables/disables automatic reconnection.	|
+
+**Access Point (AP) Mode APIs**    
+|	Function	|	Description	|
+|	-	|	-	|
+| WiFi.mode(WIFI_AP) | Sets mode to Access Point. |
+|	WiFi.softAP(ssid, pass, ch, [hide], [max])	|	Starts an Access Point. ch=channel, hide=hidden SSID, max=max clients.	|
+|	WiFi.softAPIP()	|	Returns the IP address of the ESP32 in AP mode (usually 192.168.4.1).	|
+|	WiFi.softAPmacAddress()	|	Returns the MAC address of the SoftAP.	|
+|	WiFi.softAPgetStationNum()	|	Returns the number of devices currently connected to the SoftAP.	|
+|  WiFi.softAPgetConnectedStations() |  Returns count of connected clients. |
+|	WiFi.softAPdisconnect(wifi_off)	|	Disconnects all clients and shuts down the SoftAP.	|
+
+**Network Scanning APIs**
+|	Function	|	Description	|
+|	-	|	-	|
+|	WiFi.scanNetworks()	|	Scans for available networks. Returns the number of networks found.	|
+|	WiFi.SSID(index)	|	Returns the SSID of the network at the scanned index.	|
+|	WiFi.RSSI(index)	|	Returns the signal strength in dBm of the network at the scanned index.	|
+
+
+
+## Reference
+
+https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
+
+https://github.com/espressif/arduino-esp32/tree/master/libraries/WiFi/examples
+
