@@ -172,13 +172,13 @@ CPU Frequency:     240 MHz
 Flash Size:        16 MB (16777216 bytes)
 Flash Speed:       80 MHz
 Flash Mode:        QIO (Quad I/O)
-PSRAM Total Size:  0 MB (0 bytes)
-PSRAM Free:        0 bytes
-Total Internal RAM:396760 bytes
-Free Internal RAM: 358688 bytes
-Min Free Heap:     353540 bytes
-Max Alloc Heap:    303092 bytes
-Sketch Size:       278032 bytes
+PSRAM Total Size:  8 MB (8388608 bytes)
+PSRAM Free:        8384788 bytes
+Total Internal RAM:392960 bytes
+Free Internal RAM: 356348 bytes
+Min Free Heap:     351200 bytes
+Max Alloc Heap:    294900 bytes
+Sketch Size:       283248 bytes
 Free Sketch Space: 1310720 bytes
 Chip ID (eFuse MAC): 303ED6F61B44
 ==================================================
