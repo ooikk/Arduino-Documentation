@@ -10,7 +10,7 @@ Store all link related to Arduino
    https://github.com/espressif/arduino-esp32   
 5. Go to **Tools > Board** and select ```ESP32S3 Dev Module```
 6. Go to **Tools >** Select the Configure Settings. Configure the following critical settings in the Tools menu:
-   - **USB CDC On Boot**: ```Enabled``` (Crucial! If disabled, the Serial Monitor will not work over the native USB port).
+   - **USB CDC On Boot**: ```Disabled``` 
    - **Flash Mode**: ```QIO 80MHz```
    - **Flash Size**: ```16MB```
    - **PSRAM**: ```OPI PSRAM``` (if your board has Octal SPI PSRAM) or ```Disabled```.
@@ -81,6 +81,23 @@ Once you do this, you will usually see a message in the Arduino IDE Serial Monit
 *RST:* "Restart the current program."   
 *Boot:* "Get ready to receive a new program."   
 *Boot + RST:* "Force the board into the mode required to upload a new program."   
+
+## USB Ports     
+Most popular ESP32-S3 dev boards (like the official Espressif ESP32-S3-DevKitC-1) actually have two separate USB interfaces routed to the chip, often via two physical USB-C ports on the board:
+1. Port 1: The UART Bridge (Usually labeled "UART")        
+   This port is connected to a separate, dedicated USB-to-UART converter chip on the board (commonly a CH340, CP2102, or CP2102N). This chip converts standard serial UART signals (from ESP32 GPIO 43 and 44) into USB signals. This hardware operates completely independently of the ESP32-S3's internal settings.
+2. Port 2: The Native USB / USB OTG (Usually labeled "USB")       
+   This port is wired directly to the ESP32-S3’s internal USB peripheral (GPIO 19 and 20). This is the port controlled by the ```USB CDC On Boot``` setting.
+
+
+What this means for your Arduino IDE Settings:      
+Since you are using the UART bridge chip, you should ensure your Arduino IDE Tools menu is configured correctly for this path:
+- **USB CDC On Boot**: ```Disable``` (Using USB-UART Bridge Chip)
+- **Upload Mode**: ```UART0 / Hardware CDC``` (This tells the IDE to send the compiled binary over the UART bridge)
+- **USB Mode**: ```Hardware CDC and JTAG``` (Or Disabled, it doesn't strictly matter for the UART bridge, but Hardware CDC is fine).
+
+If **USB CDC On Boot**: ```Enabled``` (Using Native USB)     
+You can use the ESP32-S3's advanced native USB features (like making it act as a USB Keyboard/Mouse, USB MIDI, or USB Mass Storage). It uses up two extra GPIO pins (43 and 44) on the ESP32.     
 
 ## Voltage Regulator
 
