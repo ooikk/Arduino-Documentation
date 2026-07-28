@@ -97,7 +97,7 @@ Since you are using the UART bridge chip, you should ensure your Arduino IDE Too
 - **USB Mode**: ```Hardware CDC and JTAG``` (Or Disabled, it doesn't strictly matter for the UART bridge, but Hardware CDC is fine).
 
 If **USB CDC On Boot**: ```Enabled``` (Using Native USB)     
-You can use the ESP32-S3's advanced native USB features (like making it act as a USB Keyboard/Mouse, USB MIDI, or USB Mass Storage). It uses up two extra GPIO pins (43 and 44) on the ESP32.     
+You can use the ESP32-S3's advanced native USB features (like making it act as a USB Keyboard/Mouse, USB MIDI, or USB Mass Storage).      
 
 ## Voltage Regulator
 
