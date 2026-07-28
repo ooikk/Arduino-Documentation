@@ -8,7 +8,7 @@ Store all link related to Arduino
 3. Go to the “Board manager” tab, on the left-hand side of the screen. Type “esp32” in the search bar.
    Install **esp32 (by Espressif Systems)**
    https://github.com/espressif/arduino-esp32   
-5. Go to **Tools > Board** and select **ESP32S3 Dev Module**
+5. Go to **Tools > Board** and select ```ESP32S3 Dev Module```
 6. Go to **Tools >** Select the Configure Settings. Configure the following critical settings in the Tools menu:
    - **USB CDC On Boot**: ```Enabled``` (Crucial! If disabled, the Serial Monitor will not work over the native USB port).
    - **Flash Mode**: ```QIO 80MHz```
