@@ -83,12 +83,24 @@ Once you do this, you will usually see a message in the Arduino IDE Serial Monit
 *Boot + RST:* "Force the board into the mode required to upload a new program."   
 
 ## USB Ports     
-Most popular ESP32-S3 dev boards (like the official Espressif ESP32-S3-DevKitC-1) actually have two separate USB interfaces routed to the chip, often via two physical USB-C ports on the board:
-1. Port 1: The UART Bridge (Usually labeled "UART")        
-   This port is connected to a separate, dedicated USB-to-UART converter chip on the board (commonly a CH340, CP2102, or CP2102N). This chip converts standard serial UART signals (from ESP32 GPIO 43 and 44) into USB signals. This hardware operates completely independently of the ESP32-S3's internal settings.
-2. Port 2: The Native USB / USB OTG (Usually labeled "USB")       
-   This port is wired directly to the ESP32-S3’s internal USB peripheral (GPIO 19 and 20). This is the port controlled by the ```USB CDC On Boot``` setting.
 
+ESP32-S3 development boards typically feature two USB ports to accommodate the chip's dual-path communication capabilities: a USB-to-UART bridge and a Native USB (OTG) interface.     
+According to the sources, the ESP32-S3 is one of the few chips in the family that natively supports both USB OTG and USB Serial through the Arduino Core.    
+1. USB-to-UART Port (Serial/Debug)     
+This port is generally used for standard development tasks. It connects to the computer via a bridge chip (such as the CP2102 or CH340) located on the development board.
+This port is connected to a separate, dedicated USB-to-UART converter chip on the board (commonly a CH340, CP2102, or CP2102N). This chip converts standard serial UART signals (from ESP32 GPIO 43 and 44) into USB signals. This hardware operates completely independently of the ESP32-S3's internal settings.      
+- Firmware Flashing: It is the primary port used to upload code to the SoC.
+- Serial Monitoring: It provides a reliable connection for debugging and viewing output via the Arduino IDE Serial Monitor.
+2. Native USB Port (USB-OTG)      
+This port connects directly to the internal USB peripheral of the ESP32-S3 chip. Because the S3 has native USB support, this port allows the chip to interact with a computer in more advanced ways without needing an external bridge chip.
+This port is wired directly to the ESP32-S3’s internal USB peripheral (GPIO 19 and 20). This is the port controlled by the ```USB CDC On Boot``` setting.     
+- Device Modes: Using the USB API, the ESP32-S3 can act as a variety of USB devices.
+  - USB CDC (Communication Device Class): Allows the chip to create a virtual serial port directly.
+  - USB MSC (Mass Storage Class): Allows the ESP32-S3 to appear to your computer as a USB flash drive or disk.
+  - HID (Human Interface Device): The chip can act as a native keyboard or mouse (though not explicitly listed as an API in these excerpts, it is a standard function of native USB-OTG).     
+- USB Host: The sources note that the ESP32-S3 supports a USB Host peripheral, meaning this port can also be used to connect and control other USB devices, such as keyboards or thumb drives.      
+
+In summary, the UART port is your go-to for programming and standard debugging, while the Native USB port is used when you want the ESP32-S3 to function as a specialized USB device or host.     
 
 What this means for your Arduino IDE Settings:      
 Since you are using the UART bridge chip, you should ensure your Arduino IDE Tools menu is configured correctly for this path:
