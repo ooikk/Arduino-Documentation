@@ -493,14 +493,15 @@ When building HTTP servers on the ESP32 using #include <WebServer.h>, the primar
 - Usage: Enables chunked streaming responses when serving dynamic or large streams of data.
 
 4. Query Parameter & Form Field Commands     
-When clients submit query parameters (/api?temp=25&unit=C) or URL-encoded form data (POST), the server parses them automatically.     
+When clients submit query parameters (```/api?temp=25&unit=C```) or URL-encoded form data (POST), the server parses them automatically.     
+
 |	Command	|	Arguments	|	Return Type	|	Usage / Description	|
 |	-	|	-	|	-	|	-	|
 |	args()	|	None	|	size_t	|	Returns total number of query or form parameters passed.	|
 |	hasArg(name)	|	name (String)	|	bool	|	Returns true if a parameter key exists.	|
 |	arg(name)	|	name (String)	|	String	|	Returns value for parameter key name.	|
 |	arg(index)	|	index (int)	|	String	|	Returns parameter value by 0-based position index.	|
-|	argName(index)	|	index (int)	|	String	|	Returns parameter key name by 0-based position index.	|
+|	argName(index)	|	index (int)	|	String	|	Returns parameter key name by 0-based position index.	|     
 
 5. Request & Connection Context Commands
 
