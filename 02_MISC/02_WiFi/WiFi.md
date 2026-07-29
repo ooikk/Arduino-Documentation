@@ -413,6 +413,25 @@ Note: To access the Web Client.
 - Method 1: Connect your computer/handphone WiFi to AP_SSID. Go to browser enter AP_IP.
 - Method 2: Connect to same router WiFi. Go to browser enter STA_IP.
 
+## HTTP servers    
+When building HTTP servers on the ESP32 using #include <WebServer.h>, the primary class is WebServer. Below is the complete API command reference organized by usage category, including parameter signatures, return types, and operational details.         
+1. Server Lifecycle Commands     
+- WebServer(int port = 80)
+  Arguments:
+  - port (int, optional): Listening TCP port number (default is 80).
+  Usage: Instantiates the web server object. Usually called globally.
+  Example: WebServer server(80);
+- begin() / begin(uint16_t port)
+  Arguments:
+  - port (uint16_t, optional): Overrides the port set in constructor.
+  Usage: Binds to port and starts listening for HTTP clients. Called inside setup().
+  Example: server.begin();
+- handleClient()
+  Arguments: None.
+  Usage: Listens for incoming connections, parses HTTP packets, and triggers assigned route handlers. Must be called continuously in loop().
+- stop() / close()
+  Arguments: None.
+  Usage: Stops the HTTP server and releases underlying sockets.
 
 ## Reference
 
