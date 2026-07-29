@@ -552,7 +552,7 @@ These codes tell the client that the ESP32 understood and fulfilled the request.
 
 |	Code	|	Status Name	|	Explanation & ESP32 Use Case	|	Example server.send() Usage	|
 |	-	|	-	|	-	|	-	|
-|	200	|	OK	|	Standard success response. Use when returning HTML pages, JSON sensor data, or plain text responses.	|```"server.send(200,""text/html"",""<h1>Hello</h1>"");```  ```server.send(200,""application/json"", ""{\""temp\"":23.5}"");"```	|
+|	200	|	OK	|	Standard success response. Use when returning HTML pages, JSON sensor data, or plain text responses.	|```server.send(200,""text/html"",""<h1>Hello</h1>"");```    ```server.send(200,""application/json"", ""{\""temp\"":23.5}"");"```	|
 |	201	|	Created	|	The request succeeded and created a new resource on the ESP32 (e.g., creating a new config file in Flash/LittleFS or saving a new user credential).	|	```server.send(201, "application/json", "{\"status\":\"created\"}");```	|
 |	204	|	No Content	|	Processed successfully, but no body content is returned. Ideal for AJAX/Fetch API calls from web UI (e.g., toggling a relay or LED) to save ESP32 memory and bandwidth.	|	```server.send(204, "text/plain", "");```	|
 
