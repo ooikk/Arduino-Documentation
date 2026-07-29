@@ -408,7 +408,10 @@ void setup() {
 void loop() {
   server.handleClient();
 }
-```
+```     
+Note: To access the Web Client.
+- Method 1: Connect your computer/handphone WiFi to AP_SSID. Go to browser enter AP_IP.
+- Method 2: Connect to same router WiFi. Go to browser enter STA_IP.
 
 
 ## Reference
