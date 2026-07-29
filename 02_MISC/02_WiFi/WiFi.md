@@ -28,7 +28,7 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 **Station (STA) Mode APIs**     
 |	Function	|	Description	|
 |	-	|	-	|
-|  ```WiFi.mode(WIFI_STA)``` | Sets mode to Station. |
+|  ```WiFi.mode(WIFI_STA)``` | Sets mode to Station. Type: ```WIFI_OFF```, ```WIFI_STA```, ```WIFI_AP```, ```WIFI_AP_STA``` |
 |	```WiFi.begin(ssid, password)```	|	Connects to a Wi-Fi network.	|
 |	```WiFi.status()```	|	Returns connection status (e.g., WL_CONNECTED, WL_DISCONNECTED).	|
 |	```WiFi.isConnected()```	|	Returns true if connected to an AP.	|
@@ -41,7 +41,7 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 **Access Point (AP) Mode APIs**    
 |	Function	|	Description	|
 |	-	|	-	|
-|  ```WiFi.mode(WIFI_AP)``` | Sets mode to Access Point. Type: ```WIFI_OFF```, ```WIFI_STA```, ```WIFI_AP```, ```WIFI_AP_STA```  |
+|  ```WiFi.mode(WIFI_AP)``` | Sets mode to Access Point.  |
 |	```WiFi.softAP(ssid, pass, ch, [hide], [max])```	|	Starts an Access Point. ch=channel, hide=hidden SSID, max=max clients.	|
 |	```WiFi.softAPIP()```	|	Returns the IP address of the ESP32 in AP mode (usually 192.168.4.1).	|
 |	```WiFi.softAPmacAddress()```	|	Returns the MAC address of the SoftAP.	|
