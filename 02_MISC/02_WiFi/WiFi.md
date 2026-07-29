@@ -557,10 +557,10 @@ void wifi_promiscuous_callback(void* buf, wifi_promiscuous_pkt_type_t type) {
 ```
 How the Code Works     
 - Promiscuous Initialization:
-  WiFi.mode(WIFI_STA) initializes the Wi-Fi driver without actually connecting to a router.
-  esp_wifi_set_promiscuous(true) disables the hardware MAC filter, and esp_wifi_set_promiscuous_rx_cb tells the ESP32 to send all raw 802.11 frames to our wifi_promiscuous_callback function.
+  ```WiFi.mode(WIFI_STA)``` initializes the Wi-Fi driver without actually connecting to a router.
+  ```esp_wifi_set_promiscuous(true)``` disables the hardware MAC filter, and ```esp_wifi_set_promiscuous_rx_cb``` tells the ESP32 to send all raw 802.11 frames to our ```wifi_promiscuous_callback``` function.
 - Channel Hopping:
-  Wi-Fi routers broadcast on specific channels (1-13 for 2.4GHz). If the ESP32 is stuck on Channel 1, it will only see routers on Channel 1. The loop() function uses a timer to change the radio channel every 3 seconds, allowing it to map the entire 2.4GHz spectrum.
+  Wi-Fi routers broadcast on specific channels (1-13 for 2.4GHz). If the ESP32 is stuck on Channel 1, it will only see routers on Channel 1. The ```loop()``` function uses a timer to change the radio channel every 3 seconds, allowing it to map the entire 2.4GHz spectrum.
 - Frame Control Parsing:
   The first byte of an 802.11 frame is the "Frame Control" field. The code uses bitwise shifts to extract the Type and Subtype. It explicitly drops the packet if it is a Data frame (which contains encrypted user traffic) or a Control frame.
 - Information Element (IE) Parsing:
