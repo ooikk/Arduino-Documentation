@@ -418,7 +418,7 @@ When building HTTP servers on the ESP32 using #include <WebServer.h>, the primar
 1. Server Lifecycle Commands          
 - WebServer(int port = 80)     
   Arguments:     
-  - port (int, optional): Listening TCP port number (default is 80).    
+  - port (int, optional): Listening TCP port number (default is 80).
   Usage: Instantiates the web server object. Usually called globally.   
   Example: WebServer server(80);    
 - begin() / begin(uint16_t port)   
