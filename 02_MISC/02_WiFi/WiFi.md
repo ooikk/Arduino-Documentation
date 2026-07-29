@@ -465,7 +465,7 @@ When building HTTP servers on the ESP32 using #include <WebServer.h>, the primar
 3. Response Generation Commands       
 - ```send(code, content_type, content)```
   - Arguments:
-    - code (int): Standard HTTP status code (200, 400, 404, 500).
+    - code (int): Standard HTTP status code (200, 400, 404, 500). See next topic for details of the code.
     - content_type (const char)*: MIME type string (e.g., "text/html", "application/json", "text/plain").
     - content (String): Body content payload.
   - Usage: Sends a full HTTP response back to the connected client.
@@ -541,6 +541,26 @@ Header Inspection API
     - realm (const char, optional)*: Authentication realm prompt string.
     - authFailMsg (String, optional): HTML response body if prompt is canceled.
   - Usage: Sends HTTP 401 response triggering a browser pop-up credentials prompt.
+
+**HTTP Status Code**    
+
+In the ```server.send(code, content_type, content)``` method from the ESP32 ```WebServer.h``` library, the code argument represents an HTTP Status Code. It tells the browser or client (like a mobile app or JavaScript fetch() call) whether the request succeeded, failed, or requires further action.
+
+Here is the complete list of HTTP status codes commonly used with ```server.send()```, grouped by category with ESP32-specific explanations and example usage.     
+1. 2xx Success (Request Processed Successfully)     
+These codes tell the client that the ESP32 understood and fulfilled the request.     
+
+|	Code	|	Status Name	|	Explanation & ESP32 Use Case	|	Example server.send() Usage	|
+|	-	|	-	|	-	|	-	|
+|	200	|	OK	|	Standard success response. Use when returning HTML pages, JSON sensor data, or plain text responses.	|	"server.send(200, ""text/html"", ""<h1>Hello</h1>"");
+server.send(200, ""application/json"", ""{\""temp\"":23.5}"");"	|
+|		|		|		|		|
+|		|		|		|		|
+|	201	|	Created	|	The request succeeded and created a new resource on the ESP32 (e.g., creating a new config file in Flash/LittleFS or saving a new user credential).	|	server.send(201, "application/json", "{\"status\":\"created\"}");	|
+|	204	|	No Content	|	Processed successfully, but no body content is returned. Ideal for AJAX/Fetch API calls from web UI (e.g., toggling a relay or LED) to save ESP32 memory and bandwidth.	|	server.send(204, "text/plain", "");	|
+
+
+
 
 
 ## Reference
