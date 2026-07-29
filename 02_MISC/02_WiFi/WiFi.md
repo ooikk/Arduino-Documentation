@@ -331,6 +331,7 @@ void loop() {
 }
 ```
 **Summary of the Core Difference**      
+
 |	Code	|	Status Name	|	Explanation & ESP32 Use Case	|	Example server.send() Usage	|
 |	-	|	-	|	-	|	-	|
 |	200	|	OK	|	Standard success response. Use when returning HTML pages, JSON sensor data, or plain text responses.	|	"server.send(200, ""text/html"", ""<h1>Hello</h1>"");
