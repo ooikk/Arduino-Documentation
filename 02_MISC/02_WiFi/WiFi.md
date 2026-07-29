@@ -332,7 +332,7 @@ void loop() {
 ```
 **Summary of the Core Difference**      
 
-|	Feature	|	Example 1: Station (STA) Mode	|	Example 2: Access Point (AP) Mode	|
+|	Feature	|	Station (STA) Mode	|	Access Point (AP) Mode	|
 |	-	|	-	|	-	|
 |	What it does	|	Joins an existing Wi-Fi network.	|	Creates its own Wi-Fi network.	|
 |	Code Command	|	```WiFi.begin(ssid, pass```	|	```WiFi.softAP(ssid, pass)```	|
