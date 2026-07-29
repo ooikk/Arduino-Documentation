@@ -335,7 +335,7 @@ void loop() {
 |	Feature	|	Station (STA) Mode	|	Access Point (AP) Mode	|
 |	-	|	-	|	-	|
 |	What it does	|	Joins an existing Wi-Fi network.	|	Creates its own Wi-Fi network.	|
-|	Code Command	|	```WiFi.begin(ssid, pass```	|	```WiFi.softAP(ssid, pass)```	|
+|	Code Command	|	```WiFi.begin(ssid, pass)```	|	```WiFi.softAP(ssid, pass)```	|
 |	IP Address	|	Assigned by your home router (e.g., ```192.168.1.50```).	|	Assigned by itself (usually ```192.168.4.1```).	|
 |	Internet Access	|	Yes (if the home router has internet).	|	No (it's an isolated local network).	|
 |	Real-world analogy	|	Your laptop connecting to your home Wi-Fi.	|	Your phone turning on its "Personal Hotspot".	|
@@ -415,6 +415,163 @@ void loop() {
 Note: To access the Web Client.
 - Method 1: Connect your computer/handphone WiFi to AP_SSID. Go to browser enter AP_IP.
 - Method 2: Connect to same router WiFi. Go to browser enter STA_IP.
+
+**Wi-Fi Sniffing**     
+
+The ESP32-S3 (like the original ESP32) features a built-in Wi-Fi radio that supports Promiscuous Mode. When enabled, the Wi-Fi driver bypasses the standard MAC address filtering and passes all captured 802.11 frames to the application layer.     
+
+In the Arduino IDE, we access this feature using the underlying ESP-IDF (Espressif IoT Development Framework) functions.     
+
+To keep this educational and safe, the following code specifically filters for 802.11 Management Frames (Type 0). It ignores Data frames (which contain the actual encrypted user traffic) and Control frames. It specifically looks for:     
+- Beacon Frames (Subtype 8): Broadcasted by routers to announce their SSID.
+- Probe Request Frames (Subtype 4): Broadcasted by client devices (phones, laptops) looking for known networks.     
+
+```
+#include <WiFi.h>
+#include <esp_wifi.h>
+
+// --- Configuration ---
+const unsigned long CHANNEL_SWITCH_INTERVAL = 3000; // Time in ms to stay on one channel
+const int MAX_CHANNEL = 13;                         // Max 2.4GHz channel (adjust to 11 for US)
+
+// --- Global Variables ---
+int current_channel = 1;
+unsigned long last_channel_switch = 0;
+
+void setup() {
+    Serial.begin(115200);
+    delay(2000); // Allow time for Serial monitor to connect
+    Serial.println("\n\n========================================");
+    Serial.println(" ESP32-S3 Wi-Fi Sniffer (Management Frames)");
+    Serial.println("========================================\n");
+
+    // 1. Initialize Wi-Fi in Station mode, but DO NOT connect to any AP
+    WiFi.mode(WIFI_STA);
+    WiFi.disconnect();
+    delay(100);
+
+    // 2. Enable Promiscuous Mode
+    esp_wifi_set_promiscuous(true);
+
+    // 3. Register the callback function to handle incoming packets
+    esp_wifi_set_promiscuous_rx_cb(&wifi_promiscuous_callback);
+
+    // 4. Set the initial Wi-Fi channel
+    esp_wifi_set_channel(current_channel, WIFI_SECOND_CHAN_NONE);
+    
+    Serial.printf("[*] Sniffer started. Listening on Channel %d...\n", current_channel);
+    Serial.println("[*] Filtering for Beacon and Probe Request frames only.\n");
+}
+
+void loop() {
+    // Simple Channel Hopping Logic
+    // Wi-Fi networks operate on different channels; a sniffer must hop to see everything.
+    if (millis() - last_channel_switch > CHANNEL_SWITCH_INTERVAL) {
+        current_channel = (current_channel % MAX_CHANNEL) + 1;
+        esp_wifi_set_channel(current_channel, WIFI_SECOND_CHAN_NONE);
+        
+        Serial.printf("\n--- Hopped to Channel %02d ---\n", current_channel);
+        last_channel_switch = millis();
+    }
+    
+    // Yield to the watchdog timer
+    delay(10); 
+}
+
+/**
+ * @brief Callback function triggered when a Wi-Fi packet is received in promiscuous mode.
+ * 
+ * @param buf Pointer to the received packet buffer
+ * @param type The type of packet (mgmt, data, ctrl, etc.)
+ */
+void wifi_promiscuous_callback(void* buf, wifi_promiscuous_pkt_type_t type) {
+    // Cast the generic buffer to the ESP-IDF promiscuous packet structure
+    const wifi_promiscuous_pkt_t *ppkt = (wifi_promiscuous_pkt_t *)buf;
+    const uint8_t *payload = ppkt->payload;
+    uint16_t len = ppkt->rx_ctrl.sig_len;
+
+    // A standard 802.11 MAC header is 24 bytes. Ignore anything shorter.
+    if (len < 24) return;
+
+    // --- Parse the Frame Control Field (First byte of the payload) ---
+    uint8_t frame_control = payload[0];
+    
+    // Bit 2-3: Frame Type (0 = Management, 1 = Control, 2 = Data)
+    uint8_t frame_type = (frame_control >> 2) & 0x03;
+    // Bit 4-7: Frame Subtype
+    uint8_t frame_subtype = (frame_control >> 4) & 0x0F;
+
+    // STRICT FILTER: We ONLY want Management frames (Type 0)
+    if (frame_type != 0) return;
+
+    // STRICT FILTER: We ONLY want Beacons (Subtype 8) and Probe Requests (Subtype 4)
+    if (frame_subtype != 8 && frame_subtype != 4) return;
+
+    // --- Extract MAC Addresses ---
+    // In 802.11 headers:
+    // Offset 4:  Addr1 (Receiver MAC)
+    // Offset 10: Addr2 (Transmitter MAC)
+    // Offset 16: Addr3 (BSSID / Filter MAC)
+    const uint8_t *transmitter_mac = payload + 10; 
+
+    // --- Extract SSID (Information Elements) ---
+    // Information Elements (IEs) start immediately after the 24-byte MAC header.
+    String ssid = "";
+    if (len > 24) {
+        uint16_t ie_offset = 24;
+        
+        // Iterate through the Information Elements
+        while (ie_offset + 2 <= len) {
+            uint8_t ie_id = payload[ie_offset];
+            uint8_t ie_len = payload[ie_offset + 1];
+
+            // Prevent buffer over-read
+            if (ie_offset + 2 + ie_len > len) break;
+
+            // The SSID is always Information Element ID 0
+            if (ie_id == 0 && ie_len > 0) {
+                char ssid_buf[33] = {0}; // Max SSID length is 32 bytes + null terminator
+                uint8_t copy_len = (ie_len > 32) ? 32 : ie_len;
+                memcpy(ssid_buf, payload + ie_offset + 2, copy_len);
+                ssid = String(ssid_buf);
+                break; // Found the SSID, stop searching
+            }
+            ie_offset += 2 + ie_len;
+        }
+    }
+
+    // Format the output string
+    const char* frame_type_str = (frame_subtype == 8) ? "BEACON " : "PROBE  ";
+    
+    if (ssid.isEmpty()) {
+        ssid = (frame_subtype == 4) ? "Broadcast (Wildcard)" : "Hidden Network";
+    }
+
+    // Print to Serial
+    Serial.printf("[%s] MAC: %02X:%02X:%02X:%02X:%02X:%02X | SSID: %s\n",
+                  frame_type_str,
+                  transmitter_mac[0], transmitter_mac[1], transmitter_mac[2], 
+                  transmitter_mac[3], transmitter_mac[4], transmitter_mac[5],
+                  ssid.c_str());
+}
+```
+How the Code Works     
+- Promiscuous Initialization:
+  WiFi.mode(WIFI_STA) initializes the Wi-Fi driver without actually connecting to a router.
+  esp_wifi_set_promiscuous(true) disables the hardware MAC filter, and esp_wifi_set_promiscuous_rx_cb tells the ESP32 to send all raw 802.11 frames to our wifi_promiscuous_callback function.
+- Channel Hopping:
+  Wi-Fi routers broadcast on specific channels (1-13 for 2.4GHz). If the ESP32 is stuck on Channel 1, it will only see routers on Channel 1. The loop() function uses a timer to change the radio channel every 3 seconds, allowing it to map the entire 2.4GHz spectrum.
+- Frame Control Parsing:
+  The first byte of an 802.11 frame is the "Frame Control" field. The code uses bitwise shifts to extract the Type and Subtype. It explicitly drops the packet if it is a Data frame (which contains encrypted user traffic) or a Control frame.
+- Information Element (IE) Parsing:
+  After the 24-byte MAC header, 802.11 management frames contain a list of "Information Elements". These are tagged parameters. The code loops through these tags looking for Tag ID 0, which is the standardized identifier for the SSID.     
+
+Educational Project Ideas    
+Because this code only captures unencrypted management frames, it is perfectly safe to use for learning and legitimate IoT projects. Here are a few ways to expand this base code:     
+- Wi-Fi Presence Detector: Instead of just printing to Serial, log the transmitter_mac from Probe Requests to a database or send it to an MQTT broker. You can use this to detect when specific devices (like your phone) enter the building, triggering smart home automations.
+- OLED Display Integration: Connect a small I2C OLED screen (like an SSD1306) to the ESP32-S3 and display the captured SSIDs and MAC addresses in real-time, creating a portable "Wi-Fi Scanner" tool.
+- Deauthentication Detection: Modify the subtype filter to look for Subtype 12 (Deauthentication). A sudden spike in these frames usually indicates a jamming attack or someone trying to force devices to reconnect to capture the WPA2 handshake. You can build an alert system for this.
+
 
 ## HTTP servers    
 When building HTTP servers on the ESP32 using #include <WebServer.h>, the primary class is WebServer. Below is the complete API command reference organized by usage category, including parameter signatures, return types, and operational details.        
