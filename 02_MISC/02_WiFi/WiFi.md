@@ -330,6 +330,16 @@ void loop() {
   delay(5000);
 }
 ```
+**Summary of the Core Difference**     
+|	Feature	|	Example 1: Station (STA) Mode	|	Example 2: Access Point (AP) Mode	|
+|	-	|	-	|	-	|
+|	What it does	|	Joins an existing Wi-Fi network.	|	Creates its own Wi-Fi network.	|
+|	Code Command	|	WiFi.begin(ssid, pass)	|	WiFi.softAP(ssid, pass)	|
+|	IP Address	|	Assigned by your home router (e.g., 192.168.1.50).	|	Assigned by itself (usually 192.168.4.1).	|
+|	Internet Access	|	Yes (if the home router has internet).	|	No (it's an isolated local network).	|
+|	Real-world analogy	|	Your laptop connecting to your home Wi-Fi.	|	Your phone turning on its "Personal Hotspot".	|
+
+
 
 
 ## Reference
