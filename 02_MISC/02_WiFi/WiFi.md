@@ -97,7 +97,9 @@ void setup() {
   delay(1000);
   
   Serial.println("=== ESP32-S3 in STATION (STA) MODE ===");
-  
+
+ // Explicitly set the mode before connecting
+  WiFi.mode(WIFI_STA); 
   // 1. Connect to the existing router
   WiFi.begin(ssid, password);
   
@@ -152,8 +154,9 @@ void handleRoot() {
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  
   Serial.println("Connecting to Wi-Fi...");
+  // Explicitly set the mode before connecting
+  WiFi.mode(WIFI_STA); 
   WiFi.begin(ssid, password);
   
   // Wait for connection
