@@ -54,7 +54,31 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 |	-	|	-	|
 |	```WiFi.scanNetworks()```	|	Scans for available networks. Returns the number of networks found.	|
 |	```WiFi.SSID(index)```	|	Returns the SSID of the network at the scanned index.	|
-|	```WiFi.RSSI(index)```	|	Returns the signal strength in dBm of the network at the scanned index.	|
+|	```WiFi.RSSI(index)```	|	Returns the signal strength in dBm of the network at the scanned index.	|      
+
+**Note on WiFi.mode()**      
+In the ESP32 Arduino core, WiFi.mode() is optional for basic STA or AP setups because the library sets it automatically behind the scenes.      
+While optional for basic setups, there are specific scenarios where you must use WiFi.mode():      
+1. Mixed Mode (AP + STA)      
+If you want the ESP32 to act as an Access Point and connect to a router at the same time, the auto-magic doesn't know which one you want to prioritize. You must explicitly tell it to use both:     
+```
+WiFi.mode(WIFI_AP_STA); // Mandatory for mixed mode!
+WiFi.softAP(ap_ssid, ap_pass);
+WiFi.begin(sta_ssid, sta_pass);
+```
+2. Turning Wi-Fi Off to Save Power
+
+If you are running on a battery and want to completely shut down the Wi-Fi radio to save power, you use:     
+```
+WiFi.mode(WIFI_OFF); 
+// or simply WiFi.disconnect(true) which also turns off the radio
+```
+3. Sniffer / Promiscuous Mode      
+If you want to capture raw Wi-Fi packets without connecting to a network, you must set the mode to null/station and then enable promiscuous:
+```
+WiFi.mode(WIFI_STA);
+WiFi.promiscuousEnable(true);
+```
 
 
 
