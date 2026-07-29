@@ -556,9 +556,52 @@ These codes tell the client that the ESP32 understood and fulfilled the request.
 |	201	|	Created	|	The request succeeded and created a new resource on the ESP32 (e.g., creating a new config file in Flash/LittleFS or saving a new user credential).	|	```server.send(201, "application/json", "{\"status\":\"created\"}");```	|
 |	204	|	No Content	|	Processed successfully, but no body content is returned. Ideal for AJAX/Fetch API calls from web UI (e.g., toggling a relay or LED) to save ESP32 memory and bandwidth.	|	```server.send(204, "text/plain", "");```	|
 
+2. 3xx Redirection (Client Action Needed)     
+These codes tell the client to navigate to another URL.    
+|	Code	|	Status Name	|	Explanation & ESP32 Use Case	|	Example server.send() Usage	|
+|	-	|	-	|	-	|	-	|
+|	301	|	Moved Permanently	|	The URI has moved permanently. Often used when enforcing HTTPS or setting up permanent route aliases.	|	```server.sendHeader("Location", "/new-path");```    ```server.send(301, "text/plain", "");```	|
+|	302	|	Found (Temporary Redirect)	|	Redirects the client to another page temporarily. Used after submitting an HTML <form> to reload the main dashboard.	|	```server.sendHeader("Location", "/"); ```   ```server.send(302, "text/plain", "");```	|
+|	303	|	See Other	|	Forces a GET redirect after a POST request. Prevents users from accidentally resubmitting form data when refreshing the page.	|	```server.sendHeader("Location", "/");``` ```server.send(303, "text/plain", "");```	|
+|	304	|	Not Modified	|	Used with browser caching. Tells the browser that a static file stored in ESP32 Flash (e.g., style.css) hasn't changed, so use the cached copy.	|	```server.send(304, "text/plain", "");```	|
 
+3. 4xx Client Errors (Invalid Request from Client)     
+These codes mean the client sent bad input, lacks permission, or requested a non-existent route.
 
+|	Code	|	Status Name	|	Explanation & ESP32 Use Case	|	Example server.send() Usage	|
+|	-	|	-	|	-	|	-	|
+|	400	|	Bad Request	|	Missing or invalid parameters. Triggered when !server.hasArg("param") or when a JSON body is invalid.	|	```server.send(400, "text/plain", "Missing 'ssid' argument");```	|
+|	401	|	Unauthorized	|	Client needs to authenticate. Sent when a user fails password checks or tries to access protected endpoints without credentials.	|	```server.send(401, "text/plain", "Access Denied");```	|
+|	403	|	Forbidden	|	Request was valid, but the ESP32 refuses to fulfill it (e.g., attempting to write to a read-only GPIO or system file).	|	```server.send(403, "text/plain", "GPIO Pin Restricted");```	|
+|	404	|	Not Found	|	The requested URI path does not exist. Used inside server.onNotFound().	|	```server.send(404, "text/plain", "404: Page Not Found");```	|
+|	405	|	Method Not Allowed	|	Client used the wrong HTTP verb (e.g., sent a GET request to an endpoint that only allows POST).	|	```server.send(405, "text/plain", "Only POST allowed");```	|
+|	429	|	Too Many Requests	|	Rate limiting. Sent if a client polls the ESP32 for sensor data faster than allowed (e.g., more than once per second).	|	```server.send(429, "text/plain", "Rate limit exceeded");```	|
 
+4. 5xx Server Errors (ESP32 Internal Failure)     
+These codes mean the request was valid, but the ESP32 encountered an internal problem processing it.    
+
+|	Code	|	Status Name	|	Explanation & ESP32 Use Case	|	Example server.send() Usage	|
+|	-	|	-	|	-	|	-	|
+|	500	|	Internal Server Error	|	Generic hardware/software crash. Used when LittleFS fails to open a file, I2C sensor read fails, or memory allocation fails.	|	```server.send(500, "text/plain", "Failed to read sensor on I2C");```	|
+|	501	|	Not Implemented	|	Feature or HTTP verb is not supported by current ESP32 firmware.	|	```server.send(501, "text/plain", "Feature not implemented");```	|
+|	503	|	Service Unavailable	|	ESP32 is temporarily unable to process the request (e.g., during an Over-The-Air (OTA) firmware update or Wi-Fi reconnecting).	|	```server.send(503, "text/plain", "ESP32 Updating Firmware...");```	|
+
+Summary of Common Content-Type Strings     
+When calling ```server.send(code, content_type, content)```, match your HTTP code with the correct MIME content_type:
+```
+// HTML Pages
+server.send(200, "text/html", "<h1>Dashboard</h1>");
+
+// JSON REST APIs
+server.send(200, "application/json", "{\"temperature\": 24.5, \"humidity\": 60}");
+
+// Plain Text Error Messages
+server.send(400, "text/plain", "Error: Missing required parameter");
+
+// JavaScript or CSS files from Flash Memory
+server.send(200, "application/javascript", jsCodeString);
+server.send(200, "text/css", cssStyleString);
+```
 
 ## Reference
 
