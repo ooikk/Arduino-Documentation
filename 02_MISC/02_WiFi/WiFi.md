@@ -423,3 +423,9 @@ https://github.com/espressif/arduino-esp32/tree/master/libraries/WiFi/examples
 https://github.com/espressif/arduino-esp32/blob/master/libraries/WebServer/src/WebServer.h
 
 https://github.com/espressif/arduino-esp32/tree/master/libraries/WebServer/examples
+
+https://www.oceanlabz.in/getting-started-with-esp32-wi-fi/
+
+https://www.oceanlabz.in/esp32-web-server-with-multiple-sliders-control-leds-brightness/
+
+https://www.oceanlabz.in/esp32-web-server-control-outputs-with-timer/
