@@ -41,7 +41,7 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 **Access Point (AP) Mode APIs**    
 |	Function	|	Description	|
 |	-	|	-	|
-|  ```WiFi.mode(WIFI_AP)``` | Sets mode to Access Point. |
+|  ```WiFi.mode(WIFI_AP)``` | Sets mode to Access Point. Type: ```WIFI_OFF```, ```WIFI_STA```, ```WIFI_AP```, ```WIFI_AP_STA```  |
 |	```WiFi.softAP(ssid, pass, ch, [hide], [max])```	|	Starts an Access Point. ch=channel, hide=hidden SSID, max=max clients.	|
 |	```WiFi.softAPIP()```	|	Returns the IP address of the ESP32 in AP mode (usually 192.168.4.1).	|
 |	```WiFi.softAPmacAddress()```	|	Returns the MAC address of the SoftAP.	|
