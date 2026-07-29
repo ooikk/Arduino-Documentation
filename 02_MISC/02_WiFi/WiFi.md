@@ -58,7 +58,7 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 
 **Note on WiFi.mode()**      
 In the ESP32 Arduino core, WiFi.mode() is optional for basic STA or AP setups because the library sets it automatically behind the scenes.      
-While optional for basic setups, there are specific scenarios where you must use WiFi.mode():        <br>
+While optional for basic setups, there are specific scenarios where you must use WiFi.mode():        
 
 
 
