@@ -417,3 +417,6 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 
 https://github.com/espressif/arduino-esp32/tree/master/libraries/WiFi/examples
 
+https://github.com/espressif/arduino-esp32/blob/master/libraries/WebServer/src/WebServer.h
+
+https://github.com/espressif/arduino-esp32/tree/master/libraries/WebServer/examples
