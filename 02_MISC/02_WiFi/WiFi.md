@@ -560,9 +560,9 @@ These codes tell the client that the ESP32 understood and fulfilled the request.
 These codes tell the client to navigate to another URL.    
 |	Code	|	Status Name	|	Explanation & ESP32 Use Case	|	Example server.send() Usage	|
 |	-	|	-	|	-	|	-	|
-|	301	|	Moved Permanently	|	The URI has moved permanently. Often used when enforcing HTTPS or setting up permanent route aliases.	|	```server.sendHeader("Location", "/new-path");```    ```server.send(301, "text/plain", "");```	|
-|	302	|	Found (Temporary Redirect)	|	Redirects the client to another page temporarily. Used after submitting an HTML <form> to reload the main dashboard.	|	```server.sendHeader("Location", "/"); ```   ```server.send(302, "text/plain", "");```	|
-|	303	|	See Other	|	Forces a GET redirect after a POST request. Prevents users from accidentally resubmitting form data when refreshing the page.	|	```server.sendHeader("Location", "/");``` ```server.send(303, "text/plain", "");```	|
+|	301	|	Moved Permanently	|	The URI has moved permanently. Often used when enforcing HTTPS or setting up permanent route aliases.	|	``` server.sendHeader("Location", "/new-path");```   ```server.send(301, "text/plain", "");```	|
+|	302	|	Found (Temporary Redirect)	|	Redirects the client to another page temporarily. Used after submitting an HTML <form> to reload the main dashboard.	|	``` server.sendHeader("Location", "/"); ```   ```server.send(302, "text/plain", "");```	|
+|	303	|	See Other	|	Forces a GET redirect after a POST request. Prevents users from accidentally resubmitting form data when refreshing the page.	|	``` server.sendHeader("Location", "/");``` ```server.send(303, "text/plain", "");```	|
 |	304	|	Not Modified	|	Used with browser caching. Tells the browser that a static file stored in ESP32 Flash (e.g., style.css) hasn't changed, so use the cached copy.	|	```server.send(304, "text/plain", "");```	|
 
 3. 4xx Client Errors (Invalid Request from Client)     
