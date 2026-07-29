@@ -414,7 +414,8 @@ Note: To access the Web Client.
 - Method 2: Connect to same router WiFi. Go to browser enter STA_IP.
 
 ## HTTP servers    
-When building HTTP servers on the ESP32 using #include <WebServer.h>, the primary class is WebServer. Below is the complete API command reference organized by usage category, including parameter signatures, return types, and operational details.         
+When building HTTP servers on the ESP32 using #include <WebServer.h>, the primary class is WebServer. Below is the complete API command reference organized by usage category, including parameter signatures, return types, and operational details.        
+
 1. Server Lifecycle Commands          
 - WebServer(int port = 80)     
   - Arguments:     
@@ -432,6 +433,114 @@ When building HTTP servers on the ESP32 using #include <WebServer.h>, the primar
 - stop() / close()   
   - Arguments: None.   
   - Usage: Stops the HTTP server and releases underlying sockets.   
+
+2. Route Registration Commands      
+- on(path, [method], handler, [uploadHandler])
+  - Arguments:
+    - path (const Uri& / String): URL path to listen for (e.g., "/", "/api/status").
+    - method (HTTPMethod, optional): HTTP verb (HTTP_GET, HTTP_POST, HTTP_PUT, HTTP_DELETE, HTTP_PATCH).
+    - handler (THandlerFunction): Callback function executed when request matches.
+    - uploadHandler (THandlerFunction, optional): Secondary callback triggered during file uploads.
+  - Usage: Binds a specific URI path and HTTP method to a custom C++ function.
+  - Example: server.on("/data", HTTP_POST, handlePostData);
+
+- onNotFound(handler)
+  - Arguments:
+    - handler (THandlerFunction): Callback function executed when no registered route matches the client request.\
+  - Usage: Renders custom 404 Error pages or processes dynamic wildcard routes.
+
+- onFileUpload(uploadHandler)
+  - Arguments:
+    - uploadHandler (THandlerFunction): Callback function invoked chunk-by-chunk during multi-part form uploads.
+  - Usage: Global callback setup for processing incoming file uploads.
+
+- serveStatic(uri, fs, path, cache_header)
+  - Arguments:
+    - uri (const char)*: Web path prefix (e.g., "/static").
+    - fs (FS&): File system instance (LittleFS, SPIFFS, or SD).
+    - path (const char)*: Disk folder/file path in Flash (e.g., "/www").
+    - cache_header (const char, optional)*: Cache-control string (e.g., "max-age=86400").
+  - Usage: Automatically serves static web pages (HTML, CSS, JS, images) stored in Flash memory.
+
+3. Response Generation Commands       
+- send(code, content_type, content)
+  - Arguments:
+    - code (int): Standard HTTP status code (200, 400, 404, 500).
+    - content_type (const char)*: MIME type string (e.g., "text/html", "application/json", "text/plain").
+    - content (String): Body content payload.
+  - Usage: Sends a full HTTP response back to the connected client.
+  - Example: server.send(200, "application/json", "{\"status\":\"ok\"}");
+
+- send_P(code, content_type, content, contentLength)
+  - Arguments:
+    - code (int): HTTP status code.
+    - content_type (const char)*: MIME type.
+    - content (PGM_P): Pointer to text/data stored directly in Flash memory (PROGMEM).
+    - contentLength (size_t, optional): Explicit byte length of Flash array.
+  - Usage: Serves large static strings from Flash without taking up RAM.
+
+- sendHeader(name, value, first)
+  - Arguments:
+    - name (String): Header key (e.g., "Location", "Access-Control-Allow-Origin").
+    - value (String): Header value.
+    - first (bool, optional): Set true to insert header at the top of stack (default false).
+  - Usage: Sets custom HTTP headers. Must be called before server.send().
+
+- sendContent(content) / setContentLength(length)
+  - Arguments:
+    - content (String / PGM_P): Data chunk.
+    - length (size_t): Total length or CONTENT_LENGTH_UNKNOWN.
+- Usage: Enables chunked streaming responses when serving dynamic or large streams of data.
+
+4. Query Parameter & Form Field Commands     
+When clients submit query parameters (/api?temp=25&unit=C) or URL-encoded form data (POST), the server parses them automatically.     
+|	Command	|	Arguments	|	Return Type	|	Usage / Description	|
+|	-	|	-	|	-	|	-	|
+|	args()	|	None	|	size_t	|	Returns total number of query or form parameters passed.	|
+|	hasArg(name)	|	name (String)	|	bool	|	Returns true if a parameter key exists.	|
+|	arg(name)	|	name (String)	|	String	|	Returns value for parameter key name.	|
+|	arg(index)	|	index (int)	|	String	|	Returns parameter value by 0-based position index.	|
+|	argName(index)	|	index (int)	|	String	|	Returns parameter key name by 0-based position index.	|
+
+5. Request & Connection Context Commands
+
+|	Command	|	Arguments	|	Return Type	|	Usage / Description	|
+|	-	|	-	|	-	|	-	|
+|	uri()	|	None	|	String	|	Returns path requested by client (e.g., "/index.html").	|
+|	method()	|	None	|	HTTPMethod	|	Returns HTTP verb (HTTP_GET, HTTP_POST, etc.).	|
+|	client()	|	None	|	WiFiClient	|	Returns active raw WiFiClient TCP stream object.	|
+|	upload()	|	None	|	HTTPUpload&	|	Returns file upload object containing .filename, .type, .totalSize, and .status.	|
+
+6. HTTP Header Commands       
+By default, request headers are ignored for performance. Call collectHeaders() before begin() to capture specific header keys.      
+- collectHeaders(headerKeys[], count)
+  - Arguments: headerKeys[] (const char array)*
+  - count (size_t).
+  - Usage: Configures server to store matching headers like User-Agent or Authorization.      
+
+Header Inspection API     
+|	Command	|	Arguments	|	Return Type	|	Usage / Description	|
+|	-	|	-	|	-	|	-	|
+|	headers()	|	None	|	int	|	Returns count of collected request headers.	|
+|	hasHeader(name)	|	name (String)	|	bool	|	Checks if header key was received.	|
+|	header(name)	|	name (String)	|	String	|	Retrieves collected header value by name.	|
+|	header(index)	|	index (int)	|	String	|	Retrieves collected header value by index.	|
+|	headerName(index)	|	index (int)	|	String	|	Retrieves name of collected header by index.	|
+|	hostHeader()	|	None	|	String	|	Returns value of HTTP Host: header.	|
+
+7. HTTP Authentication Commands    
+- authenticate(username, password)
+  - Arguments: username (const char), password (const char).
+  - Return Type: bool
+  - Usage: Checks incoming authorization header credentials against supplied values.
+
+- requestAuthentication(mode, realm, authFailMsg)
+  - Arguments:
+    - mode (HTTPAuthMethod): BASIC_AUTH or DIGEST_AUTH.
+    - realm (const char, optional)*: Authentication realm prompt string.
+    - authFailMsg (String, optional): HTML response body if prompt is canceled.
+  - Usage: Sends HTTP 401 response triggering a browser pop-up credentials prompt.
+
 
 ## Reference
 
