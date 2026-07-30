@@ -772,6 +772,10 @@ server.send(400, "text/plain", "Error: Missing required parameter");
 server.send(200, "application/javascript", jsCodeString);
 server.send(200, "text/css", cssStyleString);
 ```
+## External Reading Materials     
+
+[Building an ESP32 Web Server: The Complete Guide for Beginners](https://randomnerdtutorials.com/esp32-web-server-beginners-guide/)
+- https://github.com/RuiSantosdotme/build-web-servers-dl
 
 ## Reference
 
@@ -789,6 +793,4 @@ https://www.oceanlabz.in/esp32-web-server-with-multiple-sliders-control-leds-bri
 
 https://www.oceanlabz.in/esp32-web-server-control-outputs-with-timer/
 
-https://randomnerdtutorials.com/esp32-web-server-beginners-guide/
 
-https://github.com/RuiSantosdotme/build-web-servers-dl
