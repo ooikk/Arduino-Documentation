@@ -259,12 +259,12 @@ https://documentation.espressif.com/arduino-esp32/en/latest/index.html
 
 https://documentation.espressif.com/en/home
 
-
 https://github.com/espressif
 
 https://github.com/espressif/arduino-esp32?
 
-
+**ESP-IDF**    
+https://github.com/espressif/esp-idf
 
 **Up to date technical documents:**    
 Copy and paste below link on brower:   
