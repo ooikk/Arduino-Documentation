@@ -236,7 +236,7 @@ void loop() {
   server.handleClient();
 }
 ```
-**Access Point (AP) Mode with Authentication**      
+**Station STA Mode with Web Server and Authentication**      
 ```
 /*  
   Rui Santos & Sara Santos - Random Nerd Tutorials
