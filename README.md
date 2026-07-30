@@ -263,7 +263,12 @@ https://github.com/espressif
 
 https://github.com/espressif/arduino-esp32?
 
+**Official IoT Development Framework**     
+https://www.espressif.com/en/products/sdks/esp-idf     
+
 **ESP-IDF**    
+https://developer.espressif.com/tags/esp-idf/
+
 https://github.com/espressif/esp-idf
 
 **Up to date technical documents:**    
