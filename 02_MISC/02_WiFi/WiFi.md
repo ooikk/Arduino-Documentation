@@ -790,3 +790,5 @@ https://www.oceanlabz.in/esp32-web-server-with-multiple-sliders-control-leds-bri
 https://www.oceanlabz.in/esp32-web-server-control-outputs-with-timer/
 
 https://randomnerdtutorials.com/esp32-web-server-beginners-guide/
+
+https://github.com/RuiSantosdotme/build-web-servers-dl
