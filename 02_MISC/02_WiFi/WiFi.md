@@ -257,8 +257,8 @@ const char* http_username = "admin";
 const char* http_password = "admin";
 
 // Assign output variables to GPIO pins
-const int output26 = 26;
-const int output27 = 27;
+const int output26 = 48;
+const int output27 = 47;
 String output26State = "off";
 String output27State = "off";
 
@@ -350,6 +350,7 @@ void setup() {
   // Connect to Wi-Fi network
   Serial.print("Connecting to ");
   Serial.println(ssid);
+  WiFi.mode(WIFI_STA); 
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
