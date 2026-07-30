@@ -212,14 +212,59 @@ Free Sketch Space: 1310720 bytes
 Chip ID (eFuse MAC): 303ED6F61B44
 ==================================================
 ```
+**What is the suffix N16R8**     
+For the ESP32-S3, the suffix N16R8 indicates the memory configuration of the module.     
+```
+Suffix     Meaning
+N16        16 MB SPI Flash
+R8         8 MB PSRAM (Octal SPI/OPI on most ESP32-S3 modules)
+```
+
+- **Flash vs. PSRAM**
+  - Flash (16 MB)
+    - Stores your program (firmware)
+    - Stores filesystem data (LittleFS/SPIFFS)
+    - Supports larger OTA updates
+  - PSRAM (8 MB)
+    - Extra RAM for runtime data
+    - Useful for:
+      - Large HTML pages
+      - JSON documents
+      - Display frame buffers
+      - Camera images
+      - AI/ML models
+      - Audio buffers
+     
+- **Verify in code**
+  You can confirm that both the flash and PSRAM are available:
+  ```
+  Serial.printf("Flash Size : %u MB\n", ESP.getFlashChipSize() / (1024 * 1024));
+  Serial.printf("PSRAM Size : %u MB\n", ESP.getPsramSize() / (1024 * 1024));
+  Serial.printf("Free Heap  : %u KB\n", ESP.getFreeHeap() / 1024);
+  Serial.printf("Free PSRAM : %u KB\n", ESP.getFreePsram() / 1024);
+  ```
+
+**Link to more esp.h API:**     
+https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/Esp.h?
+
+
+
 
 
 # ESP32-S3 References
 
 https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
-<br>
+
+https://documentation.espressif.com/arduino-esp32/en/latest/index.html
+
+https://documentation.espressif.com/en/home
+
 
 https://github.com/espressif
+
+https://github.com/espressif/arduino-esp32?
+
+
 
 **Up to date technical documents:**    
 Copy and paste below link on brower:   
