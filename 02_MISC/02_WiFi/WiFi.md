@@ -788,3 +788,5 @@ https://www.oceanlabz.in/getting-started-with-esp32-wi-fi/
 https://www.oceanlabz.in/esp32-web-server-with-multiple-sliders-control-leds-brightness/
 
 https://www.oceanlabz.in/esp32-web-server-control-outputs-with-timer/
+
+https://randomnerdtutorials.com/esp32-web-server-beginners-guide/
