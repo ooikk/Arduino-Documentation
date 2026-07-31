@@ -915,10 +915,31 @@ server.send(400, "text/plain", "Error: Missing required parameter");
 server.send(200, "application/javascript", jsCodeString);
 server.send(200, "text/css", cssStyleString);
 ```
-## External Reading Materials     
+
+## ESP32 ESP-NOW     
+
+https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
+
+## ESP32 MQTT     
+
+https://www.luisllamas.es/como-usar-mqtt-en-el-esp8266-esp32/
+
+https://randomnerdtutorials.com/esp32-mqtt-publish-subscribe-arduino-ide/
+
+## Further Reading     
+
+[ESP32 WiFi Tutorial & Library Examples (Arduino IDE)](https://deepbluembedded.com/esp32-wifi-library-examples-tutorial-arduino/)
 
 [Building an ESP32 Web Server: The Complete Guide for Beginners](https://randomnerdtutorials.com/esp32-web-server-beginners-guide/)
 - https://github.com/RuiSantosdotme/build-web-servers-dl
+
+https://deepbluembedded.com/esp32-wifi-library-examples-tutorial-arduino/
+
+https://www.oceanlabz.in/getting-started-with-esp32-wi-fi/
+
+https://www.oceanlabz.in/esp32-web-server-with-multiple-sliders-control-leds-brightness/
+
+https://www.oceanlabz.in/esp32-web-server-control-outputs-with-timer/
 
 ## Reference
 
@@ -930,10 +951,8 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WebServer/src/W
 
 https://github.com/espressif/arduino-esp32/tree/master/libraries/WebServer/examples
 
-https://www.oceanlabz.in/getting-started-with-esp32-wi-fi/
 
-https://www.oceanlabz.in/esp32-web-server-with-multiple-sliders-control-leds-brightness/
 
-https://www.oceanlabz.in/esp32-web-server-control-outputs-with-timer/
+
 
 
