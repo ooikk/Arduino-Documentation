@@ -1096,7 +1096,8 @@ ESP-NOW is a fast, connectionless 2.4 GHz wireless communication protocol develo
 
 By operating directly on the Data Link Layer (Layer 2) using vendor-specific IEEE 802.11 Action Frames, ESP-NOW bypasses the overhead of the TCP/IP stack.     
 
-<img width="1111" height="516" alt="image" src="https://github.com/user-attachments/assets/bd4fec0a-db6d-488d-adfb-3e52e9612147" />     
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/bd4fec0a-db6d-488d-adfb-3e52e9612147" />       
+
 *ESP-NOW Protocol Model vs OSI Model. Source: Espressif Systems*
 
 **Technical Highlights**      
@@ -1181,7 +1182,7 @@ esp_err_t esp_now_register_recv_cb(esp_now_recv_cb_t cb);
 ```
 - Usage: Registers a function executed whenever an incoming packet is received by the ESP32.
 
-**Step-by-Step ESP-NOW Tutorial for ESP32-S3**     
+**Step-by-Step ESP-NOW Tutorial for ESP32-S3: One-Way Unicast (1:1) configuration**     
 **Step 1**: Find the Receiver Board's MAC Address    
 Upload this short utility code to your Receiver ESP32-S3 board and open the Serial Monitor (115200 baud) to copy its MAC address.    
 ```
