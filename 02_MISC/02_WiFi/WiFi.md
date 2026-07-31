@@ -920,9 +920,9 @@ server.send(200, "text/css", cssStyleString);
 The fundamental difference between these two approaches comes down to string formatting and how memory and variables are managed in C++.     
 Instead of building an HTML string line-by-line using concatenation (html += ...), the code uses a C++ Raw String Literal: R"rawliteral(...)rawliteral".     
 1. What is a Raw String Literal?     
-In standard C++, characters like double quotes (") and newlines (\n) have special meaning inside string literals. To include them in standard strings, you have to escape them with backslashes (\" or \n).
+In standard C++, characters like double quotes (```"```) and newlines (```\n```) have special meaning inside string literals. To include them in standard strings, you have to escape them with backslashes (```\"``` or ```\n```).
 
-A raw string literal ignores all escape sequences and line breaks. Everything between R"rawliteral( and )rawliteral" is saved exactly as typed.
+A raw string literal ignores all escape sequences and line breaks. Everything between ```R"rawliteral(``` and ```)rawliteral"``` is saved exactly as typed.
 
 ```
 // Standard String Concatenation (Requires escaping quotes & line-by-line syntax)
@@ -935,25 +935,25 @@ const char* htmlPage = R"rawliteral(
 ```
 
 2. How to Manage Variables with Raw Strings      
-Because const char* htmlPage is a read-only static text block, you cannot inline C++ variables directly inside it (e.g., you can't write <p>Count: + myVariable + </p> inside the raw block).
+Because ```const char* htmlPage``` is a read-only static text block, you cannot inline C++ variables directly inside it (e.g., you can't write ```<p>Count: + myVariable + </p>``` inside the raw block).
 
 To inject dynamic data, it uses a Template & Placeholder Pattern:
 
 Step 1: Define Unique Placeholders in HTML     
-Insert custom, unique string tags in your raw HTML where dynamic content belongs (e.g., %STATE%, %TEMP%, %HUMIDITY%).    
+Insert custom, unique string tags in your raw HTML where dynamic content belongs (e.g., ```%STATE%```, ```%TEMP%```, ```%HUMIDITY%```).    
 ```
 <p><strong>Status:</strong> <span id="ledStatus">%STATE%</span></p>
 <p><strong>Temperature:</strong> %TEMP% °C</p>
 ```
 
 Step 2: Make a Dynamic Copy in RAM     
-Inside your route handler function (e.g., handleRoot()), instantiate a C++ String object initialized with the raw template. This allocates dynamic memory on the heap so it can be edited.    
+Inside your route handler function (e.g., ```handleRoot()```), instantiate a C++ ```String``` object initialized with the raw template. This allocates dynamic memory on the heap so it can be edited.    
 
 ```
 String html = htmlPage; // Copies static template into dynamic RAM
 ```
 Step 3: Search and Replace Placeholders      
-Use the .replace() method to replace each placeholder tag with live runtime values before sending the response:     
+Use the ```.replace()``` method to replace each placeholder tag with live runtime values before sending the response:     
 ```
 void handleRoot() {
   float currentTemp = 24.5;
@@ -970,18 +970,18 @@ void handleRoot() {
 
 3. Advantages & Disadvantages Comparison    
 
-|	Feature	|	Raw String Literal + .replace()	|	Concatenation (html += ...)	|
+|	Feature	|	Raw String Literal + ```.replace()```	|	Concatenation (```html += ...```)	|
 |	-	|	-	|	-	|
-|	Code Readability	|	High. Looks like clean standard HTML/CSS/JS.	|	Low. Messy with backslashes, quotes, and += on every line.	|
+|	Code Readability	|	High. Looks like clean standard HTML/CSS/JS.	|	Low. Messy with backslashes, quotes, and ```+=``` on every line.	|
 |	Copy-Pasting HTML	|	Easy. Copy directly from VS Code or a web designer.	|	Hard. Requires formatting every line as C++ string syntax.	|
-|	Variable Injection	|	Requires placeholder tags (%TAG%) and .replace().	|	Inlined directly (html += myVar;).	|
-|	Heap Memory Impact	|	Creating a dynamic copy via String html = htmlPage allocates memory in RAM temporarily during request.	|	Repeated += calls cause heap fragmentation over time due to frequent allocations/reallocations.	|
-|	Flash vs RAM	|	Can be easily stored in Flash memory using PROGMEM.	|	Kept as multiple string literals or dynamic string allocations.	|
+|	Variable Injection	|	Requires placeholder tags (```%TAG%```) and ```.replace()```.	|	Inlined directly (```html += myVar;```).	|
+|	Heap Memory Impact	|	Creating a dynamic copy via ```String html = htmlPage``` allocates memory in RAM temporarily during request.	|	Repeated ```+=``` calls cause heap fragmentation over time due to frequent allocations/reallocations.	|
+|	Flash vs RAM	|	Can be easily stored in Flash memory using ```PROGMEM```.	|	Kept as multiple string literals or dynamic string allocations.	|
 
-💡 Pro Tip: Optimize RAM with PROGMEM     
-In the code provided, const char* htmlPage resides in RAM by default. If your HTML block gets large, it will consume valuable ESP32 RAM even when no web client is connected.
+💡 Pro Tip: Optimize RAM with ```PROGMEM```     
+In the code provided, ```const char* htmlPage``` resides in RAM by default. If your HTML block gets large, it will consume valuable ESP32 RAM even when no web client is connected.
 
-You can store the raw HTML template directly in Flash Memory (SPI Flash) by adding PROGMEM:
+You can store the raw HTML template directly in Flash Memory (SPI Flash) by adding ```PROGMEM```:
 ```
 // Stored in Flash Memory (saves RAM)
 const char htmlPage[] PROGMEM = R"rawliteral(
@@ -1000,6 +1000,7 @@ void handleRoot() {
 ```
 
 Full code example: ESP32 Access Point Mode: Create a Wi-Fi Hotspot to Control an LED     
+https://www.oceanlabz.in/getting-started-with-esp32-wi-fi/     
 ```
 #include <WiFi.h>
 #include <WebServer.h>
