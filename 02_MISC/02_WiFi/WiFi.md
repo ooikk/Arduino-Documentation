@@ -918,7 +918,8 @@ server.send(200, "text/css", cssStyleString);
 ## Raw String Literal + .replace() vs Concatenation (html += ...)     
 
 The fundamental difference between these two approaches comes down to string formatting and how memory and variables are managed in C++.     
-Instead of building an HTML string line-by-line using concatenation (html += ...), the code uses a C++ Raw String Literal: R"rawliteral(...)rawliteral".     
+Instead of building an HTML string line-by-line using concatenation (```html += ...```), the code uses a C++ Raw String Literal: ```R"rawliteral(...)rawliteral"```.     
+  
 1. What is a Raw String Literal?     
 In standard C++, characters like double quotes (```"```) and newlines (```\n```) have special meaning inside string literals. To include them in standard strings, you have to escape them with backslashes (```\"``` or ```\n```).
 
