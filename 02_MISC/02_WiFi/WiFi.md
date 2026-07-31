@@ -1092,6 +1092,8 @@ void loop() {
 
 ## ESP32 ESP-NOW     
 
+https://www.luisllamas.es/que-es-esp-now-esp32/
+
 https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
 
 ## ESP32 MQTT     
@@ -1099,6 +1101,8 @@ https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
 https://www.luisllamas.es/como-usar-mqtt-en-el-esp8266-esp32/
 
 https://randomnerdtutorials.com/esp32-mqtt-publish-subscribe-arduino-ide/
+
+
 
 ## Further Reading     
 
