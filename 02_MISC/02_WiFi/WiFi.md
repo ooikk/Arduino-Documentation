@@ -1328,6 +1328,209 @@ void loop() {
   // Nothing needed here. Incoming packets trigger OnDataRecv automatically.
 }
 ```
+**Code Example for Bi-Directional (2-Way)**    
+
+
+To make two ESP32-S3 boards communicate bi-directionally, both boards need to act as both Sender and Receiver.
+
+The most practical and reliable way to implement 2-way communication is the Request–Response (Ping-Pong) pattern:
+- Board A sends a command or query packet to Board B.
+- Board B receives the packet, processes it, and immediately transmits a response packet back to Board A.
+
+**1. Board A Code (Initiator / Controller)**    
+This board sends a command to Board B every 2 seconds and listens for the incoming status response.    
+
+*Note: Replace BOARD_B_MAC with the actual MAC address of your second ESP32-S3 board.*     
+
+```
+#include <WiFi.h>
+#include <esp_now.h>
+
+// ⚠️ REPLACE WITH BOARD B's MAC ADDRESS
+uint8_t boardBMac[] = {0x24, 0xEC, 0x4A, 0x36, 0x9B, 0x70};
+
+// Shared Data Structures
+typedef struct struct_command {
+  int command_id;    // e.g., 1 = Toggle LED, 2 = Read Sensor
+  bool trigger_state;
+} struct_command;
+
+typedef struct struct_response {
+  int response_from; // Board ID
+  float temp_reading;
+  bool led_status;
+} struct_response;
+
+struct_command outgoingCmd;
+struct_response incomingData;
+esp_now_peer_info_t peerInfo;
+
+// Delivery Confirmation Callback
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("Transmission to Board B: ");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivered" : "Failed");
+}
+
+// Data Received Callback
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDataPtr, int len) {
+#else
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
+#endif
+  memcpy(&incomingData, incomingDataPtr, sizeof(incomingData));
+
+  Serial.println("\n📥 [Board A] Received Reply from Board B:");
+  Serial.printf("  Sender ID:    Board #%d\n", incomingData.response_from);
+  Serial.printf("  Temp Sensor:  %.2f °C\n", incomingData.temp_reading);
+  Serial.printf("  LED Status:   %s\n", incomingData.led_status ? "ON" : "OFF");
+  Serial.println("----------------------------------------");
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  WiFi.mode(WIFI_STA);
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Register BOTH callbacks
+  esp_now_register_send_cb(OnDataSent);
+  esp_now_register_recv_cb(OnDataRecv);
+
+  // Register Board B as a Peer
+  memcpy(peerInfo.peer_addr, boardBMac, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add Board B as peer");
+    return;
+  }
+
+  Serial.println("Board A (Initiator) Ready!");
+}
+
+void loop() {
+  static int cmdCount = 0;
+  
+  // Prepare command
+  outgoingCmd.command_id = ++cmdCount;
+  outgoingCmd.trigger_state = (cmdCount % 2 == 0);
+
+  Serial.printf("\n📤 [Board A] Sending Command #%d to Board B...\n", outgoingCmd.command_id);
+
+  // Transmit command to Board B
+  esp_now_send(boardBMac, (uint8_t *) &outgoingCmd, sizeof(outgoingCmd));
+
+  delay(2000); // Send request every 2 seconds
+}
+```
+
+**2. Board B Code (Responder / Node)**     
+This board continuously listens for commands from Board A. As soon as a command arrives, it executes the request and transmits back a status payload.
+
+*Note: Replace BOARD_A_MAC with the actual MAC address of your first ESP32-S3 board.*     
+```
+#include <WiFi.h>
+#include <esp_now.h>
+
+// ⚠️ REPLACE WITH BOARD A's MAC ADDRESS
+uint8_t boardAMac[] = {0x34, 0x85, 0x18, 0x7B, 0x12, 0x40};
+
+// Shared Data Structures
+typedef struct struct_command {
+  int command_id;
+  bool trigger_state;
+} struct_command;
+
+typedef struct struct_response {
+  int response_from;
+  float temp_reading;
+  bool led_status;
+} struct_response;
+
+struct_command incomingCmd;
+struct_response outgoingReply;
+esp_now_peer_info_t peerInfo;
+
+const int LED_PIN = 2; // Built-in LED
+
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("Reply Delivery to Board A: ");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Failed");
+}
+
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDataPtr, int len) {
+#else
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
+#endif
+  memcpy(&incomingCmd, incomingDataPtr, sizeof(incomingCmd));
+
+  Serial.println("\n📥 [Board B] Command Received from Board A!");
+  Serial.printf("  Command ID: %d | Requested State: %s\n", 
+                incomingCmd.command_id, 
+                incomingCmd.trigger_state ? "HIGH" : "LOW");
+
+  // 1. Execute hardware action based on command
+  digitalWrite(LED_PIN, incomingCmd.trigger_state ? HIGH : LOW);
+
+  // 2. Prepare reply payload
+  outgoingReply.response_from = 2;
+  outgoingReply.temp_reading = 24.0 + (random(-10, 10) / 10.0); // Simulated sensor
+  outgoingReply.led_status = incomingCmd.trigger_state;
+
+  // 3. Immediately reply back to Board A
+  Serial.println("📤 [Board B] Sending status ACK back to Board A...");
+  esp_now_send(boardAMac, (uint8_t *) &outgoingReply, sizeof(outgoingReply));
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  pinMode(LED_PIN, OUTPUT);
+  WiFi.mode(WIFI_STA);
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  esp_now_register_send_cb(OnDataSent);
+  esp_now_register_recv_cb(OnDataRecv);
+
+  // Register Board A as a Peer
+  memcpy(peerInfo.peer_addr, boardAMac, 6);
+  peerInfo.channel = 0;
+  peerInfo.encrypt = false;
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add Board A as peer");
+    return;
+  }
+
+  Serial.println("Board B (Responder) Listening...");
+}
+
+void loop() {
+  // Loop remains empty; responses are event-triggered in OnDataRecv
+}
+```
+
+**3. Best Practices for 2-Way Communication**    
+- **Avoid Simultaneous Loops**: Having both boards continuously call ```esp_now_send()``` inside their ```loop()``` functions at arbitrary timers can cause RF packet collisions. Using the event-driven Request–Reply approach above eliminates radio congestion.
+- **Wi-Fi Channel Synchronization**: If one board is also connected to a home router, both boards must be pinned to the exact same Wi-Fi channel (1–13) using ```WiFi.printDiag(Serial)``` or ```esp_wifi_set_channel()```.
+- **Data Alignment**: Keep identical struct definitions across both sketches to prevent memory boundary alignment issues.
+
+
+
+
+
 
 
 https://www.luisllamas.es/que-es-esp-now-esp32/
