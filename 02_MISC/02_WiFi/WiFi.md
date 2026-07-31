@@ -1092,6 +1092,243 @@ void loop() {
 
 ## ESP32 ESP-NOW     
 
+ESP-NOW is a fast, connectionless 2.4 GHz wireless communication protocol developed by Espressif. It enables raw board-to-board data transmission without requiring a Wi-Fi router, IP address assignment, or DHCP handshakes.
+
+By operating directly on the Data Link Layer (Layer 2) using vendor-specific IEEE 802.11 Action Frames, ESP-NOW bypasses the overhead of the TCP/IP stack.     
+
+<img width="1111" height="516" alt="image" src="https://github.com/user-attachments/assets/bd4fec0a-db6d-488d-adfb-3e52e9612147" />     
+*ESP-NOW Protocol Model vs OSI Model. Source: Espressif Systems*
+
+**Technical Highlights**      
+- Payload Capacity: Up to 250 bytes per packet.
+- Latency: Extremely low, typically ~2ms to 10ms transmission time.
+- Power Consumption: Ideal for deep-sleep battery devices. A sensor can wake up, transmit data, receive confirmation, and sleep in less than 15ms.
+- Security: Supports CCMP (AES-128) encryption for paired peers.
+- Coexistence: Can operate alongside Wi-Fi Station or Access Point modes on the same channel.     
+
+**Application Topology Modes**    
+ESP-NOW supports several flexible network topologies:     
+|	Topology Mode	|	Description	|	Typical Use Case	|
+|	-	|	-	|	-	|
+|	One-Way Unicast (1:1)	|	One Sender transmits directly to a specific Receiver's MAC address.	|	Wireless light switch, remote control.	|
+|	One-to-Many (1:N)	|	One Master board broadcasts or sends data to multiple Slave boards.	|	Central controller updating multiple displays/actuators.	|
+|	Many-to-One (N:1)	|	Multiple battery-powered Nodes send readings to one central Receiver Hub.	|	Distributed soil moisture or temperature sensors.	|
+|	Bi-Directional (2-Way)	|	Every node registers the other as a peer, sending and receiving data back and forth.	|	Mesh-like telemetry, acknowledgment feedback systems.	|
+
+**ESP-NOW Header Source Code**     
+The header file esp_now.h is part of the Espressif ESP-IDF framework integrated directly into the Arduino ESP32 core:     
+Official GitHub Link: [espressif/esp-idf — esp_now.h](https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_now.h)
+
+
+**ESP-NOW API Reference**    
+To use these functions, include the header in your sketch: ```#include <esp_now.h>```     
+
+**1. Core Lifecycle APIs**    
+```
+esp_err_t esp_now_init(void);
+```
+- Usage: Initializes the ESP-NOW protocol stack. Wi-Fi mode (```WiFi.mode(...)```) must be initialized before calling ```esp_now_init()```.
+- Returns: ```ESP_OK``` on success, ```ESP_ERR_ESPNOW_NOT_INIT``` or other error codes on failure.
+
+```
+esp_err_t esp_now_deinit(void);
+```
+- Usage: De-initializes ESP-NOW and frees associated memory buffers.
+
+
+**2. Peer Management APIs**    
+Before sending a targeted message to another board, it must be registered as a peer using the ```esp_now_peer_info_t``` struct.
+
+```
+esp_err_t esp_now_add_peer(const esp_now_peer_info_t *peer);
+```
+- Usage: Adds a peer to the peer list. The struct requires setting ```.peer_addr``` (6-byte MAC), ```.channel``` (0–14), and ```.encrypt``` (bool).
+
+```
+esp_err_t esp_now_del_peer(const uint8_t *peer_addr);
+```
+- Usage: Removes a peer from the registered peer list using its 6-byte MAC address.
+
+```
+esp_err_t esp_now_mod_peer(const esp_now_peer_info_t *peer);
+```
+- Usage: Modifies settings for an existing peer (e.g., updating Wi-Fi channel or encryption keys).
+
+```
+bool esp_now_is_peer_exist(const uint8_t *peer_addr);
+```
+- Usage: Checks if a board with the specified MAC address is already registered in the peer table.
+
+**3. Data Transmission APIs**    
+```
+esp_err_t esp_now_send(const uint8_t *peer_addr, const uint8_t *data, size_t len);
+```     
+
+- Arguments:    
+  - ```peer_addr```: Target 6-byte MAC address array (or ```NULL``` to send to all registered peers).
+  - ```data```: Pointer to byte buffer array or struct cast to ```const uint8_t*```.
+  - ```len```: Number of bytes to transmit (max 250 bytes).
+- Usage: Transmits data packet over raw 2.4 GHz frames.
+
+**4. Callback Registration APIs**    
+```
+esp_err_t esp_now_register_send_cb(esp_now_send_cb_t cb);
+```
+- Usage: Registers a function executed automatically when a send operation completes. Confirms whether the packet was successfully delivered (```ESP_NOW_SEND_SUCCESS```) or failed (```ESP_NOW_SEND_FAIL```).
+
+```
+esp_err_t esp_now_register_recv_cb(esp_now_recv_cb_t cb);
+```
+- Usage: Registers a function executed whenever an incoming packet is received by the ESP32.
+
+**Step-by-Step ESP-NOW Tutorial for ESP32-S3**     
+**Step 1**: Find the Receiver Board's MAC Address    
+Upload this short utility code to your Receiver ESP32-S3 board and open the Serial Monitor (115200 baud) to copy its MAC address.    
+```
+#include <WiFi.h>
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  
+  WiFi.mode(WIFI_MODE_STA);
+  Serial.print("Receiver MAC Address: ");
+  Serial.println(WiFi.macAddress());
+}
+
+void loop() {
+  // Nothing here
+}
+```
+
+**Step 2**: Sender Code (ESP32-S3)     
+Paste your receiver's MAC address into the ```receiverAddress``` array below.     
+```
+#include <WiFi.h>
+#include <esp_now.h>
+
+// REPLACE WITH YOUR RECEIVER'S MAC ADDRESS
+uint8_t receiverAddress[] = {0x24, 0xEC, 0x4A, 0x36, 0x9B, 0x70};
+
+// Data structure to send (Must match Receiver structure)
+typedef struct struct_message {
+  int counter;
+  float temperature;
+  bool state;
+} struct_message;
+
+struct_message myData;
+esp_now_peer_info_t peerInfo;
+
+// Send Callback Function
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("Last Packet Send Status:\t");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  // Set device as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
+
+  // Initialize ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Register send callback
+  esp_now_register_send_cb(OnDataSent);
+
+  // Register peer
+  memcpy(peerInfo.peer_addr, receiverAddress, 6);
+  peerInfo.channel = 0;  // 0 means current Wi-Fi channel
+  peerInfo.encrypt = false;
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add peer");
+    return;
+  }
+
+  Serial.println("Sender Ready!");
+}
+
+void loop() {
+  // Populate message data
+  myData.counter++;
+  myData.temperature = 25.4;
+  myData.state = true;
+
+  // Send packet to peer
+  esp_err_t result = esp_now_send(receiverAddress, (uint8_t *) &myData, sizeof(myData));
+
+  if (result == ESP_OK) {
+    Serial.printf("Sent packet #%d\n", myData.counter);
+  } else {
+    Serial.println("Error sending the data");
+  }
+
+  delay(2000); // Send data every 2 seconds
+}
+```
+**Step 3**: Receiver Code (ESP32-S3)    
+Upload this code to the Receiver ESP32-S3 board.     
+```
+#include <WiFi.h>
+#include <esp_now.h>
+
+// Data structure to receive (Must match Sender structure)
+typedef struct struct_message {
+  int counter;
+  float temperature;
+  bool state;
+} struct_message;
+
+struct_message incomingData;
+
+// Receive Callback Function (Compatible with ESP32 Core v2.x and v3.x)
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDataPtr, int len) {
+#else
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
+#endif
+  memcpy(&incomingData, incomingDataPtr, sizeof(incomingData));
+  
+  Serial.println("--- New Message Received ---");
+  Serial.printf("Bytes received: %d\n", len);
+  Serial.printf("Counter: %d\n", incomingData.counter);
+  Serial.printf("Temperature: %.2f °C\n", incomingData.temperature);
+  Serial.printf("State: %s\n", incomingData.state ? "TRUE" : "FALSE");
+  Serial.println();
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  // Set device as a Wi-Fi Station
+  WiFi.mode(WIFI_STA);
+
+  // Initialize ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Register receive callback
+  esp_now_register_recv_cb(OnDataRecv);
+
+  Serial.println("Receiver Listening...");
+}
+
+void loop() {
+  // Nothing needed here. Incoming packets trigger OnDataRecv automatically.
+}
+```
+
+
 https://www.luisllamas.es/que-es-esp-now-esp32/
 
 https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
