@@ -1388,7 +1388,7 @@ void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len);
 
 In v3.x, the callback signature was updated to:
 
-```
+```cpp
 // Example placeholder – replace with your actual v3.x signature
 void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len);
 ```
@@ -1399,7 +1399,7 @@ Instead of a simple MAC pointer, it passes a pointer to a new structure called `
 
 Defined in the underlying ESP-IDF `esp_now.h`, the structure looks like this:
 
-```
+```cpp
 typedef struct {
     uint8_t src_mac;
     uint8_t des_mac;
