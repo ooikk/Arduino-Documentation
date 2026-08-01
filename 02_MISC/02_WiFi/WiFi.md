@@ -1104,15 +1104,18 @@ By operating directly on the Data Link Layer (Layer 2) using vendor-specific IEE
 - Payload Capacity: Up to 250 bytes per packet.
 - Latency: Extremely low, typically ~2ms to 10ms transmission time.
 - Power Consumption: Ideal for deep-sleep battery devices. A sensor can wake up, transmit data, receive confirmation, and sleep in less than 15ms.
-- Security: Supports CCMP (AES-128) encryption for paired peers.
-- Coexistence: Can operate alongside Wi-Fi Station or Access Point modes on the same channel.     
+- Security: Supports CCMP (AES-128) encryption for paired peers using a Pre-shared Master Key (PMK) and Local Master Keys (LMK).
+- Capacity: Supports up to 20 unencrypted peers and 10 encrypted peers simultaneously.
+- Coexistence: Can operate alongside Wi-Fi Station or Access Point modes on the same channel.
+- Range: Similar to standard Wi-Fi (up to 100m – 500m+ in open space, depending on the antenna and PCB design).      
+
 
 **Application Topology Modes**    
 ESP-NOW supports several flexible network topologies:     
 |	Topology Mode	|	Description	|	Typical Use Case	|
 |	-	|	-	|	-	|
-|	One-Way Unicast (1:1)	|	One Sender transmits directly to a specific Receiver's MAC address.	|	Wireless light switch, remote control.	|
-|	One-to-Many (1:N)	|	One Master board broadcasts or sends data to multiple Slave boards.	|	Central controller updating multiple displays/actuators.	|
+|	Unicast: One-Way (1:1)	|	One Sender transmits directly to a specific Receiver's MAC address.	|	Wireless light switch, remote control.	|
+|	Broadcast: One-to-Many (1:N)	|	One Master board broadcasts or sends data to multiple Slave boards.	|	Ideal for beaconing, time synchronization, or triggering simultaneous actions. Central controller updating multiple displays/actuators. 	|
 |	Many-to-One (N:1)	|	Multiple battery-powered Nodes send readings to one central Receiver Hub.	|	Distributed soil moisture or temperature sensors.	|
 |	Bi-Directional (2-Way)	|	Every node registers the other as a peer, sending and receiving data back and forth.	|	Mesh-like telemetry, acknowledgment feedback systems.	|
 
@@ -1135,6 +1138,11 @@ esp_err_t esp_now_init(void);
 esp_err_t esp_now_deinit(void);
 ```
 - Usage: De-initializes ESP-NOW and frees associated memory buffers.
+
+```
+esp_err_t esp_now_get_version(uint32_t *version)
+```
+- Usage: Gets the current ESP-NOW version.     
 
 
 **2. Peer Management APIs**    
@@ -1159,6 +1167,16 @@ esp_err_t esp_now_mod_peer(const esp_now_peer_info_t *peer);
 bool esp_now_is_peer_exist(const uint8_t *peer_addr);
 ```
 - Usage: Checks if a board with the specified MAC address is already registered in the peer table.
+```
+esp_err_t esp_now_get_peer(const uint8_t *mac_addr, esp_now_peer_info_t *peer)
+```
+- Usage: Retrieves the configuration of a specific peer.
+
+```
+int esp_now_get_peer_num(void)
+```
+- Returns the current number of peers in the list.     
+
 
 **3. Data Transmission APIs**    
 ```
@@ -1178,9 +1196,28 @@ esp_err_t esp_now_register_send_cb(esp_now_send_cb_t cb);
 - Usage: Registers a function executed automatically when a send operation completes. Confirms whether the packet was successfully delivered (```ESP_NOW_SEND_SUCCESS```) or failed (```ESP_NOW_SEND_FAIL```).
 
 ```
+esp_err_t esp_now_unregister_send_cb(void)
+```
+- Usage: Unregisters the send callback.
+
+```
 esp_err_t esp_now_register_recv_cb(esp_now_recv_cb_t cb);
 ```
 - Usage: Registers a function executed whenever an incoming packet is received by the ESP32.
+
+```
+esp_err_t esp_now_unregister_recv_cb(void)
+```
+- Usage: Unregisters the receive callback.     
+
+
+
+**5. Security**     
+```
+esp_err_t esp_now_set_pmk(const uint8_t *pmk)
+```
+- Usage: Sets the Primary Master Key (PMK) for encrypting the Local Master Keys (LMK). If not set, a default PMK is used.     
+
 
 **Step-by-Step ESP-NOW Tutorial for ESP32-S3: One-Way Unicast (1:1) configuration**     
 **Step 1**: Find the Receiver Board's MAC Address    
