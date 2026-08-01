@@ -1376,7 +1376,7 @@ Here is the detailed technical breakdown of the differences.
 
 In v2.x, the callback signature was:
 
-```
+```cpp
 // Example placeholder – replace with your actual v2.x signature
 void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len);
 ```
@@ -1433,7 +1433,7 @@ void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len) {
 
 **New Code (v3.x)**
 
-```c
+```cpp
 // New v3.x style callback
 void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
     // info->src_mac replaces the old mac pointer
@@ -1473,7 +1473,7 @@ This board sends a command to Board B every 2 seconds and listens for the incomi
 
 *Note: Replace BOARD_B_MAC with the actual MAC address of your second ESP32-S3 board.*     
 
-```
+```cpp
 #include <WiFi.h>
 #include <esp_now.h>
 
@@ -1565,7 +1565,7 @@ void loop() {
 This board continuously listens for commands from Board A. As soon as a command arrives, it executes the request and transmits back a status payload.
 
 *Note: Replace BOARD_A_MAC with the actual MAC address of your first ESP32-S3 board.*     
-```
+```cpp
 #include <WiFi.h>
 #include <esp_now.h>
 
