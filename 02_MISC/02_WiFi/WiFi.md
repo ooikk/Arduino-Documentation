@@ -85,7 +85,7 @@ WiFi.promiscuousEnable(true);
 ## Application Examples
 
 **Station STA Mode**     
-```
+```cpp
 #include <WiFi.h>
 
 // Your home router credentials
@@ -132,7 +132,7 @@ void loop() {
 ```
 **Station STA Mode with Simple Web Server**  
 The ESP32 connects to your home router. To see the web page, your phone must be connected to your home Wi-Fi, and you type the ESP32's IP address into your browser.     
-```
+```cpp
 #include <WiFi.h>
 #include <WebServer.h>
 
@@ -181,7 +181,7 @@ void loop() {
 ```
 **Station STA Mode with Web Server to control LED**      
 This code hosts a simple web page on the ESP32-S3 that displays uptime and allows toggling the onboard LED.    
-```
+```cpp
 #include <WiFi.h>
 #include <WebServer.h>
 
@@ -237,7 +237,7 @@ void loop() {
 }
 ```
 **Station STA Mode with Web Server and Authentication**      
-```
+```cpp
 /*  
   Rui Santos & Sara Santos - Random Nerd Tutorials
   https://RandomNerdTutorials.com/esp32-web-server-beginners-guide/
@@ -380,7 +380,7 @@ void loop() {
 ```
 
 **Access Point (AP) Mode**     
-```
+```cpp
 #include <WiFi.h>
 
 // Credentials for the ESP32's own hotspot
@@ -425,7 +425,7 @@ void loop() {
 }
 ```
 **Access Point (AP) Mode with simple Web Server**     
-```
+```cpp
 #include <WiFi.h>
 #include <WebServer.h>
 
@@ -489,7 +489,7 @@ void loop() {
 **AP + STA Mode (Mixed Mode)**      
 
 This is highly practical. The ESP32 connects to your home Wi-Fi (STA) to get internet, while simultaneously broadcasting its own Wi-Fi (AP) for local device connections.     
-```
+```cpp
 #include <WiFi.h>
 #include <WebServer.h>
 
@@ -569,7 +569,7 @@ To keep this educational and safe, the following code specifically filters for 8
 - Beacon Frames (Subtype 8): Broadcasted by routers to announce their SSID.
 - Probe Request Frames (Subtype 4): Broadcasted by client devices (phones, laptops) looking for known networks.     
 
-```
+```cpp
 #include <WiFi.h>
 #include <esp_wifi.h>
 
@@ -955,7 +955,7 @@ String html = htmlPage; // Copies static template into dynamic RAM
 ```
 Step 3: Search and Replace Placeholders      
 Use the ```.replace()``` method to replace each placeholder tag with live runtime values before sending the response:     
-```
+```cpp
 void handleRoot() {
   float currentTemp = 24.5;
 
@@ -983,7 +983,7 @@ void handleRoot() {
 In the code provided, ```const char* htmlPage``` resides in RAM by default. If your HTML block gets large, it will consume valuable ESP32 RAM even when no web client is connected.
 
 You can store the raw HTML template directly in Flash Memory (SPI Flash) by adding ```PROGMEM```:
-```
+```cpp
 // Stored in Flash Memory (saves RAM)
 const char htmlPage[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
@@ -1002,7 +1002,7 @@ void handleRoot() {
 
 Full code example: ESP32 Access Point Mode: Create a Wi-Fi Hotspot to Control an LED     
 https://www.oceanlabz.in/getting-started-with-esp32-wi-fi/     
-```
+```cpp
 #include <WiFi.h>
 #include <WebServer.h>
  
@@ -1222,7 +1222,7 @@ esp_err_t esp_now_set_pmk(const uint8_t *pmk)
 **Step-by-Step ESP-NOW Tutorial for ESP32-S3: One-Way Unicast (1:1) configuration**     
 **Step 1**: Find the Receiver Board's MAC Address    
 Upload this short utility code to your Receiver ESP32-S3 board and open the Serial Monitor (115200 baud) to copy its MAC address.    
-```
+```cpp
 #include <WiFi.h>
 
 void setup() {
@@ -1241,7 +1241,7 @@ void loop() {
 
 **Step 2**: Sender Code (ESP32-S3)     
 Paste your receiver's MAC address into the ```receiverAddress``` array below.     
-```
+```cpp
 #include <WiFi.h>
 #include <esp_now.h>
 
@@ -1313,7 +1313,7 @@ void loop() {
 ```
 **Step 3**: Receiver Code (ESP32-S3)    
 Upload this code to the Receiver ESP32-S3 board.     
-```
+```cpp
 #include <WiFi.h>
 #include <esp_now.h>
 
