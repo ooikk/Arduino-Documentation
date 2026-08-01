@@ -2075,6 +2075,194 @@ void loop() {
 The receiver board uses standard encrypted ESP-NOW code (matching `PMK_KEY` and `LMK_KEY` on Channel 1). It remains powered on as a gateway and receives messages whenever the sleep node wakes up and transmits.
 
 
+**Encrypted ESP-NOW Receiver Designs**    
+
+To receive encrypted data from a deep-sleep sensor node, the receiver design depends on your power setup:
+
+1.  **Always-On Gateway (Recommended & Most Common):** The receiver stays powered continuously so it can catch incoming packets from the sleeping sensor node at any moment.
+2.  **Synchronized Receiver Node:** The receiver also enters deep sleep and wakes up during aligned time windows to listen for a short burst before sleeping again.
+
+**1. Always-On Encrypted Receiver (Gateway)**      
+
+Because ESP-NOW AES-128 encryption requires hardware key handshake verification, the receiver **MUST** register the sender's MAC address as an encrypted peer with the exact same PMK and LMK keys.
+
+> **Note:** Replace `SENDER_MAC` with the actual MAC address of your deep-sleep sensor node.
+
+
+```cpp
+#include <WiFi.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+// ⚠️ REPLACE WITH YOUR SENDER NODE'S MAC ADDRESS
+uint8_t senderAddress[] = {0x34, 0x85, 0x18, 0x7B, 0x12, 0x40};
+
+// 16-Byte AES Keys (MUST MATCH SENDER EXACTLY)
+static const char PMK_KEY[] = "16BytePMKKey1234";
+static const char LMK_KEY[] = "16ByteLMKKey5678";
+
+// Payload Structure (MUST MATCH SENDER EXACTLY)
+typedef struct struct_sensor_data {
+  int boot_number;
+  float temperature;
+  float battery_voltage;
+} struct_sensor_data;
+
+struct_sensor_data incomingSensorData;
+esp_now_peer_info_t peerInfo;
+
+// Receive Callback (Fires instantly when decrypted packet arrives)
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDataPtr, int len) {
+  const uint8_t *mac = recv_info->src_addr;
+#else
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
+#endif
+
+  memcpy(&incomingSensorData, incomingDataPtr, sizeof(incomingSensorData));
+
+  Serial.println("==================================================");
+  Serial.printf("📥 Decrypted Packet Received from MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
+                mac, mac, mac, mac, mac, mac);
+  Serial.printf("  Boot / Transmission Count : #%d\n", incomingSensorData.boot_number);
+  Serial.printf("  Temperature               : %.2f °C\n", incomingSensorData.temperature);
+  Serial.printf("  Battery Voltage           : %.2f V\n", incomingSensorData.battery_voltage);
+  Serial.println("==================================================\n");
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  // 1. Set Wi-Fi Station Mode & Pin to Channel 1 (Must match sender)
+  WiFi.mode(WIFI_STA);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+
+  // 2. Initialize ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // 3. Set Primary Master Key (PMK)
+  esp_now_set_pmk((uint8_t *)PMK_KEY);
+
+  // 4. Register Receive Callback
+  esp_now_register_recv_cb(OnDataRecv);
+
+  // 5. Register Deep-Sleep Sender as an Encrypted Peer
+  // (Required for ESP32 hardware AES to decrypt frames from this specific MAC)
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, senderAddress, 6);
+  peerInfo.channel = 1;      // Fixed Channel 1
+  peerInfo.encrypt = true;    // Enable AES-128 Decryption
+  memcpy(peerInfo.lmk, LMK_KEY, 16);
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add encrypted sender peer!");
+    return;
+  }
+
+  Serial.println("Encrypted ESP-NOW Gateway Listening on Channel 1...");
+}
+
+void loop() {
+  // Main loop remains free for processing, MQTT bridging, SD logging, etc.
+}
+```
+
+**2. Low-Power "Synchronized Window" Receiver**     
+
+If your receiver must also run on a battery and use Deep Sleep:
+
+*   Both boards use the same timer interval (e.g., wake up every 10 seconds).
+*   On wake-up, the receiver keeps its radio active for a **100 ms listening window**.
+*   If data is received (or the window expires), the receiver logs the data and returns to sleep.
+
+
+```cpp
+#include <WiFi.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+#define uS_TO_S_FACTOR 1000000ULL
+#define TIME_TO_SLEEP  10     // Sleep 10 seconds (Matches sender interval)
+#define LISTEN_WINDOW  150    // Listen for 150ms before giving up
+
+uint8_t senderAddress[] = {0x34, 0x85, 0x18, 0x7B, 0x12, 0x40};
+static const char PMK_KEY[] = "16BytePMKKey1234";
+static const char LMK_KEY[] = "16ByteLMKKey5678";
+
+typedef struct struct_sensor_data {
+  int boot_number;
+  float temperature;
+  float battery_voltage;
+} struct_sensor_data;
+
+struct_sensor_data incomingSensorData;
+esp_now_peer_info_t peerInfo;
+volatile bool dataReceived = false;
+
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDataPtr, int len) {
+#else
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
+#endif
+  memcpy(&incomingSensorData, incomingDataPtr, sizeof(incomingSensorData));
+  dataReceived = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_STA);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+
+  if (esp_now_init() != ESP_OK) { goToSleep(); }
+
+  esp_now_set_pmk((uint8_t *)PMK_KEY);
+  esp_now_register_recv_cb(OnDataRecv);
+
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, senderAddress, 6);
+  peerInfo.channel = 1;
+  peerInfo.encrypt = true;
+  memcpy(peerInfo.lmk, LMK_KEY, 16);
+  esp_now_add_peer(&peerInfo);
+
+  // 100ms Synchronized RX Listening Window
+  uint32_t startWindow = millis();
+  while (!dataReceived && (millis() - startWindow < LISTEN_WINDOW)) {
+    delay(1);
+  }
+
+  if (dataReceived) {
+    Serial.printf("📥 Rx Boot #%d | Temp: %.1f°C | Batt: %.2fV\n",
+                  incomingSensorData.boot_number,
+                  incomingSensorData.temperature,
+                  incomingSensorData.battery_voltage);
+  } else {
+    Serial.println("⚠️ Listen window timed out. No packet caught.");
+  }
+
+  goToSleep();
+}
+
+void goToSleep() {
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  esp_wifi_stop();
+  esp_deep_sleep_start();
+}
+
+void loop() {}
+```
+
+**Critical Checkpoints for Encrypted ESP-NOW**     
+
+*   **Peer Registration is Required:** Unlike unencrypted promiscuous listening, the receiver must add the sender's MAC address with `esp_now_add_peer()` and set `peerInfo.encrypt = true`. Otherwise, incoming encrypted frames will be dropped at the hardware PHY level.
+*   **Matching Channel & Keys:** PMK, LMK, and the Wi-Fi channel (1) must match byte-for-byte across both sketches.
+*   **Data Struct Alignment:** Ensure field order and types (`int`, `float`) are identical on both sides.
+
 https://www.luisllamas.es/que-es-esp-now-esp32/
 
 https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
