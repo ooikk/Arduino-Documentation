@@ -1894,6 +1894,186 @@ void loop() {
 | **Peer Capacity Limit** | Unencrypted ESP‑NOW supports up to 20 total peers. Encrypted peers are limited to 6 peers maximum due to hardware key storage registers. |
 | **`memset(&peerInfo, 0, sizeof(peerInfo))`** | Always zero out the `peerInfo` structure before populating fields to avoid garbage memory in security parameters. |
 
+### Encrypted ESP-NOW with ESP32-S3 Deep Sleep for battery-powered sensor nodes
+
+When using standard Wi-Fi, an ESP32 must wake up, scan for networks, negotiate WPA2 authentication, and wait for a DHCP IP assignment—a process that takes **2 to 5 seconds** at ~120 mA current draw.
+
+With **Encrypted ESP-NOW + Deep Sleep**, the ESP32-S3 wakes up, sets its radio directly to a fixed Wi-Fi channel, transmits an encrypted payload, receives hardware acknowledgment, and goes back to deep sleep in **less than 50 milliseconds**. This provides a **~99% reduction** in active energy consumption, allowing a single LiPo battery to power a sensor node for months or years.
+
+**Technical Execution Flow**    
+
+```text
+       [Deep Sleep (~10µA)]
+                │
+       (Timer / RTC Wakeup)
+                │
+                ▼
+┌───────────────────────┐
+│ 1. Read Sensor Data   │ (~1-5 ms)
+└───────────┬───────────┘
+            │
+┌───────────▼───────────┐
+│ 2. Init Radio & Keys  │ (~20 ms)
+│    (WIFI_STA + Channel│
+│     PMK + LMK Peer)   │
+└───────────┬───────────┘
+            │
+┌───────────▼───────────┐
+│ 3. Send Encrypted     │ (~5-10 ms)
+│    ESP-NOW Packet     │
+└───────────┬───────────┘
+            │
+┌───────────▼───────────┐
+│ 4. Wait for ACK /     │ (~2-5 ms)
+│    Timeout Safeguard  │
+└───────────┬───────────┘
+            │
+┌───────────▼───────────┐
+│ 5. Enter Deep Sleep   │ (Back to ~10µA)
+└───────────────────────┘
+```
+
+**Complete Sensor Node Code Example**     
+
+This code wakes up every 10 seconds (configurable), reads a simulated temperature sensor, increments a persistent boot counter stored in RTC memory, transmits the encrypted payload to the receiver board, and goes back to sleep immediately.
+
+
+```cpp
+#include <WiFi.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+// ====================================================================
+// DEEP SLEEP & RTC CONFIGURATION
+// ====================================================================
+#define uS_TO_S_FACTOR 1000000ULL  /* Conversion factor for micro seconds to seconds */
+#define TIME_TO_SLEEP  10          /* Time ESP32 will go to sleep (in seconds) */
+
+// Persistent RTC memory variable (retained across deep sleep cycles)
+RTC_DATA_ATTR int bootCount = 0;
+
+// ====================================================================
+// ENCRYPTION & PEER CONFIGURATION
+// ====================================================================
+// ⚠️ REPLACE WITH YOUR RECEIVER BOARD'S MAC ADDRESS
+uint8_t receiverAddress[] = {0x24, 0xEC, 0x4A, 0x36, 0x9B, 0x70};
+
+// 16-Byte AES Keys (MUST match receiver exactly)
+static const char PMK_KEY[] = "16BytePMKKey1234";
+static const char LMK_KEY[] = "16ByteLMKKey5678";
+
+// Payload Structure
+typedef struct struct_sensor_data {
+  int boot_number;
+  float temperature;
+  float battery_voltage;
+} struct_sensor_data;
+
+struct_sensor_data sensorPayload;
+esp_now_peer_info_t peerInfo;
+
+// Flag to track transmission status
+volatile bool sendCompleted = false;
+
+// Delivery Callback
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("Encrypted Delivery Status: ");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success (ACK)" : "Fail");
+  sendCompleted = true;
+}
+
+void setup() {
+  Serial.begin(115200);
+  
+  // 1. Increment persistent boot counter
+  bootCount++;
+  Serial.printf("\n--- Wakeup #%d ---\n", bootCount);
+
+  // 2. Read Sensor Data (Keep code fast!)
+  sensorPayload.boot_number = bootCount;
+  sensorPayload.temperature = 22.0 + (random(0, 100) / 10.0); // Simulated sensor
+  sensorPayload.battery_voltage = 3.72;                        // Simulated ADC reading
+
+  // 3. Initialize Wi-Fi Station Mode & Pin Channel
+  WiFi.mode(WIFI_STA);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE); // Fixed Channel 1 required for AES
+
+  // 4. Initialize ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("ESP-NOW Init Failed! Sleeping...");
+    goToSleep();
+  }
+
+  // 5. Set Primary Master Key (PMK)
+  esp_now_set_pmk((uint8_t *)PMK_KEY);
+
+  // 6. Register Send Callback
+  esp_now_register_send_cb(OnDataSent);
+
+  // 7. Add Encrypted Peer
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, receiverAddress, 6);
+  peerInfo.channel = 1;      // Must match explicit channel set above
+  peerInfo.encrypt = true;    // Enable AES-128
+  memcpy(peerInfo.lmk, LMK_KEY, 16);
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add peer! Sleeping...");
+    goToSleep();
+  }
+
+  // 8. Transmit Encrypted Payload
+  Serial.printf("Sending Payload: Boot #%d | Temp: %.1f°C\n", 
+                sensorPayload.boot_number, sensorPayload.temperature);
+                
+  esp_err_t result = esp_now_send(receiverAddress, (uint8_t *)&sensorPayload, sizeof(sensorPayload));
+
+  if (result != ESP_OK) {
+    Serial.println("Send Initiation Failed!");
+    goToSleep();
+  }
+
+  // 9. Wait for hardware ACK callback with a short 500ms safeguard timeout
+  uint32_t startTime = millis();
+  while (!sendCompleted && (millis() - startTime < 500)) {
+    delay(1); // Short pause to keep CPU waiting efficiently
+  }
+
+  // 10. Enter Deep Sleep immediately
+  goToSleep();
+}
+
+void goToSleep() {
+  Serial.println("Entering Deep Sleep now...");
+  Serial.flush(); // Ensure serial logs are printed before power down
+
+  // Enable timer wakeup
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  
+  // Turn off Wi-Fi radio explicitly for maximum power saving
+  esp_wifi_stop();
+  
+  // Enter Deep Sleep
+  esp_deep_sleep_start();
+}
+
+void loop() {
+  // Never reached! Execution re-enters setup() on wakeup.
+}
+```
+
+**Power Optimization Highlights in This Code**    
+
+*   **RTC_DATA_ATTR Variable:** Stores `bootCount` in the RTC slow memory that stays powered during deep sleep. When the chip wakes up, variables marked with `RTC_DATA_ATTR` retain their values without being reset.
+*   **Empty `loop()`:** Deep sleep turns off the main dual CPUs. When the wake-up timer fires, the ESP32 performs a cold boot and runs `setup()` from the top. Putting all logic in `setup()` eliminates unnecessary loop iterations.
+*   **ACK Timeout Safeguard:** The `while (!sendCompleted)` loop waits for the physical 2.4 GHz ACK callback from the receiver board. The 500ms safety timeout prevents the board from hanging and draining battery if the receiver board is turned off or out of range.
+*   **`esp_wifi_stop()`:** Calling `esp_wifi_stop()` right before `esp_deep_sleep_start()` forces the Wi-Fi modem and radio synthesizers into full power-down mode immediately.
+
+
+**Receiver Compatibility**     
+
+The receiver board uses standard encrypted ESP-NOW code (matching `PMK_KEY` and `LMK_KEY` on Channel 1). It remains powered on as a gateway and receives messages whenever the sleep node wakes up and transmits.
+
 
 https://www.luisllamas.es/que-es-esp-now-esp32/
 
