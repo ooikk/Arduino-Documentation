@@ -92,7 +92,7 @@ There are two primary libraries for BLE on the ESP32-S3:
      The default ESP32 BLE stack (Bluedroid) is heavy. NimBLE-Arduino uses approximately 50% less flash space and around 100KB less RAM. This is especially critical on the ESP32-S3 if you are also running Wi-Fi, a display, or other memory-intensive tasks.
   2. Drop-in Compatibility
      It was specifically designed to be a fork structured for Arduino compilation while maintaining API compatibility with the original ESP32 BLE library. In most cases, you can switch to it simply by changing your #include statements:
-     ```
+     ```cpp
      // Instead of this:
      // #include <BLEDevice.h>
      // #include <BLEServer.h>
@@ -210,23 +210,23 @@ Setting up a GATT BLE Server on the ESP32-S3 follows a strict initialization seq
 Here are the standard steps using the Arduino ESP32 BLE framework (BLEDevice.h):     
 1. Initialize the BLE Stack: Device Name Setup.          
    Assign a broadcast name to your ESP32-S3 and initialize the underlying Bluetooth hardware stack.
-   ```
+   ```cpp
    BLEDevice::init("ESP32-S3_BLE_Server");
    ```
 2. Instantiate the BLE Server: Server Creation.       
    Create the primary BLE Server object. This acts as the root container for services and handles connection/disconnection event callbacks.
-   ```
+   ```cpp
    BLEServer *pServer = BLEDevice::createServer();
    // Optional: pServer->setCallbacks(new MyServerCallbacks());
    ```      
 3. Create the GATT Service: Service Definition.       
    Define a service using a unique 128-bit UUID to logically group your sensor or control characteristics.
-   ```
+   ```cpp
    BLEService *pService = pServer->createService(SERVICE_UUID);
    ```
 4. Add Characteristics & Descriptors: Data Endpoints.       
    Instantiate characteristics inside your service with specific access permissions (Read, Write, Notify). If enabling notifications, attach the standard 2902 Client Characteristic Configuration Descriptor.
-   ```
+   ```cpp
    BLECharacteristic *pCharacteristic = pService->createCharacteristic(
    CHARACTERISTIC_UUID,
    BLECharacteristic::PROPERTY_READ   |
@@ -238,12 +238,12 @@ Here are the standard steps using the Arduino ESP32 BLE framework (BLEDevice.h):
 
 5. Start the Service: Memory Activation.       
    Start the service to allocate its characteristics and make them active in memory.
-   ```
+   ```cpp
    pService->start();
    ```      
 6. Configure & Start Advertising: Broadcasting.       
    Attach your Service UUID to the advertising payload so central devices (such as a Web BLE client or smartphone) can discover your ESP32-S3, then start broadcasting.
-   ```
+   ```cpp
    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
    pAdvertising->addServiceUUID(SERVICE_UUID);
    pAdvertising->setScanResponse(true);
@@ -254,12 +254,12 @@ Setting up a GATT BLE Client (Central) on the ESP32 using the stock BLEDevice.h 
 Here are the basic steps to implement a BLE Client:      
 1. Initialize the BLE Stack: Device Setup.      
    Initialize the underlying BLE stack as a central client device. Unlike a server, a client does not require a public broadcast name.     
-   ```
+   ```cpp
    BLEDevice::init("");
    ```
 2. Configure & Start BLE Scanner: Device Discovery.     
    Get the scanner instance, attach an advertised device callback class to process incoming broadcasts, set active scanning, and initiate a scan window.
-   ```
+   ```cpp
    BLEScan* pBLEScan = BLEDevice::getScan();
    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
    pBLEScan->setInterval(1349);
@@ -270,7 +270,7 @@ Here are the basic steps to implement a BLE Client:
    
 3. Target Server Identification: Advertised Device Callback.       
    Inside your ```MyAdvertisedDeviceCallbacks::onResult()``` function, check incoming advertisement packets for your target Service UUID or Device Name. Once matched, save a pointer to the device and stop scanning.     
-   ```
+   ```cpp
    if (advertisedDevice.haveServiceUUID() && 
     advertisedDevice.isAdvertisingService(SERVICE_UUID)) {
    BLEDevice::getScan()->stop();
@@ -280,20 +280,20 @@ Here are the basic steps to implement a BLE Client:
    ```     
 4. Connect to GATT Server: Establish Peer Connection.     
    Instantiate a BLEClient object, attach optional connection state callbacks, and connect directly to the target BLEAdvertisedDevice.     
-   ```
+   ```cpp
    BLEClient* pClient = BLEDevice::createClient();
    pClient->connect(myDevice); // Returns true if connection succeeds
    ```     
 5. Discover Remote Services & Characteristics: GATT Tree Mapping.     
    Query the connected server to retrieve handles for your target Service UUID and its associated Remote Characteristics.     
-   ```
+   ```cpp
    BLERemoteService* pRemoteService = pClient->getService(SERVICE_UUID);
    BLERemoteCharacteristic* pSensorChar  = pRemoteService->getCharacteristic(SENSOR_CHAR_UUID);
    BLERemoteCharacteristic* pControlChar = pRemoteService->getCharacteristic(CONTROL_CHAR_UUID);
    ```
 6. Read, Write & Subscribe to Notifications: Data Exchange.       
    Perform GATT operations on the server: write data to control characteristics, read value buffers, or register a callback function to receive asynchronous notifications.      
-   ```
+   ```cpp
    // Write command payload to server
    if (pControlChar->canWrite()) {
    pControlChar->writeValue("1");
@@ -308,7 +308,7 @@ Here are the basic steps to implement a BLE Client:
 
 **Example 1: ESP32-S3 BLE Server (Send Data to Smartphone)**     
 This example sets up the ESP32-S3 as a server that advertises a custom service. You can read the characteristic value using a smartphone app like nRF Connect, Arduino Bluetooth Controller or LightBlue.
-```
+```cpp
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
@@ -371,7 +371,7 @@ void loop() {
 ```
 **Example 2: ESP32-S3 BLE Server Callbacks (Receive Commands)**     
 To react when a central device (like a smartphone) sends a command to the ESP32-S3, attach a Characteristic Callback:
-```
+```cpp
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -439,7 +439,7 @@ void loop() {
 
 **Example 3: BLE Peripheral (Server) - Smart Sensor / LED Control**     
 This example creates a BLE Server that exposes a Service with two Characteristics: one to read a simulated sensor value, and one to write data to control an LED.
-```
+```cpp
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -544,7 +544,7 @@ void loop() {
 
 **Example 4: BLE Central (Client) - Scanning and Reading**      
 This example turns the ESP32-S3 into a Central device that scans for a specific BLE peripheral, connects to it, and reads a characteristic.
-```
+```cpp
 /*
   Example 4: BLE Central (Client) - Heart Rate Monitor Receiver 
   UPDATED for ESP32 Core v3.x continuous scanning and reconnection.
@@ -741,7 +741,7 @@ Why this is the best practice:
 - Clean Code: Separate callback handlers (or if/else checks per characteristic) keep logic decoupled.
 - Semantic & Tool Friendly: In debugging apps like nRF Connect, you can inspect or control the LED without affecting the motor.
 - Granular Types & Permissions: The LED might only need PROPERTY_WRITE for a 0/1 boolean, while the motor might need PROPERTY_WRITE + PROPERTY_READ for speed control (0–255 PWM).
-```
+```cpp
 // Separate Characteristics under the SAME Service
 #define LED_CHAR_UUID   "d5875406-fa50-4bfa-982a-152586b0251b"
 #define MOTOR_CHAR_UUID "e6986517-gb61-5cgb-093b-262697c1362c"
@@ -774,7 +774,7 @@ Byte 0 (Device ID)     Byte 1 (Action / Command)    Byte 2+ (Payload / Value)
 0x01 (LED)             0x01 (ON) / 0x00 (OFF)       —
 0x02 (Motor)           0x01 (Set Speed)             0xFE (Speed = 254)
 ```
-```
+```cpp
 class CommandPipeCallback: public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic *pChar) override {
     uint8_t* data = pChar->getData();
@@ -810,7 +810,7 @@ Prerequisite: Install the ArduinoJson library (v7 or later) via the Arduino IDE 
 
 **1. Server Code (Receiver & Parser)**     
 The server listens on a single "Command Characteristic" (PROPERTY_WRITE). When data arrives, it parses the JSON object and routes actions based on the "target" field.      
-```
+```cpp
 /*
   ESP32-S3 BLE Server - JSON Command Pipe
   Parses incoming JSON objects to route actions to specific hardware modules.
@@ -912,7 +912,7 @@ void loop() {
 On your ESP32-S3 Client (or smartphone app), build the JSON document, serialize it into a string, and send it over the BLE connection.
 
 Example Helper Functions for Client:       
-```
+```cpp
 // Assuming pRemoteCmdChar is declared globally at top of sketch
 
 void sendLedCommand(bool turnOn) {
@@ -969,7 +969,7 @@ It has been implemented in Chrome, Edge, Opera (Android), and it is supported on
 The ESP32 will act as a BLE Peripheral/BLE Server that advertises its existence. Your computer, smartphone, or tablet will act as a BLE Controller/Client that interacts with the ESP32 device.      
 Create an HTML file called anyname.html with the following code (it contains both the HTML to build the web page and Javascript to handle Web Bluetooth).     
 
-```
+```cpp
 <!--
   Rui Santos
   Complete project details at https://RandomNerdTutorials.com/esp32-web-bluetooth/
@@ -1139,7 +1139,7 @@ Create an HTML file called anyname.html with the following code (it contains bot
 </html>
 ```
 Change below variable to match the server settings, in this example we use Example 3 Server code for the ESP32.
-```
+```cpp
     var deviceName ='ESP32-S3_Example_3';
     var bleService = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
     var ledCharacteristic = 'd5875406-fa50-4bfa-982a-152586b0251b';
@@ -1164,7 +1164,7 @@ Instead, use a Connectionless Broadcaster/Observer Pattern (Beacons) combined wi
 
 **1. Server Code (Broadcaster)**     
 The server wakes up every 30 minutes, broadcasts its sensor payload in advertisement data for 3 seconds, and sleeps.
-```
+```cpp
 /* ESP32-S3 BLE Server - Ultra Low Power Broadcaster */
 #include <NimBLEDevice.h>
 
@@ -1232,7 +1232,7 @@ void loop() {
 ```
 **2. Client Code (Observer with Self-Sync)**     
 The client uses RTC_DATA_ATTR memory to retain its synchronization state across deep sleep resets.     
-```
+```cpp
 /* ESP32-S3 BLE Client - Synchronized Low Power Observer */
 
 #include <NimBLEDevice.h>
@@ -1364,7 +1364,7 @@ Manufacturer Data     2 bytes            2 bytes (Company ID)  27 bytes left
 A standard 128-bit UUID consumes over half of your entire broadcast budget ($18\text{ bytes}$ total). By skipping the 128-bit UUID and using setManufacturerData(), you save $14\text{ bytes}$ of packet space—allowing you to pack multiple sensor values, battery levels, or timestamps into a single transmission.     
 3. How the Client Filters Packets Without a UUID     
 Instead of filtering by a Service UUID, the client filters by the 2-byte Company ID and data length:     
-```
+```cpp
 // Check if packet contains Manufacturer Data
 if (advertisedDevice->haveManufacturerData()) {
   std::string mData = advertisedDevice->getManufacturerData();
@@ -1430,7 +1430,7 @@ If all nodes must run on battery, every node in the mesh must share the exact sa
 ```
 How to Modify the Payload for Multi-Hop Relaying      
 To make the code relay messages, you expand the SensorPayload structure so a single advertisement packet can carry readings from multiple hops or identify the originator:     
-```
+```cpp
 struct NodeData {
   uint8_t nodeId;
   float temperature;
@@ -1492,7 +1492,7 @@ Node 3                           [Scan & Receive] --------> (Process / Push to C
 
 The $31\text{-Byte}$ Multi-Hop Payload Structure     
 We pack multiple node readings into a single raw advertising packet without exceeding BLE's $31\text{-byte}$ limit:      
-```
+```cpp
 #define MAX_CHAIN_NODES 3
 
 struct NodeReading {
@@ -1511,7 +1511,7 @@ struct MeshPayload {
 
 **Unified Multi-Hop Code for ESP32-S3**          
 This single codebase supports all three node roles. Set NODE_ROLE at the top of the file before uploading to each board.      
-```
+```cpp
 /*
   ESP32-S3 NimBLE v2.x Synchronized Multi-Hop Relay
   Configurable via NODE_ROLE macro:
@@ -1804,7 +1804,7 @@ Component config --->
         (8)  Queue size per LPN
 ```
 Friend Node Code Structure (ESP-IDF)      
-```
+```cpp
 #include "esp_ble_mesh_defs.h"
 #include "esp_ble_mesh_common_api.h"
 #include "esp_ble_mesh_networking_api.h"
@@ -1868,7 +1868,7 @@ Component config --->
         (1000) Poll timeout (100ms units) -> 100 seconds
 ```
 LPN Code Structure (ESP-IDF)     
-```
+```cpp
 #include "esp_ble_mesh_defs.h"
 #include "esp_ble_mesh_common_api.h"
 #include "esp_ble_mesh_lpn_api.h"
