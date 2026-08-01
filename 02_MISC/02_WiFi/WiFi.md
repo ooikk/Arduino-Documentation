@@ -1420,7 +1420,7 @@ If you are updating an old sketch to work with Arduino Core v3.x, you only need 
 
 **Old Code (v2.x)**
 
-```
+```cpp
 // Old v2.x style callback
 void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len) {
     // mac is a pointer to 6-byte source MAC
@@ -1433,7 +1433,7 @@ void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len) {
 
 **New Code (v3.x)**
 
-```
+```c
 // New v3.x style callback
 void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
     // info->src_mac replaces the old mac pointer
