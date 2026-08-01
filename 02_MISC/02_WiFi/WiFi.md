@@ -1376,7 +1376,7 @@ Here is the detailed technical breakdown of the differences.
 
 In v2.x, the callback signature was:
 
-```cpp
+```
 // Example placeholder – replace with your actual v2.x signature
 void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len);
 ```
