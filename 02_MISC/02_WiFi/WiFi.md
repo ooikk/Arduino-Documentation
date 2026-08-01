@@ -1471,7 +1471,7 @@ The most practical and reliable way to implement 2-way communication is the Requ
 **1. Board A Code (Initiator / Controller)**    
 This board sends a command to Board B every 2 seconds and listens for the incoming status response.    
 
-*Note: Replace BOARD_B_MAC with the actual MAC address of your second ESP32-S3 board.*     
+*Note: Replace ```BOARD_B_MAC``` with the actual MAC address of your second ESP32-S3 board.*     
 
 ```cpp
 #include <WiFi.h>
@@ -1564,7 +1564,7 @@ void loop() {
 **2. Board B Code (Responder / Node)**     
 This board continuously listens for commands from Board A. As soon as a command arrives, it executes the request and transmits back a status payload.
 
-*Note: Replace BOARD_A_MAC with the actual MAC address of your first ESP32-S3 board.*     
+*Note: Replace ```BOARD_A_MAC``` with the actual MAC address of your first ESP32-S3 board.*     
 ```cpp
 #include <WiFi.h>
 #include <esp_now.h>
