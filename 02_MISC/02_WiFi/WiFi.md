@@ -1903,11 +1903,11 @@ With **Encrypted ESP-NOW + Deep Sleep**, the ESP32-S3 wakes up, sets its radio d
 **Technical Execution Flow**    
 
 ```text
-       [Deep Sleep (~10µA)]
-                │
-       (Timer / RTC Wakeup)
-                │
-                ▼
+   [Deep Sleep (~10µA)]
+            │
+   (Timer / RTC Wakeup)
+            │
+            ▼
 ┌───────────────────────┐
 │ 1. Read Sensor Data   │ (~1-5 ms)
 └───────────┬───────────┘
