@@ -1668,7 +1668,7 @@ To enable hardware-accelerated AES-128 (CCMP) encryption on ESP-NOW, Espressif u
 Both boards must share the exact same PMK and LMK, and both must operate on the same fixed Wi-Fi channel (channel 0/auto-channel cannot negotiate encrypted handshake frames).
 
 **Encryption Configuration Steps**    
-```
+```cpp
 // 1. Both keys MUST be exactly 16 bytes (16 chars) long
 static const char PMK_KEY[] = "PMK_123456789012"; // 16 bytes
 static const char LMK_KEY[] = "LMK_123456789012"; // 16 bytes
@@ -1689,7 +1689,7 @@ esp_now_add_peer(&peerInfo);
 **Complete Encrypted 2-Way Examples**     
 1. Board A Code (Initiator)      
 *Note: Replace ```BOARD_B_MAC`` with Board B's MAC address.*    
-```
+```cpp
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
@@ -1787,7 +1787,7 @@ void loop() {
 
 2. Board B Code (Responder)    
 *Note: Replace `BOARD_A_MAC` with Board A's MAC address.*      
-```
+```cpp
 #include <WiFi.h>
 #include <esp_now.h>
 #include <esp_wifi.h>
