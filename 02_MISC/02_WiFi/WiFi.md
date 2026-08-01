@@ -1688,7 +1688,7 @@ esp_now_add_peer(&peerInfo);
 
 **Complete Encrypted 2-Way Examples**     
 1. Board A Code (Initiator)      
-*Note: Replace ```BOARD_B_MAC`` with Board B's MAC address.*    
+*Note: Replace ```BOARD_B_MAC``` with Board B's MAC address.*    
 ```cpp
 #include <WiFi.h>
 #include <esp_now.h>
