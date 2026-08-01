@@ -1529,8 +1529,239 @@ void loop() {
 
 
 
+**AES-128 key encryption on 2-way ESP-NOW between two ESP32-S3 boards**     
+To enable hardware-accelerated AES-128 (CCMP) encryption on ESP-NOW, Espressif uses a two-tier key system:     
+- Primary Master Key (PMK): A 16-byte global key used to encrypt the local master keys. Set via ```esp_now_set_pmk()```.
+- Local Master Key (LMK): A 16-byte device-to-device key stored in ```peerInfo.lmk``` for a specific peer.     
 
+Both boards must share the exact same PMK and LMK, and both must operate on the same fixed Wi-Fi channel (channel 0/auto-channel cannot negotiate encrypted handshake frames).
 
+**Encryption Configuration Steps**    
+```
+// 1. Both keys MUST be exactly 16 bytes (16 chars) long
+static const char PMK_KEY[] = "PMK_123456789012"; // 16 bytes
+static const char LMK_KEY[] = "LMK_123456789012"; // 16 bytes
+
+// 2. Set PMK after esp_now_init()
+esp_now_set_pmk((uint8_t *)PMK_KEY);
+
+// 3. Configure Peer with LMK and encrypt flag
+memcpy(peerInfo.peer_addr, targetMac, 6);
+peerInfo.channel = 1; // Fixed channel required for encryption
+peerInfo.encrypt = true;
+memcpy(peerInfo.lmk, LMK_KEY, 16);
+
+// 4. Register peer
+esp_now_add_peer(&peerInfo);
+```
+
+**Complete Encrypted 2-Way Examples**     
+1. Board A Code (Initiator)      
+*Note: Replace ```BOARD_B_MAC`` with Board B's MAC address.*    
+```
+#include <WiFi.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+// ⚠️ REPLACE WITH BOARD B's MAC ADDRESS
+uint8_t boardBMac[] = {0x24, 0xEC, 0x4A, 0x36, 0x9B, 0x70};
+
+// 16-Byte Encryption Keys
+static const char PMK_KEY[] = "16BytePMKKey1234";
+static const char LMK_KEY[] = "16ByteLMKKey5678";
+
+// Data Structures
+typedef struct struct_command {
+  int command_id;
+  bool trigger_state;
+} struct_command;
+
+typedef struct struct_response {
+  int response_from;
+  float temp_reading;
+  bool led_status;
+} struct_response;
+
+struct_command outgoingCmd;
+struct_response incomingData;
+esp_now_peer_info_t peerInfo;
+
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("Encrypted Send Status: ");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success (ACK received)" : "Fail");
+}
+
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDataPtr, int len) {
+#else
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
+#endif
+  memcpy(&incomingData, incomingDataPtr, sizeof(incomingData));
+
+  Serial.println("\n📥 [Board A] Decrypted Message Received:");
+  Serial.printf("  Sender ID:   Board #%d\n", incomingData.response_from);
+  Serial.printf("  Temp Sensor: %.2f °C\n", incomingData.temp_reading);
+  Serial.printf("  LED Status:  %s\n", incomingData.led_status ? "ON" : "OFF");
+  Serial.println("----------------------------------------");
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  // Set Wi-Fi to Station mode and pin to Channel 1
+  WiFi.mode(WIFI_STA);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+
+  // Initialize ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Set Primary Master Key (PMK)
+  esp_now_set_pmk((uint8_t *)PMK_KEY);
+
+  // Register Callbacks
+  esp_now_register_send_cb(OnDataSent);
+  esp_now_register_recv_cb(OnDataRecv);
+
+  // Configure Peer with LMK and Encryption
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, boardBMac, 6);
+  peerInfo.channel = 1;      // Must match explicit Wi-Fi channel
+  peerInfo.encrypt = true;    // Enable AES-128
+  memcpy(peerInfo.lmk, LMK_KEY, 16);
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add encrypted peer");
+    return;
+  }
+
+  Serial.println("Board A (Encrypted Initiator) Ready!");
+}
+
+void loop() {
+  static int cmdCount = 0;
+
+  outgoingCmd.command_id = ++cmdCount;
+  outgoingCmd.trigger_state = (cmdCount % 2 == 0);
+
+  Serial.printf("\n📤 [Board A] Transmitting Encrypted Cmd #%d...\n", outgoingCmd.command_id);
+  esp_now_send(boardBMac, (uint8_t *) &outgoingCmd, sizeof(outgoingCmd));
+
+  delay(2000);
+}
+```
+
+2. Board B Code (Responder)    
+*Note: Replace ```BOARD_A_MAC``` with Board A's MAC address.*      
+```
+#include <WiFi.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+// ⚠️ REPLACE WITH BOARD A's MAC ADDRESS
+uint8_t boardAMac[] = {0x34, 0x85, 0x18, 0x7B, 0x12, 0x40};
+
+// 16-Byte Encryption Keys (MUST MATCH BOARD A EXACTLY)
+static const char PMK_KEY[] = "16BytePMKKey1234";
+static const char LMK_KEY[] = "16ByteLMKKey5678";
+
+typedef struct struct_command {
+  int command_id;
+  bool trigger_state;
+} struct_command;
+
+typedef struct struct_response {
+  int response_from;
+  float temp_reading;
+  bool led_status;
+} struct_response;
+
+struct_command incomingCmd;
+struct_response outgoingReply;
+esp_now_peer_info_t peerInfo;
+
+const int LED_PIN = 2;
+
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("Encrypted Reply Status: ");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
+}
+
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDataPtr, int len) {
+#else
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
+#endif
+  memcpy(&incomingCmd, incomingDataPtr, sizeof(incomingCmd));
+
+  Serial.println("\n📥 [Board B] Decrypted Command Received!");
+  Serial.printf("  Cmd ID: %d | Requested State: %s\n", 
+                incomingCmd.command_id, 
+                incomingCmd.trigger_state ? "HIGH" : "LOW");
+
+  digitalWrite(LED_PIN, incomingCmd.trigger_state ? HIGH : LOW);
+
+  // Prepare response
+  outgoingReply.response_from = 2;
+  outgoingReply.temp_reading = 23.5 + (random(-10, 10) / 10.0);
+  outgoingReply.led_status = incomingCmd.trigger_state;
+
+  Serial.println("📤 [Board B] Sending Encrypted ACK Reply...");
+  esp_now_send(boardAMac, (uint8_t *) &outgoingReply, sizeof(outgoingReply));
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  pinMode(LED_PIN, OUTPUT);
+
+  // Set Wi-Fi to Station mode and pin to Channel 1
+  WiFi.mode(WIFI_STA);
+  esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Set Primary Master Key
+  esp_now_set_pmk((uint8_t *)PMK_KEY);
+
+  esp_now_register_send_cb(OnDataSent);
+  esp_now_register_recv_cb(OnDataRecv);
+
+  // Configure Peer with LMK and Encryption
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, boardAMac, 6);
+  peerInfo.channel = 1;      // Must match explicit Wi-Fi channel
+  peerInfo.encrypt = true;    // Enable AES-128
+  memcpy(peerInfo.lmk, LMK_KEY, 16);
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add encrypted peer");
+    return;
+  }
+
+  Serial.println("Board B (Encrypted Responder) Listening...");
+}
+
+void loop() {
+  // Empty loop; replies triggered by OnDataRecv
+}
+```
+
+**Crucial Encryption Rules & Troubleshooting**    
+
+| Rule | Why It Matters |
+|------|----------------|
+| **Exact 16‑Byte Array Length** | PMK and LMK strings must be exactly 16 bytes (128 bits). Shorter or longer key strings cause `esp_now_add_peer()` to return `ESP_ERR_ESPNOW_KEY_MAX`. |
+| **Explicit Wi‑Fi Channel Setting** | Call `esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE)` before setup. Setting `peerInfo.channel = 0` (auto channel) causes encryption key exchange to fail. |
+| **Peer Capacity Limit** | Unencrypted ESP‑NOW supports up to 20 total peers. Encrypted peers are limited to 6 peers maximum due to hardware key storage registers. |
+| **`memset(&peerInfo, 0, sizeof(peerInfo))`** | Always zero out the `peerInfo` structure before populating fields to avoid garbage memory in security parameters. |
 
 
 https://www.luisllamas.es/que-es-esp-now-esp32/
