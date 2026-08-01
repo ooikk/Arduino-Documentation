@@ -1366,7 +1366,7 @@ void loop() {
 }
 ```
 
-### Note: ESP32 Core v3.x and Core v2.x     
+### ESP32 Core v3.x and Core v2.x     
 
 The core difference is that v2.x only provided the sender's MAC address, while v3.x provides a rich context structure that includes the sender's MAC, the destination MAC, and the Wi-Fi channel the packet was received on.
 
