@@ -1365,6 +1365,100 @@ void loop() {
   // Nothing needed here. Incoming packets trigger OnDataRecv automatically.
 }
 ```
+
+**Note: ESP32 Core v3.x and Core v2.x**     
+
+The core difference is that v2.x only provided the sender's MAC address, while v3.x provides a rich context structure that includes the sender's MAC, the destination MAC, and the Wi-Fi channel the packet was received on.
+
+Here is the detailed technical breakdown of the differences.
+
+**1. Core v2.x: The Legacy Approach (`const uint8_t * mac`)**
+
+In v2.x, the callback signature was:
+
+```cpp
+// Example placeholder – replace with your actual v2.x signature
+void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len);
+```
+
+- **What it is**: `mac` is simply a raw pointer to a 6-byte array representing the **Source MAC address** (the MAC address of the device that sent the packet).
+- **Limitation**: It lacked context. If your ESP32 was running both Station (STA) and SoftAP modes simultaneously, or if it was scanning multiple channels, the callback had no way to tell you which interface received the packet or which channel it arrived on.
+
+**2. Core v3.x: The Modern Approach (`const esp_now_recv_info_t *info`)**
+
+In v3.x, the callback signature was updated to:
+
+```
+// Example placeholder – replace with your actual v3.x signature
+void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len);
+```
+
+Instead of a simple MAC pointer, it passes a pointer to a new structure called `esp_now_recv_info_t`.
+
+**The `esp_now_recv_info_t` Structure**
+
+Defined in the underlying ESP-IDF `esp_now.h`, the structure looks like this:
+
+```
+typedef struct {
+    uint8_t src_mac;
+    uint8_t des_mac;
+    int8_t  channel;
+} esp_now_recv_info_t;
+```
+
+**Field Breakdown**   
+
+- `info->src_mac[6]`: This is the direct replacement for the old `mac` pointer. It holds the **MAC address of the sender**.
+- `info->des_mac[6]`: The **destination MAC address**. This is crucial for devices operating in SoftAP mode or STA+AP concurrent mode, as the device has multiple MAC addresses. This tells you exactly which of your device's interfaces the packet was addressed to.
+- `info->channel`: The **Wi-Fi channel** (1–13/14) on which the packet was received. This is highly useful if your application implements channel hopping or if you are running a sniffer/monitor node.
+
+
+**4. How to Migrate Your Code (v2.x to v3.x)**
+
+If you are updating an old sketch to work with Arduino Core v3.x, you only need to change the callback function signature and how you access the MAC address.
+
+**Old Code (v2.x)**
+
+```
+// Old v2.x style callback
+void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len) {
+    // mac is a pointer to 6-byte source MAC
+    Serial.printf("From: %02x:%02x:%02x:%02x:%02x:%02x\n",
+                  mac, mac, mac, mac, mac, mac);
+
+    // Process incomingData...
+}
+```
+
+**New Code (v3.x)**
+
+```
+// New v3.x style callback
+void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
+    // info->src_mac replaces the old mac pointer
+    Serial.printf("From: %02x:%02x:%02x:%02x:%02x:%02x\n",
+                  info->src_mac, info->src_mac, info->src_mac,
+                  info->src_mac, info->src_mac, info->src_mac);
+
+    // Optional: use destination MAC and channel
+    // info->des_mac
+    // info->channel
+
+    // Process incomingData...
+}
+```
+
+**Summary Table**
+
+| Feature | Core v2.x (`const uint8_t * mac`) | Core v3.x (`const esp_now_recv_info_t * info`) |
+|---------|-----------------------------------|------------------------------------------------|
+| Sender MAC | `mac` | `info->src_mac` |
+| Receiver/Dest MAC | Not available | `info->des_mac` |
+| RX Wi‑Fi Channel | Not available | `info->channel` |
+| Multi‑Interface Support | Poor (Ambiguous) | Excellent (Explicitly identifies interface) |
+| Underlying ESP‑IDF | v4.4 and older | v5.1 and newer |
+
 **Code Example for Bi-Directional (2-Way)**    
 
 
