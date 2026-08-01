@@ -1459,7 +1459,7 @@ void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData
 | Multi‑Interface Support | Poor (Ambiguous) | Excellent (Explicitly identifies interface) |
 | Underlying ESP‑IDF | v4.4 and older | v5.1 and newer |
 
-**Code Example for Bi-Directional (2-Way)**    
+### Code Example for Bi-Directional (2-Way)    
 
 
 To make two ESP32-S3 boards communicate bi-directionally, both boards need to act as both Sender and Receiver.
