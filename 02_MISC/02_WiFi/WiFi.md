@@ -822,7 +822,7 @@ When clients submit query parameters (```/api?temp=25&unit=C```) or URL-encoded 
 |	```uri()```	|	None	|	String	|	Returns path requested by client (e.g., "```/index.html```").	|
 |	```method()```	|	None	|	HTTPMethod	|	Returns HTTP verb (```HTTP_GET```, ```HTTP_POST```, etc.).	|
 |	```client()```	|	None	|	WiFiClient	|	Returns active raw WiFiClient TCP stream object.	|
-|	```upload()v	|	None	|	HTTPUpload&	|	Returns file upload object containing .filename, .type, .totalSize, and .status.	|
+|	```upload()```	|	None	|	HTTPUpload&	|	Returns file upload object containing .filename, .type, .totalSize, and .status.	|
 
 6. HTTP Header Commands       
 By default, request headers are ignored for performance. Call ```collectHeaders()``` before ```begin()``` to capture specific header keys.      
