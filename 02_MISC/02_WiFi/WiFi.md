@@ -84,7 +84,7 @@ WiFi.promiscuousEnable(true);
 
 ## Application Examples
 
-**Station STA Mode**     
+### Station STA Mode     
 ```cpp
 #include <WiFi.h>
 
@@ -130,7 +130,7 @@ void loop() {
   delay(5000); 
 }
 ```
-**Station STA Mode with Simple Web Server**  
+### Station STA Mode with Simple Web Server     
 The ESP32 connects to your home router. To see the web page, your phone must be connected to your home Wi-Fi, and you type the ESP32's IP address into your browser.     
 ```cpp
 #include <WiFi.h>
@@ -179,7 +179,7 @@ void loop() {
   server.handleClient(); // Handle incoming web requests
 }
 ```
-**Station STA Mode with Web Server to control LED**      
+### Station STA Mode with Web Server to control LED      
 This code hosts a simple web page on the ESP32-S3 that displays uptime and allows toggling the onboard LED.    
 ```cpp
 #include <WiFi.h>
@@ -236,7 +236,7 @@ void loop() {
   server.handleClient();
 }
 ```
-**Station STA Mode with Web Server and Authentication**      
+### Station STA Mode with Web Server and Authentication         
 ```cpp
 /*  
   Rui Santos & Sara Santos - Random Nerd Tutorials
@@ -379,7 +379,7 @@ void loop() {
 }
 ```
 
-**Access Point (AP) Mode**     
+### Access Point (AP) Mode       
 ```cpp
 #include <WiFi.h>
 
@@ -424,7 +424,7 @@ void loop() {
   delay(3000);
 }
 ```
-**Access Point (AP) Mode with simple Web Server**     
+### Access Point (AP) Mode with simple Web Server       
 ```cpp
 #include <WiFi.h>
 #include <WebServer.h>
@@ -486,7 +486,7 @@ void loop() {
 
 
 
-**AP + STA Mode (Mixed Mode)**      
+### AP + STA Mode (Mixed Mode)      
 
 This is highly practical. The ESP32 connects to your home Wi-Fi (STA) to get internet, while simultaneously broadcasting its own Wi-Fi (AP) for local device connections.     
 ```cpp
@@ -559,7 +559,7 @@ Note: To access the Web Client.
 - Method 1: Connect your computer/handphone WiFi to AP_SSID. Go to browser enter AP_IP.
 - Method 2: Connect to same router WiFi. Go to browser enter STA_IP.
 
-**Wi-Fi Sniffing**     
+### Wi-Fi Sniffing      
 
 The ESP32-S3 (like the original ESP32) features a built-in Wi-Fi radio that supports Promiscuous Mode. When enabled, the Wi-Fi driver bypasses the standard MAC address filtering and passes all captured 802.11 frames to the application layer.     
 
@@ -707,7 +707,7 @@ void wifi_promiscuous_callback(void *buf, wifi_promiscuous_pkt_type_t type) {
   //  Serial.println("+++++++++++++++++++++++++++++++");
 }
 ```
-How the Code Works     
+** How the Code Works**     
 - Promiscuous Initialization:
   ```WiFi.mode(WIFI_STA)``` initializes the Wi-Fi driver without actually connecting to a router.
   ```esp_wifi_set_promiscuous(true)``` disables the hardware MAC filter, and ```esp_wifi_set_promiscuous_rx_cb``` tells the ESP32 to send all raw 802.11 frames to our ```wifi_promiscuous_callback``` function.
@@ -718,7 +718,7 @@ How the Code Works
 - Information Element (IE) Parsing:
   After the 24-byte MAC header, 802.11 management frames contain a list of "Information Elements". These are tagged parameters. The code loops through these tags looking for Tag ID 0, which is the standardized identifier for the SSID.     
 
-Educational Project Ideas    
+**Educational Project Ideas**      
 Because this code only captures unencrypted management frames, it is perfectly safe to use for learning and legitimate IoT projects. Here are a few ways to expand this base code:     
 - Wi-Fi Presence Detector: Instead of just printing to Serial, log the transmitter_mac from Probe Requests to a database or send it to an MQTT broker. You can use this to detect when specific devices (like your phone) enter the building, triggering smart home automations.
 - OLED Display Integration: Connect a small I2C OLED screen (like an SSD1306) to the ESP32-S3 and display the captured SSIDs and MAC addresses in real-time, creating a portable "Wi-Fi Scanner" tool.
@@ -728,7 +728,7 @@ Because this code only captures unencrypted management frames, it is perfectly s
 ## HTTP servers    
 When building HTTP servers on the ESP32 using #include <WebServer.h>, the primary class is WebServer. Below is the complete API command reference organized by usage category, including parameter signatures, return types, and operational details.        
 
-1. Server Lifecycle Commands          
+**1. Server Lifecycle Commands**          
 - ```WebServer(int port = 80)```     
   - Arguments:     
     - port (int, optional): Listening TCP port number (default is 80).     
@@ -746,7 +746,7 @@ When building HTTP servers on the ESP32 using #include <WebServer.h>, the primar
   - Arguments: None.   
   - Usage: Stops the HTTP server and releases underlying sockets.   
 
-2. Route Registration Commands      
+**2. Route Registration Commands**      
 - ```on(path, [method], handler, [uploadHandler])```
   - Arguments:
     - path (const Uri& / String): URL path to listen for (e.g., "/", "/api/status").
@@ -774,7 +774,7 @@ When building HTTP servers on the ESP32 using #include <WebServer.h>, the primar
     - cache_header (const char, optional)*: Cache-control string (e.g., "max-age=86400").
   - Usage: Automatically serves static web pages (HTML, CSS, JS, images) stored in Flash memory.
 
-3. Response Generation Commands       
+**3. Response Generation Commands**       
 - ```send(code, content_type, content)```
   - Arguments:
     - code (int): Standard HTTP status code (200, 400, 404, 500). See next topic for details of the code.
@@ -804,7 +804,7 @@ When building HTTP servers on the ESP32 using #include <WebServer.h>, the primar
     - length (size_t): Total length or CONTENT_LENGTH_UNKNOWN.
 - Usage: Enables chunked streaming responses when serving dynamic or large streams of data.
 
-4. Query Parameter & Form Field Commands     
+**4. Query Parameter & Form Field Commands**     
 When clients submit query parameters (```/api?temp=25&unit=C```) or URL-encoded form data (POST), the server parses them automatically.     
 
 |	Command	|	Arguments	|	Return Type	|	Usage / Description	|
@@ -815,7 +815,7 @@ When clients submit query parameters (```/api?temp=25&unit=C```) or URL-encoded 
 |	```arg(index)```	|	index (int)	|	String	|	Returns parameter value by 0-based position index.	|
 |	```argName(index)```	|	index (int)	|	String	|	Returns parameter key name by 0-based position index.	|     
 
-5. Request & Connection Context Commands
+**5. Request & Connection Context Commands**
 
 |	Command	|	Arguments	|	Return Type	|	Usage / Description	|
 |	-	|	-	|	-	|	-	|
@@ -824,7 +824,7 @@ When clients submit query parameters (```/api?temp=25&unit=C```) or URL-encoded 
 |	```client()```	|	None	|	WiFiClient	|	Returns active raw WiFiClient TCP stream object.	|
 |	```upload()```	|	None	|	HTTPUpload&	|	Returns file upload object containing .filename, .type, .totalSize, and .status.	|
 
-6. HTTP Header Commands       
+**6. HTTP Header Commands**       
 By default, request headers are ignored for performance. Call ```collectHeaders()``` before ```begin()``` to capture specific header keys.      
 - ```collectHeaders(headerKeys[], count)```
   - Arguments: headerKeys[] (const char array)*
@@ -841,7 +841,7 @@ Header Inspection API
 |	```headerName(index)```	|	index (int)	|	String	|	Retrieves name of collected header by index.	|
 |	```hostHeader()```	|	None	|	String	|	Returns value of HTTP Host: header.	|
 
-7. HTTP Authentication Commands    
+**7. HTTP Authentication Commands**    
 - ```authenticate(username, password)```
   - Arguments: username (const char), password (const char).
   - Return Type: bool
@@ -1219,7 +1219,7 @@ esp_err_t esp_now_set_pmk(const uint8_t *pmk)
 - Usage: Sets the Primary Master Key (PMK) for encrypting the Local Master Keys (LMK). If not set, a default PMK is used.     
 
 
-**Step-by-Step ESP-NOW Tutorial for ESP32-S3: One-Way Unicast (1:1) configuration**     
+### Step-by-Step ESP-NOW Tutorial for ESP32-S3: One-Way Unicast (1:1) configuration     
 **Step 1**: Find the Receiver Board's MAC Address    
 Upload this short utility code to your Receiver ESP32-S3 board and open the Serial Monitor (115200 baud) to copy its MAC address.    
 ```cpp
@@ -1366,7 +1366,7 @@ void loop() {
 }
 ```
 
-**Note: ESP32 Core v3.x and Core v2.x**     
+### Note: ESP32 Core v3.x and Core v2.x     
 
 The core difference is that v2.x only provided the sender's MAC address, while v3.x provides a rich context structure that includes the sender's MAC, the destination MAC, and the Wi-Fi channel the packet was received on.
 
@@ -1660,7 +1660,7 @@ void loop() {
 
 
 
-**AES-128 key encryption on 2-way ESP-NOW between two ESP32-S3 boards**     
+### AES-128 key encryption on 2-way ESP-NOW between two ESP32-S3 boards     
 To enable hardware-accelerated AES-128 (CCMP) encryption on ESP-NOW, Espressif uses a two-tier key system:     
 - Primary Master Key (PMK): A 16-byte global key used to encrypt the local master keys. Set via ```esp_now_set_pmk()```.
 - Local Master Key (LMK): A 16-byte device-to-device key stored in ```peerInfo.lmk``` for a specific peer.     
