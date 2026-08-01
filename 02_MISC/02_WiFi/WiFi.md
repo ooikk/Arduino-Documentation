@@ -1786,7 +1786,7 @@ void loop() {
 ```
 
 2. Board B Code (Responder)    
-*Note: Replace ```BOARD_A_MAC``` with Board A's MAC address.*      
+*Note: Replace `BOARD_A_MAC` with Board A's MAC address.*      
 ```
 #include <WiFi.h>
 #include <esp_now.h>
