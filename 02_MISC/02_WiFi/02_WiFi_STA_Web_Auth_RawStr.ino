@@ -17,7 +17,9 @@ bool output26State = LOW;
 bool output27State = HIGH;
 
 // HTML content to be served
-const char* htmlPage = R"rawliteral(
+// const char* htmlPage = R"rawliteral(
+// store the raw HTML template directly in Flash Memory
+const char htmlPage[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
 	<head>
