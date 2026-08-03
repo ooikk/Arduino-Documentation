@@ -20,6 +20,7 @@ bool output27State = HIGH;
 // const char* htmlPage = R"rawliteral(
 // store the raw HTML template directly in Flash Memory
 const char htmlPage[] PROGMEM = R"rawliteral(
+
 <!DOCTYPE html>
 <html>
 	<head>
@@ -52,6 +53,26 @@ const char htmlPage[] PROGMEM = R"rawliteral(
     margin: 8px 0;
    }
   -->
+
+<!-- To receive text from Web browser  -->
+      input[type=text] {
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      .btn-send {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #008CBA;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .btn-send:hover { background-color: #007399; }
+
    </style>
    
    </head>
@@ -85,10 +106,49 @@ const char htmlPage[] PROGMEM = R"rawliteral(
  <div class="box">
    <p><strong>GPIO 27 Status:</strong>
 	 <span id="gpio27">%STATE27%</span></p>
-	 <p><a href="/27"><button class="%BUTTON27%">%STATUS27%</button></a></p>
+	 <p><a href="/27"><button class="%BUTTON27%">%STATUS27%</button></a></p> 
+<!--   <p><button class="%BUTTON27%" onclick="location.href='/27'">%STATUS27%</button></p>  -->
+ <!--  <p><a href="/27" class="%BUTTON27%" role="button">%STATUS27%</a></p> -->
  </div>
 
  </div>
+
+<!-- To receive text from Web browser  -->
+    <div class="container">
+      <div>
+        <span class="card-title"><strong>Custom Payload: </strong></span>
+      </div>
+      <div>
+        <input type="text" id="customInput" placeholder="e.g. 180 or JSON">
+        <button id="btnSendCustom" class="btn-send" onclick="sendCustomPayload()">Send</button>
+      </div>
+    </div>
+
+    <script>
+      function sendCustomPayload() {
+        const inputVal = document.getElementById("customInput").value;
+        if (!inputVal) {
+          alert("Please enter a payload before sending!");
+          return;
+        }
+
+        fetch("/custom", {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: inputVal
+        })
+        .then(response => response.text())
+        .then(data => {
+          alert("ESP32 Response: " + data);
+          document.getElementById("customInput").value = ""; // Clear input field
+        })
+        .catch(error => {
+          console.error("Error:", error);
+          alert("Failed to send payload.");
+        });
+      }
+    </script>
+
 
 	</body>
 </html>
@@ -137,6 +197,29 @@ void handleGPIO27() {
   handleRoot();
 }
 
+// Function to receive and process Custom Payload from web browser
+void handleCustomPayload() {
+  if (!isAuthenticated()) return;
+
+  // Check if a POST body exists
+  if (server.hasArg("plain")) {
+    String payload = server.arg("plain");
+
+    // Log received payload to Serial Monitor
+    Serial.println("=================================");
+    Serial.print("Custom Payload Received: ");
+    Serial.println(payload);
+    Serial.println("=================================");
+
+    // TODO: Add custom logic here to parse/process 'payload'
+    // e.g., if (payload == "180") { ... }
+
+    server.send(200, "text/plain", "Payload '" + payload + "' received successfully!");
+  } else {
+    server.send(400, "text/plain", "Error: No payload received");
+  }
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -166,6 +249,10 @@ void setup() {
 
   server.on("/26", handleGPIO26);
   server.on("/27", handleGPIO27);
+
+// Register the new route for receiving Custom Payload via HTTP POST
+  server.on("/custom", HTTP_POST, handleCustomPayload);
+
 
   // Start the web server
   server.begin();
