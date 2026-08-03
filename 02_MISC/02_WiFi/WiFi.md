@@ -1086,8 +1086,59 @@ void loop() {
 }
 ```
 
+## ESP32 Web Browser Input: Step-by-Step Summary
 
-More example here: 02_WiFi_STA_Web_Auth_RawStr.ino     
+Here is a summary of the steps required to receive user input from a web browser on your ESP32:
+
+### 1. Enable HTML Controls (Client-Side)
+
+Remove the `disabled` attributes from your `<input>` and `<button>` HTML elements so users can interact with them.
+
+```html
+<input type="text" id="customInput" placeholder="e.g. 180 or JSON">
+<button id="btnSendCustom" onclick="sendCustomPayload()">Send</button>
+```
+
+### 2. Send Data via JavaScript (Client-Side)
+
+Add a JavaScript function that triggers on button click. Use the `fetch()` API to send an asynchronous HTTP POST request with the text box value to a dedicated route (e.g., `/custom`) without reloading the page:
+
+```javascript
+fetch("/custom", {
+  method: "POST",
+  headers: { "Content-Type": "text/plain" },
+  body: document.getElementById("customInput").value
+})
+```
+
+### 3. Create the Server Handler Function (Server-Side)
+
+Write a C++ function on the ESP32 to receive and process the incoming payload:
+
+- **Verify Authentication:** Call `isAuthenticated()`.
+- **Read the Data:** Use `server.arg("plain")` to extract the raw text sent in the POST body.
+- **Process & Respond:** Execute your logic with the input string and send back a response using `server.send(200, ...)`.
+
+```cpp
+void handleCustomPayload() {
+  if (!isAuthenticated()) return;
+  if (server.hasArg("plain")) {
+    String payload = server.arg("plain"); // Received input text
+    // Process input here...
+    server.send(200, "text/plain", "Received: " + payload);
+  }
+}
+```
+
+### 4. Register the Server Route (Server-Side)
+
+In your ESP32 `setup()` function, bind the HTTP route and method (`HTTP_POST`) to your handler function using `server.on()`:
+
+```cpp
+server.on("/custom", HTTP_POST, handleCustomPayload);
+```
+
+**Code example: 02_WiFi_STA_Web_Auth_RawStr.ino**     
 
 
 
