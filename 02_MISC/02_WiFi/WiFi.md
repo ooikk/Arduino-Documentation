@@ -968,6 +968,7 @@ void handleRoot() {
   server.send(200, "text/html", html); // Send finished HTML
 }
 ```
+More example here: 02_WiFi_STA_Web_Auth_RawStr.ino     
 
 3. Advantages & Disadvantages Comparison    
 
