@@ -1138,7 +1138,7 @@ In your ESP32 `setup()` function, bind the HTTP route and method (`HTTP_POST`) t
 server.on("/custom", HTTP_POST, handleCustomPayload);
 ```
 
-**Code example: 02_WiFi_STA_Web_Auth_RawStr.ino**     
+**Code example:** [02_WiFi_STA_Web_Auth_RawStr.ino](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/02_WiFi_STA_Web_Auth_RawStr.ino)     
 
 
 
