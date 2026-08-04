@@ -144,8 +144,6 @@ const char htmlPage[] PROGMEM = R"rawliteral(
 
       /*   Slider 2  */
 
-
-
     /* Top line: Label and value side-by-side */
     .slider-header {
       display: flex;
@@ -164,11 +162,11 @@ const char htmlPage[] PROGMEM = R"rawliteral(
 
     /* Expands slider to take remaining horizontal width */
     .slider2 {
-      -webkit-appearance: none;
-      appearance: none;
-      flex: 1;
-	  width: 250px;
-      height: 24px;
+      -webkit-appearance: none; /* Strips away default operating system styling  */
+      appearance: none;         /* so your custom CSS can take effect.           */
+      flex: 1;                  /* Tells the slider to grow dynamically and fill all available horizontal space between -200 and 200. */
+      height: 24px;             /*  (Note: flex: 1 will override width: 250px when inside a flex container).                          */
+	    width: 250px;        
       background: #e0e0e0;
       outline: none;
       border: none;
@@ -176,6 +174,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(
       padding: 0;
     }
 
+    /* Cross-Browser Styling: Customizes the draggable handle for WebKit browsers (Chrome, Safari, Edge) and Firefox (-moz-). */
     /* WebKit Thumb */
     .slider2::-webkit-slider-thumb {
       -webkit-appearance: none;
