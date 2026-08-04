@@ -14,6 +14,10 @@ const int output26 = 48;
 const int output27 = 47;
 bool output26State = LOW;
 bool output27State = HIGH;
+bool toggleBasicState = false; // LOW / OFF by default
+bool toggleState = true;        // HIGH / ON by default
+int sliderVal = 30;
+int slider2Val = -30;
 
 WebServer server(80);
 
@@ -50,17 +54,24 @@ const char htmlPage[] PROGMEM = R"rawliteral(
 
       .container {
         display: flex;
+		    font-family: Arial, sans-serif;
         justify-content: center;
         align-items: center;
-        gap: 20px;
-        margin-top: 15px;
+		
+        gap: 5px;
+        margin-top: 5px;
+		    padding: 5px;
         flex-wrap: wrap;
+        background-color: #FBC02D;
       }
 
       .container > div {
         border: 1px solid #ccc;
         border-radius: 6px;
         padding: 5px;
+        background-color: #F5F5DC;
+	      margin-top: 5px;
+		   margin-bottom: 5px;
       }
 
       .box {
@@ -130,6 +141,68 @@ const char htmlPage[] PROGMEM = R"rawliteral(
 
       input:checked + .slider { background-color: var(--accent-blue); }
       input:checked + .slider:before { transform: translateX(24px); }
+
+      /*   Slider 2  */
+
+
+
+    /* Top line: Label and value side-by-side */
+    .slider-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      font-size: 18px;
+    }
+
+    /* Slider line: Min, slider bar, and Max aligned vertically center */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Expands slider to take remaining horizontal width */
+    .slider2 {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+	  width: 250px;
+      height: 24px;
+      background: #e0e0e0;
+      outline: none;
+      border: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* WebKit Thumb */
+    .slider2::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      background: #48BA93;
+      cursor: pointer;
+      border: none;
+    }
+
+    /* Firefox Thumb */
+    .slider2::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+      background: #48BA93;
+      cursor: pointer;
+      border: none;
+    }
+
+    /* Firefox Track */
+    .slider2::-moz-range-track {
+      background: #e0e0e0;
+      height: 24px;
+      border: none;
+    }
+
     </style>
   </head>
   <body>
@@ -161,19 +234,59 @@ const char htmlPage[] PROGMEM = R"rawliteral(
     <div class="container">
       <div style="display: flex; align-items: center; gap: 10px;"> 
         <span><strong>Basic Toggle </strong></span>
-        <input type="checkbox" id="toggleSwitchBasic">
+        <input type="checkbox" id="toggleSwitchBasic" %TOGGLE_BASIC_CHECKED%>
       </div>
    
       <div style="display: flex; align-items: center; gap: 10px;">
         <span><strong>GPIO Toggle </strong></span>
         <div class="switch-container">
           <label class="switch">
-            <input type="checkbox" id="toggleSwitch">
+            <input type="checkbox" id="toggleSwitch" %TOGGLE_CHECKED% >
             <span class="slider"></span>
           </label>
         </div>
       </div>
     </div>
+
+	  <!-- Slider bar  -->
+  <div class="container">
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+    
+    <!-- Top Label/Value Display -->
+    <div>
+      <span>Current Value: </span>
+      <strong id="sliderValue" style="color: red;">%SLIDER_VAL%</strong>
+    </div>
+
+    <!-- Slider & Min/Max Controls -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span><strong>Slider Bar:</strong></span>
+      <span>0</span>
+      <input type="range" min="0" max="100" value="%SLIDER_VAL%" id="mySlider">
+      <span>100</span>
+    </div>
+
+  </div>
+
+  <!-- Slider 2 bar  -->
+
+  <div class="slider-container">
+
+    <!-- Header line with label and value inline -->
+    <div class="slider-header">
+      <label for="slider2"><strong>Custom range slider: </strong></label>
+      <strong id="slider2Value" style="color: red;">%SLIDER2_VAL%</strong>
+    </div>
+
+    <!-- Row with min/max values aligned vertically with the slider -->
+    <div class="slider-row">
+      <span>-200</span>
+      <input type="range" min="-200" max="200" value="%SLIDER2_VAL%" class="slider2" id="slider2">
+      <span>200</span>
+    </div>
+
+  </div>
+</div>
 
     <script>
       // Function to post text with auth header included
@@ -204,6 +317,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(
         });
       }
 
+  // Function to post toggle switch
       function sendToggleSwitchCommand(endpoint, value) {
         fetch(endpoint, {
           method: "POST",
@@ -230,6 +344,57 @@ const char htmlPage[] PROGMEM = R"rawliteral(
           sendToggleSwitchCommand('/toggleBasic', e.target.checked ? '1' : '0');
         });
       }
+
+
+  // Function to post Slider Bar value
+
+const mySlider = document.getElementById('mySlider');
+const sliderValueDisplay = document.getElementById('sliderValue');
+
+if (mySlider) {
+  // 1. Update text live on screen while dragging
+  mySlider.addEventListener('input', (e) => {
+    sliderValueDisplay.innerText = e.target.value;
+  });
+
+  // 2. Send value to ESP32 when drag finishes
+  mySlider.addEventListener('change', (e) => {
+    sendSliderValue('/slider',e.target.value);
+  });
+}
+
+function sendSliderValue(endpoint, value) {
+  fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    credentials: "same-origin", // Included for HTTP Basic Auth
+    body: value
+  })
+  .then(response => response.text())
+  .then(data => console.log("ESP32 Response:", data))
+  .catch(error => console.error("Error sending slider value:", error));
+}
+
+// Function for Slider 2 value
+// Dynamic value update on drag
+  const mySlider2 = document.getElementById('slider2');
+  const slider2ValueDisplay = document.getElementById('slider2Value');
+
+
+if (mySlider2) {
+  // 1. Update text live on screen while dragging
+  mySlider2.addEventListener('input', (e) => {
+    slider2ValueDisplay.innerText = e.target.value;
+  });
+
+  // 2. Send value to ESP32 when drag finishes
+  mySlider2.addEventListener('change', (e) => {
+    sendSliderValue('/slider2',e.target.value);
+  });
+}
+
+
+
     </script>
   </body>
 </html>
@@ -254,6 +419,13 @@ void handleRoot() {
   html.replace("%STATE27%", output27State ? "ON" : "OFF");
   html.replace("%STATUS27%", output27State ? "Turn OFF" : "Turn ON");
   html.replace("%BUTTON27_CLASS%", output27State ? "off" : "on");
+  // Dynamic Toggle State Replacements ---
+  html.replace("%TOGGLE_BASIC_CHECKED%", toggleBasicState ? "checked" : "");
+  html.replace("%TOGGLE_CHECKED%", toggleState ? "checked" : "");
+
+  // Replaces both the slider position AND the text display
+  html.replace("%SLIDER_VAL%", String(sliderVal));
+  html.replace("%SLIDER2_VAL%", String(slider2Val));
 
   server.send(200, "text/html", html);
 }
@@ -351,7 +523,11 @@ void handleToggleSwitch() {
   if (server.hasArg("plain")) {
     String payload = server.arg("plain");
     payload.trim();
-    Serial.print("Toggle Command Received: ");
+    // Update internal state when web browser sends '1' or '0'
+    toggleState = (payload == "1");
+    Serial.printf("GPIO Toggle state saved in ESP32: %s\n", toggleState ? "ON" : "OFF");
+
+    Serial.print("GPIO Toggle Command Received: ");
     Serial.println(payload);
     server.send(200, "text/plain", "Toggle updated to " + payload);
   } else {
@@ -365,11 +541,58 @@ void handleToggleSwitchBasic() {
   if (server.hasArg("plain")) {
     String payload = server.arg("plain");
     payload.trim();
+    // Update internal state when web browser sends '1' or '0'
+    toggleBasicState = (payload == "1");
+    Serial.printf("Toggle Basic state saved in ESP32: %s\n", toggleBasicState ? "ON" : "OFF");
+
     Serial.print("Toggle Basic Switch Command Received: ");
     Serial.println(payload);
     server.send(200, "text/plain", "Toggle Basic Switch updated to " + payload);
   } else {
     server.send(400, "text/plain", "No state received");
+  }
+}
+
+
+void handleSlider() {
+  if (!isAuthenticated()) return;
+
+  if (server.hasArg("plain")) {
+    String payload = server.arg("plain");
+    payload.trim();
+
+    // Convert payload to integer and save
+    sliderVal = payload.toInt();
+
+    Serial.printf("Slider value set to: %d\n", sliderVal);
+
+    // Optional: Drive a PWM pin or servo with sliderVal here
+    // analogWrite(PWM_PIN, map(sliderVal, 0, 100, 0, 255));
+
+    server.send(200, "text/plain", "Slider updated to " + String(sliderVal));
+  } else {
+    server.send(400, "text/plain", "No slider value received");
+  }
+}
+
+void handleSlider2() {
+  if (!isAuthenticated()) return;
+
+  if (server.hasArg("plain")) {
+    String payload = server.arg("plain");
+    payload.trim();
+
+    // Convert payload to integer and save
+    slider2Val = payload.toInt();
+
+    Serial.printf("Slider2 value set to: %d\n", slider2Val);
+
+    // Optional: Drive a PWM pin or servo with sliderVal here
+    // analogWrite(PWM_PIN, map(sliderVal, 0, 100, 0, 255));
+
+    server.send(200, "text/plain", "Slider2 updated to " + String(slider2Val));
+  } else {
+    server.send(400, "text/plain", "No slider2 value received");
   }
 }
 
@@ -397,6 +620,9 @@ void setup() {
   server.on("/custom", HTTP_POST, handleCustomPayload);
   server.on("/toggle", HTTP_POST, handleToggleSwitch);
   server.on("/toggleBasic", HTTP_POST, handleToggleSwitchBasic);
+    // Register the new slider route
+  server.on("/slider", HTTP_POST, handleSlider);
+  server.on("/slider2", HTTP_POST, handleSlider2);
 
   server.begin();
   Serial.println("HTTP server started");
