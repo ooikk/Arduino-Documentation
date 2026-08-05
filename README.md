@@ -18,8 +18,10 @@ Store all link related to Arduino
    - **USB Mode**: ```Hardware CDC and JTAG```.      
 7. Connect the ESP32S3 Dev Module to your computer using a USB cable. Then, go to **Tools > Port** and select the COM port that the ESP32S3 Dev Module is connected to.
 8. If you have trouble to connect to computer, identify the driver for your ESP32S3:<br>
-   (a) CH343P Driver (Used by your new ESP32-S3 board), click the link for CH343SER.EXE: https://www.wch-ic.com/downloads/CH343SER_EXE.html<br>
-   (b) CP2102 Driver (Used by older/standard ESP32 boards), click the link for "CP210x Universal Windows Driver": https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads<br>
+   (a) CH343P Driver (Used by your new ESP32-S3 board), click the link for CH343SER.EXE:
+   https://www.wch-ic.com/downloads/CH343SER_EXE.html<br>
+   (b) CP2102 Driver (Used by older/standard ESP32 boards), click the link for "CP210x Universal Windows Driver":
+   https://www.silabs.com/software-and-tools/usb-to-uart-bridge-vcp-drivers?tab=downloads<br>
 
 **Find sketches, libraries, board cores, and other files on your computer**   
 https://support.arduino.cc/hc/en-us/articles/4415103213714-Find-sketches-libraries-board-cores-and-other-files-on-your-computer
