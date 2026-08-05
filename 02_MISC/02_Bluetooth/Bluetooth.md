@@ -5,7 +5,7 @@
 The ESP32-S3 is a highly integrated, low-power Wi-Fi and Bluetooth System-on-Chip (SoC).
 ⚠️ CRITICAL DISTINCTION: Unlike the original ESP32, the ESP32-S3 ONLY supports Bluetooth Low Energy (BLE) 5.0. It does not support Bluetooth Classic (BR/EDR).     
 - What this means: You cannot use it for Classic Bluetooth Serial (SPP), Classic Audio (A2DP), or connect to older legacy Bluetooth devices.
-- What it is great for: IoT sensor networks, wearables, smart home devices, beacons, and low-power wireless communication with smartphones.
+- What it is great for: IoT sensor networks, wearables, smart home devices, beacons, and low-power wireless communication with smartphones.     
 **Key Bluetooth 5.0 LE Features on ESP32-S3**     
 - Higher Speed: Supports the 2 Mbps PHY (Physical Layer), doubling the data rate compared to BLE 4.2.
 - Long Range: Supports the Coded PHY (125 kbps and 500 kbps), significantly increasing the communication range (up to 1km in ideal open environments).
