@@ -2,7 +2,7 @@
 
 // Your home router credentials
 const char* ssid = "Nightingale_IoT";
-const char* password = "98297824";
+const char* password = "1122334455";
 
 void setup() {
   Serial.begin(115200);
