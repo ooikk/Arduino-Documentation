@@ -2,7 +2,7 @@
 #include <WebServer.h>
 
 const char* ssid     = "Nightingale_IoT";
-const char* password = "98297824";
+const char* password = "1122334455";
 
 WebServer server(80);
 const int LED_PIN = 2; // Built-in LED on most S3 dev boards
