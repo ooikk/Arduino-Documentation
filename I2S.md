@@ -1,4 +1,4 @@
-## Overview
+# Overview
 I2S (Inter-IC Sound) is a synchronous serial bus protocol designed by Philips Semiconductors (now NXP) in 1986 for transmitting digital audio data between integrated circuits (e.g., ADCs, DACs, DSPs). It uses at least three lines—Bit Clock (BCLK), Word Select (WS/LRCK), and Serial Data (SD)—to transmit Pulse Code Modulation (PCM) stereo data, with a dedicated controller/target architecture for high-quality audio.
 
 ## Key Features of I2S Protocol:
