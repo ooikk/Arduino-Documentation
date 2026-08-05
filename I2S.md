@@ -39,7 +39,7 @@ I2S (Inter-IC Sound) is a synchronous serial bus protocol designed by Philips Se
 ## Master-Slave Working Modes
 I2S systems require clear "Master" and "Slave" roles, determined by which device generates the clock (SCK) and frame synchronization (LRCK) signals. The Master provides timing references, while the Slave passively follows. Common configurations include:
 
-**1. Transmitter as Master, Receiver as Slave**
+### 1. Transmitter as Master, Receiver as Slave
 
 
 <img width="480" height="143" alt="image" src="https://github.com/user-attachments/assets/c7090346-d45f-4e17-974f-e3ba96766e5c" />
@@ -49,7 +49,7 @@ I2S systems require clear "Master" and "Slave" roles, determined by which device
 
 **Advantage:** Capture-side timing control, ideal for "real-time recording" projects (e.g., voice recorders) to avoid data loss from receiver timing fluctuations.
 
-**2. Receiver as Master, Transmitter as Slave**
+### 2. Receiver as Master, Transmitter as Slave    
 
 <img width="481" height="143" alt="image" src="https://github.com/user-attachments/assets/12523f30-278d-4dcc-96c6-083c781fd0e5" />
 
@@ -58,7 +58,7 @@ I2S systems require clear "Master" and "Slave" roles, determined by which device
 
 **Advantage:** Output-side timing control, suitable for "high-fidelity playback" to ensure stable sound quality.
 
-**3. Both Transmitter and Receiver as Slaves**
+### 3. Both Transmitter and Receiver as Slaves   
 
 <img width="492" height="239" alt="image" src="https://github.com/user-attachments/assets/3f01a11a-49e5-4168-a8e4-1ed74e11edfd" />
 
