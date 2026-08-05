@@ -822,7 +822,7 @@ uint8_t* readBinFile(String filename, size_t& outSize) {
   }
 ```
 
-⚠️ Important Memory Notes for Arduino:  
+### ⚠️ Important Memory Notes for Arduino:    
 1. Binary File Memory Management: Because ```readBinFile``` uses ```malloc()``` to create the array, the memory is allocated on the heap. You must call ```free(binData)``` when you are completely done using the array, otherwise, your Arduino will run out of memory (Memory Leak).  
 2. Text File Memory Fragmentation: The ```String``` class in Arduino can cause memory fragmentation if used heavily or with very large files. If you are reading a massive text file on a memory-constrained board (like an Arduino Uno), it is better to process the text line-by-line inside the while(```file.available()```) loop rather than appending it all to a single ```String```.
 3. File Paths: Ensure your filenames include the extension (e.g., "log.txt", "sensor_data.bin"). If your files are inside a folder, use the full path (e.g., "folder/data.txt"). Note that the standard Arduino SD.h library requires folder names to be 8.3 format (max 8 characters for the name, max 3 for the extension).  
