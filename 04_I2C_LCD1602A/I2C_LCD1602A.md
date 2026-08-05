@@ -330,4 +330,94 @@ String messageToScroll = "This is a scrolling message with more than 16 characte
 // lcdColumns: number of columns of your LCD
 void scrollText(int row, String message, int delayTime, int lcdColumns) {
   for (int i=0; i < lcdColumns; i++) {
-    message = " " + message;
+    message = " " + message;  
+  } 
+  message = message + " "; 
+  for (int pos = 0; pos < message.length(); pos++) {
+    lcd.setCursor(0, row);
+    lcd.print(message.substring(pos, pos + lcdColumns));
+    delay(delayTime);
+  }
+}
+
+void setup(){
+  // initialize LCD
+  lcd.init();
+  // turn on LCD backlight                      
+  lcd.backlight();
+}
+
+void loop(){
+  // set cursor to first column, first row
+  lcd.setCursor(0, 0);
+  // print static message
+  lcd.print(messageStatic);
+  // print scrolling message
+  scrollText(1, messageToScroll, 250, lcdColumns);
+}
+```
+
+## Display Custom Characters
+
+In a 16×2 LCD there are 32 blocks where you can display characters. Each block is made out of 5×8 tiny pixels. You can display custom characters by defining the state of each tiny pixel. For that, you can create a byte variable to hold the state of each pixel. In total you can store 8 custom characters from address 0 to 8, see Character Codes and Character Patterns (ROM Code: A00). Use write() to display the custom character.
+
+To create your custom character, you can go here to generate the byte variable for your character.  
+
+https://maxpromer.github.io/LCD-Character-Creator/
+
+<img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/5b944f40-7727-4f61-92ab-af41c521c1b8" />
+
+```cpp
+#include <LiquidCrystal_I2C.h>
+
+// Set the LCD address to 0x27 in PCF8574 by NXP and Set to 0x3F in PCF8574A by Ti
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+byte customChar[] = {
+  B00000,
+  B01010,
+  B11111,
+  B11111,
+  B11111,
+  B01110,
+  B00100,
+  B00000
+};
+
+void setup() {
+  // initialize LCD
+  lcd.init();
+  lcd.clear();
+  // turn on LCD backlight                      
+  lcd.backlight();
+  lcd.createChar(0, customChar);
+}
+
+void loop() { 
+  lcd.setCursor(0,3);
+  lcd.write(0);
+}
+```
+
+## Character Codes and Character Patterns (ROM Code: A00)
+
+<img width="512" height="864" alt="image" src="https://github.com/user-attachments/assets/9ffb9230-d2d5-459d-b8c7-0e7f68089267" />
+<br>
+
+<img width="698" height="861" alt="image" src="https://github.com/user-attachments/assets/904ddb6c-3d7e-4ad1-a57b-35879ecd3d60" />
+
+## Reference
+
+https://docs.arduino.cc/learn/electronics/lcd-displays/
+
+https://randomnerdtutorials.com/esp32-esp8266-i2c-lcd-arduino-ide/
+
+https://www.luisllamas.es/en/arduino-lcd-i2c/
+
+https://easyelecmodule.com/how-to-use-the-lcd1602a/
+
+- https://easyelecmodule.com/wp-content/uploads/CN0295D-other-related-document.pdf
+- https://easyelecmodule.com/wp-content/uploads/eone-1602a1-1.pdf
+- https://easyelecmodule.com/wp-content/uploads/PCF8574-2.pdf
+
+https://zaitronics.com.au/blogs/guides/how-to-use-16x2-lcd-parallel-i2c?
