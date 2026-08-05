@@ -10,7 +10,7 @@
 
 // Replace with your network credentials
 const char* ssid = "Nightingale_IoT";
-const char* password = "98297824";
+const char* password = "1122334455";
 
 // Username and password for web page access
 const char* http_username = "admin";
