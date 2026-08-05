@@ -3,7 +3,7 @@
 
 // STA Credentials (Your Home Router)
 const char* sta_ssid = "Nightingale_IoT";
-const char* sta_password = "98297824";
+const char* sta_password = "1122334455";
 
 // AP Credentials (ESP32's own network)
 const char* ap_ssid = "ESP32-S3-Mixed";
