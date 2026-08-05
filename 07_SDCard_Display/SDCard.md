@@ -97,10 +97,10 @@ void loop() {
 ## Initialize the SD Card to use same SPI bus with TFT Display
 
 On the ESP32‑S3, two different SPIClass objects cannot manage the same hardware SPI peripheral concurrently – this leads to a lock‑up when the TFT library tries to take control. To avoid ESP32-S3 hangs during SD card initialization when sharing the SPI bus with an ILI9488 TFT display:
-User_Setup.h is configured to use HSPI (USE_HSPI_PORT) or VSPI (USE_FSPI_PORT). The TFT_eSPI library will initialise that bus automatically inside tft.init(). You must not create any separate SPIClass object for the SD card. Instead:
-1. Get the SPI bus instance from the TFT library using tft.getSPIinstance().
-2. Use that instance when initializing the SD card with SD.begin().
-3. Pull the CS pins of all share SPI devices HIGH at the very top of your setup() function before doing anything else to avoid unassigned state.
+```User_Setup.h``` is configured to use HSPI (USE_HSPI_PORT) or VSPI (USE_FSPI_PORT). The TFT_eSPI library will initialise that bus automatically inside ```tft.init()```. You must not create any separate SPIClass object for the SD card. Instead:
+1. Get the SPI bus instance from the TFT library using ```tft.getSPIinstance()```.
+2. Use that instance when initializing the SD card with ```SD.begin()```.
+3. Pull the CS pins of all share SPI devices HIGH at the very top of your ```setup()``` function before doing anything else to avoid unassigned state.
 
 ### Wiring Diagram - share SPI
 
@@ -187,7 +187,7 @@ SD card corruption after running ESP32 code strongly suggests a hardware or soft
 
 ### 1. Missing SPI transaction management – Critical!
 
-When two devices share the same SPI bus, you must use SPI.beginTransaction() / SPI.endTransaction() to switch between them. Without this, the TFT and SD card may try to talk at the same time, causing garbage data and corrupting the SD card’s file system.
+When two devices share the same SPI bus, you must use ```SPI.beginTransaction()``` / ```SPI.endTransaction()``` to switch between them. Without this, the TFT and SD card may try to talk at the same time, causing garbage data and corrupting the SD card’s file system.
 
 What your code should do:
 
@@ -221,7 +221,7 @@ If your ESP32 resets (watchdog, crash, or power loss) while the SD card is still
 
 ### Step 1: Ensure proper SPI transaction around SD access
 
-Wrap every SD card operation (including SD.begin()) with transactions:
+Wrap every SD card operation (including ```SD.begin()```) with transactions:
 
 ```cpp
 #include <SPI.h>
@@ -253,9 +253,9 @@ void setup() {
 
 ### Step 2: In your file access function, wrap each file operation
 
-The SD.open and file.read already use transactions internally if the SD library is compiled with USE_SPI_TRANSACTIONS. But to be safe, you can add explicit transactions around the file open/read loop.
+The ```SD.open``` and ```file.read``` already use transactions internally if the SD library is compiled with ```USE_SPI_TRANSACTIONS```. But to be safe, you can add explicit transactions around the file open/read loop.
 
-However, the simplest fix is to ensure that no SPI device is selected while the other is active. TFT_eSPI automatically de‑selects the TFT after each drawing command. But if you call tft.pushImage repeatedly, the TFT stays selected? No – pushImage ends with de‑select. So that’s likely fine.
+However, the simplest fix is to ensure that no SPI device is selected while the other is active. TFT_eSPI automatically de‑selects the TFT after each drawing command. But if you call ```tft.pushImage``` repeatedly, the TFT stays selected? No – ```pushImage``` ends with de‑select. So that’s likely fine.
 
 ### Step 3: Lower SD card SPI speed
 
@@ -276,7 +276,7 @@ displayBinary656(...);
 delay(50);
 ```
 
-Also, after closing the file, you can force a flush of the SD library cache (if any) by calling SD.end() before power down – but that’s only if you are about to sleep or reset.
+Also, after closing the file, you can force a flush of the SD library cache (if any) by calling ```SD.end()``` before power down – but that’s only if you are about to sleep or reset.
 
 ### Step 5: Use SdFat library
 
@@ -287,15 +287,15 @@ It allows you to explicitly pass a pointer to the SPI instance. When initializin
 #define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(16), tft.getSPIinstance())
 ```
 
-This uses the getSPIinstance() method to fetch a pointer to the exact SPI object TFT_eSPI is using, guaranteeing they will cooperate correctly.  
-Library SdFat.h by Bill Greiman  
+This uses the ```getSPIinstance()``` method to fetch a pointer to the exact SPI object TFT_eSPI is using, guaranteeing they will cooperate correctly.  
+Library ```SdFat.h``` by Bill Greiman  
 https://github.com/greiman/SdFat  
 
 Check here for detail about [SdFat](https://github.com/ooikk/Arduino-Documentation/blob/main/07_SDCard_Display/SDCard_SdFat.md)
 
 ### Step 6: Check for accidental writes
 
-Ensure you never open the file with FILE_WRITE. Use FILE_READ only.
+Ensure you never open the file with ```FILE_WRITE```. Use ```FILE_READ``` only.
 
 ```cpp
 File file = SD.open(filename, FILE_READ);
@@ -449,59 +449,59 @@ void loop() {
 
 | Category | Function | Example | Description |
 | --- | --- | --- | --- |
-| Initialization | begin(csPin) | if (!SD.begin(4)) { Serial.println("Init failed!"); } | Initializes the SD card library. Must be called first, before any other SD card functions. Returns true on success. |
-| File/Directory Info | exists(path) | if (SD.exists("/data.txt")) { Serial.println("File found"); } | Checks if a file or directory exists on the SD card. |
-| File/Directory Info | open(path, mode) | File dataFile = SD.open("/data.txt", FILE_WRITE); | Opens a file for reading/writing. Must be called before you can read (FILE_READ) or write (FILE_WRITE) to a file. Returns a File object or false on failure. |
-| File/Directory Info | remove(path) | if (SD.exists("/unwanted.txt")) { SD.remove("/unwanted.txt"); } | Deletes a file from the SD card. It's recommended to check if the file exists first using SD.exists(). |
-| File/Directory Info | mkdir(path) | SD.mkdir("/newFolder/subFolder"); | Creates a directory. Can also create intermediate directories if they don't exist. |
-| File/Directory Info | rmdir(path) | SD.rmdir("/emptyFolder"); | Removes an empty directory. The directory must be empty before calling this. |
-| Control | close() | dataFile.close(); | Closes a file and ensures any data written to it is saved to the SD card. It's good practice to close files when you're done with them. |
-| Control | flush() | dataFile.flush(); | Forces any buffered data to be written to the SD card. This is done automatically when you close the file. |
-| State Information | available() | while (dataFile.available()) { char c = dataFile.read(); } | Checks if there are any bytes available to be read from the file. |
-| State Information | position() | uint32_t pos = dataFile.position(); | Returns the current position (in bytes) within a file, where the next read or write will happen. |
-| State Information | seek(pos) | dataFile.seek(0); // Jump to the start of the file | Moves the read/write position to a specific byte in a file. |
-| State Information | size() | uint32_t fileSize = dataFile.size(); | Returns the total size of a file in bytes. |
-| State Information | isDirectory() | if (root.isDirectory()) { Serial.println("It's a directory!"); } | Checks if the current File object represents a directory (folder). |
-| Reading & Writing | read() | char ch = dataFile.read(); | Reads a single byte from a file. Returns -1 if no bytes are available. |
-| Reading & Writing | write(data) | dataFile.write("Hello, world!"); | Writes a single byte or a buffer of data to a file. |
-| Reading & Writing | print(data) | dataFile.print("Sensor Value: "); dataFile.print(sensorValue); | Writes text to a file. Numbers are automatically converted to their ASCII string representation. |
-| Reading & Writing | println(data) | dataFile.println("--- End of Data ---"); | Like print(), but adds a newline (\r\n) at the end. |
-| Reading & Writing | peek() | char nextChar = dataFile.peek(); | Reads a byte from a file without moving the read pointer, so a subsequent read() will return the same byte. |
-| Directory Navigation | openNextFile() | File entry = dir.openNextFile(); | Opens the next file or folder in a directory. Used in a loop to list all contents of a directory. |
-| Directory Navigation | rewindDirectory() | dir.rewindDirectory(); | Resets the file pointer back to the first file in a directory, allowing you to iterate over it again. |
-| Information | name() | Serial.println(entry.name()); | Returns the name of a file or directory as a character array (string). |
+| Initialization | ```begin(csPin)``` | ```if (!SD.begin(4)) { Serial.println("Init failed!"); }``` | Initializes the SD card library. Must be called first, before any other SD card functions. Returns true on success. |
+| File/Directory Info | ```exists(path)``` | ```if (SD.exists("/data.txt")) { Serial.println("File found"); }``` | Checks if a file or directory exists on the SD card. |
+| File/Directory Info | ```open(path, mode)``` | ```File dataFile = SD.open("/data.txt", FILE_WRITE);``` | Opens a file for reading/writing. Must be called before you can read (```FILE_READ```) or write (```FILE_WRITE```) to a file. Returns a File object or false on failure. |
+| File/Directory Info | ```remove(path)``` | ```f (SD.exists("/unwanted.txt")) { SD.remove("/unwanted.txt"); }``` | Deletes a file from the SD card. It's recommended to check if the file exists first using ```SD.exists()```. |
+| File/Directory Info | ```mkdir(path)``` | ```SD.mkdir("/newFolder/subFolder");``` | Creates a directory. Can also create intermediate directories if they don't exist. |
+| File/Directory Info | ```rmdir(path)``` | ```SD.rmdir("/emptyFolder");``` | Removes an empty directory. The directory must be empty before calling this. |
+| Control | ```close()``` | ```dataFile.close();``` | Closes a file and ensures any data written to it is saved to the SD card. It's good practice to close files when you're done with them. |
+| Control | ```flush()``` | ```dataFile.flush();``` | Forces any buffered data to be written to the SD card. This is done automatically when you close the file. |
+| State Information | ```available()``` | ```while (dataFile.available()) { char c = dataFile.read(); }``` | Checks if there are any bytes available to be read from the file. |
+| State Information | ```position()``` | ```uint32_t pos = dataFile.position();``` | Returns the current position (in bytes) within a file, where the next read or write will happen. |
+| State Information | ```seek(pos)``` | ```dataFile.seek(0); // Jump to the start of the file```| Moves the read/write position to a specific byte in a file. |
+| State Information | ```size()``` | ```uint32_t fileSize = dataFile.size();``` | Returns the total size of a file in bytes. |
+| State Information | ```isDirectory()``` | ```if (root.isDirectory()) { Serial.println("It's a directory!"); }``` | Checks if the current File object represents a directory (folder). |
+| Reading & Writing | ```read()``` | ```char ch = dataFile.read();``` | Reads a single byte from a file. Returns -1 if no bytes are available. |
+| Reading & Writing | ```write(data)``` | ```dataFile.write("Hello, world!");``` | Writes a single byte or a buffer of data to a file. |
+| Reading & Writing | ```print(data)``` | ```dataFile.print("Sensor Value: "); dataFile.print(sensorValue);``` | Writes text to a file. Numbers are automatically converted to their ASCII string representation. |
+| Reading & Writing | ```println(data)``` | ```dataFile.println("--- End of Data ---");``` | Like ```print()```, but adds a newline (```\r\n```) at the end. |
+| Reading & Writing | ```peek()``` | ```char nextChar = dataFile.peek();``` | Reads a byte from a file without moving the read pointer, so a subsequent ```read()``` will return the same byte. |
+| Directory Navigation | ```openNextFile()``` | ```File entry = dir.openNextFile();``` | Opens the next file or folder in a directory. Used in a loop to list all contents of a directory. |
+| Directory Navigation | ```rewindDirectory()``` | ```dir.rewindDirectory();``` | Resets the file pointer back to the first file in a directory, allowing you to iterate over it again. |
+| Information | ```name()``` | ```Serial.println(entry.name());``` | Returns the name of a file or directory as a character array (string). |
 
 Refer to SD library for more details:  
 https://docs.arduino.cc/libraries/sd/
 
 ### write() and print() functions
 
-In the context of Arduino and the SD.h library (and serial communication), the difference between *write()* and *print()* comes down to Raw Binary Data vs. Human-Readable Text.
+In the context of Arduino and the ```SD.h``` library (and serial communication), the difference between ```write()``` and ```print()``` comes down to Raw Binary Data vs. Human-Readable Text.
 
-1. write() (Raw Bytes)
-write() takes the exact binary representation of the data and dumps it directly into the file. It does not format or convert the data into text.
+1. ```write()``` (Raw Bytes)
+```write()``` takes the exact binary representation of the data and dumps it directly into the file. It does not format or convert the data into text.
 - Best for: Binary files, saving memory, writing arrays of bytes, sensor data, images, or audio.
 - How it works: If you tell it to write the number 255, it writes exactly 1 byte (0xFF in hex). If you write an integer 1000, it writes 2 bytes (or 4, depending on the board).
 - Syntax:
-  - file.write(myByte); (Writes a single byte)
-  - file.write(myArray, arrayLength); (Writes an array of bytes)
+  - ```file.write(myByte);``` (Writes a single byte)
+  - ```file.write(myArray, arrayLength);``` (Writes an array of bytes)
 
-2. print() (Formatted Text / ASCII)
-print() takes your data, converts it into human-readable ASCII characters (text), and then writes those characters to the file.
+2. ```print()``` (Formatted Text / ASCII)
+```print()``` takes your data, converts it into human-readable ASCII characters (text), and then writes those characters to the file.
 - Best for: Text files, CSV logs, configuration files, data that needs to be read by a human or imported into Excel.
 - How it works: If you tell it to print the number 255, it converts it to the text characters '2', '5', and '5'. This takes 3 bytes of space, not 1. If you print 1000, it takes 4 bytes.
 - Syntax:
-  - file.print(255); (Writes the text "255")
-  - file.print(255, HEX); (Writes the text "FF")
-  - file.print(3.14159, 2); (Writes the text "3.14" - limits to 2 decimal places)
+  - ```file.print(255);``` (Writes the text "255")
+  - ```file.print(255, HEX);``` (Writes the text "FF")
+  - ```file.print(3.14159, 2);``` (Writes the text "3.14" - limits to 2 decimal places)
 
 Visual Comparison:  
-Imagine you have an integer variable: int myValue = 12345;
+Imagine you have an integer variable: ```int myValue = 12345;```
 
 | Method | Code | What is actually saved in the file | File Size Increase | How it looks if you open it in Notepad |
 | --- | --- | --- | --- | --- |
-| write() | file.write((uint8_t*)&myValue, 2); | 0x39 0x30 (Raw binary) | 2 Bytes | Gibberish symbols (e.g., 90) |
-| print() | file.print(myValue); | 0x31 0x32 0x33 0x34 0x35 (ASCII for "12345") | 5 Bytes | 12345 |
+| ```write()``` | ```file.write((uint8_t*)&myValue, 2);``` | 0x39 0x30 (Raw binary) | 2 Bytes | Gibberish symbols (e.g., 90) |
+| ```print()``` | ```file.print(myValue);``` | 0x31 0x32 0x33 0x34 0x35 (ASCII for "12345") | 5 Bytes | 12345 |
 
 ## Sample code to access the SD Card
 
@@ -706,12 +706,12 @@ bool writeBinFile(const String& filename, const uint8_t* binData, size_t dataSiz
 ```
 
 ⚠️ Important Note on Overwriting in Arduino:  
-In the standard Arduino SD.h library, the FILE_WRITE mode is hardcoded to append data. To overwrite a file, the most reliable method is to delete the existing file first using SD.remove() before opening it in write mode.
+In the standard Arduino ```SD.h``` library, the ```FILE_WRITE``` mode is hardcoded to append data. To overwrite a file, the most reliable method is to delete the existing file first using ```SD.remove()``` before opening it in write mode.
 
 Key Design Choices:  
-1. Return Type (bool): File operations can fail (e.g., SD card full, bad sector, write error). Returning a boolean allows your main code to check if the write was actually successful.
-2. Pass by Reference (const String&): For the text function, passing the string by const reference prevents the Arduino from creating an unnecessary copy of the string in memory, which is crucial for preventing memory fragmentation on low-RAM boards.
-3. Verification: The functions check the return value of file.print() and file.write(). If the SD card becomes full halfway through writing, the function will catch it and return false.
+1. Return Type (```bool```): File operations can fail (e.g., SD card full, bad sector, write error). Returning a boolean allows your main code to check if the write was actually successful.
+2. Pass by Reference (```const String&```): For the text function, passing the string by const reference prevents the Arduino from creating an unnecessary copy of the string in memory, which is crucial for preventing memory fragmentation on low-RAM boards.
+3. Verification: The functions check the return value of ```file.print()``` and ```file.write()```. If the SD card becomes full halfway through writing, the function will catch it and return false.
 
 ### Read from a file
 
@@ -823,13 +823,13 @@ uint8_t* readBinFile(String filename, size_t& outSize) {
 ```
 
 ⚠️ Important Memory Notes for Arduino:  
-1. Binary File Memory Management: Because readBinFile uses malloc() to create the array, the memory is allocated on the heap. You must call free(binData) when you are completely done using the array, otherwise, your Arduino will run out of memory (Memory Leak).  
-2. Text File Memory Fragmentation: The String class in Arduino can cause memory fragmentation if used heavily or with very large files. If you are reading a massive text file on a memory-constrained board (like an Arduino Uno), it is better to process the text line-by-line inside the while(file.available()) loop rather than appending it all to a single String.
+1. Binary File Memory Management: Because ```readBinFile``` uses ```malloc()``` to create the array, the memory is allocated on the heap. You must call ```free(binData)``` when you are completely done using the array, otherwise, your Arduino will run out of memory (Memory Leak).  
+2. Text File Memory Fragmentation: The ```String``` class in Arduino can cause memory fragmentation if used heavily or with very large files. If you are reading a massive text file on a memory-constrained board (like an Arduino Uno), it is better to process the text line-by-line inside the while(```file.available()```) loop rather than appending it all to a single ```String```.
 3. File Paths: Ensure your filenames include the extension (e.g., "log.txt", "sensor_data.bin"). If your files are inside a folder, use the full path (e.g., "folder/data.txt"). Note that the standard Arduino SD.h library requires folder names to be 8.3 format (max 8 characters for the name, max 3 for the extension).  
 
 ## Display RGB565 Image
 
-Below is the 565RGB text file structure modified from generated online by [565RGB Convertor](https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/). The code in 07_SDCard_Display_565.ino will load this file and send the pixel color to pushImage() function. The format is:  
+Below is the 565RGB text file structure modified from generated online by [565RGB Convertor](https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/). The code in **07_SDCard_Display_565.ino** will load this file and send the pixel color to ```pushImage()``` function. The format is:  
   *Height,Width,{16-bit_pixels,16-bit_pixels....};*  
 Picture height is 320 and width is 480. Use ".565" as the image file extention.
 
@@ -853,7 +853,7 @@ There are a few methods to over come the memory limitation.
 ### 1. Process the file in chunks – avoid storing the whole array
 
 If you only need the pixel data for streaming (e.g., to a display), you can parse the text file incrementally without storing all pixels at once. For example, read one line of hex values at a time and send them to the display or process them on the fly.  
-Example in display565FileDirect() or displayBinary565() in sketch 07_SDCard_Display_565.ino.  
+Example in ```display565FileDirect()``` or ```displayBinary565()``` in sketch **07_SDCard_Display_565.ino**.  
 
 ### 2. Use a raw binary format instead of text
 
