@@ -165,7 +165,7 @@ void loop() {
 }
 ```
 
-### Note
+**Note:**    
 
 Sometime having problem with SD Card initialization on first power up after code download, you may implement a retry code.
 
