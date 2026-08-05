@@ -1,7 +1,7 @@
 # Arduino-Documentation
 Store all link related to Arduino
 
-# Install and Setup Arduino IDE
+## Install and Setup Arduino IDE
 1. Get the latest Arduino IDE here: https://www.arduino.cc/en/software/
 2. Open IDE, go to: **File > Preferences**, under **Settings > Additional Boards Manager URLs**. Add this:
    https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
