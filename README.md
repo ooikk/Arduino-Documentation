@@ -29,9 +29,9 @@ https://support.arduino.cc/hc/en-us/articles/4415103213714-Find-sketches-librari
 **Espressif Systems**    
 https://www.aliexpress.com/item/1005009523697481.html?
 
-# ESP32-S3 Pins Assignment
+## ESP32-S3 Pins Assignment
 
-## Pins to Avoid
+### Pins to Avoid
 
 While most pins are available, you should generally avoid these pins to prevent system crashes or interference: <br>  
 **GPIO 43 & 44:** Reserved for UART0 (Serial Debugging). GPIO 43 is U0TXD and GPIO 44 is U0RXD. <br>
@@ -50,12 +50,12 @@ While most pins are available, you should generally avoid these pins to prevent 
 
 <br>
 
-# ESP32 S3 Board
+## ESP32 S3 Board
 
 <img width="605" height="491" alt="ESP32-S3-PCBA" src="https://github.com/user-attachments/assets/ec73d7da-acef-4d03-a89f-68f72a6ce86f" />
 
 
-## Buttons
+### Buttons
 **1. The RST (Reset) Button**  
 What it does: It restarts the microcontroller.   
 How it works: It temporarily pulls the EN (Enable) pin to a low state, which cuts power to the chip's core and immediately restarts it.   
@@ -84,7 +84,7 @@ Once you do this, you will usually see a message in the Arduino IDE Serial Monit
 *Boot:* "Get ready to receive a new program."   
 *Boot + RST:* "Force the board into the mode required to upload a new program."   
 
-## USB Ports     
+### USB Ports     
 
 ESP32-S3 development boards typically feature two USB ports to accommodate the chip's dual-path communication capabilities: a USB-to-UART bridge and a Native USB (OTG) interface.     
 According to the sources, the ESP32-S3 is one of the few chips in the family that natively supports both USB OTG and USB Serial through the Arduino Core.    
@@ -126,10 +126,10 @@ LM1117 Linear low drop 3.3V 800mA voltage regulator:
 
 <img width="627" height="611" alt="image" src="https://github.com/user-attachments/assets/ed28a01f-c33a-4fa7-aed1-7380aa46385e" />
 
-# ESP32-S3 Hardware Information      
+## ESP32-S3 Hardware Information      
 Here is the complete Arduino code to extract and print all available hardware information from your ESP32-S3.     
 This script uses the built-in esp32-hal library functions to read the chip's physical properties, memory allocations, and unique identifiers.     
-```
+```cpp
 void setup() {
   Serial.begin(115200);
   delay(1000); // Give serial monitor time to open
@@ -188,7 +188,7 @@ void loop() {
   // We only need to run the hardware check once on boot.
 }
 ```
-**Troubleshooting / Notes:**     
+### Troubleshooting / Notes:     
 1. PSRAM shows 0 bytes? If PSRAM Total Size prints 0 MB, it means PSRAM is not enabled in your IDE. In the Arduino IDE, go to Tools > PSRAM and change it to OPI PSRAM (since the R8 variant uses Octal SPI, not Quad SPI).
 2. Flash Size shows 4MB or 8MB? If the physical flash size prints lower than 16MB, your IDE is restricting it. Go to Tools > Flash Size and ensure it is set to 16MB (128Mb).
 3. Internal RAM: The ESP32-S3 has roughly 512KB of internal SRAM. You will see it fluctuates slightly based on what the core initializes on boot.
@@ -214,7 +214,7 @@ Free Sketch Space: 1310720 bytes
 Chip ID (eFuse MAC): 303ED6F61B44
 ==================================================
 ```
-**What is the suffix N16R8**     
+### What is the suffix N16R8       
 For the ESP32-S3, the suffix N16R8 indicates the memory configuration of the module.     
 ```
 Suffix     Meaning
@@ -239,21 +239,21 @@ R8         8 MB PSRAM (Octal SPI/OPI on most ESP32-S3 modules)
      
 - **Verify in code**
   You can confirm that both the flash and PSRAM are available:
-  ```
+  ```cpp
   Serial.printf("Flash Size : %u MB\n", ESP.getFlashChipSize() / (1024 * 1024));
   Serial.printf("PSRAM Size : %u MB\n", ESP.getPsramSize() / (1024 * 1024));
   Serial.printf("Free Heap  : %u KB\n", ESP.getFreeHeap() / 1024);
   Serial.printf("Free PSRAM : %u KB\n", ESP.getFreePsram() / 1024);
   ```
 
-**Link to more esp.h API:**     
+### Link to more esp.h API:       
 https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/Esp.h?
 
 
 
 
 
-# ESP32-S3 References
+## ESP32-S3 References
 
 https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 
@@ -265,15 +265,15 @@ https://github.com/espressif
 
 https://github.com/espressif/arduino-esp32?
 
-**Official IoT Development Framework**     
+### Official IoT Development Framework     
 https://www.espressif.com/en/products/sdks/esp-idf     
 
-**ESP-IDF**    
+### ESP-IDF    
 https://developer.espressif.com/tags/esp-idf/
 
 https://github.com/espressif/esp-idf
 
-**Up to date technical documents:**    
+### Up to date technical documents:      
 Copy and paste below link on brower:   
 *https://www.espressif.com/en/support/documents/technical-documents*   
 
@@ -284,20 +284,20 @@ https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolutio
 
 
 
-# 10 ESP32 Pro Features: Take your Projects to the Next Level!
+## 10 ESP32 Pro Features: Take your Projects to the Next Level!
 https://www.youtube.com/watch?v=_HzG5FjH_6g
 
 
-# Resistor Color Band
+## Resistor Color Band
 
 <img width="635" height="682" alt="image" src="https://github.com/user-attachments/assets/fa5e2931-75d9-4af8-9c2f-e70d87138844" />
 
-**Resistor Calculator**
+### Resistor Calculator   
 
 https://www.calculator.net/resistor-calculator.html
 
 
-# Circuit Simulators
+## Circuit Simulators
 
 ✔️ Cirkit Designer:
 https://app.cirkitdesigner.com/
