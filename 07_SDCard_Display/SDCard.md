@@ -573,7 +573,7 @@ if (test) {
 
 ### More Examples
 
-### Write to a file
+#### Write to a file
 
 ```cpp
 /**
@@ -713,7 +713,7 @@ Key Design Choices:
 2. Pass by Reference (```const String&```): For the text function, passing the string by const reference prevents the Arduino from creating an unnecessary copy of the string in memory, which is crucial for preventing memory fragmentation on low-RAM boards.
 3. Verification: The functions check the return value of ```file.print()``` and ```file.write()```. If the SD card becomes full halfway through writing, the function will catch it and return false.
 
-### Read from a file
+#### Read from a file
 
 ```cpp
 /**
