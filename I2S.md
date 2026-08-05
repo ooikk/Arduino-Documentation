@@ -178,7 +178,7 @@ void loop() {
 }
 ```
 
-### Key Technical Notes**
+### Key Technical Notes   
 
 **1. Power Supply for 3W**
 
