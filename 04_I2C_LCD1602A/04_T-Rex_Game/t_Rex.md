@@ -1,16 +1,18 @@
 # T_Rex Game
+
 The T-Rex Game (also known as the Chrome Dino Game) is a simple, built-in side-scrolling runner game created by Google.
 
 It famously appears in the Google Chrome web browser whenever you try to visit a webpage but lose your internet connection. The character design is a nod to the "prehistoric ages" of being offline.
 
-**How It Works**
+## How It Works
+
 The gameplay is incredibly straightforward but gets addictive as the speed increases:
 
 The Goal: Guide a pixelated Tyrannosaurus rex across a desert landscape for as long as possible to get a high score.
 
 Obstacles: You must dodge oncoming obstacles like cacti and flying pterodactyls.
 
-**Controls:**
+## Controls
 
 Spacebar or Up Arrow: Jump over obstacles.
 
@@ -20,17 +22,17 @@ Tap Screen: Jump (on mobile devices).
 
 As you advance, the game transitions between day mode (light background) and night mode (dark background) every 700 points.
 
-**How to Play It (Even When Online)**
+## How to Play It (Even When Online)
+
 You don't actually have to pull your internet plug to play it. You can launch it anytime by opening a new tab in Google Chrome and typing this into the address bar:
 
 chrome://dino
 
 Fun Fact: The game is theoretically endless. The developers capped the maximum playtime at approximately 17 million years—a playful reference to how long the T-Rex was alive on Earth before extinction.
 
-<img alt="image" style="width: 75%; height: auto;"  src="https://github.com/user-attachments/assets/f703984a-98c2-4fa8-af7e-9a35bc16a68d" />
+<img alt="image" style="width: 75%; height: auto;" src="https://github.com/user-attachments/assets/f703984a-98c2-4fa8-af7e-9a35bc16a68d" />
 
-
-# The hardware setup
+## The Hardware Setup
 
 Follow the link for LCD1602A setup:
 
@@ -46,53 +48,54 @@ https://github.com/ooikk/Arduino-Documentation/blob/main/04_I2C_LCD1602A/I2C_LCD
 
 Below final circuit with push button switch.
 
-```
+```cpp
 // Toggle switch connects to GPIO 4 of ESP32
 const int togglePin = 4;     // switch to trigger jump action
 ```
 
 <img alt="image" style="width: 75%; height: auto;" src="https://github.com/user-attachments/assets/4f50c7ff-d5d9-4342-916f-aa5fc1925757" />
 
-
 **NOTE:** Omit external pull-up 3.3k ohm resistor if use internal pull up configuration.
-```
-  pinMode(togglePin, INPUT_PULLUP);
+
+```cpp
+pinMode(togglePin, INPUT_PULLUP);
 ```
 
-# The Game
+## The Game
 
-## Toggle Switch
+### Toggle Switch
 
 To prevent abnormal action when player presses the switch continuosly, the action only start with "Press" and "Released" sequence.
 
 This code will wait until player Press and Release. Use in none playing mode.
-```
-    // Wait user to continue
-    switchState = digitalRead(togglePin);
-    while (switchState == HIGH) {
-      switchState = digitalRead(togglePin);
-    }
-    while (switchState == LOW) {
-      switchState = digitalRead(togglePin);
-    }
+
+```cpp
+// Wait user to continue
+switchState = digitalRead(togglePin);
+while (switchState == HIGH) {
+  switchState = digitalRead(togglePin);
+}
+while (switchState == LOW) {
+  switchState = digitalRead(togglePin);
+}
 ```
 
 Under play mode, the code is broken into two parts in order not to block the CPU processing for other on going tasks. First part is to detect "press" down and let the code flows to next step. With a **switchStateCur** flag to indicate the switch state, on next loop second part of the code will be able to detect "release" button. Once confirm Press and Release, start the jump action.
 
+```cpp
+switchState = digitalRead(togglePin);
+if (switchState == LOW) {
+  switchStateCur = LOW;
+}
+if ((switchStateCur == LOW) && (switchState == HIGH)) {
+  switchStateCur = HIGH;  // confirm user press and release switch
+  actionJump = HIGH;      // trigger jump action
+}
 ```
-    switchState = digitalRead(togglePin);
-    if (switchState == LOW) {
-      switchStateCur = LOW;
-    }
-    if ((switchStateCur == LOW) && (switchState == HIGH)) {
-      switchStateCur = HIGH;  // confirm user press and release switch
-      actionJump = HIGH;      // trigger jump action
-    }
 
-```
+### Reset Game
 
-## Reset Game
-```
+```cpp
 void resetGame() {
   // Reset variables
   t_RexStatus = LOW;
@@ -105,10 +108,11 @@ void resetGame() {
 }
 ```
 
-## Moving Track
+### Moving Track
+
 For the playing scene, defined custom characters. Use arrayTrack[16] for characters to be displayed on LCD screen. For the running track, only baseChar and wallChar to be displayed.
 
-```
+```cpp
 byte clearChar[] = {
   B00000,
   B00000,
@@ -173,18 +177,17 @@ const int HITCHAR = 4;
 byte arrayTrack[16] = { BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, WALLCHAR, BASECHAR, WALLCHAR,
                         BASECHAR, BASECHAR, BASECHAR, WALLCHAR, BASECHAR, BASECHAR, BASECHAR, WALLCHAR };
 
-
-  // Store special character at LCD's memory 0 to 4
-  lcd.createChar(CLEARCHAR, clearChar);
-  lcd.createChar(BASECHAR, baseChar);
-  lcd.createChar(WALLCHAR, wallChar);
-  lcd.createChar(REXCHAR, rexChar);
-  lcd.createChar(HITCHAR, hitChar);
-
+// Store special character at LCD's memory 0 to 4
+lcd.createChar(CLEARCHAR, clearChar);
+lcd.createChar(BASECHAR, baseChar);
+lcd.createChar(WALLCHAR, wallChar);
+lcd.createChar(REXCHAR, rexChar);
+lcd.createChar(HITCHAR, hitChar);
 ```
+
 Next step is to have a function to display the scrolling track, it will update at each "timeInterval". It will record the characters a Wall or Base at t_Rex position.
 
-```
+```cpp
 void writeTrack() {
   int tempInd = 0;
   // move at fix interval
@@ -192,7 +195,7 @@ void writeTrack() {
     lcd.setCursor(0, 1);  // Go to start of second line
     for (int i = 0; i < 16; i++) {
       tempInd = (i + scrollTrackIndex) % 16;                               // find the mod 16
-      if (i == t_RexPos) {                                                 // keep a copy of Char at t_Rex position for hit checking
+      if (i == t_RexPos) {                                                // keep a copy of Char at t_Rex position for hit checking
         t_RexPosChar = arrayTrack[tempInd];                                // keep a copy of status at T-Rex position: wall or space
         if ((t_RexPosChar == WALLCHAR) && (t_RexStatus == HIGH)) Score++;  // gain 1 point each time passing a wall
         if (t_RexStatus == LOW) lcd.write(REXCHAR);                        // re-draw the t_REX at base location
@@ -206,12 +209,12 @@ void writeTrack() {
 }
 ```
 
-## t_Rex
+### t_Rex
 
-If an "actionJump" is initiated, it will update the t_Rex to jump from lcd.setCursor(t_RexPos, 1) to lcd.setCursor(t_RexPos, 0). 
+If an "actionJump" is initiated, it will update the t_Rex to jump from lcd.setCursor(t_RexPos, 1) to lcd.setCursor(t_RexPos, 0).  
 t_Rex only come down after "jumptimeInterval".
 
-```
+```cpp
 void jumpWall() {
   if (actionJump == HIGH) {      // Action to jump
     actionJump = LOW;            // Set to low for next command
@@ -235,28 +238,32 @@ void jumpWall() {
   }
 }
 ```
-## Checking the hit
+
+### Checking the Hit
 
 Only check if t_Rex is at the track (non-jump state), got hit if the track character at t_RexPos is a "WALL". If Hit, minus Score and numLife.
-```
-  // check whether t_Rex hitting the Wall
-  if ((t_RexStatus == LOW) && (t_RexPosChar == WALLCHAR)) {
-    numLife--;                   // Hiting the wall, minus one life
-    lcd.setCursor(t_RexPos, 1);  //
-    lcd.write(HITCHAR);          // show hit character
-    lcd.setCursor(t_RexPos, 1);  // ensure blinking on HITChar
-    lcd.blink();
-    delay(3000);
-    lcd.noBlink();
-    // Serial.println("Got HIT");
-    actionJump = LOW;       // initiate a jump action after switch is pressed and released
-    switchStateCur = HIGH;  // current switch status for checking switch pressed and released function
-  }
+
+```cpp
+// check whether t_Rex hitting the Wall
+if ((t_RexStatus == LOW) && (t_RexPosChar == WALLCHAR)) {
+  numLife--;                   // Hiting the wall, minus one life
+  lcd.setCursor(t_RexPos, 1);  //
+  lcd.write(HITCHAR);          // show hit character
+  lcd.setCursor(t_RexPos, 1);  // ensure blinking on HITChar
+  lcd.blink();
+  delay(3000);
+  lcd.noBlink();
+  // Serial.println("Got HIT");
+  actionJump = LOW;       // initiate a jump action after switch is pressed and released
+  switchStateCur = HIGH;  // current switch status for checking switch pressed and released function
+}
 ```
 
-## Scoreboard
+### Scoreboard
+
 Update the Score and numLife on LCD row 0. Check for Game over if numLife = 0, and wait to start new game.
-```
+
+```cpp
 void updateScoreboard() {
 
   // Print the game score and life
@@ -289,31 +296,31 @@ void updateScoreboard() {
   }
 }
 ```
-## Random Wall generator
+
+### Random Wall Generator
 
 May inject random WALL in the track instead of using default fix sequence.
 
-```
+```cpp
 // Generate random WALL position
-  arrayTrack[0] == BASECHAR;
-  if (arrayTrack[15] == BASECHAR) {  // Avoid 2 consecutive WALLs
-    tempInd = millis() % 2;
-    if (tempInd == 1)
-      arrayTrack[0] == WALLCHAR;
-  }
+arrayTrack[0] == BASECHAR;
+if (arrayTrack[15] == BASECHAR) {  // Avoid 2 consecutive WALLs
+  tempInd = millis() % 2;
+  if (tempInd == 1)
+    arrayTrack[0] == WALLCHAR;
+}
 ```
 
-# 🎮 Other Top Game Ideas for 1 Button + LCD
+## 🎮 Other Top Game Ideas for 1 Button + LCD
 
-**Reaction Time Tester (Best for beginners)**
+### Reaction Time Tester (Best for beginners)
 The LCD says "Get Ready...". After a random delay (2–5 seconds), it flashes "PRESS NOW!". The ESP32 measures exactly how many milliseconds it took you to press the button.
 
-**1-Button "Dino Jump" (Chrome Offline Game style)**
+### 1-Button "Dino Jump" (Chrome Offline Game style)
 A character (^) sits on the bottom row of the LCD. An obstacle (M) scrolls from right to left. Pressing the button makes the character "jump" to the top row for a second to dodge the obstacle.
 
-**Speed Clicker Challenge**
+### Speed Clicker Challenge
 The game gives you exactly 10 seconds. The LCD displays a countdown. Your goal is to mash the button as many times as possible. It displays your final score and a rank (e.g., "Speed Demon!").
 
-**Higher or Lower (Number Guessing)**
+### Higher or Lower (Number Guessing)
 The ESP32 picks a number from 1 to 100. You press the button to cycle through numbers. A short press adds 1, a long press (hold > 1 sec) adds 10. The LCD tells you "Higher!" or "Lower!" until you guess it.
-
