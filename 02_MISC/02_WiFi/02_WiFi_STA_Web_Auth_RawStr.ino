@@ -3,7 +3,7 @@
 
 // WiFi credentials
 const char* ssid = "Nightingale_IoT";
-const char* password = "98297824";
+const char* password = "1122334455";
 
 // Web server login credentials
 const char* http_username = "admin";
