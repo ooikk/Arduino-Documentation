@@ -38,7 +38,7 @@ Sample code: **RFID_v2**
 
 https://github.com/OSSLibraries/Arduino_MFRC522v2
 
-# Card information
+## Card information
 
 <img width="806" height="384" alt="image" src="https://github.com/user-attachments/assets/0b785230-987c-4df8-a9fa-d2a86216a89e" />
 
@@ -127,7 +127,7 @@ Read Data    Key A or Key B    Access bits allow both.
 Write Data   Key B Only        Access bits restrict writing to the "Higher" key (Key B).
 ```
 
-# Reading from the card
+## Reading from the card
 
 ### **18-Byte Buffer**
 
@@ -145,7 +145,7 @@ Use `PICC_CMD_MF_AUTH_KEY_B` because the card image showed that Key B was active
 
 If you ever use a card where Key B is hidden, switch back to `PICC_CMD_MF_AUTH_KEY_A`.
 
-# Writing to the card
+## Writing to the card
 
 Writing to a MIFARE Classic card is more complex than reading because you must authenticate with the correct key (usually `FF FF FF FF FF FF` for new cards) before the card will allow a write operation.
 
@@ -185,7 +185,7 @@ If writing to multiple sectors (for example, Sector 1 followed by Sector 2), cal
 
 If authentication still results in a timeout, try reducing the SPI frequency to **1 MHz (1000000 Hz)**.
 
-# Reference
+## Reference
 
 https://www.oceanlabz.in/esp32-s3-rfid-with-arduino-ide/
 
