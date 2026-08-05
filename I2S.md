@@ -2,7 +2,7 @@
 I2S (Inter-IC Sound) is a synchronous serial bus protocol designed by Philips Semiconductors (now NXP) in 1986 for transmitting digital audio data between integrated circuits (e.g., ADCs, DACs, DSPs). It uses at least three lines—Bit Clock (BCLK), Word Select (WS/LRCK), and Serial Data (SD)—to transmit Pulse Code Modulation (PCM) stereo data, with a dedicated controller/target architecture for high-quality audio.
 
 ## Key Features of I2S Protocol:
-**Three-Wire Interface:**
+### Three-Wire Interface:
 - **Bit Clock (BCLK/SCK):** Synchronizes each bit of data. The protocol does not specify a maximum data rate. The clock runs continuously.<br>
   SCK Frequency = Number of Channels × Sampling Frequency × Data Bit Width <br>
   Example: For stereo audio with a 44.1 kHz sampling rate (CD standard) and 16-bit width:<br>
@@ -73,7 +73,7 @@ The ESP32-S3 uses a GPIO Matrix, meaning there are no fixed hardware pins for I2
 The ESP32-S3 contains two independent I2S peripherals (I2S0 and I2S1).
 
 
-**1. Standard I2S Signal Pins.** 
+### 1. Standard I2S Signal Pins.    
 
 To set up an I2S connection (e.g., for a microphone or speaker), you typically need to define these three main lines:  
 ```
@@ -83,7 +83,7 @@ WS                   LRCK / FS               Word Select: Indicates Left or Righ
 DIN / DOUT           SD / DATA               Data In/Out: The actual digital audio stream.
 MCLK                 CLK                     Master Clock: Optional; only needed for some high-end DACs.
 ```
-**2. Example Pin Configurations**
+### 2. Example Pin Configurations   
 
 Since you must define these in your code, here are common pin mappings used in popular ESP32-S3 projects:  
 ```
@@ -93,10 +93,10 @@ MAX98357A Amplifier     GPIO 4    GPIO 5         GPIO 1 (Output)
 LilyGo T7-S3            GPIO 4    GPIO 5         GPIO 1
 ```
 
-**3. Implementation in Arduino**
+### 3. Implementation in Arduino
 
 If you are using the ESP32-I2S library or the native driver/i2s.h, you define the pins during initialization like this:
-```
+```cpp
 #include "driver/i2s.h"
 
 #define I2S_BCLK 4
@@ -113,7 +113,7 @@ void setup() {
   i2s_set_pin(I2S_NUM_0, &pin_config);
 }
 ```
-**4. Connecting ESP32S3 to MAX98357A and 3W speaker**
+### 4. Connecting ESP32S3 to MAX98357A and 3W speaker 
 
 To drive a MAX98357A with your ESP32-S3, you are moving into the world of digital audio. This specific chip is an I2S Class-D amplifier, meaning it takes the digital signal directly from the ESP32 and pumps it into your 3W speaker without needing a separate DAC.
 
@@ -137,7 +137,7 @@ This example uses the popular ESP32-audioI2S library, which is the most robust w
 
 Library Requirement: In the Library Manager, search for and install "ESP32-audioI2S" by Wolle (Schreibfaul1).
 
-```
+```cpp
 #include "Audio.h"
 
 // Updated I2S Pins for ESP32-S3
@@ -178,7 +178,7 @@ void loop() {
 }
 ```
 
-**Key Technical Notes**
+### Key Technical Notes**
 
 **1. Power Supply for 3W**
 
