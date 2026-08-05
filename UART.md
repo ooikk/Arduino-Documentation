@@ -1,31 +1,31 @@
-## UART Communication Protocol
+# UART Communication Protocol
 
-**Overview**
+## Overview   
 
 UART (Universal Asynchronous Receiver-Transmitter) is a widely used, 2-wire (Tx/Rx) asynchronous serial communication protocol that transfers data between devices without a shared clock signal. It converts parallel data from a CPU into serial form for transmission and back to parallel at the receiving end. Both devices must be configured to the same speed (baud rate), with data framed by start/stop bits. 
 
 <img alt="image" style="width: 75%; height: auto;" src="https://github.com/user-attachments/assets/c9456370-4bc9-4fe2-aec5-404b62bd8983" />
 
 
-**Key Aspects of UART Protocol**
+## Key Aspects of UART Protocol  
 - **Asynchronous Operation:** Unlike SPI or I2C, UART does not use a clock signal to synchronize the transmitter and receiver. Instead, it relies on pre-configured, matching baud rates (e.g., 9600, 115200).
 - **Data Framing:** To manage asynchronous communication, UART wraps data in packets containing a start bit, 5–9 data bits, an optional parity bit (for error checking), and 1–2 stop bits.
 - **Wiring:** It only requires two wires—Transmit (Tx) and Receive (Rx)—plus a common ground, making it simple to implement.
 - **Communication Modes:** UART allows for full-duplex (simultaneous two-way) or half-duplex (alternating) communication.
 - **Voltage Levels:** UART typically uses TTL (transistor-transistor logic) levels. 
 
-**Data Transmission Process**
+## Data Transmission Process   
 - **Idle:** The transmission line is held at a high voltage level.
 - **Start Bit:** The transmitter pulls the line low for one clock cycle.
 - **Data Bits:** The data is sent, starting with the least significant bit (LSB).
 - **Parity Bit (Optional):** Used for error checking.
 - **Stop Bit(s):** The line is pulled high again to signal the end of the frame. 
 
-**Advantages and Disadvantages**
+## Advantages and Disadvantages   
 - **Pros:** Only two wires, no clock signal needed, widely documented, and versatile.
 - **Cons:** Slower than SPI/I2C, limited to point-to-point communication (no master/slave networks), and requires precise, pre-matched baud rates. 
 
-**Common Uses**
+## Common Uses   
 UART is extensively used in embedded systems for debugging (e.g., Arduino serial monitor), connecting GPS modules, Bluetooth modules, and, historically, teletypewriters. 
 
 ## UART Communication
@@ -40,14 +40,14 @@ UART transmitted data is organized into packets. Each packet contains 1 start bi
 
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/64213327-43f1-4b64-b994-d350b43648ef" />
 
-**Advantages**
+### Advantages   
 - Only uses two wires
 - No clock signal is necessary
 - Has a parity bit to allow for error checking
 - The structure of the data packet can be changed as long as both sides are set up for it
 - Well documented and widely used method
 
-**Disadvantages**
+### Disadvantages   
 - The size of the data frame is limited to a maximum of 9 bits
 - Doesn’t support multiple slave or multiple master systems
 - The baud rates of each UART must be within 10% of each otherAdvantages
@@ -74,7 +74,7 @@ The Result: This effectively leaves all three hardware UARTs (0, 1, and 2) compl
 ## UART0 and the Serial Monitor
 Here’s a basic example that shows a two-way communication between the ESP32 and the Serial Monitor (your computer).
 
-```
+```cpp
 /*********
   Rui Santos & Sara Santos - Random Nerd Tutorials
   Complete instructions at https://RandomNerdTutorials.com/esp32-uart-communication-serial-arduino/
@@ -113,7 +113,7 @@ void loop() {
 ```
 
 Simple code to wait for user to hit Enter before proceed to next step.   
-```
+```cpp
 void waitForSerial() {
 
   // Clear the serial buffer so it doesn't instantly loop again
@@ -130,19 +130,19 @@ void waitForSerial() {
 Setting custom UART pins is quite simple. As we’ve seen previously, the ESP32 has three UART ports you can use: UART0, UART 1 and UART 2.
 
 To use any of those ports, you just need to create an HardwareSerial instance on the desired UART port. For example, the following line creates a serial instance called mySerial using UART2.
-```
+```cpp
 #define RX_GPIO 16
 #define TX_GPIO 17
 HardwareSerial mySerial(2);
 ```
 
 Then, you can use any pins of your choice. You just need to pass them to the begin() method like this:
-```
+```cpp
 mySerial.begin(GPS_BAUD, SERIAL_8N1, RX_GPIO, TX_GPIO);
 ```
 ## UART Communication with Other Devices
 
-```
+```cpp
 /*********
   Rui Santos & Sara Santos - Random Nerd Tutorials
   Complete instructions at https://RandomNerdTutorials.com/esp32-neo-6m-gps-module-arduino/
@@ -183,7 +183,7 @@ https://docs.arduino.cc/language-reference/en/functions/communication/serial/beg
 
 ## ESP32 Serial Communication Between ESP
 If you want to communicate with another ESP32, it is not much different. You basically initialize a serial communication on the desired GPIOs and then use the functions to read and send data via serial.
-```
+```cpp
 Wire connection bewteen ESP
 ESP32 #1 (Sender)    ESP32 #2 (Receiver)
 TXD1 (GPIO 17)       RXD1 (GPIO 18)
@@ -194,8 +194,8 @@ GND                  GND
 <img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/e8ce7894-2877-4c79-aeed-0817990f31b6" />
 
 
-**Sender Code**
-```
+### Sender Code   
+```cpp
 /*********
   Rui Santos & Sara Santos - Random Nerd Tutorials
   Complete instructions at https://RandomNerdTutorials.com/esp32-uart-communication-serial-arduino/
@@ -232,8 +232,8 @@ void loop() {
   delay(1000); 
 }
 ```
-**Receiver  Code**
-```
+### Receiver  Code    
+```cpp
 /*********
   Rui Santos & Sara Santos - Random Nerd Tutorials
   Complete instructions at https://RandomNerdTutorials.com/esp32-uart-communication-serial-arduino/
@@ -264,14 +264,14 @@ void loop() {
   }
 }
 ```
-**Reading single character at a time**
+### Reading single character at a time   
 
-When you use *Serial.read()*, it reads exactly one byte of data from the serial buffer at a time and returns it as its ASCII character value (an integer).
+When you use ```Serial.read()```, it reads exactly one byte of data from the serial buffer at a time and returns it as its ASCII character value (an integer).
 
 Because it only reads one character at a time, you cannot immediately know if it is part of a larger "string" (text) or a "number" without checking the value of that character, or reading the entire incoming message first.      
 
-If you want to check if the incoming byte is a digit (0–9) or an alphabetical letter (a–z, A–Z), you can use built-in Arduino character analysis functions like *isdigit()* and *isalpha()*.      
-```
+If you want to check if the incoming byte is a digit (0–9) or an alphabetical letter (a–z, A–Z), you can use built-in Arduino character analysis functions like ```isdigit()``` and ```isalpha()```.      
+```cpp
 void setup() {
   Serial.begin(9600);
 }
@@ -295,12 +295,12 @@ void loop() {
   }
 }
 ```      
-**Parsing Whole Numbers vs. Strings**     
+### Parsing Whole Numbers vs. Strings     
 
-If someone types 456 or hello into the Serial Monitor, *Serial.read()* will look at them one letter at a time ('4', then '5', then '6'). To handle the whole piece of data, it is usually better to read the entire line first.
+If someone types 456 or hello into the Serial Monitor, ```Serial.read()``` will look at them one letter at a time ('4', then '5', then '6'). To handle the whole piece of data, it is usually better to read the entire line first.
 
-You can use *Serial.readString()* to grab the incoming data as a complete string, and then determine if that string represents a number.     
-```
+You can use ```Serial.readString()``` to grab the incoming data as a complete string, and then determine if that string represents a number.     
+```cpp
 void setup() {
   Serial.begin(9600);
 }
@@ -347,20 +347,20 @@ bool isNumeric(String str) {
   return true; // Passed all checks!
 }
 ```
-Solves the "Zero" Dilemma: If the user types 0, isNumeric returns true, and your code processes it perfectly. If they type hello, isNumeric catches it as false instead of giving you a fake 0.
+Solves the "Zero" Dilemma: If the user types 0, ```isNumeric``` returns true, and your code processes it perfectly. If they type hello, ```isNumeric``` catches it as false instead of giving you a fake 0.
 
 Alternative: Let Arduino Separate It for You
-If you know you are expecting numbers, you can skip *Serial.read()* entirely and use *Serial.parseInt()* or *Serial.parseFloat()*.
+If you know you are expecting numbers, you can skip ```Serial.read()``` entirely and use ```Serial.parseInt()``` or ```Serial.parseFloat()```.
 
-*Serial.parseInt()* automatically skips any initial letters/symbols, looks specifically for numeric digits in the buffer, and returns them as an actual integer. If it times out without finding a number, it returns 0.     
+```Serial.parseInt()``` automatically skips any initial letters/symbols, looks specifically for numeric digits in the buffer, and returns them as an actual integer. If it times out without finding a number, it returns 0.     
 
 If your main goal is to read numbers (like 42, -15, or 3.14) from the Serial Monitor, you have three main ways to do it depending on how robust you want your code to be.
 
 Here are the best methods, ranked from the easiest to the most professional.     
 
-**Method 1:** The Easiest Way (Serial.parseInt() or Serial.parseFloat())    
+**Method 1:** The Easiest Way (```Serial.parseInt()``` or ```Serial.parseFloat()```)    
 
-```
+```cpp
 void setup() {
   Serial.begin(9600);
   Serial.println("Enter a number:");
@@ -376,13 +376,13 @@ void loop() {
   }
 }
 ```
-⚠️ The Catch: parseInt() is a "blocking" function. If you don't type anything for a moment, it will pause your code for up to 1 second (the default timeout) waiting for data, and then return 0.     
+⚠️ The Catch: ```parseInt()``` is a "blocking" function. If you don't type anything for a moment, it will pause your code for up to 1 second (the default timeout) waiting for data, and then return 0.     
 
-**Method 2:** The Cleanest Way (Serial.readStringUntil())     
-To avoid the 1-second lag/timeout issue of *parseInt()*, it is usually better to read the entire line as text first, and then convert it to a number using *.toInt()* or *.toFloat()*.
+**Method 2:** The Cleanest Way (```Serial.readStringUntil()```)     
+To avoid the 1-second lag/timeout issue of ```parseInt()```, it is usually better to read the entire line as text first, and then convert it to a number using ```.toInt()``` or ```.toFloat()```.
 
 Set your Serial Monitor dropdown (at the bottom right) to "Newline" or "Both NL & CR" for this to work best.
-```
+```cpp
 void setup() {
   Serial.begin(9600);
   Serial.println("Enter a number:");
@@ -404,7 +404,7 @@ void loop() {
 }
 ```
 
-If a user enters non-numeric text in above Method 2, toInt() will attempt to parse what it can, but it will usually return 0. The exact behavior depends entirely on where the non-number characters are in the text. Here is how toInt() handles different inputs:      
+If a user enters non-numeric text in above Method 2, ```toInt()``` will attempt to parse what it can, but it will usually return 0. The exact behavior depends entirely on where the non-number characters are in the text. Here is how ```toInt()``` handles different inputs:      
 
 |	User Types	|	What toInt() Sees	|	Final Return Value	|
 |	-	|	-	|	-	|
@@ -417,11 +417,11 @@ If a user enters non-numeric text in above Method 2, toInt() will attempt to par
 
 
 **Method 3:** The Pro Way (Non-blocking Character Gathering)      
-If your Arduino is controlling motors or time-sensitive sensors, you cannot afford to let Serial.readString() or parseInt() pause your code.
+If your Arduino is controlling motors or time-sensitive sensors, you cannot afford to let ```Serial.readString()``` or ```parseInt()``` pause your code.
 
 The professional approach is to read characters one by one as they arrive, store them in a string, and convert them to a number only when the user hits 'Enter'.
 
-```
+```cpp
 String inputString = "";      // A string to hold incoming data
 bool stringComplete = false;  // Whether the string is complete
 
