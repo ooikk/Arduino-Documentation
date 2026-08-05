@@ -3,7 +3,7 @@
 https://wokwi.com/
 
 Add 2 ESP32-S3, modify the **diagram.json** file
-```
+```xml
 {
   "version": 1,
   "author": "Anonymous maker",
