@@ -9,11 +9,12 @@ Unlike analog pins that process a continuous range of voltages, digital pins ope
 
 When configured as an **output**, the pin acts as a switch to apply 3.3V or 0V to a component (like turning an LED on or off). When configured as an **input**, the pin reads whether an external component is applying 3.3V or 0V to it (like detecting a button press).
 
-**Architecture of IO MUX, RTC IO MUX, and GPIO Matrix**      
+## Architecture of IO MUX, RTC IO MUX, and GPIO Matrix
+
 <img width="1064" height="848" alt="image" src="https://github.com/user-attachments/assets/86625741-b333-4891-ab43-59ce794aecab" />
 
+## Pin Modes Configuration
 
-**Pin Modes Configuration**    
 The ESP32-S3 is highly flexible. Using the standard Arduino framework, a GPIO pin can be configured into four primary modes using the **pinMode()** function:
 
 - **OUTPUT**: The pin is set to drive a high or low voltage. It has low impedance and can source or sink current (up to about 20mA per pin, though it's best to keep it lower).
@@ -21,96 +22,121 @@ The ESP32-S3 is highly flexible. Using the standard Arduino framework, a GPIO pi
 - **INPUT_PULLUP**: The pin is configured as an input but activates an internal resistor connected to 3.3V. This prevents the pin from floating, ensuring it reads HIGH by default until an external switch pulls it down to LOW (Ground).
 - **INPUT_PULLDOWN**: The pin is configured as an input but activate an internal resistor connected to ground.
 
-**Internal IO Pad**     
-<img style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/e2099815-e54e-4510-a207-bba9c6132f1f" />      
+## Internal IO Pad
 
-**Key Elements of the GPIO Circuit:**     
+<img style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/e2099815-e54e-4510-a207-bba9c6132f1f" />
+
+### Key Elements of the GPIO Circuit
+
 - **Internal Pull-Up ($R_{PU}$)**: An internal $\sim45\text{ k}\Omega$ resistor connected to $3.3\text{V}$ that can be enabled via software (INPUT_PULLUP).
 - **Internal Pull-Down ($R_{PD}$)**: An internal $\sim45\text{ k}\Omega$ resistor connected to $0\text{V}/\text{GND}$ that can be enabled via software (INPUT_PULLDOWN).
 - **Schmitt Trigger / Input Buffer**: Converts the analog voltage level at the pin into a clean $0$ or $1$ digital signal for digitalRead().
-- **Output PMOS / NMOS Transistors**: Drive the pin to $3.3\text{V}$ (HIGH) or $0\text{V}$ (LOW) when configured as an OUTPUT.      
+- **Output PMOS / NMOS Transistors**: Drive the pin to $3.3\text{V}$ (HIGH) or $0\text{V}$ (LOW) when configured as an OUTPUT.
 
+## GPIO Pins for user
 
-## GPIO Pins for user     
+The ESP32-S3 chip features a total of 45 physical GPIO pins (numbered GPIO 0 to 21, and GPIO 26 to 48). However, the actual number of "user-usable" pins drops significantly because several pins are hardwired internally to handle critical tasks like flash memory, system booting, and communication.The practical breakdown of available pins depends on how your specific module is configured:
 
-The ESP32-S3 chip features a total of 45 physical GPIO pins (numbered GPIO 0 to 21, and GPIO 26 to 48).  However, the actual number of "user-usable" pins drops significantly because several pins are hardwired internally to handle critical tasks like flash memory, system booting, and communication.The practical breakdown of available pins depends on how your specific module is configured:      
+### 1. Pins You Cannot Use (Internal Memory)
 
-**1. Pins You Cannot Use (Internal Memory)**     
-The ESP32-S3 chip relies on external Flash and PSRAM (Pseudo-Static RAM) encapsulated inside the module (like the standard ESP32-S3-WROOM-1).     
-- Quad SPI Flash Modules (Standard): Pins *GPIO 26 through 32 (7 pins)* are permanently wired to the internal SPI flash memory. If you try to use them, the micro-controller will instantly crash or refuse to boot.
-- Octal Flash / Octal PSRAM Modules (High Performance): If your specific board uses the high-speed Octal memory variants (like the N8R8 or N16R8), an additional 5 pins (*GPIO 33 through 37*) are consumed by the system.
-Available Pins Remaining: ~33 to 38 pins.     
+The ESP32-S3 chip relies on external Flash and PSRAM (Pseudo-Static RAM) encapsulated inside the module (like the standard ESP32-S3-WROOM-1).
 
-**2. Pins to Use With Caution (Strapping & USB)**      
+- **Quad SPI Flash Modules (Standard):** Pins *GPIO 26 through 32 (7 pins)* are permanently wired to the internal SPI flash memory. If you try to use them, the micro-controller will instantly crash or refuse to boot.
+- **Octal Flash / Octal PSRAM Modules (High Performance):** If your specific board uses the high-speed Octal memory variants (like the N8R8 or N16R8), an additional 5 pins (*GPIO 33 through 37*) are consumed by the system.
+
+**Available Pins Remaining:** ~33 to 38 pins.
+
+### 2. Pins to Use With Caution (Strapping & USB)
+
 Several pins are exposed and usable, but have major caveats depending on your board's hardware design.
-- Strapping Pins (*GPIO 0, 3, 45, 46*): These control how the chip boots up.
-  - *GPIO 0*: Must be HIGH to boot normally into your code (it drops LOW to enter flashing mode). You can use it as an output, but avoid pulling it LOW with external hardware during a reset.     
+
+- **Strapping Pins (*GPIO 0, 3, 45, 46*):** These control how the chip boots up.
+  - *GPIO 0*: Must be HIGH to boot normally into your code (it drops LOW to enter flashing mode). You can use it as an output, but avoid pulling it LOW with external hardware during a reset.
   - *GPIO 46*: Is an input-only pin and lacks internal pull-up/pull-down resistors.
-- Native USB & Debugging (*GPIO 19, 20, 43, 44*): * *GPIO 19* and *20* handle the native USB-OTG/JTAG connection. If your board programs via native USB, using these pins will break your serial connection.
+- **Native USB & Debugging (*GPIO 19, 20, 43, 44*):**
+  - *GPIO 19* and *20* handle the native USB-OTG/JTAG connection. If your board programs via native USB, using these pins will break your serial connection.
   - *GPIO 43* and *44* are typically tied to the UART0 transceiver for hardware-level flashing and logging.
-  
-**Summary Table: Truly Safe & Usable GPIOs**     
-If you want completely un-restricted, safe pins for sensors, displays, and relays without interfering with memory, booting, or standard USB flashing, you have roughly *23* to *28* "safe" pins available on a standard development board.     
 
-|GPIO Ranges	| Usability Status |	Notes / Limitations |
+### Summary Table: Truly Safe & Usable GPIOs
+
+If you want completely un-restricted, safe pins for sensors, displays, and relays without interfering with memory, booting, or standard USB flashing, you have roughly *23* to *28* "safe" pins available on a standard development board.
+
+| GPIO Ranges | Usability Status | Notes / Limitations |
 | - | - | - |
-|GPIO 1 to 2, 4 to 18, 21	|🟢 100% Safe|	Excellent general-purpose pins. Many double as ADC (Analog) and Capacitive Touch pins. |
-|GPIO 38 to 42	|🟡 Generally Safe|	Fully available on Quad-SPI modules, though frequently routed to onboard peripherals (like camera data/microphones) on specialized modules.
-|GPIO 0, 3, 45	|⚠️ Conditional|	Strapping pins. Safe for outputs, but must not be forced to conflicting logic levels during a power cycle/reboot.
-|GPIO 46	|⚠️ Conditional|	Strapping pin. Input Only. No internal pull-up/pull-down resistors.
-|GPIO 19, 20	|❌ Restricted|	Reserved for native USB-OTG/JTAG functionality.
-|GPIO 43, 44	|❌ Restricted|	Typically reserved for Main Hardware Serial (UART0 TX/RX).
-|GPIO 26 to 32	|🚫 Never Use|	Dedicated entirely to SPI Flash memory.
-|GPIO 33 to 37	|🚫 Never Use (Usually)|	Dedicated to High-speed PSRAM/Flash if using an Octal module variant.
+| GPIO 1 to 2, 4 to 18, 21 | 🟢 100% Safe | Excellent general-purpose pins. Many double as ADC (Analog) and Capacitive Touch pins. |
+| GPIO 38 to 42 | 🟡 Generally Safe | Fully available on Quad-SPI modules, though frequently routed to onboard peripherals (like camera data/microphones) on specialized modules. |
+| GPIO 0, 3, 45 | ⚠️ Conditional | Strapping pins. Safe for outputs, but must not be forced to conflicting logic levels during a power cycle/reboot. |
+| GPIO 46 | ⚠️ Conditional | Strapping pin. Input Only. No internal pull-up/pull-down resistors. |
+| GPIO 19, 20 | ❌ Restricted | Reserved for native USB-OTG/JTAG functionality. |
+| GPIO 43, 44 | ❌ Restricted | Typically reserved for Main Hardware Serial (UART0 TX/RX). |
+| GPIO 26 to 32 | 🚫 Never Use | Dedicated entirely to SPI Flash memory. |
+| GPIO 33 to 37 | 🚫 Never Use (Usually) | Dedicated to High-speed PSRAM/Flash if using an Octal module variant. |
 
-## GPIO API     
-**pinMode**    
+## GPIO API
+
+### pinMode
+
 The **pinMode** function is used to define the GPIO operation mode for a specific pin.
-```
+
+```cpp
 void pinMode(uint8_t pin, uint8_t mode);
-```    
+```
+
 - *pin* defines the GPIO pin number.
-- *mode* sets operation mode.    
+- *mode* sets operation mode.
 
 The following modes are supported for the basic input and output:
+
 - *INPUT* sets the GPIO as input without pullup or pulldown (high impedance).
 - *OUTPUT* sets the GPIO as output/read mode.
 - *INPUT_PULLDOWN* sets the GPIO as input with the internal pulldown.
-- *INPUT_PULLUP* sets the GPIO as input with the internal pullup.     
+- *INPUT_PULLUP* sets the GPIO as input with the internal pullup.
 
-**Internal Pullup and Pulldown**     
-The ESP32 SoC families supports the internal pullup and pulldown throught a 45kR resistor, that can be enabled when configuring the GPIO mode as INPUT mode. If the pullup or pulldown mode is not defined, the pin will stay in the high impedance mode.     
+### Internal Pullup and Pulldown
 
-**digitalWrite**     
-The function **digitalWrite** sets the state of the selected GPIO to *HIGH* or *LOW*. This function is only used if the **pinMode** was configured as *OUTPUT*.     
-```
+The ESP32 SoC families supports the internal pullup and pulldown throught a 45kR resistor, that can be enabled when configuring the GPIO mode as INPUT mode. If the pullup or pulldown mode is not defined, the pin will stay in the high impedance mode.
+
+### digitalWrite
+
+The function **digitalWrite** sets the state of the selected GPIO to *HIGH* or *LOW*. This function is only used if the **pinMode** was configured as *OUTPUT*.
+
+```cpp
 void digitalWrite(uint8_t pin, uint8_t val);
 ```
+
 - *pin* defines the GPIO pin number.
 - *val* set the output digital state to *HIGH* or *LOW*.
 
-**digitalRead**    
-To read the state of a given pin configured as INPUT, the function digitalRead is used.     
-```
+### digitalRead
+
+To read the state of a given pin configured as INPUT, the function digitalRead is used.
+
+```cpp
 int digitalRead(uint8_t pin);
 ```
-- *pin* select GPIO     
 
-This function will return the logical state of the selected pin as *HIGH* or *LOW*.     
+- *pin* select GPIO
 
-**Interrupts**     
+This function will return the logical state of the selected pin as *HIGH* or *LOW*.
+
+### Interrupts
+
 The GPIO peripheral on the ESP32 supports interruptions.
 
-**attachInterrupt**     
+### attachInterrupt
+
 The function **attachInterrupt** is used to attach the interrupt to the defined pin.
-```
+
+```cpp
 attachInterrupt(uint8_t pin, voidFuncPtr handler, int mode);
 ```
+
 - *pin* defines the GPIO pin number.
 - *handler* set the handler function.
-- *mode* set the interrupt mode.   
+- *mode* set the interrupt mode.
 
 Here are the supported interrupt modes:
+
 - DISABLED
 - RISING
 - FALLING
@@ -120,26 +146,32 @@ Here are the supported interrupt modes:
 - ONLOW_WE
 - ONHIGH_WE
 
-**attachInterruptArg**     
-The function **attachInterruptArg** is used to attach the interrupt to the defined pin using arguments.     
-```
+### attachInterruptArg
+
+The function **attachInterruptArg** is used to attach the interrupt to the defined pin using arguments.
+
+```cpp
 attachInterruptArg(uint8_t pin, voidFuncPtrArg handler, void * arg, int mode);
 ```
+
 - *pin* defines the GPIO pin number.
 - *handler* set the handler function.
 - *arg* pointer to the interrupt arguments.
-- *mode* set the interrupt mode.        
+- *mode* set the interrupt mode.
 
+### detachInterrupt
 
-**detachInterrupt**     
-To detach the interruption from a specific pin, use the **detachInterrupt** function giving the GPIO to be detached.  
-```
+To detach the interruption from a specific pin, use the **detachInterrupt** function giving the GPIO to be detached.
+
+```cpp
 detachInterrupt(uint8_t pin);
 ```
-- *pin* defines the GPIO pin number.     
 
-**Example Code: GPIO Interrupt**     
-```
+- *pin* defines the GPIO pin number.
+
+### Example Code: GPIO Interrupt
+
+```cpp
 #include <Arduino.h>
 
 struct Button {
@@ -187,13 +219,15 @@ void loop() {
 }
 ```
 
-## Code Examples (Arduino IDE)     
+## Code Examples (Arduino IDE)
+
 Here are practical code examples demonstrating how to use these modes.
 
-**1. Output Mode: Blinking an LED**
+### 1. Output Mode: Blinking an LED
+
 This example configures a pin as an output to repeatedly turn an LED on and off.
 
-```
+```cpp
 // Define the GPIO pin connected to the LED
 const int LED_PIN_R = 15; 
 const int LED_PIN_B = 16; 
@@ -215,10 +249,11 @@ void loop() {
 }
 ```
 
-**2. Input Mode: Reading a Push Button (With Internal Pull-up)**     
+### 2. Input Mode: Reading a Push Button (With Internal Pull-up)
+
 Using INPUT_PULLUP is the standard way to read a simple button. When the button is not pressed, the pin reads HIGH. When the button is pressed (connecting the pin to Ground), the pin reads LOW.
 
-```
+```cpp
 // Define the GPIO pins
 const int BUTTON_PIN = 15;
 const int LED_PIN = 17;
@@ -249,20 +284,19 @@ void loop() {
   delay(50); // Small delay to de-noise/debounce slightly
 }
 ```
-**Wiring Diagram**     
+
+### Wiring Diagram
 
 <img width="562" height="486" alt="image" src="https://github.com/user-attachments/assets/36c7d625-592f-488f-8238-431cbe2307f8" />
 
+## References
 
+[https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/gpio.html](https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/gpio.html)
 
-## References    
+[https://randomnerdtutorials.com/esp32-digital-inputs-outputs-arduino/](https://randomnerdtutorials.com/esp32-digital-inputs-outputs-arduino/)
 
-https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/gpio.html
+[https://www.oceanlabz.in/esp32-inputs-outputs/](https://www.oceanlabz.in/esp32-inputs-outputs/)
 
-https://randomnerdtutorials.com/esp32-digital-inputs-outputs-arduino/
+[https://deepbluembedded.com/esp32-digital-inputs-outputs-arduino/](https://deepbluembedded.com/esp32-digital-inputs-outputs-arduino/)
 
-https://www.oceanlabz.in/esp32-inputs-outputs/
-
-https://deepbluembedded.com/esp32-digital-inputs-outputs-arduino/
-
-https://docs.arduino.cc/language-reference/en/functions/digital-io/pinMode/
+[https://docs.arduino.cc/language-reference/en/functions/digital-io/pinMode/](https://docs.arduino.cc/language-reference/en/functions/digital-io/pinMode/)
