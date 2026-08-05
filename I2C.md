@@ -1,4 +1,4 @@
-## I2C Communication Protocol
+# I2C Communication Protocol
 
 The ESP32 has two I2C bus interfaces that can serve as I2C master or slave.
 
