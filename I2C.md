@@ -60,7 +60,7 @@ Vcc         3.3V
 
 ## Customizing I2C Pins
 With the ESP32 you can set almost any pin to have I2C capabilities, you just need to set that in your code. You can reassign them in your setup() function like this:
-```
+```cpp
 // Example: Using GPIO 1 and GPIO 2 for I2C
 #define I2C_SDA 1
 #define I2C_SCL 2
@@ -77,7 +77,7 @@ With I2C communication, each slave on the bus has its own address, a hexadecimal
 
 The I2C address can be usually found on the component’s datasheet. However, if it is difficult to find out, you may need to run an I2C scanner sketch to find out the I2C address.
 
-```
+```cpp
 /*********
   Rui Santos
   Complete project details at https://randomnerdtutorials.com  
@@ -136,7 +136,7 @@ Example: The OLED and the BME280 have different addresses, we can use the same S
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/963cf283-f44c-4629-90f7-6306649d322f" />
 
 
-```
+```cpp
 if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
   Serial.println(F("SSD1306 allocation failed"));
   for(;;);
@@ -151,7 +151,7 @@ if (!status) {
 
 ## Multiple I2C Buses
 The ESP32-S3 actually has two independent I2C peripherals (Wire and Wire1). This is very useful if you have two devices with the same address or if you want to run one sensor at 100kHz and another at 400kHz.
-```
+```cpp
 // TwoWire I2C_one = TwoWire(0); // Create first I2C bus
 TwoWire I2C_two = TwoWire(1); // Create a second I2C bus
 
@@ -163,7 +163,7 @@ void setup() {
 
 Example, one of the sensors uses the default pins, and the other uses GPIO 10 and GPIO 11.
 
-```
+```cpp
 /*
   Rui Santos
   Complete project details at https://RandomNerdTutorials.com/esp32-i2c-communication-arduino-ide/
@@ -261,11 +261,11 @@ Here’s how I2C communication between two ESP32 boards works:
 
 
 
-**Master Code**
+### Master Code   
 
 The Master initiates all communication. It "pushes" data to the slave and "pulls" data when needed.
 
-```
+```cpp
 #include <Wire.h>
 #define I2C_SDA 8
 #define I2C_SCL 9
@@ -340,11 +340,11 @@ byte* receiveDataFromSlave(int length) {
 
 
 ```
-**Slave Code**
+### Slave Code
 
 The Slave is passive. It waits for the Master to trigger either the onReceive event (receiving data) or the onRequest event (sending data).
 
-```
+```cpp
 #include <Wire.h>
 #define I2C_SDA 8
 #define I2C_SCL 9
@@ -397,7 +397,7 @@ void requestEvent() {
 
 ```
 
-**Key Technical Considerations**
+### Key Technical Considerations    
 
 Buffer Sizes: The standard Wire library has a buffer limit (usually 32 bytes). If you need to send larger data arrays, you must break them into chunks.
 
