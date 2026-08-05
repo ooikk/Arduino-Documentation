@@ -219,7 +219,7 @@ If your ESP32 resets (watchdog, crash, or power loss) while the SD card is still
 
 ### How to fix – Step by step
 
-### Step 1: Ensure proper SPI transaction around SD access
+#### Step 1: Ensure proper SPI transaction around SD access
 
 Wrap every SD card operation (including ```SD.begin()```) with transactions:
 
@@ -251,13 +251,13 @@ void setup() {
 }
 ```
 
-### Step 2: In your file access function, wrap each file operation
+#### Step 2: In your file access function, wrap each file operation
 
 The ```SD.open``` and ```file.read``` already use transactions internally if the SD library is compiled with ```USE_SPI_TRANSACTIONS```. But to be safe, you can add explicit transactions around the file open/read loop.
 
 However, the simplest fix is to ensure that no SPI device is selected while the other is active. TFT_eSPI automatically de‑selects the TFT after each drawing command. But if you call ```tft.pushImage``` repeatedly, the TFT stays selected? No – ```pushImage``` ends with de‑select. So that’s likely fine.
 
-### Step 3: Lower SD card SPI speed
+#### Step 3: Lower SD card SPI speed
 
 Many SD cards are unstable at 40 MHz. Force a lower speed:
 
@@ -267,7 +267,7 @@ SD.begin(SD_CS, SPI, 4000000);  // 4 MHz
 
 Add this after your transaction block.
 
-### Step 4: Add delays and flush after each file access
+#### Step 4: Add delays and flush after each file access
 
 Example, after displaying an image, add a small delay to let the SD card finish any internal cleanup:
 
@@ -278,7 +278,7 @@ delay(50);
 
 Also, after closing the file, you can force a flush of the SD library cache (if any) by calling ```SD.end()``` before power down – but that’s only if you are about to sleep or reset.
 
-### Step 5: Use SdFat library
+#### Step 5: Use SdFat library
 
 It allows you to explicitly pass a pointer to the SPI instance. When initializing your SD card, define the config like this:
 
@@ -293,7 +293,7 @@ https://github.com/greiman/SdFat
 
 Check here for detail about [SdFat](https://github.com/ooikk/Arduino-Documentation/blob/main/07_SDCard_Display/SDCard_SdFat.md)
 
-### Step 6: Check for accidental writes
+#### Step 6: Check for accidental writes
 
 Ensure you never open the file with ```FILE_WRITE```. Use ```FILE_READ``` only.
 
