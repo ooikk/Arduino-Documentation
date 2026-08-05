@@ -403,11 +403,11 @@ Buffer Sizes: The standard Wire library has a buffer limit (usually 32 bytes). I
 
 Clock Stretching: ESP32-S3 supports clock stretching. If your Slave is busy processing when the Master requests data, the Slave will hold the SCL line low to tell the Master to wait.
 
-Static Buffers: In the Master code, the buffer is declared as static. This ensures the pointer returned to the loop() remains valid after the function scope ends.
+Static Buffers: In the Master code, the buffer is declared as static. This ensures the pointer returned to the ```loop()``` remains valid after the function scope ends.
 
-Error Handling: Wire.endTransmission() returns a status code.
+Error Handling: ```Wire.endTransmission()``` returns a status code.
 - 0: Success.
-- 2: Address NACK (Slave not found/wrong address).
+- 2: Address ```NACK``` (Slave not found/wrong address).
 - 4: Other error (usually electrical noise or missing pull-ups).
 
 ## Reference:
