@@ -217,7 +217,7 @@ If your USB power is weak, a sudden current drop can cause the SD card to reset 
 
 If your ESP32 resets (watchdog, crash, or power loss) while the SD card is still selected (CS low) or a transaction is open, the card’s internal state may be corrupted.
 
-### How to fix – Step by step
+### ✅ How to fix – Step by step
 
 #### Step 1: Ensure proper SPI transaction around SD access
 
