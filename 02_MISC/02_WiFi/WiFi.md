@@ -707,7 +707,7 @@ void wifi_promiscuous_callback(void *buf, wifi_promiscuous_pkt_type_t type) {
   //  Serial.println("+++++++++++++++++++++++++++++++");
 }
 ```
-** How the Code Works**     
+**How the Code Works**       
 - Promiscuous Initialization:
   ```WiFi.mode(WIFI_STA)``` initializes the Wi-Fi driver without actually connecting to a router.
   ```esp_wifi_set_promiscuous(true)``` disables the hardware MAC filter, and ```esp_wifi_set_promiscuous_rx_cb``` tells the ESP32 to send all raw 802.11 frames to our ```wifi_promiscuous_callback``` function.
