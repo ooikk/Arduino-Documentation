@@ -973,7 +973,8 @@ if __name__ == "__main__":
 2. Replace pixels color to any color, change the desire color in the script: ```replace_color.py```. Usage:        
    - ```REPLACE_MATCH = 1``` → replaces matching pixels (equal to ```SEARCH_COLOR```) with ```REPLACE_COLOR```.
    - ```REPLACE_MATCH = 0``` → replaces non‑matching pixels (not equal to ```SEARCH_COLOR```) with ```REPLACE_COLOR```.
-   - Under Windows PowerShell, go to 565RGB file directory and type: ```python replace_color.py input-black.h output-red.h```       
+   - Under Windows PowerShell, go to 565RGB file directory and type:       
+     ```python replace_color.py input-black.h output-red.h```       
 3. Convert 565RGB image edge color, use this script: ```draw_edge_line.py```, it uses background color as baseline to check for edge. You can change the ```BG_COLOR``` and ```EDGE_COLOR``` in the script. Usage under Windows PowerShell:       
    ```python draw_edge_line.py input-black.h output-red.h```        
 4. Scaled the image to any size, ```scale_image.py```. Usage (For scale factor of 0.5):          
