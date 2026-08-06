@@ -1984,7 +1984,7 @@ The Mental Model. imagine:
 - The source pivot is the hole at the base of the clock hand.
 - pushRotated() hangs the hole onto the nail and spins it.
 
-**1. Source Pivot (Needle) → "Where is the hole?"**
+**Source Pivot (Needle) → "Where is the hole?"**
 This is the coordinate inside the needle image where the physical pin/hinge is.     
 ```
 Needle Image (e.g., 20 x 100 pixels)
@@ -1999,7 +1999,7 @@ Needle Image (e.g., 20 x 100 pixels)
 
 needle.setPivot(10, 90);  // The "hole" in the needle
 ```      
-**2. Destination Pivot (Gauge) → "Where is the nail?"**       
+**Destination Pivot (Gauge) → "Where is the nail?"**       
 This is the coordinate inside the gauge sprite where the center of the dial is drawn.    
 ```
 Gauge Sprite (e.g., 240 x 240 pixels)
