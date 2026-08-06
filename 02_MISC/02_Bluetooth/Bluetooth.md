@@ -1577,8 +1577,10 @@ Node 2                [Scan &    [Broadcast]-------------> (Deep Sleep 14s) ----
 Node 3                           [Scan & Receive] --------> (Process / Push to Cloud)
 (Sink)                           (Payload: N1 + N2)
 ```
-**1. Slot 1 ($0\text{s} - 3\text{s}$)**: Node 1 (Leaf) wakes up, packs its sensor reading into a BLE advertisement, and broadcasts for $3\text{ seconds}$.
-**2. Slot 2 ($2\text{s} - 6\text{s}$)**: Node 2 (Relay) wakes up slightly early, scans for Node 1, appends its own reading to the payload array, and re-broadcasts the combined data for $3\text{ seconds}$.
+**1. Slot 1 ($0\text{s} - 3\text{s}$)**: Node 1 (Leaf) wakes up, packs its sensor reading into a BLE advertisement, and broadcasts for $3\text{ seconds}$.     
+
+**2. Slot 2 ($2\text{s} - 6\text{s}$)**: Node 2 (Relay) wakes up slightly early, scans for Node 1, appends its own reading to the payload array, and re-broadcasts the combined data for $3\text{ seconds}$.     
+
 **3. Slot 3 ($5\text{s} - 9\text{s}$)**: Node 3 (Central Sink) scans, receives the full chain payload (Node 1 + Node 2 data), and processes or uploads it via Wi-Fi/MQTT.
 
 The $31\text{-Byte}$ Multi-Hop Payload Structure     
