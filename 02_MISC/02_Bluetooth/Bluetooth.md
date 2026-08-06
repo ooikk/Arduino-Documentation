@@ -851,11 +851,11 @@ If you have dozens of minor commands (or a terminal-like interface), creating 20
 
 Instead of raw string parsing like "L1" and "M255" (which gets tricky when parsing multi-digit numbers or floats), use one of two structured patterns:
 
-**Option A: Binary Protocol (Fastest & Lightest)**
+
+#### Option A: Binary Protocol (Fastest & Lightest)    
 
 Send fixed binary byte arrays rather than ASCII strings:
 
-# ==================================================================
 
 ```
 Byte 0 (Device ID)     Byte 1 (Action / Command)    Byte 2+ (Payload / Value)
@@ -884,9 +884,9 @@ class CommandPipeCallback: public BLECharacteristicCallbacks {
   }
 };
 ```
-**Option B: JSON Payload (Human-Readable)**        
-If memory isn't tight and you use ArduinoJson: send {"target":"motor", "speed":180}.      
-**Summary Recommendation**     
+#### Option B: JSON Payload (Human-Readable)        
+If memory isn't tight and you use ArduinoJson: send ```{"target":"motor", "speed":180}```.      
+#### Summary Recommendation     
 For a project with 2–6 distinct controls (LEDs, relays, motors, sensors), use Separate Characteristics.
 
 If you plan to build a general-purpose serial terminal or dynamic command processor, use a Single Command Pipe with binary opcodes.       
@@ -896,8 +896,8 @@ Using a JSON Payload over a single BLE characteristic gives you a clean, human-r
 
 Prerequisite: Install the ArduinoJson library (v7 or later) via the Arduino IDE Library Manager (Tools > Manage Libraries... -> Search [ArduinoJson](https://arduinojson.org/?utm_source=meta&utm_medium=library.properties)).      
 
-**1. Server Code (Receiver & Parser)**     
-The server listens on a single "Command Characteristic" (PROPERTY_WRITE). When data arrives, it parses the JSON object and routes actions based on the "target" field.      
+### 1. Server Code (Receiver & Parser)     
+The server listens on a single "Command Characteristic" (```PROPERTY_WRITE```). When data arrives, it parses the JSON object and routes actions based on the "target" field.      
 ```cpp
 /*
   ESP32-S3 BLE Server - JSON Command Pipe
@@ -996,7 +996,7 @@ void loop() {
 }
 ```
 
-**2. Client Code Snippet (Transmitter)**     
+### 2. Client Code Snippet (Transmitter)     
 On your ESP32-S3 Client (or smartphone app), build the JSON document, serialize it into a string, and send it over the BLE connection.
 
 Example Helper Functions for Client:       
@@ -1041,7 +1041,7 @@ sendMotorCommand(180);    // Sets motor speed to 180
 ```
 
 
-**3. Example Payloads & Behavior**     
+### 3. Example Payloads & Behavior     
 ```
 Action                  Sent JSON Payload              Server Reaction
 Turn LED On             {"target":"led","state":1}     Sets LED_PIN to HIGH.
@@ -1239,18 +1239,18 @@ To achieve ultra-low power consumption on both devices without missing broadcast
 
 Instead, use a Connectionless Broadcaster/Observer Pattern (Beacons) combined with a Sliding Sync Window.      
 
-**Key Architectural Concepts**     
-1. Connectionless Broadcasting     
+### Key Architectural Concepts     
+**1. Connectionless Broadcasting**     
    - Server: Wakes up, reads sensors, embeds data directly into the BLE Advertisement Payload (Manufacturer Data), advertises continuously for 2–3 seconds, and goes straight back to deep sleep.
    - Client: Wakes up, scans for the payload, extracts the data, and deep sleeps until the next expected window.      
-2. Overcoming RTC Clock Drift     
+**2. Overcoming RTC Clock Drift**     
    The ESP32’s internal RTC oscillator drifts by roughly 1% to 3% over time due to temperature fluctuations. Over 30 minutes ($1,800\text{ seconds}$), a 1% drift equals 18 seconds of offset.      
    To ensure you never miss a message:
    - The client wakes up 20 seconds early (Safety Margin).
    - The client starts scanning. Once it catches the advertisement, it immediately recalculates the exact time remaining until the next 30-minute mark and goes back to sleep.
    - Self-Correcting Sync: Because the client resynchronizes its sleep timer on every received packet, clock drift never accumulates across cycles.
 
-**1. Server Code (Broadcaster)**     
+### 1. Server Code (Broadcaster)     
 The server wakes up every 30 minutes, broadcasts its sensor payload in advertisement data for 3 seconds, and sleeps.
 ```cpp
 /* ESP32-S3 BLE Server - Ultra Low Power Broadcaster */
@@ -1318,7 +1318,7 @@ void loop() {
 }
 
 ```
-**2. Client Code (Observer with Self-Sync)**     
+### 2. Client Code (Observer with Self-Sync)     
 The client uses RTC_DATA_ATTR memory to retain its synchronization state across deep sleep resets.     
 ```cpp
 /* ESP32-S3 BLE Client - Synchronized Low Power Observer */
@@ -1420,28 +1420,28 @@ void loop() {}
 
 ```
 
-**Timing & Energy Budget Comparison***      
+### Timing & Energy Budget Comparison      
 ```
 Metric              Continuous Scanning Client     Synchronized Deep-Sleep Client
 Active Scan Time    30 minutes (1800s)             ~20 seconds per 30 minutes
 Current Draw        ~40mA continuous               ~40mA for 20s, ~10µA for 1780s
 Power Reduction     Baseline                       ~98.8% energy savings
 ```
-**Safety Recovery Strategy**    
+### Safety Recovery Strategy    
 If a broadcast is missed due to wireless interference:
 - The client scan times out after 45 seconds.
 - It sets isSynced = false and goes to sleep for 5 seconds.
 - On the next boot, it stays awake scanning continuously until it catches the next 30-minute transmission, instantly restoring lock-step synchronization.
 
-**BLE Advertising (Beaconing)**     
+### BLE Advertising (Beaconing)     
 The low-power example omitted UUIDs because it isn't using GATT (Generic Attribute Profile) at all. Instead, it uses raw connectionless BLE Advertising (Beaconing).     
 
 Here is why that batters for code structure and battery life:     
 
-1. UUIDs belong to GATT Databases     
+**1. UUIDs belong to GATT Databases**     
 In standard BLE, UUIDs are used to label services and characteristics inside a GATT database (like pServer->createService(SERVICE_UUID)).     
 When a client connects, it queries the GATT server using those UUIDs to figure out where to read or write data. In the low-power beacon example, the server never creates a GATT server or establishes a connection, so there is no GATT database to attach a Service UUID to.     
-2. The 31-Byte Advertising Limit     
+**2. The 31-Byte Advertising Limit**     
 BLE advertisement packets have a strict maximum size of 31 bytes.
 ```
 Field Type            Header Overhead    Payload ID Size       Space Remaining for Data
@@ -1449,8 +1449,9 @@ Field Type            Header Overhead    Payload ID Size       Space Remaining f
 Manufacturer Data     2 bytes            2 bytes (Company ID)  27 bytes left
 ```
 
-A standard 128-bit UUID consumes over half of your entire broadcast budget ($18\text{ bytes}$ total). By skipping the 128-bit UUID and using setManufacturerData(), you save $14\text{ bytes}$ of packet space—allowing you to pack multiple sensor values, battery levels, or timestamps into a single transmission.     
-3. How the Client Filters Packets Without a UUID     
+A standard 128-bit UUID consumes over half of your entire broadcast budget ($18\text{ bytes}$ total). By skipping the 128-bit UUID and using setManufacturerData(), you save $14\text{ bytes}$ of packet space—allowing you to pack multiple sensor values, battery levels, or timestamps into a single transmission.       
+
+**3. How the Client Filters Packets Without a UUID**     
 Instead of filtering by a Service UUID, the client filters by the 2-byte Company ID and data length:     
 ```cpp
 // Check if packet contains Manufacturer Data
@@ -1470,44 +1471,44 @@ if (advertisedDevice->haveManufacturerData()) {
 Beyond simple sensor-to-client data streaming, the ESP32-S3's BLE stack (especially when running lightweight NimBLE) unlocks several high-utility, low-power applications. Because BLE operates without needing a Wi-Fi router or local network, it bridges the physical hardware world directly to smartphones, PCs, and smart home hubs.
 
 Here are some of the most practical and interesting BLE applications for the ESP32 platform:     
-1. BLE-MIDI Wireless Controllers     
+**1. BLE-MIDI Wireless Controllers**     
 BLE supports native MIDI over Bluetooth (ESP32-BLE-MIDI), meaning Windows, macOS, iOS, and Android recognize the ESP32 as a class-compliant wireless instrument without needing custom drivers or USB dongles.
 - Expression Controllers: Connect potentiometers, breath sensors, or IMUs (gyroscope/accelerometer) to stream low-latency pitch bend, CC parameters, or modulation to DAWs like Ableton Live or Logic Pro.
 - Custom Foot Switches: Wireless pedalboards for page-turning digital sheet music (for tablets) or controlling guitar plugin suites.     
 
-2. Human Interface Devices (BLE HID)     
+**2. Human Interface Devices (BLE HID)**     
 The ESP32 can masquerade as a Bluetooth keyboard, mouse, or gamepad (ESP32-BLE-Keyboard).      
 - Custom Macro Keypads: Hardware knobs (rotary encoders) and switches mapped to shortcut macros for photo/video editing apps (DaVinci Resolve, Lightroom).
 - Assistive Input Devices: Building custom single-switch or gesture-based input accessories for accessibility.
 - Air Mouse / Presenter Remotes: Combine an MPU6050 6-axis gyro with BLE mouse emulation for gesture-based slide presentation or HTPC navigation.
 
-3. BLE-to-MQTT / Home Assistant Gateways     
+**3. BLE-to-MQTT / Home Assistant Gateways**     
 In a smart home setup, Wi-Fi can be power-hungry for battery nodes. You can run the ESP32 as an active BLE Scanner Gateway (e.g., using ESPHome or custom NimBLE code).     
 - Passive Beacon Sniffing: Listen to raw BLE advertisement packets broadcast by cheap off-the-shelf hardware (Govee temperature probes, Xiaomi sensors, BLE plant monitors, tile trackers) and forward the parsed payload to your local network via Wi-Fi/MQTT.
 - Room-Level Presence Tracking: Track BLE RSSI (signal strength) from smartwatches or key fobs to trigger localized room lighting or HVAC adjustments as you walk from room to room.
 
-4. Touchless Smart Access & Geofencing      
+**4. Touchless Smart Access & Geofencing**      
 Using BLE RSSI and advertising callbacks, the ESP32 can estimate proximity without needing a manual button press.     
 - Proximity Unlocking: Trigger a relay/solenoid for garage doors or workshop power tools when your phone's unique BLE beacon gets within 1–2 meters.
 - Anti-Loss / Asset Tracking: Trigger an alarm or log an event when an ESP32 tag moves out of range of a central hub (or vice versa).
 
-5. BLE Mesh Networks
+**5. BLE Mesh Networks**
 Unlike point-to-point client/server BLE, ESP-BLE-MESH enables thousands of nodes to communicate in a many-to-many topology without a Wi-Fi router.     
 - Multi-Room Lighting Systems: Relay control messages across a large area where individual nodes are out of range of the main controller.
 - Distributed Sensor Networks: Gather environmental data across large workshops, gardens, or greenhouses by hopping messages node-to-node back to a central logging node.
 
-6. Secure Device Provisioning      
+**6. Secure Device Provisioning**      
 Instead of forcing a device into AP mode (where users have to disconnect their phone from Wi-Fi to log into a 192.168.4.1 captive portal), use BLE for initial setup:      
 - Use a mobile app to send Wi-Fi SSIDs, passwords, API keys, or calibration parameters via BLE characteristics.
 - Once provisioned, the ESP32 saves credentials to NVS (Non-Volatile Storage), shuts down the BLE radio to conserve power, and connects to Wi-Fi.    
 
-**Multi-node relay**       
+## Multi-node relay         
 Beacons mode code can not be used with the exact code as-is, because of one fundamental physics constraint: a node in deep sleep cannot hear radio broadcasts.   
 
 If a relay node is sleeping when a sensor node transmits, that broadcast is lost in the air.     
 
 However, you can adapt this architecture into a Low-Power Mesh/Relay Network using one of two strategies:       
-**Strategy 1**: Network-Wide Synchronized Wake Windows (All Nodes Sleep)      
+### Strategy 1: Network-Wide Synchronized Wake Windows (All Nodes Sleep)      
 If all nodes must run on battery, every node in the mesh must share the exact same 30-minute sleep schedule so they wake up together in a synchronized 5-second window.      
 ```
  Time: 00:00:00                00:00:02                00:00:04                            00:00:05
@@ -1538,7 +1539,7 @@ Relay Node Logic (during the awake window):
 3. Re-broadcast: Node 2 advertises the updated combined payload for $2\text{ seconds}$ so the Central Node (or next relay) can pick it up.
 4. Sleep: All nodes return to deep sleep for 30 minutes.     
 
-**Strategy 2**: ESP-BLE-MESH (Standard SIG Mesh with LPNs)      
+### Strategy 2: ESP-BLE-MESH (Standard SIG Mesh with LPNs)      
 If you want a standard, scalable mesh (dozens of nodes over large distances), use the official Bluetooth SIG Mesh standard built into the ESP32 framework (ESP-BLE-MESH).     
 Bluetooth Mesh solves power consumption using Low Power Nodes (LPN) and Friend Nodes:      
 ```
@@ -1548,7 +1549,7 @@ Sensor Node (LPN)     Deep Sleep (~10µA)         Wakes up, sends sensor reading
 Relay Node (Friend)   Mains Powered (Always On)  Stays awake 24/7. Buffers messages for sleeping LPNs and relays
                                                  messages hop-by-hop back to the Central Node.
 ```
-Comparison: Custom Sync Relay vs. Official BLE Mesh     
+**Comparison: Custom Sync Relay vs. Official BLE Mesh**     
 ```
 Feature                   Synchronized Custom Beacons                         Official ESP-BLE-MESH  
 Relay Power Requirements  Battery Powered (Deep Sleep allowed)                Mains Powered / Always Awake
@@ -1557,7 +1558,7 @@ Max Network Size          Small (3–5 nodes per branch)                        
 Payload Size              Restricted to $31\text{ bytes}$ advertising packet  Segmented packets (up to 384 bytes)
 ```
 
-**Multi-node relay: Strategy 1 - Slot-Based Time-Division Multiplexing (TDM)**      
+### Multi-node relay: Strategy 1 - Slot-Based Time-Division Multiplexing (TDM)      
 
 To build a multi-hop relay network with battery-powered nodes, we use Slot-Based Time-Division Multiplexing (TDM).     
 Because deep-sleeping nodes cannot hear radio signals, each node in the chain is assigned a specific time slot within a shared $20\text{-second}$ test cycle (which you can easily scale up to 30 minutes in production).      
@@ -1574,9 +1575,9 @@ Node 2                [Scan &    [Broadcast]-------------> (Deep Sleep 14s) ----
 Node 3                           [Scan & Receive] --------> (Process / Push to Cloud)
 (Sink)                           (Payload: N1 + N2)
 ```
-1. Slot 1 ($0\text{s} - 3\text{s}$): Node 1 (Leaf) wakes up, packs its sensor reading into a BLE advertisement, and broadcasts for $3\text{ seconds}$.
-2. Slot 2 ($2\text{s} - 6\text{s}$): Node 2 (Relay) wakes up slightly early, scans for Node 1, appends its own reading to the payload array, and re-broadcasts the combined data for $3\text{ seconds}$.
-3. Slot 3 ($5\text{s} - 9\text{s}$): Node 3 (Central Sink) scans, receives the full chain payload (Node 1 + Node 2 data), and processes or uploads it via Wi-Fi/MQTT.
+**1. Slot 1 ($0\text{s} - 3\text{s}$)**: Node 1 (Leaf) wakes up, packs its sensor reading into a BLE advertisement, and broadcasts for $3\text{ seconds}$.
+**2. Slot 2 ($2\text{s} - 6\text{s}$)**: Node 2 (Relay) wakes up slightly early, scans for Node 1, appends its own reading to the payload array, and re-broadcasts the combined data for $3\text{ seconds}$.
+**3. Slot 3 ($5\text{s} - 9\text{s}$)**: Node 3 (Central Sink) scans, receives the full chain payload (Node 1 + Node 2 data), and processes or uploads it via Wi-Fi/MQTT.
 
 The $31\text{-Byte}$ Multi-Hop Payload Structure     
 We pack multiple node readings into a single raw advertising packet without exceeding BLE's $31\text{-byte}$ limit:      
@@ -1597,7 +1598,7 @@ struct MeshPayload {
 ```
 *Total Manufacturer Data = 2 bytes Header (\xFF\xFF) + 22 bytes Payload = 24 bytes (Well within the 31-byte BLE limit).*     
 
-**Unified Multi-Hop Code for ESP32-S3**          
+#### Unified Multi-Hop Code for ESP32-S3          
 This single codebase supports all three node roles. Set NODE_ROLE at the top of the file before uploading to each board.      
 ```cpp
 /*
@@ -1845,14 +1846,16 @@ When the transmission reaches the Central Hub, you will see all accumulated tele
    ├─ Node ID 2: Temp = 24.50°C | Hum = 59.00% | Boot = 14
 ============================================
 ```
-**Multi-node relay: Strategy 2 - ESP-BLE-MESH**      
+### Multi-node relay: Strategy 2 - ESP-BLE-MESH      
 
 Unlike custom broadcast hacks, official Bluetooth SIG Mesh includes a native feature for battery-powered devices called Friendship.     
 In an ESP-BLE-MESH network, a Low Power Node (LPN) pairs with a mains-powered Friend Node. The Friend Node stays awake $100\%$ of the time to act as a "mailbox," storing all incoming mesh messages intended for the LPN. The LPN spends most of its time in deep sleep, waking up briefly to query its Friend, download queued messages, transmit its sensor readings, and go back to sleep.     
+
+
 ⚠️ Framework Requirement: Official ESP-BLE-MESH with full LPN/Friendship feature support requires ESP-IDF (Espressif IoT Development Framework v4.4+ or v5.x) or PlatformIO configured with the ESP-IDF framework. Standard Arduino BLE libraries only implement GATT/GAP, not the full Bluetooth Mesh protocol stack.      
 
 
-1. How Friendship Works (The Handshake & Poll)
+#### 1. How Friendship Works (The Handshake & Poll)   
 
 ```
 Friend Node (Always Awake)                       Low Power Node (LPN)
@@ -1870,14 +1873,14 @@ Friend Node (Always Awake)                       Low Power Node (LPN)
        │                                                   │
 ```
 
-  - Establishment: The LPN broadcasts a Friend Request packet with its required queue size and polling parameters. Nearby Friend Nodes respond with a Friend Offer. The LPN selects the best offer and establishes a Friendship.
-  - Buffering: When other nodes in the mesh send data to the LPN, the Friend Node intercepts and buffers the packets in its local RAM.
-  - Polling: When the LPN wakes up from sleep, it sends a Friend Poll. The Friend Node responds immediately with any stored messages.
-  - Sleep: If no messages remain in the queue, the LPN returns to deep sleep.     
+  - **Establishment**: The LPN broadcasts a Friend Request packet with its required queue size and polling parameters. Nearby Friend Nodes respond with a Friend Offer. The LPN selects the best offer and establishes a Friendship.
+  - **Buffering**: When other nodes in the mesh send data to the LPN, the Friend Node intercepts and buffers the packets in its local RAM.
+  - **Polling**: When the LPN wakes up from sleep, it sends a Friend Poll. The Friend Node responds immediately with any stored messages.
+  - **Sleep**: If no messages remain in the queue, the LPN returns to deep sleep.     
 
 
 
-2. Setting Up the Friend Node (Mains Powered)     
+#### 2. Setting Up the Friend Node (Mains Powered)     
 The Friend Node needs sufficient RAM allocated to buffer messages for one or more LPNs.     
 
 ```sdkconfig``` Settings for Friend Node     
@@ -1942,7 +1945,7 @@ void app_main(void) {
 ```
 
 
-3. Setting Up the Low Power Node (LPN)    
+#### 3. Setting Up the Low Power Node (LPN)        
 The LPN configures its timing constraints (how fast it expects replies and how long it sleeps between polls) and initiates the Friendship request.
 
 ```sdkconfig``` Settings for LPN     
@@ -2009,7 +2012,7 @@ void on_lpn_wakeup(void) {
 ```
 
 
-4. Key Parameters Comparison     
+#### 4. Key Parameters Comparison     
 ```
 Parameter       Recommended Value                What It Controls
 poll_timeout    18000(1,800 seconds = 30 min)    Max time the LPN can sleep before the Friend considers the friendship dead and drops the queue.
@@ -2019,7 +2022,7 @@ min_queue_num   2 - 8 packets                    Minimum queue depth the Friend 
 ```
 
 
-5. Provisioning the Mesh     
+#### 5. Provisioning the Mesh       
 Before an LPN and Friend Node can communicate, both devices must be provisioned into the same Bluetooth Mesh network:
   - Use an app like nRF Mesh (iOS/Android) or an ESP32 configured as a Mesh Provisioner.
   - Provision the Friend Node first so it is alive on the mesh.
