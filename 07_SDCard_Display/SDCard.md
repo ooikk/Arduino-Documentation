@@ -860,8 +860,7 @@ Example in ```display565FileDirect()``` or ```displayBinary565()``` in sketch **
 Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the file size is ~5× larger than binary. Parsing it also requires more temporary memory. An 320×480 image in ASCII 565RGB take about 1.17MB of file size, the file size reduced to 300kB in binary format. 
 
 # =============================================
-
-    
+  
 
 Convert images to raw binary format offline with Python script:     
 
@@ -886,7 +885,7 @@ Below is the Python script to convert ASCII RGB565 images file to binary RGB565 
 *Refer to 1.8 TFT SPI Display section for online tool to convert images to RGB565 ASCII format.*     
 - [1.8" TFT Display](https://github.com/ooikk/Arduino-Documentation/blob/main/05_1.8_TFT_SPI_Display/1.8_TFT_Display.md)
 
-```
+```python
 #!/usr/bin/env python3
 """
 Convert a C header with PROGMEM array (e.g. clockhand.h) to a binary .b565 file.
