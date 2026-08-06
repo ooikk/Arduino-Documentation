@@ -862,7 +862,7 @@ Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the fi
 
   
 
-#### Convert images to raw binary format offline with Python script:     
+### Convert images to raw binary format offline with Python script:     
 
 Use little‑endian storage – it matches ESP32’s native byte order, giving the fastest possible read performance. Then enable byte swapping on the TFT:    
 ```
@@ -870,7 +870,7 @@ Use little‑endian storage – it matches ESP32’s native byte order, giving t
 [2 bytes: width  little-endian]
 [height × width × 2 bytes: pixel data (16‑bit RGB565, little‑endian)]
 ```
-#### Store in little‑endian (recommended)     
+### Store in little‑endian (recommended)     
 - File contents: [height_L, height_H, width_L, width_H, pixel0_L, pixel0_H, pixel1_L, pixel1_H, ...] (low byte first, high byte second)
 - Reader code: Directly read into ```uint16_t``` variables. Because ESP32 is little‑endian, the in‑memory value will be correct (e.g., bytes 0x15, 0x6C become 0x6C15).
 - TFT display: Call ```tft.setSwapBytes(true);``` once. The library will reverse the byte order when sending to the display (converting to big‑endian). This is very fast (done in DMA or SPI transfer).     
