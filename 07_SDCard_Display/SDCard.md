@@ -1812,7 +1812,7 @@ spr.pushSprite(tft_x, tft_y, sprite_x, sprite_y, width, height);
 For a full guide on installing and setting up the base TFT_eSPI library for ESP32 boards, you can refer to the [TFT_eSPI Getting Started Docs](https://doc-tft-espi.readthedocs.io/graphics/)) or follow this setup guide:
 
 
-### Code Examples     
+#### Code Examples     
 
 Scrolling Text:     
 ```cpp
