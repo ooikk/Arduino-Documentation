@@ -834,7 +834,8 @@ Below is the 565RGB text file structure modified from generated online by [565RG
 Picture height is 320 and width is 480. Use ".565" as the image file extention.
 
 ```
-480,320,{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+480,320,{0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 :
 0x736d, 0x4a48
 };
@@ -859,7 +860,6 @@ Example in ```display565FileDirect()``` or ```displayBinary565()``` in sketch **
 
 Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the file size is ~5× larger than binary. Parsing it also requires more temporary memory. An 320×480 image in ASCII 565RGB take about 1.17MB of file size, the file size reduced to 300kB in binary format. 
 
-# =============================================
   
 
 #### Convert images to raw binary format offline with Python script:     
@@ -986,8 +986,8 @@ if __name__ == "__main__":
    #define CLOCKHAND_HEIGHT 185
    // array size is 10360
    static const uint16_t clockhand[] PROGMEM = {
-   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
+   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 
+   0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
    :
    0x0000, 0x0000
    };
@@ -995,12 +995,12 @@ if __name__ == "__main__":
 
 ## Display JPEG images    
 
-**Library**     
+### Library     
 TJpg_Decoder by Bodmer     
 https://github.com/Bodmer/TJpg_Decoder
 
-**Sample Code**    
-```
+### Sample Code    
+```cpp
 #include <SPI.h>
 #include <SD.h>
 #include <TFT_eSPI.h>
@@ -1121,34 +1121,34 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap) 
 ```
 
 
-**Key Features Explained**     
+### Key Features Explained     
 |Feature | How It's Implemented|
 |--- | ---|
 |Auto‑rotation	| Rotate ( 1 or 2) the image to match the orientations (landscape vs. portrait).|
 |Scaling	| The function selects the smallest power‑of‑two scale (1, 2, 4, or 8) that either covers the screen (cropping edges) if possible, or fits entirely (letterbox) if the image is smaller.|
-|Memory usage	| TJpg_Decoder uses a fixed ~3.5KB workspace – the maxSize parameter is kept for compatibility but is not needed.|
+|Memory usage	| ```TJpg_Decoder``` uses a fixed ~3.5KB workspace – the maxSize parameter is kept for compatibility but is not needed.|
 |Centering	| The image is always drawn at the centre of the screen (the destX/destY arguments are ignored).|
 |Edge cropping	| When covering the screen, the image is cropped symmetrically on the shorter side, preserving the aspect ratio.|
-|Callback‑based rendering	| The tft_output function is called for each MCU block, streaming the image directly to the TFT without a full‑frame buffer.|
+|Callback‑based rendering	| The ```tft_output``` function is called for each MCU block, streaming the image directly to the TFT without a full‑frame buffer.|
 
-**Important Notes**
+### Important Notes  
 1. JPEG format – The library only supports 24‑bit JPEGs (not 8‑bit) and does not support progressive JPEGs.
-2. SD Card initialisation – Make sure SD.begin() is called before any drawSdJpg() calls.
+2. SD Card initialisation – Make sure ```SD.begin()``` is called before any ```drawSdJpg()``` calls.
 3. Scaling limits – The library only supports scaling factors of 1, 2, 4, or 8. The function automatically picks the best one.
 4. Callback clipping – The tft_output callback already clips at screen edges, so negative x/y positions are handled automatically.
 5. Restoring rotation – The original screen rotation is restored after drawing, so the rest of your UI remains unaffected.
 
 ## Display BMP images       
 
-**Library**     
+### Library     
 
 None     
 
-**Sample Code**     
+### Sample Code     
 
-Below is a complete implementation of displayBMP() that reads a **24‑bit BMP** file from an SD card, automatically rotates the TFT to match the image orientation, and scales/crops the image to fill the screen while preserving aspect ratio. The image is centered, and only the necessary portion of the BMP is loaded into memory, respecting the maxSize parameter.    
+Below is a complete implementation of ```displayBMP()``` that reads a **24‑bit BMP** file from an SD card, automatically rotates the TFT to match the image orientation, and scales/crops the image to fill the screen while preserving aspect ratio. The image is centered, and only the necessary portion of the BMP is loaded into memory, respecting the maxSize parameter.    
 
-```
+```cpp
 #include <SPI.h>
 #include <SD.h>
 #include <TFT_eSPI.h>
@@ -1462,23 +1462,23 @@ bool displayBMP(const char* filename, TFT_eSPI& tft, size_t maxSize) {
 
 ```
 
-**Usage Example:**    
-```
+### Usage Example:    
+```cpp
     // Display a BMP image with a memory limit of 4096 bytes per row
     if (!displayBMP("/image.bmp", tft, 4096)) {
         Serial.println("Failed to display BMP");
     }
 ```
 
-**Key Features**
-- Auto‑rotation: The TFT is rotated so that the image’s longer side aligns with the screen’s longer side (setRotation(1) for landscape, 2 for portrait).
+### Key Features
+- Auto‑rotation: The TFT is rotated so that the image’s longer side aligns with the screen’s longer side (```setRotation(1)``` for landscape, 2 for portrait).
 - Scaling & Cropping: If the image is larger than the screen, it is scaled to fill the entire display; excess edge pixels are discarded to preserve aspect ratio. If the image is smaller, the code expands the image to fill the entire screen even if the original image is smaller than the TFT.
 - Memory‑aware: Only the required portion of each BMP row is read into a buffer; the buffer size is checked against maxSize. (For very wide images, you may need to extend the implementation with horizontal strip processing.)
 - Centering: The image is always centered on the screen, whether scaled or not.
 - Supported format: Uncompressed 24‑bit BMP (the most common format).
 
-**Notes**
-- The function assumes the SD library provides a File object with seek(), read(), write(), etc. Adjust the SD.open path prefix as needed for your filesystem (e.g., SPIFFS or LittleFS).
+### Notes     
+- The function assumes the SD library provides a File object with ```seek()```, ```read()```, ```write()```, etc. Adjust the ```SD.open``` path prefix as needed for your filesystem (e.g., SPIFFS or LittleFS).
 - If your BMP has negative height (top‑down orientation), it is handled correctly.
 - For extremely wide images that exceed maxSize after cropping, you can implement horizontal strip processing by splitting the screen into vertical bands and calling pushImage for each band. The provided code returns false in that case for simplicity.
 
@@ -1490,9 +1490,10 @@ The PNG function support standard non‑interlaced 24‑bit PNG, if unable to di
 - Bit depth = 24‑bit (or "Truecolor")
 - No alpha channel if possible (or it may still work)
 
-**Note:** Transparency – The PNG decoder handles alpha channels; this code uses 0xffffffff as the background colour for blending (fully opaque). If you want transparency to show the TFT background, you can modify the callback to blend pixels.    
+### Note:     
+Transparency – The PNG decoder handles alpha channels; this code uses ```0xffffffff``` as the background colour for blending (fully opaque). If you want transparency to show the TFT background, you can modify the callback to blend pixels.    
 
-**Online Tools**          
+### Online Tools          
 
 - To convert PNG to 24-bit PNG: https://elysiatools.com/en/tools/png-to-24bit-png
 - To resize or crop image: https://imageresizer.com/crop-image
@@ -1502,15 +1503,15 @@ The PNG function support standard non‑interlaced 24‑bit PNG, if unable to di
 
 
 
-**Library**     
+### Library      
 
 PNGdec by Larry Bank          
 https://github.com/bitbank2/PNGdec     
 
 
-**Sample Code**     
+### Sample Code     
 
-```
+```cpp
 #include <SD.h>
 #include <TFT_eSPI.h>
 #include <PNGdec.h>
@@ -1692,16 +1693,16 @@ bool displayPNG(const char* filename, TFT_eSPI& tft, size_t maxSize) {
 }
 ```
 
-**Usage Example:**    
+### Usage Example:    
 
-```
+```cpp
 if (!displayPNG("/image.png", tft, 4096)) {
     Serial.println("Display failed");
 }
 ```
 
-**Key Features**
-- Auto‑rotation: The TFT is rotated so that the image’s longer side aligns with the screen’s longer side (setRotation(1) for landscape, 2 for portrait).
+### Key Features   
+- Auto‑rotation: The TFT is rotated so that the image’s longer side aligns with the screen’s longer side (```setRotation(1)``` for landscape, 2 for portrait).
 - Scaling & Cropping: If the image is larger than the screen, it is scaled to fill the entire display; excess edge pixels are discarded to preserve aspect ratio. If the image is smaller, the code expands the image to fill the entire screen even if the original image is smaller than the TFT.
 - Memory‑aware: Only the required portion of each PNG row is read into a buffer; the buffer size is checked against maxSize. (For very wide images, you may need to extend the implementation with horizontal strip processing.)
 - Centering: The image is always centered on the screen, whether scaled or not.
@@ -1711,9 +1712,9 @@ if (!displayPNG("/image.png", tft, 4096)) {
 
 TFT_eSprite is a class in the TFT_eSPI library that creates an off-screen memory buffer (a canvas). It is highly useful for eliminating screen flicker, building complex UI components, and rendering smooth animations on your ESP32 display.     
 
-**Sprite Declarations**     
+### Sprite Declarations     
 The two sprite declarations look similar but have important differences in C++:      
-```
+```cpp
 TFT_eSprite needle(&tft);                      // Direct initialization
 TFT_eSprite needle = TFT_eSprite(&tft);        // Copy-initialization
 ```
@@ -1721,14 +1722,14 @@ Detailed Breakdown:
 
 |Declaration|What it does|
 | - | - |
-|TFT_eSprite needle(&tft);|Direct initialization – calls the constructor TFT_eSprite(TFT_eSPI*) directly with &tft. No temporary object is created; needle is constructed in place. This is the standard, most efficient way.|
-|TFT_eSprite needle = TFT_eSprite(&tft);| Copy-initialization – creates a temporary TFT_eSprite object using the same constructor, then copy‑constructs (or move‑constructs) needle from that temporary.|
+|```TFT_eSprite needle(&tft);```|Direct initialization – calls the constructor ```TFT_eSprite(TFT_eSPI*)``` directly with ```&tft```. No temporary object is created; needle is constructed in place. This is the standard, most efficient way.|
+|```TFT_eSprite needle = TFT_eSprite(&tft);```| Copy-initialization – creates a temporary ```TFT_eSprite``` object using the same constructor, then copy‑constructs (or move‑constructs) needle from that temporary.|
 
-⚠️ The Critical Issue: Copy Constructor     
+**⚠️ The Critical Issue: Copy Constructor**     
 The TFT_eSprite class (from the TFT_eSPI library) does not provide a copy constructor – in fact, it is almost certainly deleted (or implicitly deleted) because the sprite owns a dynamically allocated frame buffer. Copying a sprite would cause two objects to point to the same buffer, leading to double‑free errors.    
 
 If the copy constructor is deleted, the second line:     
-```
+```cpp
 TFT_eSprite needle = TFT_eSprite(&tft);
 ```
 will fail to compile with an error like:     
@@ -1737,19 +1738,20 @@ error: use of deleted function ‘TFT_eSprite::TFT_eSprite(const TFT_eSprite&)�
 ```
 Even if the copy constructor exists (unlikely), the second form is less efficient because it creates a temporary, copies it, and then discards the temporary.     
 
-✅ Recommended Way     
+
+**✅ Recommended Way**     
 Always use direct initialization:
-```
+```cpp
 TFT_eSprite needle(&tft);
 ```
 This avoids unnecessary temporaries and works because it doesn't require a copy constructor.     
-📝 Additional Note      
+**📝 Additional Note**      
 If you need to declare a sprite pointer (e.g., for dynamic allocation), you would do:       
-```
+```cpp
 TFT_eSprite* needle = new TFT_eSprite(&tft);
 ```
 But the direct object declaration is simpler and safer.      
-📌 Summary       
+**📌 Summary**       
 | |TFT_eSprite needle(&tft);	|TFT_eSprite needle = TFT_eSprite(&tft);|
 | - | - | - |
 |How it works|	Direct construction|	Copy‑initialization (temporary + copy)|
@@ -1759,60 +1761,60 @@ Efficiency|	Best|	Worse (temporary overhead)|
 
 So always use the first form.     
 
-**Core Workflow**     
+### Core Workflow     
 To use sprites effectively, follow this standard sequence in your code:     
-1. **Instantiation**: Create an instance of *TFT_eSprite* linked to your main *TFT_eSPI* object.
-2. **Allocation**: Define the size of your sprite in memory using *createSprite()*.
-3. **Drawing**: Use sprite equivalents of standard commands (e.g., *drawString()*, *fillRect()*) to draw to the buffer.
-4. **Rendering**: Push the completed sprite to the screen using *pushSprite()*.
-5. **Memory Management**: Free up ESP32 RAM by using *deleteSprite()* when the sprite is no longer needed.     
+1. **Instantiation**: Create an instance of ```TFT_eSprite``` linked to your main ```TFT_eSPI``` object.
+2. **Allocation**: Define the size of your sprite in memory using ```createSprite()```.
+3. **Drawing**: Use sprite equivalents of standard commands (e.g., ```drawString()```, ```fillRect()```) to draw to the buffer.
+4. **Rendering**: Push the completed sprite to the screen using ```pushSprite()```.
+5. **Memory Management**: Free up ESP32 RAM by using ```deleteSprite()``` when the sprite is no longer needed.     
 
-NOTE: When you draw inside a Sprite, the coordinates are relative to the Sprite itself (where 0,0 is the top-left corner of the sprite), not the main screen.
+**NOTE:** When you draw inside a Sprite, the coordinates are relative to the Sprite itself (where 0,0 is the top-left corner of the sprite), not the main screen.
 
-**Memory & Color Settings**     
-**Color Depths**           
+### Memory & Color Settings     
+#### Color Depths           
 Sprites support different color depths to help balance rendering speed against RAM usage on the ESP32:      
 - **8-bit (Color)**: Uses 1 byte per pixel. Requires less RAM.
 - **16-bit (RGB565)**: Uses 2 bytes per pixel. Default setting for high-quality color.
-- **1-bit (Palette/Monochrome)**: Uses 1 bit per pixel. Extremely memory-efficient; ideal for e-paper displays or compressing static bitmaps. Set using *spr.setColorDepth(1)*;.
+- **1-bit (Palette/Monochrome)**: Uses 1 bit per pixel. Extremely memory-efficient; ideal for e-paper displays or compressing static bitmaps. Set using ```spr.setColorDepth(1)```;.
 
-**Color Depth Syntax**     
+#### Color Depth Syntax     
 To declare a custom color depth, insert the function immediately after creation:      
-```
+```cpp
 spr.createSprite(100, 100);
 spr.setColorDepth(8); // Switch to 8-bit color depth
 ```
 
-**pushSprite()**      
-1. Full Sprite Pushing      
-*pushSprite(x, y)* is a fast, direct pixel-transfer function. It copies a source Sprite and pastes it onto a destination (the TFT screen or another Sprite) at exact (x, y) coordinates. It always aligns the top-left corner of the source sprite to the target location. Because it involves no complex math, it is extremely fast and efficient.                  
-```
+### pushSprite()      
+**1. Full Sprite Pushing**      
+```pushSprite(x, y)``` is a fast, direct pixel-transfer function. It copies a source Sprite and pastes it onto a destination (the TFT screen or another Sprite) at exact (x, y) coordinates. It always aligns the top-left corner of the source sprite to the target location. Because it involves no complex math, it is extremely fast and efficient.                  
+```cpp
 spr.pushSprite(x, y);
 ```
 
-2. Full Sprite Pushing with Transparency
+**2. Full Sprite Pushing with Transparency**   
    Renders the entire sprite while ignoring a specific background color, allowing graphics to appear transparent.
-```
+```cpp
 spr.pushSprite(x, y, transparent_color);
 ```
-3. Partial Sprite Pushing
+**3. Partial Sprite Pushing**     
    Copies a specific sub-rectangle of the sprite onto the screen.     
-```
+```cpp
 spr.pushSprite(tft_x, tft_y, sprite_x, sprite_y, width, height);
 ```       
 
 
-**Best Practices**     
+#### Best Practices     
 - **Avoid Full-Screen Sprites**: ESP32 RAM is limited. Allocating a full-screen sprite (e.g., 320 × 240 × 2 bytes) can quickly cause a memory crash (OutOfMemory). Use smaller sprites for text, gauges, or small icons instead.
-- **Use Transparency**: To overlay sprites without overwriting the background, use *pushSprite(x, y, transparent_color)*. For example, if your background is black, use *spr.pushSprite(x, y, TFT_BLACK);*.
+- **Use Transparency**: To overlay sprites without overwriting the background, use ```pushSprite(x, y, transparent_color)```. For example, if your background is black, use ```spr.pushSprite(x, y, TFT_BLACK);```.
 
 For a full guide on installing and setting up the base TFT_eSPI library for ESP32 boards, you can refer to the [TFT_eSPI Getting Started Docs](https://doc-tft-espi.readthedocs.io/graphics/)) or follow this setup guide:
 
 
-**Code Example**     
+### Code Examples     
 
 Scrolling Text:     
-```
+```cpp
 #include <TFT_eSPI.h>
 
 TFT_eSPI tft = TFT_eSPI();           // Main TFT object
@@ -1850,7 +1852,7 @@ void loop() {
 }
 ```
 Boucing Ball:      
-```
+```cpp
 #include <TFT_eSPI.h>
 TFT_eSprite ball = TFT_eSprite(&tft);  // Sprite object linked to TFT
 int x_pos_ball = 320 / 2;
@@ -1904,26 +1906,26 @@ void loop() {
 }
 ```     
 
-**pushRotated**      
-*pushRotated(angle)* is a geometric transformation function. It takes a source Sprite, rotates its pixels by a specified angle, and pastes it onto a destination. Instead of using (x, y) coordinates, it aligns the pivot point of the source sprite with the pivot point of the destination. Because it requires trigonometric calculations to map the rotated pixels, it is computationally heavier, but it is essential for drawing dynamic, rotating elements like gauge needles or clock hands.     
+### pushRotated      
+```pushRotated(angle)``` is a geometric transformation function. It takes a source Sprite, rotates its pixels by a specified angle, and pastes it onto a destination. Instead of using (x, y) coordinates, it aligns the pivot point of the source sprite with the pivot point of the destination. Because it requires trigonometric calculations to map the rotated pixels, it is computationally heavier, but it is essential for drawing dynamic, rotating elements like gauge needles or clock hands.     
 Examples:      
-```
+```cpp
 
-           // Push a rotated copy of Sprite to TFT with optional transparent colour
-  bool     pushRotated(int16_t angle, uint32_t transp = 0x00FFFFFF);
-           // Push a rotated copy of Sprite to another different Sprite with optional transparent colour
-  bool     pushRotated(TFT_eSprite *spr, int16_t angle, uint32_t transp = 0x00FFFFFF);
+         // Push a rotated copy of Sprite to TFT with optional transparent colour
+bool     pushRotated(int16_t angle, uint32_t transp = 0x00FFFFFF);
+         // Push a rotated copy of Sprite to another different Sprite with optional transparent colour
+bool     pushRotated(TFT_eSprite *spr, int16_t angle, uint32_t transp = 0x00FFFFFF);
 
 needle.pushRotated(angle, TFT_WHITE);               // rotate at angle and ignore background color TFT_WHITE
 needle.pushRotated(&meterArea, angle, TFT_BLACK);   // push to another sprite meterArea
 ```      
 
-**setPivot**       
-1. pushRotated to TFT screen direatly      
-To draw a needle directly to the TFT screen at any arbitrary location, you use the version of pushRotated() that does not take a sprite pointer.
+### setPivot       
+#### 1. pushRotated to TFT screen direatly      
+To draw a needle directly to the TFT screen at any arbitrary location, you use the version of ```pushRotated()``` that does not take a sprite pointer.
 When pushing directly to the TFT, the library aligns the Source Sprite's Pivot with the TFT's Pivot.
 Here is exactly how to do it:
-```
+```cpp
 // --- INITIALIZATION ---
 // 1. Create and draw the needle
 needle.createSprite(CLOCKHAND_WIDTH, CLOCKHAND_HEIGHT);
@@ -1944,20 +1946,20 @@ void drawNeedleOnScreen(float angle, int screenX, int screenY) {
 }
 ```      
 
-How it works:     
-- *tft.setPivot(screenX, screenY)* places the "nail" on your physical screen at (screenX, screenY).
-- *needle.setPivot(...)* defines the "hole" in your needle image.
-- *needle.pushRotated(angle)* rotates the needle around its hole, and then docks that hole directly onto the TFT's nail.     
+**How it works:**     
+- ```tft.setPivot(screenX, screenY)``` places the "nail" on your physical screen at (screenX, screenY).
+- ```needle.setPivot(...)``` defines the "hole" in your needle image.
+- ```needle.pushRotated(angle)``` rotates the needle around its hole, and then docks that hole directly onto the TFT's nail.     
 
-⚠️ CRITICAL WARNING: The "Smearing" Problem       
+**⚠️ CRITICAL WARNING: The "Smearing" Problem**       
 Because you are drawing directly to the TFT without a destination sprite to hold the background, the TFT does not automatically erase the old needle.     
-If you call *drawNeedleOnScreen()* in a loop to animate the gauge, the new needle will draw on top of the old needle, creating a massive smeared mess.
+If you call ```drawNeedleOnScreen()``` in a loop to animate the gauge, the new needle will draw on top of the old needle, creating a massive smeared mess.
 How to fix the smearing:      
-Since you don't have a destination sprite to *fillSprite()* and redraw, you must manually erase the old needle before drawing the new one.
+Since you don't have a destination sprite to ```fillSprite()``` and redraw, you must manually erase the old needle before drawing the new one.
 The Solution: Create a bigger sprite area     
-Before pushing the new angle, *fillSprite()* with background color and redraw needle before *pushRotated()*.      
+Before pushing the new angle, ```fillSprite()``` with background color and redraw needle before ```pushRotated()```.      
 
-```
+```cpp
 // in setup():
   needle.createSprite(CLOCKHAND_HEIGHT * 2, CLOCKHAND_HEIGHT * 2);    // ensure the area cover the needle length
   needle.fillSprite(TFT_BLACK);                                       // background color
@@ -1972,7 +1974,7 @@ Before pushing the new angle, *fillSprite()* with background color and redraw ne
   needle.pushRotated(angle, TFT_BLACK);  // needle with black background color TFT_BLACK 
 ```      
 
-2. pushRotated to another sprite          
+#### 2. pushRotated to another sprite          
 When pushing a rotated needle into a bigger sprite, you only need to think about two pivot points, and they work together like a hinge and a nail on a wall.     
 The Mental Model. imagine:        
 - The destination sprite is a wall.
@@ -1981,7 +1983,7 @@ The Mental Model. imagine:
 - The source pivot is the hole at the base of the clock hand.
 - pushRotated() hangs the hole onto the nail and spins it.
 
-1. Source Pivot (Needle) → "Where is the hole?"
+**1. Source Pivot (Needle) → "Where is the hole?"**
 This is the coordinate inside the needle image where the physical pin/hinge is.     
 ```
 Needle Image (e.g., 20 x 100 pixels)
@@ -1996,7 +1998,7 @@ Needle Image (e.g., 20 x 100 pixels)
 
 needle.setPivot(10, 90);  // The "hole" in the needle
 ```      
-2. Destination Pivot (Gauge) → "Where is the nail?"       
+**2. Destination Pivot (Gauge) → "Where is the nail?"**       
 This is the coordinate inside the gauge sprite where the center of the dial is drawn.    
 ```
 Gauge Sprite (e.g., 240 x 240 pixels)
@@ -2010,7 +2012,7 @@ gaugeSprite.setPivot(120, 120);  // The "nail" on the wall
 ```    
 *Important*: This is relative to the gauge sprite's own (0,0) top-left corner, not the physical screen.      
 What Happens During pushRotated        
-```
+```cpp
 needle.pushRotated(&gaugeSprite, 45, TFT_MAGENTA);
 ```
 The library does this internally:
@@ -2027,7 +2029,7 @@ Before rotation:                After rotation & docking:
        |                           /
       tip                        tip
 ```          
-⚠️ Critical: Destination Sprite Must Be Big Enough        
+**⚠️ Critical: Destination Sprite Must Be Big Enough**        
 When a sprite rotates, its bounding box grows. A 20×100 needle rotated 45° needs roughly 85×85 pixels of space.      
 If your gauge sprite is too small, the rotated needle gets clipped at the edges:     
 ```
@@ -2041,7 +2043,7 @@ If your gauge sprite is too small, the rotated needle gets clipped at the edges:
 *Rule of thumb*: The destination sprite should be at least as large as 2 times of source sprite length     
 
 Complete Working Example:      
-```
+```cpp
 // --- INIT ---
 // Needle: 20 wide, 100 tall, pin at bottom-center
 needle.createSprite(20, 100);
@@ -2072,29 +2074,29 @@ void drawNeedle(float angle) {
 ```
 
 
-**Sprite deletion**      
-To release a sprite generated with the TFT_eSPI library, you call the deleteSprite() method on the sprite object. This frees the internal frame buffer that was allocated by createSprite().
+### Sprite deletion      
+To release a sprite generated with the TFT_eSPI library, you call the ```deleteSprite()``` method on the sprite object. This frees the internal frame buffer that was allocated by ```createSprite()```.
 
-✅ Basic Usage     
-```
+**✅ Basic Usage**     
+```cpp
 TFT_eSprite mySprite = TFT_eSprite(&tft);  // create the object
 mySprite.createSprite(100, 100);            // allocate memory
 // ... use the sprite ...
 mySprite.deleteSprite();                    // release memory
 ```
 
-🔄 Reusing a Sprite Object       
+**🔄 Reusing a Sprite Object**       
 You can delete a sprite and then recreate it with different dimensions using the same object:     
-```
+```cpp
 mySprite.deleteSprite();          // free old buffer
 mySprite.createSprite(200, 50);   // allocate new buffer
 ```
-🧠 Important: Sprites Created with new     
-If you allocated the sprite on the heap using new (like *TFT_eSprite* sprite = new TFT_eSprite(&tft);*), you must:    
-1. Call sprite->deleteSprite(); to free its internal buffer.
-2. Call delete sprite; to free the object itself.
+**🧠 Important: Sprites Created with new**     
+If you allocated the sprite on the heap using new (like ```TFT_eSprite sprite = new TFT_eSprite(&tft);```), you must:    
+1. Call ```sprite->deleteSprite();``` to free its internal buffer.
+2. Call ```delete sprite;``` to free the object itself.
 
-```
+```cpp
 TFT_eSprite* sprite = new TFT_eSprite(&tft);
 sprite->createSprite(32, 32);
 // ...
@@ -2102,16 +2104,16 @@ sprite->deleteSprite();   // free buffer
 delete sprite;            // free object
 ```
 
-⚠️ Watch Out for Memory Fragmentation      
+**⚠️ Watch Out for Memory Fragmentation**          
 Frequently creating and deleting sprites of different sizes can cause heap fragmentation – especially on memory‑constrained microcontrollers (ESP8266, Arduino Uno). To avoid this, it's often better to:
 
-Create all sprites once during setup() and keep them alive.     
+Create all sprites once during ```setup()``` and keep them alive.     
 
 Reuse the same sprite (delete and recreate) only when absolutely necessary.    
 
-🔍 Verifying Memory Release      
+**🔍 Verifying Memory Release**      
 You can check free heap memory before and after to confirm deletion:
-```
+```cpp
 #ifdef ESP32
   Serial.printf("Free heap: %u\n", ESP.getFreeHeap());
 #endif
@@ -2121,14 +2123,14 @@ mySprite.deleteSprite();
 #endif
 ```
 
-📌 Summary     
+**📌 Summary**     
 |Action|	Method|
 |-|-|
-|Release sprite buffer	|sprite.deleteSprite()|
-|Release object (if new used)	|delete sprite|
-|Recreate sprite	|sprite.createSprite(w, h) after deleting|
+|Release sprite buffer	|```sprite.deleteSprite()```|
+|Release object (if new used)	|```delete sprite```|
+|Recreate sprite	|```sprite.createSprite(w, h)``` after deleting|
 
-Always call deleteSprite() when you're done with a sprite to keep your RAM usage under control.     
+Always call ```deleteSprite()``` when you're done with a sprite to keep your RAM usage under control.     
 
 Refer to this for more details about:
 - [Sprite.h](https://github.com/Bodmer/TFT_eSPI/blob/master/Extensions/Sprite.h)
