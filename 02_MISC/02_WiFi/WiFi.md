@@ -942,7 +942,7 @@ To inject dynamic data, it uses a Template & Placeholder Pattern:
 
 Step 1: Define Unique Placeholders in HTML     
 Insert custom, unique string tags in your raw HTML where dynamic content belongs (e.g., ```%STATE%```, ```%TEMP%```, ```%HUMIDITY%```).    
-```
+```html
 <p><strong>Status:</strong> <span id="ledStatus">%STATE%</span></p>
 <p><strong>Temperature:</strong> %TEMP% °C</p>
 ```
@@ -950,7 +950,7 @@ Insert custom, unique string tags in your raw HTML where dynamic content belongs
 Step 2: Make a Dynamic Copy in RAM     
 Inside your route handler function (e.g., ```handleRoot()```), instantiate a C++ ```String``` object initialized with the raw template. This allocates dynamic memory on the heap so it can be edited.    
 
-```
+```html
 String html = htmlPage; // Copies static template into dynamic RAM
 ```
 Step 3: Search and Replace Placeholders      
