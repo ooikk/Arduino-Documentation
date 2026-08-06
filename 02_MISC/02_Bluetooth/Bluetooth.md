@@ -1242,7 +1242,9 @@ Instead, use a Connectionless Broadcaster/Observer Pattern (Beacons) combined wi
 ### Key Architectural Concepts     
 **1. Connectionless Broadcasting**     
    - Server: Wakes up, reads sensors, embeds data directly into the BLE Advertisement Payload (Manufacturer Data), advertises continuously for 2–3 seconds, and goes straight back to deep sleep.
-   - Client: Wakes up, scans for the payload, extracts the data, and deep sleeps until the next expected window.      
+   - Client: Wakes up, scans for the payload, extracts the data, and deep sleeps until the next expected window.          
+
+
 **2. Overcoming RTC Clock Drift**     
    The ESP32’s internal RTC oscillator drifts by roughly 1% to 3% over time due to temperature fluctuations. Over 30 minutes ($1,800\text{ seconds}$), a 1% drift equals 18 seconds of offset.      
    To ensure you never miss a message:
