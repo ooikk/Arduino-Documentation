@@ -925,7 +925,7 @@ In standard C++, characters like double quotes (```"```) and newlines (```\n```)
 
 A raw string literal ignores all escape sequences and line breaks. Everything between ```R"rawliteral(``` and ```)rawliteral"``` is saved exactly as typed.
 
-```
+```html
 // Standard String Concatenation (Requires escaping quotes & line-by-line syntax)
 String html = "<button class=\"btn\">Turn ON</button>";
 
