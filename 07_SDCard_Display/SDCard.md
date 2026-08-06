@@ -862,7 +862,7 @@ Text hex representation takes ~5 characters per pixel (e.g., 0xABCD,), so the fi
 # =============================================
   
 
-Convert images to raw binary format offline with Python script:     
+#### Convert images to raw binary format offline with Python script:     
 
 Use little‑endian storage – it matches ESP32’s native byte order, giving the fastest possible read performance. Then enable byte swapping on the TFT:    
 ```
@@ -870,19 +870,19 @@ Use little‑endian storage – it matches ESP32’s native byte order, giving t
 [2 bytes: width  little-endian]
 [height × width × 2 bytes: pixel data (16‑bit RGB565, little‑endian)]
 ```
-Store in little‑endian (recommended)     
+#### Store in little‑endian (recommended)     
 - File contents: [height_L, height_H, width_L, width_H, pixel0_L, pixel0_H, pixel1_L, pixel1_H, ...] (low byte first, high byte second)
-- Reader code: Directly read into uint16_t variables. Because ESP32 is little‑endian, the in‑memory value will be correct (e.g., bytes 0x15, 0x6C become 0x6C15).
-- TFT display: Call tft.setSwapBytes(true); once. The library will reverse the byte order when sending to the display (converting to big‑endian). This is very fast (done in DMA or SPI transfer).     
+- Reader code: Directly read into ```uint16_t``` variables. Because ESP32 is little‑endian, the in‑memory value will be correct (e.g., bytes 0x15, 0x6C become 0x6C15).
+- TFT display: Call ```tft.setSwapBytes(true);``` once. The library will reverse the byte order when sending to the display (converting to big‑endian). This is very fast (done in DMA or SPI transfer).     
 
-Advantages:     
+**Advantages:**     
 - No conversion needed when reading from SD.
 - Uses the native endianness of the ESP32 – fastest.
-- tft.setSwapBytes(true) is a single instruction.
+- ```tft.setSwapBytes(true)``` is a single instruction.
 
 Below is the Python script to convert ASCII RGB565 images file to binary RGB565 file. 
 
-*Refer to 1.8 TFT SPI Display section for online tool to convert images to RGB565 ASCII format.*     
+*Refer to **1.8 TFT SPI Display** section for online tool to convert images to RGB565 ASCII format.*     
 - [1.8" TFT Display](https://github.com/ooikk/Arduino-Documentation/blob/main/05_1.8_TFT_SPI_Display/1.8_TFT_Display.md)
 
 ```python
@@ -967,22 +967,21 @@ if __name__ == "__main__":
     main()
 ```
 
-**Other Pythons Tools for 565RGB**     
+### Other Pythons Tools for 565RGB     
 1. Convert background color, use text editor to replace background color to any color of your choice.       
    Example search 0xffff (white) and replace with 0xf800 (RED).      
-2. Replace pixels color to any color, change the desire color in the script: *replace_color.py*. Usage:        
-   - REPLACE_MATCH = 1 → replaces matching pixels (equal to SEARCH_COLOR) with REPLACE_COLOR.
-   - REPLACE_MATCH = 0 → replaces non‑matching pixels (not equal to SEARCH_COLOR) with REPLACE_COLOR.       
-   *python replace_color.py input-black.h output-red.h*       
-3. Convert 565RGB image edge color, use this script: *draw_edge_line.py*, it uses background color as baseline to check for edge. You can change the BG_COLOR and EDGE_COLOR in the script. Usage:       
-   *python draw_edge_line.py input-black.h output-red.h*        
-4. Scaled the image to any size, *scale_image.py*. Usage:                         
-   For scale factor of 0.5:          
-   *python scale_image.py 0.5 clockhand.h scaled_clockhand.h*      
+2. Replace pixels color to any color, change the desire color in the script: ```replace_color.py```. Usage:        
+   - ```REPLACE_MATCH = 1``` → replaces matching pixels (equal to ```SEARCH_COLOR```) with ```REPLACE_COLOR```.
+   - ```REPLACE_MATCH = 0``` → replaces non‑matching pixels (not equal to ```SEARCH_COLOR```) with ```REPLACE_COLOR```.
+   - Under Windows PowerShell, go to 565RGB file directory and type: ```python replace_color.py input-black.h output-red.h```       
+3. Convert 565RGB image edge color, use this script: ```draw_edge_line.py```, it uses background color as baseline to check for edge. You can change the ```BG_COLOR``` and ```EDGE_COLOR``` in the script. Usage under Windows PowerShell:       
+   ```python draw_edge_line.py input-black.h output-red.h```        
+4. Scaled the image to any size, ```scale_image.py```. Usage (For scale factor of 0.5):          
+   ```python scale_image.py 0.5 clockhand.h scaled_clockhand.h```      
 
-*File Format*: File has to use the following format as generated from [Online Convertor](https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/)      
+**File Format**: File has to use the following format as generated from [Online Convertor](https://mischianti.org/rgb-image-to-byte-array-converter-for-arduino-tft-displays/)      
 
-   ```
+   ```h
    #define CLOCKHAND_WIDTH 28
    #define CLOCKHAND_HEIGHT 185
    // array size is 10360
