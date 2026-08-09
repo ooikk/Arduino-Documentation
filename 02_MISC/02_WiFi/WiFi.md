@@ -1148,7 +1148,7 @@ ESP-NOW is a fast, connectionless 2.4 GHz wireless communication protocol develo
 
 By operating directly on the Data Link Layer (Layer 2) using vendor-specific IEEE 802.11 Action Frames, ESP-NOW bypasses the overhead of the TCP/IP stack.     
 
-<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/bd4fec0a-db6d-488d-adfb-3e52e9612147" />       
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/bd4fec0a-db6d-488d-adfb-3e52e9612147" />       
 
 *ESP-NOW Protocol Model vs OSI Model. Source: Espressif Systems*
 
