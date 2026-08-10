@@ -79,7 +79,7 @@ If you want to capture raw Wi-Fi packets without connecting to a network, you mu
 WiFi.mode(WIFI_STA);
 WiFi.promiscuousEnable(true);
 ```
-##  ESP WiFI API Reference
+##  ESP WiFi API Reference
 Include the ESP WiFi library at the top of your sketch: ```#include <esp_wifi.h>```     
 https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_wifi.h 
 
