@@ -1549,6 +1549,9 @@ void loop() {
   // Nothing needed here. Incoming packets trigger OnDataRecv automatically.
 }
 ```
+**Note**: In ESP-NOW unicast mode, ```esp_err_t!=ESP_OK``` or "Delivery Fail" means the sender's radio transmitted the packet, but never received a hardware ACK frame back from the target receiver.    
+
+Unlike standard Wi-Fi, ESP-NOW unicast requires the receiving node's radio to acknowledge the packet within milliseconds over the air.
 
 ### ESP32 Core v3.x and Core v2.x     
 
