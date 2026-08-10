@@ -9,7 +9,7 @@ The badges in your image are created using Shields.io's static badge service. Th
 ```text
 [https://img.shields.io/badge/](https://img.shields.io/badge/)<LABEL>-<MESSAGE>-<COLOR>
 ```
-[https://img.shields.io/badge/](https://img.shields.io/badge/)<LABEL>-<MESSAGE>-<COLOR>
+
 
 #### Syntax Formatting Rules:
 * **Spaces:** Replace spaces with `%20` or an underscore (`_`).
