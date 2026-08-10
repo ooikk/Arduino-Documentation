@@ -1,6 +1,6 @@
 # Arduino-Documentation
 
-![License](https://img.shields.io/badge/License-MIT-yellow)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](./LICENSE)
 
 ## Install and Setup Arduino IDE
 1. Get the latest Arduino IDE here: https://www.arduino.cc/en/software/
