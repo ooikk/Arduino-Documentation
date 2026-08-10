@@ -25,7 +25,7 @@ The ESP32-S3 can operate in several distinct Wi-Fi modes, which can be used indi
 Include the Wi-Fi library at the top of your sketch: ```#include <WiFi.h>```     
 https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h     
 
-**Station (STA) Mode APIs**     
+### Station (STA) Mode APIs     
 |	Function	|	Description	|
 |	-	|	-	|
 |  ```WiFi.mode(WIFI_STA)``` | Sets mode to Station. Type: ```WIFI_OFF```, ```WIFI_STA```, ```WIFI_AP```, ```WIFI_AP_STA``` |
@@ -38,7 +38,7 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 |	```WiFi.disconnect()```	|	Disconnects from the current Wi-Fi network.	|
 |	```WiFi.setAutoReconnect(bool)```	|	Enables/disables automatic reconnection.	|
 
-**Access Point (AP) Mode APIs**    
+### Access Point (AP) Mode APIs    
 |	Function	|	Description	|
 |	-	|	-	|
 |  ```WiFi.mode(WIFI_AP)``` | Sets mode to Access Point.  |
@@ -49,38 +49,136 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFi/src/WiFi.h
 |  ```WiFi.softAPgetConnectedStations()``` |  Returns count of connected clients. |
 |	```WiFi.softAPdisconnect(wifi_off)```	|	Disconnects all clients and shuts down the SoftAP.	|
 
-**Network Scanning APIs**
+### Network Scanning APIs
 |	Function	|	Description	|
 |	-	|	-	|
 |	```WiFi.scanNetworks()```	|	Scans for available networks. Returns the number of networks found.	|
 |	```WiFi.SSID(index)```	|	Returns the SSID of the network at the scanned index.	|
 |	```WiFi.RSSI(index)```	|	Returns the signal strength in dBm of the network at the scanned index.	|      
 
-**Note on WiFi.mode()**      
+### Note on WiFi.mode()      
 In the ESP32 Arduino core, WiFi.mode() is optional for basic STA or AP setups because the library sets it automatically behind the scenes.      
 While optional for basic setups, there are specific scenarios where you must use WiFi.mode():        
 
-
-
-1. Mixed Mode (AP + STA)      
+**1. Mixed Mode (AP + STA)**      
 If you want the ESP32 to act as an Access Point and connect to a router at the same time, the auto-magic doesn't know which one you want to prioritize. You must explicitly tell it to use both:     
 ```
 WiFi.mode(WIFI_AP_STA); // Mandatory for mixed mode!
 WiFi.softAP(ap_ssid, ap_pass);
 WiFi.begin(sta_ssid, sta_pass);
 ```
-2. Turning Wi-Fi Off to Save Power     
+**2. Turning Wi-Fi Off to Save Power**     
 If you are running on a battery and want to completely shut down the Wi-Fi radio to save power, you use:     
 ```
 WiFi.mode(WIFI_OFF); 
 // or simply WiFi.disconnect(true) which also turns off the radio
 ```
-3. Sniffer / Promiscuous Mode      
+**3. Sniffer / Promiscuous Mode**      
 If you want to capture raw Wi-Fi packets without connecting to a network, you must set the mode to null/station and then enable promiscuous:
 ```
 WiFi.mode(WIFI_STA);
 WiFi.promiscuousEnable(true);
 ```
+##  ESP WiFI API Reference
+Include the ESP WiFi library at the top of your sketch: ```#include <esp_wifi.h>```     
+https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_wifi.h 
+
+### Driver Lifecycle & State Management
+
+| Function API | Description |
+| :--- | :--- |
+| `esp_wifi_init(const wifi_init_config_t *config)` | Allocates resources and initializes the Wi-Fi driver. |
+| `esp_wifi_deinit(void)` | Frees driver resources and halts Wi-Fi tasks. |
+| `esp_wifi_start(void)` | Powers up the Wi-Fi PHY radio and starts the station/AP interface. |
+| `esp_wifi_stop(void)` | Shuts down the Wi-Fi PHY radio to stop operations or enter deep sleep. |
+| `esp_wifi_restore(void)` | Resets Wi-Fi configuration settings back to factory defaults. |
+| `esp_wifi_set_storage(wifi_storage_t storage)` | Sets config storage location (`WIFI_STORAGE_RAM` or `WIFI_STORAGE_FLASH`). |
+
+---
+
+### Configuration & Interface Control
+
+| Function API | Description |
+| :--- | :--- |
+| `esp_wifi_set_mode(wifi_mode_t mode)` | Sets operational mode (`WIFI_MODE_STA`, `WIFI_MODE_AP`, `WIFI_MODE_APSTA`, `WIFI_MODE_NULL`). |
+| `esp_wifi_get_mode(wifi_mode_t *mode)` | Retrieves the active Wi-Fi operating mode. |
+| `esp_wifi_set_config(wifi_interface_t ifx, wifi_config_t *conf)` | Applies station or SoftAP connection settings (SSID, password, auth mode). |
+| `esp_wifi_get_config(wifi_interface_t ifx, wifi_config_t *conf)` | Reads the current configuration structure for a specific interface. |
+| `esp_wifi_set_mac(wifi_interface_t ifx, const uint8_t mac[6])` | Overrides the interface hardware MAC address in software. |
+| `esp_wifi_get_mac(wifi_interface_t ifx, uint8_t mac[6])` | Retrieves the hardware MAC address of a specified interface. |
+| `esp_wifi_set_country(const wifi_country_t *country)` | Configures country code, channel ranges, and max regulatory TX power limits. |
+| `esp_wifi_get_country(wifi_country_t *country)` | Retrieves current regulatory country settings. |
+
+---
+
+### RF Channel & Bandwidth Control
+
+| Function API | Description |
+| :--- | :--- |
+| `esp_wifi_set_channel(uint8_t primary, wifi_second_chan_t second)` | Locks the Wi-Fi radio to a specific primary channel and HT20/HT40 offset. |
+| `esp_wifi_get_channel(uint8_t *primary, wifi_second_chan_t *second)` | Reads the active RF channel and secondary channel configuration. |
+| `esp_wifi_set_bandwidth(wifi_interface_t ifx, wifi_bandwidth_t bw)` | Sets channel bandwidth (`WIFI_BW_HT20` or `WIFI_BW_HT40`). |
+| `esp_wifi_get_bandwidth(wifi_interface_t ifx, wifi_bandwidth_t *bw)` | Reads current interface channel bandwidth. |
+| `esp_wifi_set_protocol(wifi_interface_t ifx, uint8_t protocol_bitmap)` | Enables specific PHY protocols (`802.11b/g/n` or LR ESP-NOW mode). |
+| `esp_wifi_get_protocol(wifi_interface_t ifx, uint8_t *protocol_bitmap)` | Reads supported PHY protocols for an interface. |
+
+---
+
+### Station Mode (STA) & Scanning
+
+| Function API | Description |
+| :--- | :--- |
+| `esp_wifi_connect(void)` | Connects the ESP32 station to the configured Access Point. |
+| `esp_wifi_disconnect(void)` | Disconnects the station from the active Access Point. |
+| `esp_wifi_scan_start(const wifi_scan_config_t *config, bool block)` | Initiates passive/active Wi-Fi network scanning. |
+| `esp_wifi_scan_stop(void)` | Aborts an ongoing network scan operation. |
+| `esp_wifi_scan_get_ap_num(uint16_t *number)` | Gets the total count of Access Points found during the last scan. |
+| `esp_wifi_scan_get_ap_records(uint16_t *number, wifi_ap_record_t *ap_records)` | Populates an array with detailed scan results (SSID, RSSI, BSSID, Auth). |
+| `esp_wifi_scan_get_ap_record(wifi_ap_record_t *ap_record)` | Fetches information regarding the AP that the station is currently joined to. |
+
+---
+
+### Access Point Mode (SoftAP)
+
+| Function API | Description |
+| :--- | :--- |
+| `esp_wifi_ap_get_sta_list(wifi_sta_list_t *sta)` | Fetches list and MAC addresses of all stations connected to the ESP32 SoftAP. |
+| `esp_wifi_ap_get_sta_aid(const uint8_t mac[6], uint16_t *aid)` | Retrieves the Association ID (AID) assigned to a connected station MAC. |
+| `esp_wifi_deauth_sta(uint16_t aid)` | Forces deauthentication/disconnection of a client connected to the SoftAP by AID. |
+
+---
+
+### Power Management & Transmit Power
+
+| Function API | Description |
+| :--- | :--- |
+| `esp_wifi_set_ps(wifi_ps_type_t type)` | Configures Wi-Fi modem sleep power saving mode (`WIFI_PS_NONE`, `WIFI_PS_MIN_MODEM`, `WIFI_PS_MAX_MODEM`). |
+| `esp_wifi_get_ps(wifi_ps_type_t *type)` | Retrieves current power-save configuration. |
+| `esp_wifi_set_max_tx_power(int8_t power)` | Adjusts maximum RF output power (range: `+8` to `+84` corresponding to `+2 dBm` to `+20 dBm`). |
+| `esp_wifi_get_max_tx_power(int8_t *power)` | Reads active RF transmit power setting. |
+
+---
+
+### Promiscuous Mode & Low-Level Frame Transmission
+
+| Function API | Description |
+| :--- | :--- |
+| `esp_wifi_set_promiscuous(bool enable)` | Enables/disables promiscuous mode (Wi-Fi packet sniffing). |
+| `esp_wifi_get_promiscuous(bool *enable)` | Checks if promiscuous sniffing mode is active. |
+| `esp_wifi_set_promiscuous_rx_cb(wifi_promiscuous_cb_t cb)` | Registers the callback handler for capturing raw 802.11 Wi-Fi frames. |
+| `esp_wifi_set_promiscuous_filter(const wifi_promiscuous_filter_t *filter)` | Filters packet types captured in promiscuous mode (Mgmt, Data, Control, Misc). |
+| `esp_wifi_80211_tx(wifi_interface_t ifx, const void *buffer, int len, bool en_sys_seq)` | Transmits raw custom 802.11 frames directly out of the Wi-Fi radio. |
+
+---
+
+### Vendor Information Elements (IE)
+
+| Function API | Description |
+| :--- | :--- |
+| `esp_wifi_set_vendor_ie(bool enable, wifi_vendor_ie_type_t type, wifi_vendor_ie_id_t id, const void *ie)` | Attaches custom vendor Information Elements to beacon or probe frames. |
+| `esp_wifi_set_vendor_ie_cb(esp_vendor_ie_cb_t cb, void *ctx)` | Registers callback to handle incoming vendor-specific Information Elements. |
+
+
 
 ## Application Examples
 
