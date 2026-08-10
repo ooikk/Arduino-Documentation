@@ -901,7 +901,7 @@ These codes mean the request was valid, but the ESP32 encountered an internal pr
 
 Summary of Common Content-Type Strings     
 When calling ```server.send(code, content_type, content)```, match your HTTP code with the correct MIME content_type:
-```
+```cpp
 // HTML Pages
 server.send(200, "text/html", "<h1>Dashboard</h1>");
 
@@ -1180,58 +1180,71 @@ Official GitHub Link: [espressif/esp-idf — esp_now.h](https://github.com/espre
 To use these functions, include the header in your sketch: ```#include <esp_now.h>```     
 
 **1. Core Lifecycle APIs**    
-```
+```cpp
 esp_err_t esp_now_init(void);
 ```
 - Usage: Initializes the ESP-NOW protocol stack. Wi-Fi mode (```WiFi.mode(...)```) must be initialized before calling ```esp_now_init()```.
 - Returns: ```ESP_OK``` on success, ```ESP_ERR_ESPNOW_NOT_INIT``` or other error codes on failure.
 
-```
+```cpp
 esp_err_t esp_now_deinit(void);
 ```
 - Usage: De-initializes ESP-NOW and frees associated memory buffers.
 
-```
+```cpp
 esp_err_t esp_now_get_version(uint32_t *version)
 ```
 - Usage: Gets the current ESP-NOW version.     
 
 
 **2. Peer Management APIs**    
-Before sending a targeted message to another board, it must be registered as a peer using the ```esp_now_peer_info_t``` struct.
-
+Before sending a targeted message to another board, it must be registered as a peer using the ```esp_now_peer_info_t``` struct.       
+This is ```esp_now_peer_info_t``` struct.     
+```cpp
+typedef struct esp_now_peer_info {
+    uint8_t peer_addr[ESP_NOW_ETH_ALEN];    /**< ESPNOW peer MAC address that is also the MAC address of station or softap */
+    uint8_t lmk[ESP_NOW_KEY_LEN];           /**< ESPNOW peer local master key that is used to encrypt data */
+    uint8_t channel;                        /**< Wi-Fi channel that peer uses to send/receive ESPNOW data. If the value is 0,
+                                                 use the current channel which station or softap is on. Otherwise, it must be
+                                                 set as the channel that station or softap is on. */
+    wifi_interface_t ifidx;                 /**< Wi-Fi interface that peer uses to send/receive ESPNOW data */
+    bool encrypt;                           /**< ESPNOW data that this peer sends/receives is encrypted or not */
+    void *priv;                             /**< ESPNOW peer private data */
+} esp_now_peer_info_t;
 ```
+
+```cpp
 esp_err_t esp_now_add_peer(const esp_now_peer_info_t *peer);
 ```
 - Usage: Adds a peer to the peer list. The struct requires setting ```.peer_addr``` (6-byte MAC), ```.channel``` (0–14), and ```.encrypt``` (bool).
 
-```
+```cpp
 esp_err_t esp_now_del_peer(const uint8_t *peer_addr);
 ```
 - Usage: Removes a peer from the registered peer list using its 6-byte MAC address.
 
-```
+```cpp
 esp_err_t esp_now_mod_peer(const esp_now_peer_info_t *peer);
 ```
 - Usage: Modifies settings for an existing peer (e.g., updating Wi-Fi channel or encryption keys).
 
-```
+```cpp
 bool esp_now_is_peer_exist(const uint8_t *peer_addr);
 ```
 - Usage: Checks if a board with the specified MAC address is already registered in the peer table.
-```
+```cpp
 esp_err_t esp_now_get_peer(const uint8_t *mac_addr, esp_now_peer_info_t *peer)
 ```
 - Usage: Retrieves the configuration of a specific peer.
 
-```
+```cpp
 int esp_now_get_peer_num(void)
 ```
 - Returns the current number of peers in the list.     
 
 
 **3. Data Transmission APIs**    
-```
+```cpp
 esp_err_t esp_now_send(const uint8_t *peer_addr, const uint8_t *data, size_t len);
 ```     
 
@@ -1242,22 +1255,22 @@ esp_err_t esp_now_send(const uint8_t *peer_addr, const uint8_t *data, size_t len
 - Usage: Transmits data packet over raw 2.4 GHz frames.
 
 **4. Callback Registration APIs**    
-```
+```cpp
 esp_err_t esp_now_register_send_cb(esp_now_send_cb_t cb);
 ```
 - Usage: Registers a function executed automatically when a send operation completes. Confirms whether the packet was successfully delivered (```ESP_NOW_SEND_SUCCESS```) or failed (```ESP_NOW_SEND_FAIL```).
 
-```
+```cpp
 esp_err_t esp_now_unregister_send_cb(void)
 ```
 - Usage: Unregisters the send callback.
 
-```
+```cpp
 esp_err_t esp_now_register_recv_cb(esp_now_recv_cb_t cb);
 ```
 - Usage: Registers a function executed whenever an incoming packet is received by the ESP32.
 
-```
+```cpp
 esp_err_t esp_now_unregister_recv_cb(void)
 ```
 - Usage: Unregisters the receive callback.     
@@ -1265,7 +1278,7 @@ esp_err_t esp_now_unregister_recv_cb(void)
 
 
 **5. Security**     
-```
+```cpp
 esp_err_t esp_now_set_pmk(const uint8_t *pmk)
 ```
 - Usage: Sets the Primary Master Key (PMK) for encrypting the Local Master Keys (LMK). If not set, a default PMK is used.     
