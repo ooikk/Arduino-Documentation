@@ -1337,7 +1337,15 @@ struct_message myData;
 esp_now_peer_info_t peerInfo;
 
 // Send Callback Function
+// Receive Callback Function (Compatible with ESP32 Core v2.x and v3.x)
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+// Send Callback Function (Updated for ESP32 Arduino Core 3.x)
+void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
+#else
+// Send Callback Function (Updated for ESP32 Arduino Core 2.x)
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+#endif
+
   Serial.print("Last Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
