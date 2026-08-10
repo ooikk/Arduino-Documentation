@@ -9,6 +9,7 @@ The badges in your image are created using Shields.io's static badge service. Th
 ```text
 [https://img.shields.io/badge/](https://img.shields.io/badge/)<LABEL>-<MESSAGE>-<COLOR>
 ```
+[https://img.shields.io/badge/](https://img.shields.io/badge/)<LABEL>-<MESSAGE>-<COLOR>
 
 #### Syntax Formatting Rules:
 * **Spaces:** Replace spaces with `%20` or an underscore (`_`).
@@ -28,6 +29,11 @@ To place these exact badges into your `README.md`, copy and paste the following 
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 ```
 
+![Developer](https://img.shields.io/badge/Developer-Salman%20Farsi-007ec6)
+![Hardware](https://img.shields.io/badge/Hardware-ESP32--S3%20DevKitC--1%20N16R8-red)
+![Model](https://img.shields.io/badge/Model-Stories--15M%20(LLaMA--2)-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-yellow)
+
 ---
 
 ### Making Badges Clickable
@@ -37,7 +43,7 @@ If you want a badge to link to an external page (e.g., clicking the License badg
 ```markdown
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](./LICENSE)
 ```
-
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](./LICENSE)
 ---
 
 ### Customization Options
@@ -51,3 +57,4 @@ You can add query parameters to customize the visual style:
 ```markdown
 ![Python](https://img.shields.io/badge/Python-3.10-blue?style=flat-square&logo=python)
 ```
+![Python](https://img.shields.io/badge/Python-3.10-blue?style=flat-square&logo=python)
