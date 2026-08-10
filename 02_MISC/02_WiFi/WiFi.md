@@ -1561,7 +1561,7 @@ If you are updating an old sketch to work with Arduino Core v3.x, you only need 
 void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len) {
     // mac is a pointer to 6-byte source MAC
     Serial.printf("From: %02x:%02x:%02x:%02x:%02x:%02x\n",
-                  mac, mac, mac, mac, mac, mac);
+                  mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
     // Process incomingData...
 }
@@ -1574,8 +1574,8 @@ void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len) {
 void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
     // info->src_mac replaces the old mac pointer
     Serial.printf("From: %02x:%02x:%02x:%02x:%02x:%02x\n",
-                  info->src_addr, info->src_addr, info->src_addr,
-                  info->src_addr, info->src_addr, info->src_addr);
+                  info->src_addr[0], info->src_addr[1], info->src_addr[2],
+                  info->src_addr[3], info->src_addr[4], info->src_addr[5]);
 
     // Optional: use destination MAC and channel
     // info->src_addr
