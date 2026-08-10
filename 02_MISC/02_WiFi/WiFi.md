@@ -2365,6 +2365,14 @@ https://github.com/espressif/arduino-esp32/blob/master/libraries/WebServer/src/W
 
 https://github.com/espressif/arduino-esp32/tree/master/libraries/WebServer/examples
 
+https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP_NOW/src/ESP32_NOW.h
+
+https://github.com/espressif/arduino-esp32/tree/master/libraries/ESP_NOW/examples
+
+https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_wifi.h
+
+https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_now.h
+
 
 
 
