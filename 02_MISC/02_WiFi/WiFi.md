@@ -1483,16 +1483,6 @@ Instead of a simple MAC pointer, it passes a pointer to a new structure called `
 
 #### The `esp_now_recv_info_t` Structure   
 
-Defined in the underlying ESP-IDF `esp_now.h`, the structure looks like this:
-
-```cpp
-typedef struct esp_now_recv_info {
-    uint8_t * src_addr;                      /**< Source address of ESPNOW packet */
-    uint8_t * des_addr;                      /**< Destination address of ESPNOW packet */
-    wifi_pkt_rx_ctrl_t * rx_ctrl;            /**< Rx control info of ESPNOW packet */
-} esp_now_recv_info_t;
-```
-
 In Arduino ESP32 Core v3.x (ESP-IDF v5.x), the `esp_now_recv_info_t` structure is defined in `esp_now.h` as follows:
 
 ```cpp
