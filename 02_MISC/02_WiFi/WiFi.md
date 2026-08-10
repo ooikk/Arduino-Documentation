@@ -1458,7 +1458,7 @@ The core difference is that v2.x only provided the sender's MAC address, while v
 
 Here is the detailed technical breakdown of the differences.
 
-**1. Core v2.x: The Legacy Approach (`const uint8_t * mac`)**
+#### 1. Core v2.x: The Legacy Approach (`const uint8_t * mac`)    
 
 In v2.x, the callback signature was:
 
@@ -1470,7 +1470,7 @@ void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len);
 - **What it is**: `mac` is simply a raw pointer to a 6-byte array representing the **Source MAC address** (the MAC address of the device that sent the packet).
 - **Limitation**: It lacked context. If your ESP32 was running both Station (STA) and SoftAP modes simultaneously, or if it was scanning multiple channels, the callback had no way to tell you which interface received the packet or which channel it arrived on.
 
-**2. Core v3.x: The Modern Approach (`const esp_now_recv_info_t *info`)**
+#### 2. Core v3.x: The Modern Approach (`const esp_now_recv_info_t *info`)    
 
 In v3.x, the callback signature was updated to:
 
@@ -1481,17 +1481,77 @@ void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData
 
 Instead of a simple MAC pointer, it passes a pointer to a new structure called `esp_now_recv_info_t`.
 
-**The `esp_now_recv_info_t` Structure**
+#### The `esp_now_recv_info_t` Structure   
 
 Defined in the underlying ESP-IDF `esp_now.h`, the structure looks like this:
 
 ```cpp
-typedef struct {
-    uint8_t src_mac;
-    uint8_t des_mac;
-    int8_t  channel;
+typedef struct esp_now_recv_info {
+    uint8_t * src_addr;                      /**< Source address of ESPNOW packet */
+    uint8_t * des_addr;                      /**< Destination address of ESPNOW packet */
+    wifi_pkt_rx_ctrl_t * rx_ctrl;            /**< Rx control info of ESPNOW packet */
 } esp_now_recv_info_t;
 ```
+
+In Arduino ESP32 Core v3.x (ESP-IDF v5.x), the `esp_now_recv_info_t` structure is defined in `esp_now.h` as follows:
+
+```cpp
+typedef struct esp_now_recv_info {
+    uint8_t *src_addr;            /**< Source MAC address (6 bytes) */
+    uint8_t *des_addr;            /**< Destination MAC address (6 bytes) */
+    wifi_pkt_rx_ctrl_t *rx_ctrl;  /**< Rx control metadata header */
+} esp_now_recv_info_t;
+```
+
+---
+
+#### Breakdown of Struct Fields
+
+**1. `src_addr` (`uint8_t *`)**    
+Pointer to the 6-byte array containing the **transmitter's (sender's) MAC address**.
+* **Accessing:** `recv_info->src_addr[0]` through `recv_info->src_addr[5]`
+
+**2. `des_addr` (`uint8_t *`)**     
+Pointer to the 6-byte array containing the **intended recipient's MAC address** (your receiver's MAC or `FF:FF:FF:FF:FF:FF` for broadcast packets).
+* **Accessing:** `recv_info->des_addr[0]` through `recv_info->des_addr[5]`
+
+**3. `rx_ctrl` (`wifi_pkt_rx_ctrl_t *`)**     
+Pointer to a nested Wi-Fi PHY control structure containing low-level radio metadata about the received frame. Key members inside `rx_ctrl` include:
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `rx_ctrl->rssi` | `int` | **Received Signal Strength Indicator** in dBm (e.g., `-65`) |
+| `rx_ctrl->channel` | `unsigned` | Primary Wi-Fi channel the packet was received on |
+| `rx_ctrl->timestamp` | `uint32_t` | Microsecond hardware timer tick when packet arrived |
+| `rx_ctrl->rate` | `unsigned` | PHY bit-rate encoding |
+| `rx_ctrl->sig_mode` | `unsigned` | Signal mode (`0`: Non-HT, `1`: HT20, `2`: HT40, etc.) |
+
+---
+
+**Practical Example**     
+
+Here is how to extract and print all fields from `recv_info` inside your receive callback:
+
+```cpp
+void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDataPtr, int len) {
+  // 1. Extract Source MAC
+  const uint8_t *src = recv_info->src_addr;
+  Serial.printf("Sender MAC : %02X:%02X:%02X:%02X:%02X:%02X\n",
+                src[0], src[1], src[2], src[3], src[4], src[5]);
+
+  // 2. Extract Destination MAC
+  const uint8_t *dst = recv_info->des_addr;
+  Serial.printf("Target MAC : %02X:%02X:%02X:%02X:%02X:%02X\n",
+                dst[0], dst[1], dst[2], dst[3], dst[4], dst[5]);
+
+  // 3. Extract Radio Telemetry (RSSI & Channel)
+  if (recv_info->rx_ctrl != NULL) {
+    Serial.printf("Signal RSSI: %d dBm\n", recv_info->rx_ctrl->rssi);
+    Serial.printf("Channel    : %d\n", recv_info->rx_ctrl->channel);
+  }
+}
+```
+
 
 **Field Breakdown**   
 
@@ -1500,7 +1560,7 @@ typedef struct {
 - `info->channel`: The **Wi-Fi channel** (1–13/14) on which the packet was received. This is highly useful if your application implements channel hopping or if you are running a sniffer/monitor node.
 
 
-**4. How to Migrate Your Code (v2.x to v3.x)**
+#### 3. How to Migrate Your Code (v2.x to v3.x)  
 
 If you are updating an old sketch to work with Arduino Core v3.x, you only need to change the callback function signature and how you access the MAC address.
 
@@ -1524,16 +1584,18 @@ void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len) {
 void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
     // info->src_mac replaces the old mac pointer
     Serial.printf("From: %02x:%02x:%02x:%02x:%02x:%02x\n",
-                  info->src_mac, info->src_mac, info->src_mac,
-                  info->src_mac, info->src_mac, info->src_mac);
+                  info->src_addr, info->src_addr, info->src_addr,
+                  info->src_addr, info->src_addr, info->src_addr);
 
     // Optional: use destination MAC and channel
-    // info->des_mac
-    // info->channel
+    // info->src_addr
+    // info->wifi_pkt_rx_ctrl_t
 
     // Process incomingData...
 }
 ```
+
+
 
 **Summary Table**
 
