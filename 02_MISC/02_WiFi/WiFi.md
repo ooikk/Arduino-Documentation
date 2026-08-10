@@ -1591,9 +1591,9 @@ void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData
 
 | Feature | Core v2.x (`const uint8_t * mac`) | Core v3.x (`const esp_now_recv_info_t * info`) |
 |---------|-----------------------------------|------------------------------------------------|
-| Sender MAC | `mac` | `info->src_mac` |
-| Receiver/Dest MAC | Not available | `info->des_mac` |
-| RX Wi‑Fi Channel | Not available | `info->channel` |
+| Sender MAC | `mac` | `info->src_addr` |
+| Receiver/Dest MAC | Not available | `info->des_addr` |
+| RX Wi‑Fi Channel | Not available | `info->rx_ctrl->channel` |
 | Multi‑Interface Support | Poor (Ambiguous) | Excellent (Explicitly identifies interface) |
 | Underlying ESP‑IDF | v4.4 and older | v5.1 and newer |
 
