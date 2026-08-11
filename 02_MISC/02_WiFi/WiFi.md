@@ -2397,7 +2397,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
 
   Serial.println("==================================================");
   Serial.printf("📥 Decrypted Packet Received from MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
-                mac, mac, mac, mac, mac, mac);
+                mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   Serial.printf("  Boot / Transmission Count : #%d\n", incomingSensorData.boot_number);
   Serial.printf("  Temperature               : %.2f °C\n", incomingSensorData.temperature);
   Serial.printf("  Battery Voltage           : %.2f V\n", incomingSensorData.battery_voltage);
