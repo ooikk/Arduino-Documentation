@@ -1,6 +1,14 @@
 #include <WiFi.h>
 #include <esp_now.h>
 
+#define ENCRYPTION
+#ifdef ENCRYPTION
+#include <esp_wifi.h>
+// 16-Byte Encryption Keys (MUST MATCH BOARD A EXACTLY)
+static const char PMK_KEY[] = "16BytePMKKey1234";
+static const char LMK_KEY[] = "16ByteLMKKey5678";
+#endif
+
 // ⚠️ REPLACE WITH BOARD A's MAC ADDRESS
 uint8_t boardAMac[] = { 0xAC, 0xA7, 0x04, 0xE0, 0x4E, 0x64 };  // COM3
 //uint8_t boardAMac[] = { 0x44, 0x1B, 0xF6, 0xD6, 0x3E, 0x30 };  // COM4
@@ -40,7 +48,11 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
 #endif
   memcpy(&incomingCmd, incomingDataPtr, sizeof(incomingCmd));
 
+#ifdef ENCRYPTION
+Serial.println("\n📥 [Board B] Decrypted Command Received!");
+#else
   Serial.println("\n📥 [Board B] Command Received from Board A!");
+#endif
   Serial.printf("  Command ID: %d | Requested State: %s\n",
                 incomingCmd.command_id,
                 incomingCmd.trigger_state ? "HIGH" : "LOW");
@@ -54,7 +66,11 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
   outgoingReply.led_status = incomingCmd.trigger_state;
 
   // 3. Immediately reply back to Board A
+#ifdef ENCRYPTION
+   Serial.println("📤 [Board B] Sending Encrypted ACK Reply...");
+#else
   Serial.println("📤 [Board B] Sending status ACK back to Board A...\n");
+#endif  
   Serial.printf("Response from: #%d\n", outgoingReply.response_from);
   Serial.printf("Temperature: %.2f\n", outgoingReply.temp_reading);
   Serial.printf("LED Status: %s\n", outgoingReply.led_status ? "HIGH" : "LOW");
@@ -74,13 +90,26 @@ void setup() {
     return;
   }
 
+#ifdef ENCRYPTION
+  // Set Primary Master Key
+  esp_now_set_pmk((uint8_t *)PMK_KEY);
+#endif
   esp_now_register_send_cb(OnDataSent);
   esp_now_register_recv_cb(OnDataRecv);
 
+#ifdef ENCRYPTION
+  // Configure Peer with LMK and Encryption
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, boardAMac, 6);
+  peerInfo.channel = 1;      // Must match explicit Wi-Fi channel
+  peerInfo.encrypt = true;    // Enable AES-128
+  memcpy(peerInfo.lmk, LMK_KEY, 16);
+#else
   // Register Board A as a Peer
   memcpy(peerInfo.peer_addr, boardAMac, 6);
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
+#endif
 
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
     Serial.println("Failed to add Board A as peer");

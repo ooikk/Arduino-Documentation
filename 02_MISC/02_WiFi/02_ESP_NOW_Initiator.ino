@@ -1,18 +1,27 @@
 #include <WiFi.h>
 #include <esp_now.h>
 
+#define ENCRYPTION
+#ifdef ENCRYPTION
+#include <esp_wifi.h>
+// 16-Byte Encryption Keys
+static const char PMK_KEY[] = "16BytePMKKey1234";
+static const char LMK_KEY[] = "16ByteLMKKey5678";
+
+#endif
+
 // ⚠️ REPLACE WITH BOARD B's MAC ADDRESS
 //uint8_t boardBMac[] = { 0xAC, 0xA7, 0x04, 0xE0, 0x4E, 0x64 }; // COM3
 uint8_t boardBMac[] = { 0x44, 0x1B, 0xF6, 0xD6, 0x3E, 0x30 };  // COM4
 
 // Shared Data Structures
 typedef struct struct_command {
-  int command_id;    // e.g., 1 = Toggle LED, 2 = Read Sensor
+  int command_id;  // e.g., 1 = Toggle LED, 2 = Read Sensor
   bool trigger_state;
 } struct_command;
 
 typedef struct struct_response {
-  int response_from; // Board ID
+  int response_from;  // Board ID
   float temp_reading;
   bool led_status;
 } struct_response;
@@ -57,14 +66,28 @@ void setup() {
     return;
   }
 
+#ifdef ENCRYPTION
+  // Set Primary Master Key (PMK)
+  esp_now_set_pmk((uint8_t *)PMK_KEY);
+#endif
+
   // Register BOTH callbacks
   esp_now_register_send_cb(OnDataSent);
   esp_now_register_recv_cb(OnDataRecv);
 
+#ifdef ENCRYPTION
+  // Configure Peer with LMK and Encryption
+  memset(&peerInfo, 0, sizeof(peerInfo));
+  memcpy(peerInfo.peer_addr, boardBMac, 6);
+  peerInfo.channel = 1;     // Must match explicit Wi-Fi channel
+  peerInfo.encrypt = true;  // Enable AES-128
+  memcpy(peerInfo.lmk, LMK_KEY, 16);
+#else
   // Register Board B as a Peer
   memcpy(peerInfo.peer_addr, boardBMac, 6);
   peerInfo.channel = 0;
   peerInfo.encrypt = false;
+#endif
 
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
     Serial.println("Failed to add Board B as peer");
@@ -76,16 +99,20 @@ void setup() {
 
 void loop() {
   static int cmdCount = 0;
-  
+
   // Prepare command
   outgoingCmd.command_id = ++cmdCount;
   outgoingCmd.trigger_state = (cmdCount % 2 == 0);
 
+#ifdef ENCRYPTION
+  Serial.printf("\n📤 [Board A] Transmitting Encrypted Cmd #%d...\n", outgoingCmd.command_id);
+#else
   Serial.printf("\n📤 [Board A] Sending Command: #%d to Board B...\n", outgoingCmd.command_id);
+#endif
   Serial.printf("📤 [Board A] Sending Trigger State: %s to Board B...\n", outgoingCmd.trigger_state ? "HIGH" : "LOW");
 
   // Transmit command to Board B
-  esp_now_send(boardBMac, (uint8_t *) &outgoingCmd, sizeof(outgoingCmd));
+  esp_now_send(boardBMac, (uint8_t *)&outgoingCmd, sizeof(outgoingCmd));
 
-  delay(2000); // Send request every 2 seconds
+  delay(2000);  // Send request every 2 seconds
 }
