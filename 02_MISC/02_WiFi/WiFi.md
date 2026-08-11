@@ -2541,6 +2541,46 @@ https://www.luisllamas.es/que-es-esp-now-esp32/
 
 https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
 
+### Encrypted 1-to-Many ESP-NOW communication with deep sleep nodes
+
+An ESP32 in deep sleep completely powers off its Wi-Fi radio and cannot hear incoming ESP-NOW transmissions.
+
+To put both the Gateway and the Sensor Nodes into deep sleep, you must implement **Time-Synchronized Wake Windows (Duty Cycling)**:
+
+- **Gateway:** Wakes up on a fixed schedule (e.g., every 60 seconds) and leaves its radio open for a brief 1–2 second window.
+- **Sensor Nodes:** Wake up at the exact same interval, burst their encrypted payloads to the Gateway during this window, collect replies, and go back to sleep.
+- **Gateway:** Closes its listening window after processing all incoming nodes and returns to deep sleep.
+
+#### Critical Design Considerations for Dual Deep Sleep
+
+**Clock Drift Buffer (`LISTEN_WINDOW_MS`)**    
+
+Internal ESP32 RTC timers drift by ~1% to 5% due to temperature fluctuations. Setting `LISTEN_WINDOW_MS = 1500` ensures the Gateway wakes up early enough and stays awake long enough to catch nodes whose internal clocks run slightly slower or faster.
+
+**Synchronized Cycles**     
+
+Both Gateway (`GATEWAY_SLEEP_SEC`) and Sensor Nodes (`currentSleepSec`) must use the exact same sleep interval (e.g., 60 seconds).
+
+**Battery Savings**   
+
+The Gateway's average active time drops from 100% (always on) down to ~2.5% (awake 1.5s every 60s), making it suitable for solar/battery power.
+
+#### Important Encrypted Deep Sleep Rules
+
+**LMK Key Requirements**   
+
+The LMK key must be exactly 16 bytes (128 bits). If the key length is incorrect, peer registration returns `ESP_ERR_ESPNOW_KEY_IF`.
+
+**Max Encrypted Peers**    
+
+Standard ESP32 hardware supports up to 6 encrypted peers simultaneously in legacy modes, while ESP32-S3 supports up to 17 encrypted peers. Because the nodes only pair with 1 Gateway, you can scale up to hundreds of sleeping sensor nodes; only the central Gateway needs to manage/rotate peer table allocations if active peers exceed hardware capacity.
+
+**Wi-Fi Channel Uniformity**      
+
+Every node and gateway must remain strictly locked on `PEER_CHANNEL 1` via `esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);`. Encrypted frames cannot be parsed during channel hopping.
+
+
+
 ## ESP32 MQTT     
 
 https://www.luisllamas.es/como-usar-mqtt-en-el-esp8266-esp32/
