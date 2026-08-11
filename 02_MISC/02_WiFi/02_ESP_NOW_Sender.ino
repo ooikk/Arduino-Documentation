@@ -22,13 +22,16 @@ volatile bool deliveryComplete = false;
 
 
 // REPLACE WITH YOUR RECEIVER'S MAC ADDRESS
-uint8_t receiverAddress[] = { 0xAC, 0xA7, 0x04, 0xE0, 0x4E, 0x64 };
+//uint8_t receiverAddress[] = { 0xAC, 0xA7, 0x04, 0xE0, 0x4E, 0x64 }; // COM3
+uint8_t receiverAddress[] = { 0x44, 0x1B, 0xF6, 0xD6, 0x3E, 0x30 };  // COM4
+
 
 // Data structure to send (Must match Receiver structure)
 typedef struct struct_message {
   int counter;
   float temperature;
   bool state;
+  char message[180];    // Fixed array buffer (keeps total struct under 250 bytes)
 } struct_message;
 
 struct_message myData;
@@ -113,6 +116,15 @@ void setup() {
   myData.counter = bootCounter;
   myData.temperature = 25.4 + random(-100, 100) / 10.0;
   myData.state = true;
+/*  
+  //can not use this command: myData.message = "Long message: Step-by-Step ESP-NOW Tutorial for ESP32-S3.";
+
+  With an array (char msg[180]): You must copy the actual characters byte-by-byte into the 180-byte memory block reserved inside your struct.
+  snprintf() is preferred over standard strcpy() or strncpy() in embedded code because:
+  1. It copies the characters directly into the reserved struct memory.
+  2. It automatically enforces the sizeof(myData.message) limit, truncating the string safely if it exceeds 180 bytes rather than overflowing memory and crashing the ESP32.
+*/
+  snprintf(myData.message, sizeof(myData.message), "Long message: Step-by-Step ESP-NOW Tutorial for ESP32-S3.");
 
   // 6. Queue transmission
   esp_err_t result = esp_now_send(receiverAddress, (uint8_t *)&myData, sizeof(myData));
@@ -126,6 +138,7 @@ void setup() {
   Serial.printf("Sent temperature %.2f °C\n", myData.temperature);
   Serial.printf("Sent state %d\n", myData.state);
   Serial.printf("Sent state: %s\n", myData.state ? "TRUE" : "FALSE");
+  Serial.printf("Sent message: %s\n", myData.message);
 
   // 7. CRITICAL: Block execution until OnDataSent sets flag (or 250ms safety timeout)
   uint32_t startTime = millis();

@@ -17,6 +17,7 @@ typedef struct struct_message {
   int counter;
   float temperature;
   bool state;
+  char message[180];    // Fixed array buffer (keeps total struct under 250 bytes)
 } struct_message;
 
 struct_message incomingData;
@@ -42,6 +43,7 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
   Serial.printf("Counter: %d\n", incomingData.counter);
   Serial.printf("Temperature: %.2f °C\n", incomingData.temperature);
   Serial.printf("State: %s\n", incomingData.state ? "TRUE" : "FALSE");
+  Serial.printf("message: %s\n", incomingData.message);
   Serial.println();
 
 #ifdef ESP_DEEPSLEEP
