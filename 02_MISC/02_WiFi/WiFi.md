@@ -1250,7 +1250,7 @@ By operating directly on the Data Link Layer (Layer 2) using vendor-specific IEE
 
 *ESP-NOW Protocol Model vs OSI Model. Source: Espressif Systems*
 
-**Technical Highlights**      
+### Technical Highlights      
 - Payload Capacity: Up to 250 bytes per packet.
 - Latency: Extremely low, typically ~2ms to 10ms transmission time.
 - Power Consumption: Ideal for deep-sleep battery devices. A sensor can wake up, transmit data, receive confirmation, and sleep in less than 15ms.
@@ -1259,8 +1259,19 @@ By operating directly on the Data Link Layer (Layer 2) using vendor-specific IEE
 - Coexistence: Can operate alongside Wi-Fi Station or Access Point modes on the same channel.
 - Range: Similar to standard Wi-Fi (up to 100m – 500m+ in open space, depending on the antenna and PCB design).      
 
+**Note:**    
+To transmit text strings over ESP-NOW, you must embed a fixed-size character array inside the struct. Example ```char message[180];``` below:
+```cpp
+typedef struct struct_message {
+  int counter;          // 4 bytes
+  float temperature;    // 4 bytes
+  bool state;           // 1 byte
+  char message[180];    // Fixed array buffer (keeps total struct under 250 bytes)
+} struct_message;
+```
+Important ESP-NOW Limit: The total size of struct_message cannot exceed 250 bytes (the hard hardware payload limit for an ESP-NOW frame).
 
-**Application Topology Modes**    
+### Application Topology Modes    
 ESP-NOW supports several flexible network topologies:     
 |	Topology Mode	|	Description	|	Typical Use Case	|
 |	-	|	-	|	-	|
@@ -1269,12 +1280,12 @@ ESP-NOW supports several flexible network topologies:
 |	Many-to-One (N:1)	|	Multiple battery-powered Nodes send readings to one central Receiver Hub.	|	Distributed soil moisture or temperature sensors.	|
 |	Bi-Directional (2-Way)	|	Every node registers the other as a peer, sending and receiving data back and forth.	|	Mesh-like telemetry, acknowledgment feedback systems.	|
 
-**ESP-NOW Header Source Code**     
+### ESP-NOW Header Source Code     
 The header file esp_now.h is part of the Espressif ESP-IDF framework integrated directly into the Arduino ESP32 core:     
 Official GitHub Link: [espressif/esp-idf — esp_now.h](https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_now.h)
 
 
-**ESP-NOW API Reference**    
+### ESP-NOW API Reference    
 To use these functions, include the header in your sketch: ```#include <esp_now.h>```     
 
 **1. Core Lifecycle APIs**    
