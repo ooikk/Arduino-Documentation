@@ -2244,8 +2244,13 @@ esp_now_peer_info_t peerInfo;
 // Flag to track transmission status
 volatile bool sendCompleted = false;
 
-// Delivery Callback
+// Delivery Confirmation Callback (Compatible with ESP32 Core v2.x and v3.x)
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+void OnDataSent(const wifi_tx_info_t *tx_info, esp_now_send_status_t status) {
+#else
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+#endif
+
   Serial.print("Encrypted Delivery Status: ");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Success (ACK)" : "Fail");
   sendCompleted = true;
