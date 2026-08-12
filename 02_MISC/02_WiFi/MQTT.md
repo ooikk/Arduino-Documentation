@@ -1903,8 +1903,25 @@ bool connected = mqtt.connect(clientId.c_str(), TOPIC_STATUS, 0, true, "offline"
 ```
 
 ---
+### Step 4: Setup HiveMQ Web Client       
+1. Set `Host: broker.hivemq.com`
+2. Copy `clientId` eg. `esp32s3-441BF6D63E30` + MAC address from your Serial port.
+   ```text
+   ESP32-S3 MQTT Example
+   Connecting to Wi-Fi.....
+   Wi-Fi connected. IP address: 192.168.0.35
+   Attempting MQTT connection as client ID: esp32s3-441BF6D63E30
+   MQTT connected
+   ```
+3. Set `Port: 8884`
+4. Add Subscription eg `esp32s3/#`
+5. Under Publish, select topic (must match the code setting), eg `esp32s3/led/set`
 
-### Step 4: Test the ESP32 and Browser Together
+Below is the screenshot     
+<img width="958" height="871" alt="image" src="https://github.com/user-attachments/assets/204346ae-02f5-4bf4-a408-15d3df71a8d4" />
+
+
+### Step 5: Test the ESP32 and Browser Together
 1. Flash the updated code to your ESP32-S3 and open the Serial Monitor.
 2. Go back to your **HiveMQ Web Client** browser tab.
 3. Subscribe to `myname/esp32s3/#` (The `#` is a wildcard that catches all sub-topics).
