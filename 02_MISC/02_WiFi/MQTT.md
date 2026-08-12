@@ -1853,7 +1853,7 @@ Open one of these free, web-based MQTT clients in your browser. They connect to 
 *   *Note:* It automatically connects to HiveMQ’s public broker the moment you open the page.
 
 **Option B: MQTTX Web (More Modern UI)**
-*   **URL:** [https://web.mqttx.app/](https://web.mqttx.app/)
+*   **URL:** [MQTTX Web](https://mqttx.app/web-client#/)
 *   *Setup:* Click "New Connection", set Host to `broker.hivemq.com`, Port to `8000`, and ensure "WebSocket" is selected.
 
 ---
