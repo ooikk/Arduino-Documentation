@@ -1845,7 +1845,7 @@ This method requires **zero installation**, bypasses local firewall/router port-
 
 ---
 
-### Step 1: Use a Browser-Based Web Client
+### Use a Browser-Based Web Client
 Open one of these free, web-based MQTT clients in your browser. They connect to public brokers using WebSockets.
 
 **Option A: HiveMQ Web Client (Easiest)**
@@ -1854,11 +1854,15 @@ Open one of these free, web-based MQTT clients in your browser. They connect to 
 
 **Option B: MQTTX Web (More Modern UI)**
 *   **URL:** [MQTTX Web](https://mqttx.app/web-client#/)
-*   *Setup:* Click "New Connection", set Host to `broker.hivemq.com`, Port to `8000`, and ensure "WebSocket" is selected.
+*   *Setup:* Click "New Connection", set Host to `broker.emqx.io`, Port to `8084`, and ensure "WebSocket" is selected.
 
+**Option C: EMQX Web (More Modern UI)**
+*   **URL:** [EMQX Cloud](https://www.emqx.com/en/cloud)
+*   *Sign up:* Sign up for EMQX Platform, set Host to `ffcebc18.ala.asia-southeast1.emqxsl.com`, Port to `8084`, and ensure "WebSocket" is selected.
 ---
 
-### Step 2A: Test Publishing and Subscribing (In the Browser)
+### Option A: HiveMQ Web Client
+#### Step 1: Test Publishing and Subscribing (In the Browser)
 Using the **HiveMQ Web Client** as an example:
 
 1. **Subscribe to a topic:**
@@ -1872,7 +1876,7 @@ Using the **HiveMQ Web Client** as an example:
 
 ---
 
-### Step 3A: Connect your ESP32-S3 to the Same Broker
+#### Step2: Connect your ESP32-S3 to the Same Broker
 To test your ESP32-S3 without setting up a local server, simply point your ESP32 code to the public broker. The ESP32 will connect via standard TCP, while your browser is connected via WebSockets, but **they will see each other's messages**.
 
 Modify your ESP32 Arduino code configuration section to this:
@@ -1903,7 +1907,7 @@ bool connected = mqtt.connect(clientId.c_str(), TOPIC_STATUS, 0, true, "offline"
 ```
 
 ---
-### Step 4A: Setup HiveMQ Web Client       
+#### Step 3: Setup HiveMQ Web Client       
 1. Set `Host: broker.hivemq.com`
 2. Copy `clientId` eg. `esp32s3-441BF6D63E30` from your Serial port.
    ```text
@@ -1921,14 +1925,14 @@ Below is the screenshot
 <img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/204346ae-02f5-4bf4-a408-15d3df71a8d4" />
 
 
-### Step 5A: Test the ESP32 and Browser Together
+#### Step 4: Test the ESP32 and Browser Together
 1. Flash the updated code to your ESP32-S3 and open the Serial Monitor.
 2. Go back to your **HiveMQ Web Client** browser tab.
 3. Subscribe to `myname/esp32s3/#` (The `#` is a wildcard that catches all sub-topics).
 4. You will instantly see the ESP32's telemetry and "online" status appear in your browser!
 5. Publish `1` to `myname/esp32s3/led/set` from the browser, and watch your ESP32's physical LED turn on.
 
-### 2B: Connect to MQTTX Web (More Modern UI)
+### Option B: Connect to MQTTX Web (More Modern UI)
 
 If you want to use the standalone web client, open [MQTTX Web](https://mqttx.app/web) in your browser.
 
@@ -1974,6 +1978,17 @@ Below is the screenshot
 
 Below is the screenshot for subscriptions     
 <img width="90%" height="auto" alt="image" src="https://github.com/user-attachments/assets/732bfe93-761b-4b8b-b268-fef56c2fedc5" />
+
+### Option C: EMQX Web
+1. Sign up for EMQX Platform at **Start Free**: https://www.emqx.com/en/cloud
+2. Create new project, select EMQX Broker
+3. Set Host: `ffcebc18.ala.asia-southeast1.emqxsl.com`
+4. Enter the port: `8084`
+5. Enter Client ID
+6. Access Control/Authentication: register user name and password
+7. Add subscriptions
+
+
 
 ---
 
