@@ -6,9 +6,9 @@ This is one of N nodes
 #include <esp_now.h>
 #include <esp_wifi.h>
 
-#define NODE_ID 1           // Unique ID for this sensor node
+#define NODE_ID 3           // Unique ID for this sensor node
 #define PEER_CHANNEL 1      // Must match Gateway channel
-#define SLEEP_SEC 10        // 10-second deep sleep cycle
+#define SLEEP_MS 10000    // 10-second deep sleep cycle
 #define ACK_TIMEOUT_MS 150  // Reply wait window in milliseconds
 
 // 16-Byte Encryption Keys (MUST MATCH GATEWAY)
@@ -22,7 +22,7 @@ uint8_t gatewayMac[] = { 0x44, 0x1B, 0xF6, 0xD6, 0x3E, 0x30 };  // COM4
 
 // Preserved across deep sleep cycles
 RTC_DATA_ATTR uint32_t bootCount = 0;
-RTC_DATA_ATTR uint16_t currentSleepSec = SLEEP_SEC;
+RTC_DATA_ATTR uint16_t currentSleepMsec = SLEEP_MS;
 
 typedef struct struct_sensor_data {
   uint8_t node_id;
@@ -34,7 +34,7 @@ typedef struct struct_sensor_data {
 
 typedef struct struct_command {
   uint8_t target_node_id;
-  uint16_t sleep_duration_sec;
+  int32_t sleep_duration_mS;
   bool relay_state;
 } struct_command;
 
@@ -66,11 +66,17 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
   }
 }
 
-void goToSleep(uint32_t seconds) {
-  Serial.printf("Node #%d going to deep sleep for %d seconds...\n\n", NODE_ID, seconds);
+void goToSleep(int32_t mSeconds) {
+
+  if (mSeconds < 1) {
+    mSeconds = 1;  // Guard against negative/zero sleep duration
+  }
+  Serial.printf("Node #%d going to deep sleep for %.3f seconds...\n\n", NODE_ID, (float)mSeconds / 1000.0f);
   Serial.flush();
   esp_wifi_stop();
-  esp_sleep_enable_timer_wakeup(seconds * 1000000ULL);
+
+  //esp_sleep_enable_timer_wakeup(seconds * 1000000ULL);
+  esp_sleep_enable_timer_wakeup(mSeconds * 1000ULL);
   esp_deep_sleep_start();
 }
 
@@ -87,7 +93,7 @@ void setup() {
 
   // 2. Init ESP-NOW & PMK
   if (esp_now_init() != ESP_OK) {
-    goToSleep(currentSleepSec);
+    goToSleep(currentSleepMsec);
   }
   /*
   delay(100);
@@ -107,7 +113,7 @@ void setup() {
 
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
     Serial.println("Failed to add Gateway peer");
-    goToSleep(currentSleepSec);
+    goToSleep(currentSleepMsec);
   }
 
   // 4. Sample Sensor Data
@@ -133,16 +139,16 @@ void setup() {
   // 7. Process Gateway Reply (if received)
   if (commandReceived) {
     Serial.printf("📥 Command Received! Node ID: %d\n", incomingCommand.target_node_id);
-    Serial.printf("Gateway Sleep Sync: %d sec | Relay State: %s\n", incomingCommand.sleep_duration_sec, incomingCommand.relay_state ? "ON" : "OFF");
-    if (incomingCommand.sleep_duration_sec > 0) {
-      currentSleepSec = incomingCommand.sleep_duration_sec;
+    Serial.printf("Gateway Sleep Sync: %.3f sec | Relay State: %s\n", (float)incomingCommand.sleep_duration_mS / 1000.0f, incomingCommand.relay_state ? "ON" : "OFF");
+    if (incomingCommand.sleep_duration_mS > 0) {
+      currentSleepMsec = incomingCommand.sleep_duration_mS;
     }
   } else {
     Serial.println("⚠️ No Gateway reply within 150ms window.");
   }
 
   // 8. Return to Deep Sleep for 60 Seconds
-  goToSleep(currentSleepSec);
+  goToSleep(currentSleepMsec);
 }
 
 void loop() {

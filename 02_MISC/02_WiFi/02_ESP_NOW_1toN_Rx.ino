@@ -7,9 +7,9 @@ Auto sync the wake up time of all sensor nodes
 #include <esp_wifi.h>
 
 #define PEER_CHANNEL 1
-#define GATEWAY_SLEEP_SEC 10    // Gateway sleep duration (Must match Sensor Nodes)
-#define LISTEN_WINDOW_MS 12000  // wait for > 10secs for auto sync // Active window (1.5s) to collect packets from all nodes
-#define WAKEUP_BUFFER_SEC 1     // Wake up 3 secs earlier
+#define GATEWAY_SLEEP_MS 10000    // Gateway sleep duration (Must match Sensor Nodes)
+#define LISTEN_WINDOW_MS 12000    // wait for > 10secs for auto sync // Active window (1.5s) to collect packets from all nodes
+#define WAKEUP_BUFFER_MS 1000     // Wake up 1 secs earlier
 
 // 16-Byte Encryption Keys (MUST MATCH ALL SENSOR NODES)
 static const char *PMK_KEY = "PMK_KEY_12345678";
@@ -25,8 +25,8 @@ uint8_t knownNodes[][6] = {
 // Auto-calculate number of registered nodes
 const size_t TOTAL_NODES = sizeof(knownNodes) / sizeof(knownNodes[0]);
 int numNode = 0;  // Reset to 0 at each wake up from deep sleep
-uint32_t currentMilliSecs = 0;
-uint32_t startWakeUpmilliSecs = 0;
+uint32_t elapsedMs = 0;   // use unsign to ensure no overflow from millis()
+uint32_t startWakeUpMs = 0;
 
 // Array of flags to track receipt status of each node
 volatile bool dataReceived[TOTAL_NODES] = { false };
@@ -44,7 +44,7 @@ typedef struct struct_sensor_data {
 
 typedef struct struct_command {
   uint8_t target_node_id;
-  uint16_t sleep_duration_sec;
+  int32_t sleep_duration_sec;
   bool relay_state;
 } struct_command;
 
@@ -105,15 +105,19 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
 
     // 2. Prepare Command Response
     outgoingCommand.target_node_id = incomingSensorData.node_id;
-    //outgoingCommand.sleep_duration_sec = GATEWAY_SLEEP_SEC;  // Re-sync node sleep time
-    currentMilliSecs = millis() - startWakeUpmilliSecs;
-    outgoingCommand.sleep_duration_sec = GATEWAY_SLEEP_SEC - currentMilliSecs / 1000;  // Re-sync node sleep time
+
+    //outgoingCommand.sleep_duration_sec = GATEWAY_SLEEP_MS;  // Re-sync node sleep time
+    elapsedMs = millis() - startWakeUpMs;
+    // Calculate remaining cycle time in seconds (rounded to nearest second or passed in ms)
+    int32_t remainingSleepMs = (int32_t)(GATEWAY_SLEEP_MS  - elapsedMs);
+    if (remainingSleepMs < 1) remainingSleepMs = 1;
+    outgoingCommand.sleep_duration_sec = remainingSleepMs;  // Re-sync node sleep time
 
     outgoingCommand.relay_state = (incomingSensorData.boot_count % 2 == 0);
 
     Serial.printf("------Data sent to node: %d-----\n", outgoingCommand.target_node_id);
-    Serial.printf("Sleep Duration: %d sec | Relay State: %s \n",
-                  outgoingCommand.sleep_duration_sec,
+    Serial.printf("Sleep Duration: %.3f sec | Relay State: %s \n",
+                  (float)outgoingCommand.sleep_duration_sec / 1000.0f,
                   outgoingCommand.relay_state ? "ON" : "OFF");
 
     // 3. Immediate Encrypted Reply
@@ -133,23 +137,27 @@ void OnDataRecv(const uint8_t *mac, const uint8_t *incomingDataPtr, int len) {
 }
 
 //void goToSleep(uint32_t seconds) {
-void goToSleep(int seconds) {  
-  currentMilliSecs = millis() - startWakeUpmilliSecs;
-  seconds = seconds - WAKEUP_BUFFER_SEC - (int) currentMilliSecs / 1000;
-  if (seconds < 1) seconds = 1;
-  Serial.printf("Gateway going to deep sleep for %d seconds...\n\n", seconds);
+void goToSleep(int32_t mSeconds) {
+  elapsedMs = millis() - startWakeUpMs;
+  // Total target cycle in ms minus buffer in ms minus elapsed active awake time in ms
+  int32_t remainingSleepMs = (int32_t)(mSeconds - WAKEUP_BUFFER_MS) - (int32_t)elapsedMs;
+
+  if (remainingSleepMs < 1) remainingSleepMs = 1;
+
+
+  Serial.printf("Gateway going to deep sleep for %.3f seconds...\n\n", (float)remainingSleepMs / 1000.0f);
   Serial.flush();
   esp_wifi_stop();
 
-  esp_sleep_enable_timer_wakeup((seconds - 0) * 1000000ULL);  // wake up 1 second earlier
+  //esp_sleep_enable_timer_wakeup((seconds - 0) * 1000000ULL);  // wake up 1 second earlier
 
-  //esp_sleep_enable_timer_wakeup(((seconds - WAKEUP_BUFFER_SEC) * 1000ULL - currentMilliSecs) * 1000ULL);  // wake up 1 second earlier
+  esp_sleep_enable_timer_wakeup(remainingSleepMs * 1000ULL);  // wake up 1 second earlier
   esp_deep_sleep_start();
 }
 
 void setup() {
 
-  startWakeUpmilliSecs = millis();
+  startWakeUpMs = millis();
 
   Serial.begin(115200);
   gatewayBootCount++;
@@ -163,7 +171,7 @@ void setup() {
 
   // 2. Init ESP-NOW & PMK
   if (esp_now_init() != ESP_OK) {
-    goToSleep(GATEWAY_SLEEP_SEC);
+    goToSleep(GATEWAY_SLEEP_MS);
   }
   /*
   delay(100);
@@ -188,7 +196,7 @@ void setup() {
   }
 
   // 4. Return to Deep Sleep
-  goToSleep(GATEWAY_SLEEP_SEC);
+  goToSleep(GATEWAY_SLEEP_MS);
 }
 
 void loop() {
