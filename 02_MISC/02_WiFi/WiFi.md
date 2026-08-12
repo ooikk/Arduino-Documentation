@@ -822,6 +822,9 @@ Because this code only captures unencrypted management frames, it is perfectly s
 - OLED Display Integration: Connect a small I2C OLED screen (like an SSD1306) to the ESP32-S3 and display the captured SSIDs and MAC addresses in real-time, creating a portable "Wi-Fi Scanner" tool.
 - Deauthentication Detection: Modify the subtype filter to look for Subtype 12 (Deauthentication). A sudden spike in these frames usually indicates a jamming attack or someone trying to force devices to reconnect to capture the WPA2 handshake. You can build an alert system for this.
 
+### Static IP Address (Arduino IDE) – Assign Fixed IP     
+Follow the link to the tutorial:      
+- https://deepbluembedded.com/esp32-static-fixed-ip-address-arduino/
 
 ## HTTP servers    
 When building HTTP servers on the ESP32 using #include <WebServer.h>, the primary class is WebServer. Below is the complete API command reference organized by usage category, including parameter signatures, return types, and operational details.        
