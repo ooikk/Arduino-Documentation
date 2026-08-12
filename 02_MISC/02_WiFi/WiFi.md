@@ -2664,6 +2664,183 @@ Node Sleep (ms) = (GATEWAY_SLEEP_SEC x 1000) - t_elapsed_ms
 Gateway Sleep (ms) = ((GATEWAY_SLEEP_SEC - WAKEUP_BUFFER_SEC) x 1000) - t_gateway_elapsed_ms
 ```
 
+### Broadcast: One-to-Many (1:N)
+
+In an ESP-NOW **Broadcast (1:N)** topology, one Transmitter sends a single message to the universal broadcast MAC address (`FF:FF:FF:FF:FF:FF`). Every Receiver tuned to the same Wi-Fi channel receives the payload simultaneously without needing individual peer MAC registrations or handshakes.
+
+---
+
+#### Core Rules for ESP-NOW Broadcasting
+
+1. **MAC Address:** Target address must be `FF:FF:FF:FF:FF:FF`.
+2. **Channel Matching:** All nodes (Transmitter and Receivers) **must** be on the exact same Wi-Fi channel.
+3. **Encryption:** Broadcast messages **cannot** be encrypted (`encrypt = false`).
+4. **No Acknowledgments (ACK):** The transmitter does not receive hardware delivery ACKs for broadcast packets.
+
+---
+
+#### 1. Transmitter Code (1 - Broadcaster)
+
+This code registers the broadcast peer and transmits a data payload every 2 seconds to all listening nodes.
+
+```cpp
+#include <WiFi.h>
+#include <esp_now.h>
+
+#define WIFI_CHANNEL 1
+
+// Universal Broadcast MAC Address
+uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+// Sample data structure
+typedef struct struct_message {
+  uint32_t msg_id;
+  float temperature;
+  char command[16];
+} struct_message;
+
+struct_message txData;
+esp_now_peer_info_t peerInfo;
+
+// Callback when data is sent
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.printf("Broadcast Status: %s\n", status == ESP_NOW_SEND_SUCCESS ? "Success" : "Fail");
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Set Wi-Fi to Station mode and set channel
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  
+  // Lock to specific Wi-Fi Channel
+  esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE);
+
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Register send callback
+  esp_now_register_send_cb(OnDataSent);
+
+  // Register broadcast peer
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = WIFI_CHANNEL;
+  peerInfo.encrypt = false; // Broadcast MUST NOT be encrypted
+
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
+    Serial.println("Failed to add broadcast peer");
+    return;
+  }
+
+  Serial.println("Broadcaster initialized successfully.");
+}
+
+void loop() {
+  static uint32_t counter = 0;
+
+  // Prepare payload
+  txData.msg_id = ++counter;
+  txData.temperature = 25.5f + (rand() % 50) / 10.0f;
+  snprintf(txData.command, sizeof(txData.command), "SYNC_LIGHTS");
+
+  // Send broadcast packet (pass NULL or broadcastAddress as target)
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&txData, sizeof(txData));
+
+  if (result == ESP_OK) {
+    Serial.printf("[%u] Broadcast sent: Temp = %.1f C, Cmd = %s\n", 
+                  txData.msg_id, txData.temperature, txData.command);
+  } else {
+    Serial.println("Error sending broadcast packet");
+  }
+
+  delay(2000);
+}
+```
+
+---
+
+#### 2. Receiver Code (N - Multiple Receivers)
+
+Flash this exact same firmware onto **N separate ESP32 boards**. They will all listen on Channel 1 and process incoming broadcast packets.
+
+```cpp
+#include <WiFi.h>
+#include <esp_now.h>
+
+#define WIFI_CHANNEL 1
+
+typedef struct struct_message {
+  uint32_t msg_id;
+  float temperature;
+  char command[16];
+} struct_message;
+
+struct_message rxData;
+
+// ESP32 Arduino Core v3.x Callback Signature
+void OnDataRecv(const esp_now_recv_info *recv_info, const uint8_t *incomingData, int len) {
+  // Extract Sender MAC Address
+  char macStr[18];
+  snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
+           recv_info->src_addr[0], recv_info->src_addr[1], recv_info->src_addr[2],
+           recv_info->src_addr[3], recv_info->src_addr[4], recv_info->src_addr[5]);
+
+  memcpy(&rxData, incomingData, sizeof(rxData));
+
+  Serial.printf("Received Broadcast from %s | ID: %u | Temp: %.1f C | Cmd: %s\n",
+                macStr, rxData.msg_id, rxData.temperature, rxData.command);
+}
+
+/* 
+// NOTE: If using older ESP32 Arduino Core v2.x, use this callback signature instead:
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
+  memcpy(&rxData, incomingData, sizeof(rxData));
+  Serial.printf("ID: %u | Temp: %.1f C | Cmd: %s\n", rxData.msg_id, rxData.temperature, rxData.command);
+}
+*/
+
+void setup() {
+  Serial.begin(115200);
+
+  // Set Wi-Fi to Station mode and match transmitter channel
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE);
+
+  // Init ESP-NOW
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  // Register receive callback
+  esp_now_register_recv_cb(OnDataRecv);
+
+  Serial.printf("Receiver Listening on Channel %d... MAC: %s\n", 
+                WIFI_CHANNEL, WiFi.macAddress().c_str());
+}
+
+void loop() {
+  // Receiver stays active listening in background callback
+  delay(1000);
+}
+```
+
+---
+
+#### Comparison Summary
+
+| Feature | Broadcast (1:N) | Unicast Star (N:1 / 1:1) |
+| :--- | :--- | :--- |
+| **Target MAC** | `FF:FF:FF:FF:FF:FF` | Specific Peer MAC (e.g., `AA:BB:CC:...`) |
+| **Peer Registration** | Register once with broadcast address | Must register each node's MAC individually |
+| **Encryption** | Not Supported | Supported (`encrypt = true`) |
+| **Delivery ACK** | No ACK from receivers | Hardware ACK per transmitted packet |
+| **Use Case** | System triggers, time sync, beacon signals | Reliable sensor data logging, commands |
 
 ## ESP32 MQTT     
 
