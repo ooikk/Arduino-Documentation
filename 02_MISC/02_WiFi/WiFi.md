@@ -826,6 +826,11 @@ Because this code only captures unencrypted management frames, it is perfectly s
 Follow the link to the tutorial:      
 - https://deepbluembedded.com/esp32-static-fixed-ip-address-arduino/
 
+### Hostname Change    
+Follow the link to the tutorial:    
+- https://deepbluembedded.com/esp32-hostname-change-arduino/
+
+
 ## HTTP servers    
 When building HTTP servers on the ESP32 using #include <WebServer.h>, the primary class is WebServer. Below is the complete API command reference organized by usage category, including parameter signatures, return types, and operational details.        
 
