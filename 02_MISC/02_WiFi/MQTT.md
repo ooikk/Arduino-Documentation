@@ -466,10 +466,10 @@ Features:
 
 Documentation reference:
 
-```text
-ESP-IDF MQTT documentation:
+
+ESP-IDF MQTT documentation:        
 https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/protocols/mqtt.html
-```
+
 
 ---
 
