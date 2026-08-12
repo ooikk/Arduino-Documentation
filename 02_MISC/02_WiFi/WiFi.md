@@ -3080,7 +3080,7 @@ The **ESP32-S3** is a powerful dual-core microcontroller from Espressif designed
 
 MQTT is a lightweight, publish-subscribe messaging protocol designed for constrained network bandwidth and low memory footprints. Instead of communicating directly using a traditional client-server architecture (like HTTP GET/POST), endpoints route messages through a central **Broker**.
 
-<img width="70" height="auto" alt="image" src="https://github.com/user-attachments/assets/40c0b8e4-ad85-4213-93fe-2bc5ffe79dfb" />
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/40c0b8e4-ad85-4213-93fe-2bc5ffe79dfb" />
 
 *MQTT Publish-Subscribe Architecture. Source: EMQX / Introduction to MQTT Publish-Subscribe Pattern | EMQ*
 
