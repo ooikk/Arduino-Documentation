@@ -1905,7 +1905,7 @@ bool connected = mqtt.connect(clientId.c_str(), TOPIC_STATUS, 0, true, "offline"
 ---
 ### Step 4: Setup HiveMQ Web Client       
 1. Set `Host: broker.hivemq.com`
-2. Copy `clientId` eg. `esp32s3-441BF6D63E30` + MAC address from your Serial port.
+2. Copy `clientId` eg. `esp32s3-441BF6D63E30` from your Serial port.
    ```text
    ESP32-S3 MQTT Example
    Connecting to Wi-Fi.....
