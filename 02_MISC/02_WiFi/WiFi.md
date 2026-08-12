@@ -3113,6 +3113,9 @@ Depending on the development environment (Arduino IDE, PlatformIO, or ESP-IDF), 
 
 ## 3. Key API Reference (`PubSubClient`)
 
+PubSubClient by Nick O’Leary:     
+https://github.com/knolleary/pubsubclient     
+
 When using the widely adopted `PubSubClient` library, the core API methods include:
 
 * `PubSubClient(Client& client)`: Constructor that accepts a `WiFiClient` or `WiFiClientSecure` network client.
