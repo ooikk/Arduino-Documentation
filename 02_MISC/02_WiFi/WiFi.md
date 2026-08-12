@@ -3074,7 +3074,9 @@ https://www.luisllamas.es/como-usar-mqtt-en-el-esp8266-esp32/
 
 https://randomnerdtutorials.com/esp32-mqtt-publish-subscribe-arduino-ide/
 
+https://www.emqx.com/en/blog/esp32-connects-to-the-free-public-mqtt-broker
 
+https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/protocols/mqtt.html
 
 ## Further Reading     
 
