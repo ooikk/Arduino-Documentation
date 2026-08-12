@@ -1965,6 +1965,7 @@ If you want to use the standalone web client, open [MQTTX Web](https://mqttx.app
    ```text
    esp32s3/#
    ```
+9. Under Publish, select topic (must match the code setting), eg esp32s3/led/set     
 
 <img width="1789" height="617" alt="image" src="https://github.com/user-attachments/assets/5796ec8c-7643-4cde-8d0c-94c5a5d056b3" />
 
