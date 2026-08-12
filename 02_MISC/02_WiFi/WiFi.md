@@ -2541,7 +2541,7 @@ https://www.luisllamas.es/que-es-esp-now-esp32/
 
 https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
 
-### Encrypted 1-to-Many ESP-NOW communication with deep sleep nodes
+### Broadcast: One-to-Many (1:N) - Encrypted ESP-NOW communication with deep sleep nodes
 
 An ESP32 in deep sleep completely powers off its Wi-Fi radio and cannot hear incoming ESP-NOW transmissions.
 
@@ -2578,6 +2578,104 @@ Standard ESP32 hardware supports up to 6 encrypted peers simultaneously in legac
 **Wi-Fi Channel Uniformity**      
 
 Every node and gateway must remain strictly locked on `PEER_CHANNEL 1` via `esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);`. Encrypted frames cannot be parsed during channel hopping.
+
+#### ESP-NOW Closed-Loop Auto-Wakeup Synchronization Protocol
+
+**Overview**     
+
+This protocol synchronizes the deep-sleep cycles of multiple battery-powered **Sensor Nodes** with a central **Gateway Node** using ESP-NOW.
+
+To minimize power consumption and prevent network collisions, Sensor Nodes remain in deep sleep for the majority of the cycle. The Gateway wakes up slightly earlier than the nodes to establish an active listening window, calculates clock phase offsets in real time, and sends dynamic sleep duration commands back to each node.
+
+```text
+Gateway:  |-- WAKE --|-- LISTEN & REPLY --|--------------- DEEP SLEEP ---------------|-- WAKE --|
+                      ^                  ^
+Node 1:   ------------|-- TX / RX ACK ---|---------------- DEEP SLEEP -------------------------|
+                      (Node wakes up)    (Sleep command adjusts next wakeup time)
+```
+
+**Step 1: Sensor Node Implementation**     
+
+Each Sensor Node reads sensors, transmits its payload via encrypted ESP-NOW, and listens briefly for a dynamic configuration command from the Gateway before entering deep sleep.
+
+**1. Dynamic Deep Sleep Function**     
+
+The function accepts a dynamically calculated sleep duration in seconds or milliseconds received from the Gateway.
+
+```cpp
+void goToSleep(uint32_t seconds) {
+  if (seconds < 1) {
+    seconds = 1; // Guard against negative/zero sleep duration
+  }
+
+  Serial.printf(
+    "Node #%d entering deep sleep for %u seconds...\n\n",
+    NODE_ID,
+    seconds
+  );
+
+  Serial.flush();
+
+  esp_wifi_stop();
+  esp_sleep_enable_timer_wakeup((uint64_t)seconds * 1000000ULL);
+  esp_deep_sleep_start();
+}
+```
+
+**2. Dual-Data Structures**     
+
+The following data structures define sensor telemetry sent to the Gateway and incoming synchronization commands returned to the Node.
+
+```cpp
+typedef struct struct_sensor_data {
+  uint8_t node_id;
+  float temperature;
+  float humidity;
+  uint16_t vcc_mv;
+  uint32_t boot_count;
+} struct_sensor_data;
+
+typedef struct struct_command {
+  uint8_t target_node_id;
+  int sleep_duration_sec; // Dynamic sleep time calculated by Gateway
+  bool relay_state;
+} struct_command;
+```
+
+**Step 2: Central Gateway Node Implementation**    
+
+The Gateway powers on, pre-registers known Node MAC addresses, and opens a receiver window defined by `LISTEN_WINDOW_MS`.
+
+Upon packet arrival from a node, the Gateway:
+
+1. Records the precise elapsed time, \(t_{\text{elapsed}}\), since its own wake-up.
+2. Calculates the remaining time until the next scheduled Gateway wake-up cycle.
+3. Immediately replies with a `struct_command` containing the exact `sleep_duration_sec` tailored to that specific node.
+4. Waits until all nodes respond or `LISTEN_WINDOW_MS` expires.
+5. Adjusts its own sleep timer by subtracting `WAKEUP_BUFFER_SEC`, ensuring that it powers on before the nodes during the next cycle.
+6. Enters deep sleep.
+
+**Synchronization Formula**     
+
+To eliminate phase drift, calculate sleep durations with millisecond precision:
+
+\[
+\text{Node Sleep (ms)}
+=
+(\text{GATEWAY\_SLEEP\_SEC} \times 1000)
+-
+t_{\text{elapsed\_ms}}
+\]
+
+\[
+\text{Gateway Sleep (ms)}
+=
+((\text{GATEWAY\_SLEEP\_SEC}
+-
+\text{WAKEUP\_BUFFER\_SEC}) \times 1000)
+-
+t_{\text{gateway\_elapsed\_ms}}
+\]
 
 
 
