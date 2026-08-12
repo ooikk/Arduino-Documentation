@@ -601,7 +601,10 @@ or for MQTT over WebSocket:
 
 ## 7.2 PubSubClient API
 
-PubSubClient is a popular Arduino MQTT library.
+PubSubClient is a popular Arduino MQTT library.    
+
+**PubSubClient by Nick O’Leary**:    
+https://github.com/knolleary/pubsubclient
 
 ### Common Functions
 
