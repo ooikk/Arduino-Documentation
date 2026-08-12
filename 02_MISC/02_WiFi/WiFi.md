@@ -2659,8 +2659,10 @@ Upon packet arrival from a node, the Gateway:
 
 To eliminate phase drift, calculate sleep durations with millisecond precision:
 
-`Node Sleep (ms) = (GATEWAY_SLEEP_SEC times 1000) - t_elapsed_ms`
-`Gateway Sleep (ms) = ((GATEWAY_SLEEP_SEC - WAKEUP_BUFFER_SEC) times 1000) - t_gateway_elapsed_ms`
+```text
+Node Sleep (ms) = (GATEWAY_SLEEP_SEC x 1000) - t_elapsed_ms     
+Gateway Sleep (ms) = ((GATEWAY_SLEEP_SEC - WAKEUP_BUFFER_SEC) x 1000) - t_gateway_elapsed_ms
+```
 
 
 ## ESP32 MQTT     
