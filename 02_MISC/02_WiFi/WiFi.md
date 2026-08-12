@@ -830,6 +830,9 @@ Follow the link to the tutorial:
 Follow the link to the tutorial:    
 - https://deepbluembedded.com/esp32-hostname-change-arduino/
 
+### Sending Data from ESP32 to Google Sheets     
+Follow the link to the tutorial:       
+- https://www.oceanlabz.in/sending-data-from-esp32-to-google-sheets-iot-data-logger-tutorial/
 
 ## HTTP servers    
 When building HTTP servers on the ESP32 using #include <WebServer.h>, the primary class is WebServer. Below is the complete API command reference organized by usage category, including parameter signatures, return types, and operational details.        
