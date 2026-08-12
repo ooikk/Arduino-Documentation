@@ -2541,7 +2541,7 @@ https://www.luisllamas.es/que-es-esp-now-esp32/
 
 https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
 
-### Many-to-One (N:1) - Encrypted ESP-NOW communication with deep sleep nodes
+### Many-to-One (N:1) - Star Topology: Encrypted ESP-NOW communication with deep sleep nodes
 
 An ESP32 in deep sleep completely powers off its Wi-Fi radio and cannot hear incoming ESP-NOW transmissions.
 
