@@ -1,1 +1,1835 @@
+# ESP32-S3 MQTT: Introduction, Description, and Tutorial
 
+This guide explains how to use MQTT with the ESP32-S3. It covers the basic technology, MQTT brokers, useful libraries, API documentation, a practical software implementation example, and additional production-related topics such as TLS security, OTA updates, power management, debugging, and best practices.
+
+---
+
+## 1. Introduction
+
+The **ESP32-S3** is a low-cost, low-power system-on-chip from Espressif with integrated Wi-Fi and Bluetooth LE. It is widely used in IoT projects such as sensors, actuators, smart home devices, industrial gateways, wearable prototypes, and connected appliances.
+
+**MQTT**, or **Message Queuing Telemetry Transport**, is a lightweight publish/subscribe messaging protocol commonly used in IoT systems. It is designed for unreliable networks, low-bandwidth connections, and constrained devices.
+
+Together, **ESP32-S3 + MQTT** form a practical foundation for building IoT systems where a device can:
+
+- Publish sensor data to a server or cloud platform.
+- Subscribe to command topics and control actuators.
+- Report online/offline status using MQTT Last Will and Testament.
+- Communicate with dashboards, mobile apps, home automation systems, or industrial backends.
+
+Typical examples include:
+
+- Temperature and humidity monitoring.
+- Smart relays and switches.
+- Energy metering.
+- Machine status reporting.
+- Battery-powered telemetry nodes.
+- MQTT-controlled LEDs, pumps, fans, or motors.
+- Gateways that collect BLE sensor data and forward it over MQTT.
+
+---
+
+## 2. Description of ESP32-S3 MQTT Systems
+
+An ESP32-S3 MQTT system usually consists of four parts:
+
+```text
+Sensors / Actuators
+        |
+   ESP32-S3 Device
+        |
+     Wi-Fi Network
+        |
+     MQTT Broker
+        |
+Backend / Dashboard / Mobile App / Cloud
+```
+
+The ESP32-S3 connects to Wi-Fi, then connects to an MQTT broker. After that, it can publish messages to topics and subscribe to topics sent by other clients.
+
+Example topic structure:
+
+```text
+esp32s3/status
+esp32s3/telemetry
+esp32s3/led/set
+esp32s3/led/state
+```
+
+Example messages:
+
+```text
+esp32s3/status       -> online
+esp32s3/telemetry    -> {"temp":25.4,"rssi":-62}
+esp32s3/led/set      -> 1
+esp32s3/led/state    -> 1
+```
+
+---
+
+## 3. MQTT Basic Technology
+
+MQTT is a **publish/subscribe** protocol. Instead of devices talking directly to each other, they communicate through an intermediary called an **MQTT broker**.
+
+### 3.1 MQTT Clients and Broker
+
+An MQTT client can be:
+
+- ESP32-S3
+- Raspberry Pi
+- PC
+- Mobile app
+- Cloud backend
+- Dashboard software
+
+The broker:
+
+- Receives published messages.
+- Routes messages to subscribed clients.
+- Manages client sessions.
+- Stores retained messages.
+- Handles Last Will and Testament messages.
+- Enforces authentication and authorization.
+
+Popular MQTT brokers include:
+
+| Broker | Notes |
+|---|---|
+| Eclipse Mosquitto | Lightweight, easy to install, good for local development |
+| EMQX | High-performance, scalable, good for production clusters |
+| HiveMQ | Enterprise MQTT broker with strong tooling |
+| VerneMQ | Distributed MQTT broker |
+| NanoMQ | Lightweight broker for edge deployments |
+| AWS IoT Core | Managed cloud MQTT service |
+| Azure IoT Hub | Managed cloud device service using MQTT among other protocols |
+| ThingsBoard | IoT platform with built-in MQTT support |
+| ThingSpeak | IoT analytics platform with MQTT support |
+
+---
+
+### 3.2 Publish and Subscribe
+
+MQTT uses topics instead of direct URLs.
+
+Example:
+
+```text
+Device publishes:
+Topic:   esp32s3/telemetry
+Payload: {"temp":24.5}
+
+Dashboard subscribes:
+Topic:   esp32s3/telemetry
+```
+
+A dashboard can also publish commands:
+
+```text
+Dashboard publishes:
+Topic:   esp32s3/led/set
+Payload: 1
+
+ESP32-S3 subscribes:
+Topic:   esp32s3/led/set
+```
+
+---
+
+### 3.3 MQTT Topics
+
+Topics are hierarchical strings separated by `/`.
+
+Examples:
+
+```text
+home/livingroom/temperature
+factory/line1/motor/status
+device/esp32s3/abc123/command
+```
+
+Topic wildcards:
+
+| Wildcard | Meaning |
+|---|---|
+| `+` | Single-level wildcard |
+| `#` | Multi-level wildcard |
+
+Examples:
+
+```text
+home/+/temperature
+home/#
+```
+
+Best practices:
+
+- Use lowercase topics.
+- Keep topic names short.
+- Avoid spaces.
+- Avoid leading or trailing slashes.
+- Separate device identity from command topics.
+- Use state topics for reporting actual state.
+- Use set topics for commands.
+
+Example structure:
+
+```text
+site/device-type/device-id/telemetry
+site/device-type/device-id/status
+site/device-type/device-id/led/set
+site/device-type/device-id/led/state
+```
+
+---
+
+### 3.4 MQTT QoS Levels
+
+MQTT defines three Quality of Service levels:
+
+| QoS | Name | Meaning |
+|---|---|---|
+| 0 | At most once | Fire and forget, message may be lost |
+| 1 | At least once | Message arrives at least once but may duplicate |
+| 2 | Exactly once | Message arrives exactly once, more overhead |
+
+For ESP32-S3 projects:
+
+- QoS 0 is fine for frequent sensor telemetry.
+- QoS 1 is often good for commands and status.
+- QoS 2 is rarely needed on constrained devices unless the application requires it.
+
+---
+
+### 3.5 Retained Messages
+
+A retained message is stored by the broker and sent to new subscribers immediately.
+
+Example:
+
+```text
+Topic:   esp32s3/status
+Payload: online
+Retain:  true
+```
+
+If a dashboard subscribes later, it immediately receives the last known status.
+
+Retained messages are useful for:
+
+- Device online/offline state.
+- LED state.
+- Switch state.
+- Alarm state.
+- Configuration state.
+
+Do not retain fast-changing telemetry such as sensor samples every second.
+
+---
+
+### 3.6 Last Will and Testament, LWT
+
+MQTT Last Will and Testament allows the broker to publish a message if the client disconnects unexpectedly.
+
+Example:
+
+```text
+Will Topic:   esp32s3/status
+Will Payload: offline
+Will Retain:  true
+```
+
+When the device connects successfully, it publishes:
+
+```text
+esp32s3/status -> online
+```
+
+If the device crashes or loses network unexpectedly, the broker publishes:
+
+```text
+esp32s3/status -> offline
+```
+
+This is extremely useful for monitoring device health.
+
+---
+
+### 3.7 Keep Alive
+
+MQTT clients periodically send a keep-alive message to show they are still connected.
+
+Example:
+
+```text
+Keep Alive: 30 seconds
+```
+
+If the broker does not receive any packet within the keep-alive window, it may consider the client disconnected and publish the LWT message.
+
+For battery-powered devices, a longer keep-alive saves power but delays offline detection.
+
+---
+
+### 3.8 MQTT Packet Types
+
+Common MQTT packets include:
+
+| Packet | Purpose |
+|---|---|
+| CONNECT | Client asks to connect to broker |
+| CONNACK | Broker acknowledges connection |
+| PUBLISH | Send a message |
+| PUBACK | QoS 1 publish acknowledgement |
+| SUBSCRIBE | Request subscription to topics |
+| SUBACK | Broker acknowledges subscription |
+| UNSUBSCRIBE | Remove subscription |
+| PINGREQ | Keep-alive request |
+| PINGRESP | Keep-alive response |
+| DISCONNECT | Clean disconnect |
+
+---
+
+### 3.9 MQTT Versions
+
+The most common versions are:
+
+| Version | Notes |
+|---|---|
+| MQTT 3.1.1 | Very widely supported, simple, stable |
+| MQTT 5.0 | Adds reason codes, user properties, message expiry, shared subscriptions, topic aliases |
+
+For many ESP32-S3 projects, MQTT 3.1.1 is sufficient. MQTT 5.0 is useful in larger or more advanced systems.
+
+---
+
+## 4. ESP32-S3 Features Relevant to MQTT
+
+The ESP32-S3 is well suited for MQTT-based IoT devices.
+
+Key features:
+
+| Feature | Relevance to MQTT |
+|---|---|
+| Wi-Fi 802.11 b/g/n | Connects to local network or internet |
+| Dual-core Xtensa LX7 CPU | Handles Wi-Fi, MQTT, sensors, and application logic |
+| Bluetooth LE | Useful for BLE-to-MQTT gateways or provisioning |
+| USB OTG | Easy serial debugging and firmware flashing |
+| Hardware cryptographic acceleration | Helps TLS performance |
+| PSRAM support | Useful for larger buffers or TLS workloads |
+| Low-power modes | Useful for battery MQTT devices |
+| GPIO, ADC, I2C, SPI, UART | Connect sensors and actuators |
+| Secure boot and flash encryption | Useful for production security |
+
+Common ESP32-S3 boards:
+
+- ESP32-S3-DevKitC-1
+- ESP32-S3-WROOM-1 modules
+- ESP32-S3-WROOM-2 modules
+- ESP32-S3-BOX
+- Custom ESP32-S3 PCB designs
+
+---
+
+## 5. MQTT Broker
+
+An MQTT broker is the central message router. For development, you can run a broker locally on a PC, Raspberry Pi, server, or Docker container.
+
+### 5.1 Broker Responsibilities
+
+The broker handles:
+
+- TCP connections.
+- MQTT protocol handling.
+- Authentication.
+- Authorization.
+- Topic routing.
+- Retained messages.
+- QoS message delivery.
+- Client session management.
+- Last Will messages.
+- TLS encryption.
+- Clustering and scaling in production.
+
+---
+
+### 5.2 Installing Mosquitto on Linux
+
+Mosquitto is a good broker for learning and local testing.
+
+On Debian/Ubuntu/Raspberry Pi OS:
+
+```bash
+sudo apt update
+sudo apt install mosquitto mosquitto-clients
+```
+
+Check service status:
+
+```bash
+sudo systemctl status mosquitto
+```
+
+---
+
+### 5.3 Configure Mosquitto with Username and Password
+
+Mosquitto 2.x often disables anonymous access by default. For a development broker accessible on the LAN, create a configuration file.
+
+Example:
+
+```bash
+sudo nano /etc/mosquitto/conf.d/esp32.conf
+```
+
+Add:
+
+```conf
+listener 1883
+protocol mqtt
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+```
+
+Create a user:
+
+```bash
+sudo mosquitto_passwd -c /etc/mosquitto/passwd esp32
+```
+
+Enter a password when prompted.
+
+Restart Mosquitto:
+
+```bash
+sudo systemctl restart mosquitto
+```
+
+If using a firewall, allow port 1883:
+
+```bash
+sudo ufw allow 1883/tcp
+```
+
+For production, prefer TLS on port 8883.
+
+---
+
+### 5.4 Test the Broker
+
+Subscribe to all ESP32-S3 topics:
+
+```bash
+mosquitto_sub -h localhost -u esp32 -P YOUR_PASSWORD -t 'esp32s3/#' -v
+```
+
+Publish a test message:
+
+```bash
+mosquitto_pub -h localhost -u esp32 -P YOUR_PASSWORD -t esp32s3/test -m hello
+```
+
+You should see:
+
+```text
+esp32s3/test hello
+```
+
+---
+
+## 6. MQTT Libraries for ESP32-S3
+
+There are several ways to implement MQTT on ESP32-S3.
+
+### 6.1 ESP-IDF ESP-MQTT
+
+ESP-MQTT is the official MQTT component in ESP-IDF.
+
+Best for:
+
+- Production firmware.
+- ESP-IDF projects.
+- Advanced TLS configuration.
+- MQTT event handling.
+- Stable low-level control.
+
+Features:
+
+- MQTT 3.1.1 support.
+- MQTT 5.0 support in newer ESP-IDF versions.
+- TLS support.
+- Username/password authentication.
+- Last Will and Testament.
+- QoS 0, 1, and 2 depending on configuration and broker.
+- Event-driven architecture.
+- Reconnection handling.
+- MQTT over WebSocket support.
+
+Documentation reference:
+
+```text
+ESP-IDF MQTT documentation:
+https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/protocols/mqtt.html
+```
+
+---
+
+### 6.2 Arduino ESP32 Core MQTT Libraries
+
+If using the Arduino IDE or PlatformIO with the Arduino ESP32 core, common options include:
+
+| Library | Best For | Notes |
+|---|---|---|
+| ESP32MQTTClient | Arduino ESP32 core 3.x projects | Wraps ESP-IDF ESP-MQTT |
+| PubSubClient | Simple learning projects | Very popular, easy to use |
+| AsyncMqttClient | Asynchronous Arduino projects | Event-driven, good for non-blocking designs |
+| ArduinoMqttClient | Generic Arduino MQTT | Simple API from Arduino ecosystem |
+
+For production ESP32-S3 projects, ESP-MQTT or an ESP-MQTT wrapper is usually preferred.
+
+---
+
+### 6.3 Library Comparison
+
+| Feature | ESP-MQTT | ESP32MQTTClient | PubSubClient | AsyncMqttClient |
+|---|---:|---:|---:|---:|
+| Official Espressif component | Yes | Wrapper | No | No |
+| ESP-IDF support | Native | Arduino core | Arduino library | Arduino library |
+| TLS support | Strong | Strong | Possible via WiFiClientSecure | Possible |
+| Event-driven | Yes | Yes | No | Yes |
+| QoS support | Good | Good | Limited/simple | Good |
+| MQTT 5 support | Depending on ESP-IDF | Depending on core | Usually no | Usually no |
+| Ease of use | Medium | Easy | Very easy | Medium |
+| Production suitability | High | High | Medium | Medium/high |
+
+---
+
+## 7. API Documentation Overview
+
+This section summarizes important APIs. Exact API names may vary depending on library version.
+
+---
+
+## 7.1 ESP-IDF ESP-MQTT API
+
+### Important Types
+
+| Type | Purpose |
+|---|---|
+| `esp_mqtt_client_config_t` | MQTT client configuration |
+| `esp_mqtt_client_handle_t` | MQTT client handle |
+| `esp_mqtt_event_handle_t` | Event data passed to event handler |
+| `esp_mqtt_event_id_t` | Event type |
+
+---
+
+### Common Events
+
+| Event | Meaning |
+|---|---|
+| `MQTT_EVENT_ERROR` | Error occurred |
+| `MQTT_EVENT_CONNECTED` | Client connected to broker |
+| `MQTT_EVENT_DISCONNECTED` | Client disconnected |
+| `MQTT_EVENT_SUBSCRIBED` | Subscription acknowledged |
+| `MQTT_EVENT_UNSUBSCRIBED` | Unsubscribe acknowledged |
+| `MQTT_EVENT_PUBLISHED` | Publish acknowledged |
+| `MQTT_EVENT_DATA` | Message received |
+| `MQTT_EVENT_BEFORE_CONNECT` | Called before connection attempt |
+
+---
+
+### Common Functions
+
+| Function | Purpose |
+|---|---|
+| `esp_mqtt_client_init()` | Create MQTT client |
+| `esp_mqtt_client_register_event()` | Register event handler |
+| `esp_mqtt_client_start()` | Start MQTT client |
+| `esp_mqtt_client_stop()` | Stop MQTT client |
+| `esp_mqtt_client_destroy()` | Destroy MQTT client |
+| `esp_mqtt_client_publish()` | Publish message |
+| `esp_mqtt_client_subscribe()` | Subscribe to topic |
+| `esp_mqtt_client_unsubscribe()` | Unsubscribe from topic |
+
+---
+
+### ESP-MQTT Configuration Example
+
+Modern ESP-IDF v5.x style:
+
+```c
+esp_mqtt_client_config_t mqtt_cfg = {
+    .broker.address.hostname = "192.168.1.100",
+    .broker.address.port = 1883,
+
+    .credentials.client_id = "esp32s3-device-001",
+    .credentials.username = "esp32",
+    .credentials.authentication.password = "CHANGE_ME",
+
+    .session.keepalive = 30,
+
+    .session.last_will = {
+        .topic = "esp32s3/status",
+        .msg = "offline",
+        .msg_len = 0,
+        .qos = 1,
+        .retain = true,
+    },
+};
+```
+
+Older ESP-IDF versions often used URI-style configuration:
+
+```c
+esp_mqtt_client_config_t mqtt_cfg = {
+    .uri = "mqtt://esp32:CHANGE_ME@192.168.1.100:1883",
+};
+```
+
+For TLS:
+
+```c
+.broker.verification.certificate = root_ca_pem,
+```
+
+or for MQTT over WebSocket:
+
+```c
+.broker.address.uri = "mqtts://broker.example.com:8883",
+```
+
+---
+
+## 7.2 PubSubClient API
+
+PubSubClient is a popular Arduino MQTT library.
+
+### Common Functions
+
+| Function | Purpose |
+|---|---|
+| `setServer()` | Set broker address and port |
+| `setCallback()` | Set message receive callback |
+| `setClient()` | Set network client |
+| `setKeepAlive()` | Set MQTT keep-alive interval |
+| `setBufferSize()` | Set maximum MQTT packet buffer |
+| `setSocketTimeout()` | Set socket timeout |
+| `connect()` | Connect to broker |
+| `connected()` | Check connection state |
+| `loop()` | Process MQTT background tasks |
+| `publish()` | Publish message |
+| `subscribe()` | Subscribe to topic |
+| `unsubscribe()` | Unsubscribe from topic |
+| `state()` | Get connection/error state |
+
+---
+
+### PubSubClient Connection States
+
+| State | Meaning |
+|---|---|
+| `-4` | MQTT connection timeout |
+| `-3` | Network connection lost |
+| `-2` | TCP connection failed |
+| `-1` | Client disconnected cleanly |
+| `0` | Connected |
+| `1` | Invalid protocol |
+| `2` | Rejected client ID |
+| `3` | Broker unavailable |
+| `4` | Bad username/password |
+| `5` | Not authorized |
+
+---
+
+## 8. Tutorial: ESP32-S3 MQTT with Arduino IDE
+
+This tutorial builds a practical ESP32-S3 MQTT example.
+
+The device will:
+
+1. Connect to Wi-Fi.
+2. Connect to an MQTT broker.
+3. Publish telemetry every 10 seconds.
+4. Publish online/offline status using MQTT Last Will.
+5. Subscribe to an LED control topic.
+6. Turn an LED on or off from MQTT messages.
+7. Report LED state on a retained topic.
+
+---
+
+## 8.1 Hardware Required
+
+- ESP32-S3 development board.
+- USB cable compatible with the board.
+- Optional: external LED and resistor if your board does not have a usable GPIO LED.
+- Wi-Fi network.
+- Computer with Arduino IDE or PlatformIO.
+- MQTT broker, such as Mosquitto.
+
+Note: Some ESP32-S3 development boards use an addressable RGB LED, such as WS2812. If your onboard LED is addressable, this simple `digitalWrite()` example may not control it. In that case, use an external LED or replace the LED logic with a NeoPixel library.
+
+---
+
+## 8.2 Software Required
+
+Install:
+
+1. Arduino IDE.
+2. ESP32 Arduino core.
+3. PubSubClient library.
+4. Mosquitto broker, or another MQTT broker.
+
+---
+
+## 8.3 Install ESP32-S3 Support in Arduino IDE
+
+In Arduino IDE:
+
+1. Open **File > Preferences**.
+2. Add the ESP32 board manager URL:
+
+```text
+https://espressif.github.io/arduino-esp32/package_esp32_index.json
+```
+
+3. Open **Tools > Board > Boards Manager**.
+4. Search for **esp32**.
+5. Install **esp32 by Espressif Systems**.
+
+Then select your board:
+
+```text
+Tools > Board > ESP32 Arduino > ESP32S3 Dev Module
+```
+
+Common settings:
+
+```text
+USB CDC On Boot: Enabled
+Flash Size: Match your board, often 4MB or 8MB
+Partition Scheme: Default or match your board
+PSRAM: Match your board, disabled if unsure
+Upload Speed: 921600 or default
+```
+
+If using the native USB port, make sure the correct COM port or serial device is selected.
+
+---
+
+## 8.4 Install PubSubClient
+
+In Arduino IDE:
+
+1. Open **Sketch > Include Library > Manage Libraries**.
+2. Search for **PubSubClient**.
+3. Install the library by **Nick O'Leary**.
+
+---
+
+## 8.5 Prepare the MQTT Broker
+
+This example assumes Mosquitto is running on your local network.
+
+Example broker address:
+
+```text
+192.168.1.100
+```
+
+Broker port:
+
+```text
+1883
+```
+
+Username:
+
+```text
+esp32
+```
+
+Password:
+
+```text
+CHANGE_ME
+```
+
+Topics used:
+
+```text
+esp32s3/status
+esp32s3/telemetry
+esp32s3/led/set
+esp32s3/led/state
+```
+
+---
+
+## 8.6 ESP32-S3 Arduino MQTT Example
+
+Copy this into the Arduino IDE and modify the configuration section.
+
+```cpp
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+// ----------------------------
+// User configuration
+// ----------------------------
+const char* WIFI_SSID     = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+
+const char* MQTT_HOST     = "192.168.1.100";
+const uint16_t MQTT_PORT  = 1883;
+const char* MQTT_USERNAME = "esp32";
+const char* MQTT_PASSWORD = "CHANGE_ME";
+
+// ----------------------------
+// MQTT topics
+// ----------------------------
+const char* TOPIC_STATUS      = "esp32s3/status";
+const char* TOPIC_TELEMETRY   = "esp32s3/telemetry";
+const char* TOPIC_LED_SET     = "esp32s3/led/set";
+const char* TOPIC_LED_STATE   = "esp32s3/led/state";
+
+// ----------------------------
+// Hardware configuration
+// ----------------------------
+// Adjust this pin for your board.
+// Many ESP32-S3 boards have addressable LEDs, so an external LED may be easier.
+const int LED_PIN = 2;
+
+// ----------------------------
+// Timing configuration
+// ----------------------------
+const uint32_t TELEMETRY_PERIOD_MS = 10000;
+const uint32_t MQTT_RECONNECT_INTERVAL_MS = 2000;
+
+// ----------------------------
+// Global objects
+// ----------------------------
+WiFiClient tcpClient;
+PubSubClient mqtt(tcpClient);
+
+bool ledState = false;
+uint32_t lastTelemetryMs = 0;
+uint32_t lastMqttConnectAttemptMs = 0;
+
+// ----------------------------
+// Wi-Fi connection
+// ----------------------------
+void connectWiFi() {
+  if (WiFi.status() == WL_CONNECTED) {
+    return;
+  }
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  Serial.print("Connecting to Wi-Fi");
+
+  uint32_t startMs = millis();
+
+  while (WiFi.status() != WL_CONNECTED && millis() - startMs < 15000) {
+    delay(250);
+    Serial.print(".");
+  }
+
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("Wi-Fi connected. IP address: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("Wi-Fi connection failed.");
+  }
+}
+
+// ----------------------------
+// MQTT callback
+// ----------------------------
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  // Copy payload into a null-terminated string.
+  char message[length + 1];
+  memcpy(message, payload, length);
+  message[length] = '\0';
+
+  Serial.printf("MQTT RX topic: %s, payload: %s\n", topic, message);
+
+  if (strcmp(topic, TOPIC_LED_SET) == 0) {
+    String value = String(message);
+    value.trim();
+    value.toLowerCase();
+
+    bool turnOn = false;
+    bool turnOff = false;
+
+    if (value == "1" || value == "on" || value == "true") {
+      turnOn = true;
+    } else if (value == "0" || value == "off" || value == "false") {
+      turnOff = true;
+    }
+
+    if (turnOn) {
+      ledState = true;
+      digitalWrite(LED_PIN, HIGH);
+      mqtt.publish(TOPIC_LED_STATE, "1", true);
+      Serial.println("LED turned ON");
+    } else if (turnOff) {
+      ledState = false;
+      digitalWrite(LED_PIN, LOW);
+      mqtt.publish(TOPIC_LED_STATE, "0", true);
+      Serial.println("LED turned OFF");
+    } else {
+      Serial.println("Unknown LED command");
+    }
+  }
+}
+
+// ----------------------------
+// MQTT connection
+// ----------------------------
+void connectMQTT() {
+  if (mqtt.connected()) {
+    return;
+  }
+
+  // Prevent reconnect spam.
+  if (millis() - lastMqttConnectAttemptMs < MQTT_RECONNECT_INTERVAL_MS) {
+    return;
+  }
+
+  lastMqttConnectAttemptMs = millis();
+
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+
+  String clientId = "esp32s3-";
+  clientId += WiFi.macAddress();
+  clientId.replace(":", "");
+
+  Serial.printf("Attempting MQTT connection as client ID: %s\n", clientId.c_str());
+
+  // Connect with Last Will and Testament.
+  // If the device disconnects unexpectedly, broker publishes "offline".
+  bool connected = mqtt.connect(
+    clientId.c_str(),
+    MQTT_USERNAME,
+    MQTT_PASSWORD,
+    TOPIC_STATUS,
+    0,          // Will QoS
+    true,       // Will retain
+    "offline"   // Will message
+  );
+
+  if (connected) {
+    Serial.println("MQTT connected");
+
+    // Publish online status.
+    mqtt.publish(TOPIC_STATUS, "online", true);
+
+    // Subscribe to command topics.
+    mqtt.subscribe(TOPIC_LED_SET, 1);
+
+    // Report current LED state.
+    mqtt.publish(TOPIC_LED_STATE, ledState ? "1" : "0", true);
+  } else {
+    Serial.printf("MQTT connection failed, state code: %d\n", mqtt.state());
+  }
+}
+
+// ----------------------------
+// Publish telemetry
+// ----------------------------
+void publishTelemetry() {
+  if (!mqtt.connected()) {
+    return;
+  }
+
+  // Replace this with a real sensor reading.
+  int temperature = random(20, 30);
+
+  char payload[128];
+  snprintf(
+    payload,
+    sizeof(payload),
+    "{\"temp\":%d,\"rssi\":%ld,\"uptime_sec\":%llu}",
+    temperature,
+    (long)WiFi.RSSI(),
+    (unsigned long long)(millis() / 1000)
+  );
+
+  bool ok = mqtt.publish(TOPIC_TELEMETRY, payload);
+
+  if (ok) {
+    Serial.printf("Published telemetry: %s\n", payload);
+  } else {
+    Serial.println("Telemetry publish failed");
+  }
+}
+
+// ----------------------------
+// Setup
+// ----------------------------
+void setup() {
+  Serial.begin(115200);
+  delay(500);
+
+  Serial.println();
+  Serial.println("ESP32-S3 MQTT Example");
+
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+
+  connectWiFi();
+
+  mqtt.setServer(MQTT_HOST, MQTT_PORT);
+  mqtt.setCallback(mqttCallback);
+
+  // Increase buffer if using larger JSON payloads.
+  mqtt.setBufferSize(512);
+
+  // MQTT keep-alive interval in seconds.
+  mqtt.setKeepAlive(30);
+
+  // Socket timeout in seconds.
+  mqtt.setSocketTimeout(15);
+}
+
+// ----------------------------
+// Main loop
+// ----------------------------
+void loop() {
+  if (WiFi.status() != WL_CONNECTED) {
+    connectWiFi();
+  }
+
+  if (!mqtt.connected()) {
+    connectMQTT();
+  }
+
+  mqtt.loop();
+
+  if (millis() - lastTelemetryMs >= TELEMETRY_PERIOD_MS) {
+    lastTelemetryMs = millis();
+    publishTelemetry();
+  }
+
+  delay(10);
+}
+```
+
+---
+
+## 8.7 Upload and Monitor
+
+1. Select the correct board and port.
+2. Upload the sketch.
+3. Open Serial Monitor at `115200`.
+
+Expected output:
+
+```text
+ESP32-S3 MQTT Example
+Connecting to Wi-Fi....
+Wi-Fi connected. IP address: 192.168.1.123
+Attempting MQTT connection as client ID: esp32s3-AABBCCDDEEFF
+MQTT connected
+Published telemetry: {"temp":25,"rssi":-61,"uptime_sec":10}
+```
+
+---
+
+## 8.8 Test the Device
+
+Open one terminal and subscribe to all device topics:
+
+```bash
+mosquitto_sub -h localhost -u esp32 -P CHANGE_ME -t 'esp32s3/#' -v
+```
+
+You should see:
+
+```text
+esp32s3/status online
+esp32s3/led/state 0
+esp32s3/telemetry {"temp":24,"rssi":-60,"uptime_sec":10}
+```
+
+Turn the LED on:
+
+```bash
+mosquitto_pub -h localhost -u esp32 -P CHANGE_ME -t esp32s3/led/set -m 1
+```
+
+Turn the LED off:
+
+```bash
+mosquitto_pub -h localhost -u esp32 -P CHANGE_ME -t esp32s3/led/set -m 0
+```
+
+You can also use text commands:
+
+```bash
+mosquitto_pub -h localhost -u esp32 -P CHANGE_ME -t esp32s3/led/set -m ON
+```
+
+```bash
+mosquitto_pub -h localhost -u esp32 -P CHANGE_ME -t esp32s3/led/set -m OFF
+```
+
+---
+
+## 9. Adding TLS Security to ESP32-S3 MQTT
+
+For production, avoid plaintext MQTT over port 1883. Use TLS on port 8883.
+
+### 9.1 Why TLS Matters
+
+TLS helps protect:
+
+- Wi-Fi credentials.
+- MQTT username and password.
+- Sensor data.
+- Control commands.
+- Device identity.
+
+Without TLS, credentials and messages may be visible on the network.
+
+---
+
+### 9.2 Mosquitto TLS Configuration Example
+
+Example Mosquitto TLS listener:
+
+```conf
+listener 8883
+cafile /etc/mosquitto/certs/ca.crt
+certfile /etc/mosquitto/certs/server.crt
+keyfile /etc/mosquitto/certs/server.key
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+```
+
+Restart Mosquitto:
+
+```bash
+sudo systemctl restart mosquitto
+```
+
+Test TLS connection:
+
+```bash
+mosquitto_sub -h localhost -p 8883 --cafile ca.crt -u esp32 -P CHANGE_ME -t 'esp32s3/#' -v
+```
+
+---
+
+### 9.3 Arduino TLS Concept
+
+For TLS with PubSubClient, use `WiFiClientSecure`.
+
+Conceptual example:
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+
+const char* ROOT_CA = R"(
+-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----
+)";
+
+WiFiClientSecure secureClient;
+PubSubClient mqtt(secureClient);
+
+void setup() {
+  secureClient.setCACert(ROOT_CA);
+
+  mqtt.setServer("broker.example.com", 8883);
+}
+```
+
+Important notes:
+
+- TLS certificate validation usually requires correct system time.
+- Use SNTP to synchronize time before connecting.
+- Avoid `setInsecure()` in production.
+- Store CA certificates carefully.
+- TLS uses more RAM than plaintext MQTT.
+
+Time synchronization example:
+
+```cpp
+#include <time.h>
+
+configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+```
+
+Wait for valid time before TLS connection.
+
+---
+
+## 10. ESP-IDF ESP-MQTT Example
+
+For production systems, ESP-IDF with ESP-MQTT is often preferred.
+
+Below is a simplified example structure.
+
+```c
+#include <stdio.h>
+#include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
+#include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "nvs_flash.h"
+#include "mqtt_client.h"
+
+static const char *TAG = "ESP32S3_MQTT";
+
+static esp_mqtt_client_handle_t mqtt_client = NULL;
+static bool mqtt_connected = false;
+
+static void mqtt_event_handler(void *handler_args,
+                               esp_event_base_t base,
+                               int32_t event_id,
+                               void *event_data)
+{
+    esp_mqtt_event_handle_t event = event_data;
+    mqtt_client = event->client;
+
+    switch ((esp_mqtt_event_id_t)event_id) {
+
+    case MQTT_EVENT_CONNECTED:
+        ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+        mqtt_connected = true;
+
+        esp_mqtt_client_publish(mqtt_client,
+                                "esp32s3/status",
+                                "online",
+                                0,
+                                1,
+                                1);
+
+        esp_mqtt_client_subscribe(mqtt_client,
+                                  "esp32s3/led/set",
+                                  1);
+        break;
+
+    case MQTT_EVENT_DISCONNECTED:
+        ESP_LOGW(TAG, "MQTT_EVENT_DISCONNECTED");
+        mqtt_connected = false;
+        break;
+
+    case MQTT_EVENT_SUBSCRIBED:
+        ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+        break;
+
+    case MQTT_EVENT_UNSUBSCRIBED:
+        ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+        break;
+
+    case MQTT_EVENT_PUBLISHED:
+        ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+        break;
+
+    case MQTT_EVENT_DATA:
+        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+        ESP_LOGI(TAG, "TOPIC=%.*s", event->topic_len, event->topic);
+        ESP_LOGI(TAG, "DATA=%.*s", event->data_len, event->data);
+        break;
+
+    case MQTT_EVENT_ERROR:
+        ESP_LOGE(TAG, "MQTT_EVENT_ERROR");
+        break;
+
+    default:
+        ESP_LOGI(TAG, "Other event id:%d", event_id);
+        break;
+    }
+}
+
+static void telemetry_task(void *pvParameters)
+{
+    char payload[128];
+
+    while (1) {
+        if (mqtt_connected) {
+            snprintf(payload,
+                     sizeof(payload),
+                     "{\"uptime_sec\":%lld}",
+                     (long long)(esp_timer_get_time() / 1000000));
+
+            esp_mqtt_client_publish(mqtt_client,
+                                    "esp32s3/telemetry",
+                                    payload,
+                                    strlen(payload),
+                                    1,
+                                    0);
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10000));
+    }
+}
+
+void app_main(void)
+{
+    // In a full project, initialize Wi-Fi here:
+    // nvs_flash_init();
+    // esp_netif_init();
+    // esp_event_loop_create_default();
+    // wifi_init_sta();
+    // wait_for_wifi_connected();
+
+    esp_mqtt_client_config_t mqtt_cfg = {
+        .broker.address.hostname = "192.168.1.100",
+        .broker.address.port = 1883,
+
+        .credentials.client_id = "esp32s3-idf-001",
+        .credentials.username = "esp32",
+        .credentials.authentication.password = "CHANGE_ME",
+
+        .session.keepalive = 30,
+
+        .session.last_will = {
+            .topic = "esp32s3/status",
+            .msg = "offline",
+            .msg_len = 0,
+            .qos = 1,
+            .retain = true,
+        },
+    };
+
+    mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
+
+    esp_mqtt_client_register_event(mqtt_client,
+                                   ESP_EVENT_ANY_ID,
+                                   mqtt_event_handler,
+                                   NULL);
+
+    esp_mqtt_client_start(mqtt_client);
+
+    xTaskCreate(&telemetry_task,
+                "telemetry_task",
+                4096,
+                NULL,
+                5,
+                NULL);
+}
+```
+
+In a complete ESP-IDF project, you must also implement Wi-Fi initialization and connection handling.
+
+---
+
+## 11. MQTT Topic Design Example
+
+A good topic design makes your system easier to scale.
+
+Example:
+
+```text
+home/livingroom/esp32s3/status
+home/livingroom/esp32s3/telemetry
+home/livingroom/esp32s3/led/set
+home/livingroom/esp32s3/led/state
+```
+
+More production-like:
+
+```text
+site1/esp32s3/device001/status
+site1/esp32s3/device001/telemetry
+site1/esp32s3/device001/relay/set
+site1/esp32s3/device001/relay/state
+```
+
+Separate:
+
+```text
+set   -> command sent to device
+state -> actual state reported by device
+```
+
+This is important because a command may fail, may be ignored, or may take time. The device should report the real state.
+
+---
+
+## 12. Relevant Additional Topics
+
+The following topics are not strictly required for a basic ESP32-S3 MQTT demo, but they are important in real projects.
+
+---
+
+### 12.1 Secure Boot and Flash Encryption
+
+ESP32-S3 supports:
+
+- Secure Boot.
+- Flash encryption.
+
+These features help protect firmware and secrets.
+
+Useful for production when devices are deployed in the field.
+
+---
+
+### 12.2 Certificate Management
+
+For TLS MQTT, you need to manage:
+
+- Root CA certificates.
+- Server certificates.
+- Device certificates, if using mutual TLS.
+- Certificate expiration.
+- Certificate rotation.
+
+Best practices:
+
+- Use long-lived CA certificates.
+- Use shorter-lived device certificates if possible.
+- Automate certificate provisioning.
+- Store certificates securely.
+- Do not hard-code production secrets in public source code.
+
+---
+
+### 12.3 SNTP Time Synchronization
+
+TLS certificate validation requires accurate time.
+
+Use SNTP:
+
+```text
+pool.ntp.org
+time.google.com
+time.nist.gov
+```
+
+Without correct time, the ESP32 may reject valid certificates or accept expired ones depending on implementation.
+
+---
+
+### 12.4 MQTT Authentication and Authorization
+
+Authentication confirms who the client is.
+
+Common methods:
+
+- Username/password.
+- Client certificate.
+- Token-based authentication.
+- Cloud-specific device credentials.
+
+Authorization controls what the client can do.
+
+Example Mosquitto ACL:
+
+```text
+user esp32
+topic read esp32s3/led/set
+topic write esp32s3/status
+topic write esp32s3/telemetry
+topic write esp32s3/led/state
+```
+
+This prevents a device from publishing to topics it should not control.
+
+---
+
+### 12.5 OTA Updates
+
+MQTT can be used to trigger OTA updates.
+
+Example command topic:
+
+```text
+esp32s3/ota/trigger
+```
+
+Example payload:
+
+```json
+{
+  "url": "https://firmware.example.com/app-v1.0.2.bin",
+  "version": "1.0.2"
+}
+```
+
+Best practices:
+
+- Use HTTPS.
+- Verify firmware signature or checksum.
+- Use rollback-capable partition tables.
+- Do not transfer large firmware images directly inside MQTT payloads.
+- Trigger OTA over MQTT, download firmware over HTTP/HTTPS.
+
+---
+
+### 12.6 Power Management
+
+MQTT over Wi-Fi can consume significant power.
+
+For battery-powered ESP32-S3 devices:
+
+- Use deep sleep between telemetry publishes.
+- Use modem sleep when possible.
+- Increase MQTT keep-alive interval.
+- Reduce Wi-Fi transmit power if appropriate.
+- Avoid constant TCP reconnections.
+- Use QoS carefully.
+- Avoid retained telemetry.
+
+Deep-sleep MQTT pattern:
+
+```text
+Wake up
+Connect Wi-Fi
+Connect MQTT
+Publish telemetry
+Disconnect
+Sleep
+```
+
+In this pattern, subscriptions are usually not useful because the device is asleep most of the time.
+
+---
+
+### 12.7 BLE Provisioning
+
+ESP32-S3 supports Bluetooth LE. BLE can be used to provision Wi-Fi credentials before the device connects to MQTT.
+
+Common provisioning methods:
+
+- SoftAP web configuration.
+- BLE configuration.
+- ESP BluFi.
+- ESP-IDF Unified Provisioning.
+- Wi-Fi Manager style configuration portal.
+
+Provisioning flow:
+
+```text
+User connects to ESP32-S3 over BLE or AP
+User provides Wi-Fi SSID/password
+ESP32-S3 saves credentials
+ESP32-S3 connects to Wi-Fi
+ESP32-S3 connects to MQTT broker
+```
+
+---
+
+### 12.8 MQTT over WebSocket
+
+Some networks block port 1883 or 8883. MQTT can also run over WebSocket.
+
+Example URIs:
+
+```text
+ws://broker.example.com:8080/mqtt
+wss://broker.example.com:443/mqtt
+```
+
+ESP-MQTT supports WebSocket connections in many ESP-IDF versions.
+
+This is useful when connecting through restrictive firewalls or web-based dashboards.
+
+---
+
+### 12.9 Device Shadow / Digital Twin
+
+A device shadow is a stored representation of device state.
+
+Example:
+
+```json
+{
+  "led": {
+    "desired": 1,
+    "reported": 0
+  }
+}
+```
+
+This is useful when the device is offline.
+
+Cloud platforms provide shadow/twin services:
+
+- AWS IoT Device Shadow.
+- Azure IoT Device Twin.
+- Google Cloud IoT device state/config historically.
+- ThingsBoard device attributes.
+- Custom retained MQTT topics.
+
+---
+
+### 12.10 Data Serialization
+
+MQTT payloads can be:
+
+- Plain text.
+- JSON.
+- CBOR.
+- MessagePack.
+- Protocol Buffers.
+- Binary structures.
+
+For simple systems, JSON is easy.
+
+Example:
+
+```json
+{
+  "temp": 24.5,
+  "humidity": 58.2,
+  "rssi": -63,
+  "uptime": 3600
+}
+```
+
+For constrained devices or high-frequency data, binary formats may be more efficient.
+
+---
+
+### 12.11 Logging and Debugging
+
+Useful debugging tools:
+
+- Serial monitor logs.
+- `mosquitto_sub -v`
+- `mosquitto_sub -d`
+- Broker logs.
+- Wireshark or tcpdump.
+- Network scanner.
+- Ping to broker.
+- DNS lookup tools.
+- MQTT client state codes.
+
+Example verbose subscribe:
+
+```bash
+mosquitto_sub -h localhost -u esp32 -P CHANGE_ME -t '#' -v
+```
+
+Example debug output:
+
+```bash
+mosquitto_sub -h localhost -u esp32 -P CHANGE_ME -t '#' -v -d
+```
+
+---
+
+## 13. Common Problems and Troubleshooting
+
+| Problem | Possible Cause | Solution |
+|---|---|---|
+| ESP32-S3 cannot connect to Wi-Fi | Wrong SSID/password | Check credentials and signal strength |
+| ESP32-S3 cannot connect to MQTT broker | Wrong broker IP | Use correct IP or hostname |
+| MQTT rc=4 or rc=5 | Bad username/password or authorization failure | Check broker credentials and ACL |
+| MQTT rc=-2 | TCP connection failed | Check firewall, broker port, network route |
+| Device connects then disconnects | Duplicate client ID | Use unique client ID |
+| No messages received | Wrong topic | Check topic spelling and case |
+| TLS fails | Wrong CA certificate | Verify CA certificate and server name |
+| TLS fails | Incorrect time | Synchronize SNTP time |
+| Messages cut off | Buffer too small | Increase MQTT buffer size |
+| Device resets | Stack overflow or watchdog reset | Increase task stack, avoid blocking callbacks |
+| Broker rejects connection | Anonymous access disabled | Configure username/password |
+| Broker only local | Mosquitto listener bound to localhost | Configure LAN listener |
+| Commands delayed | Wi-Fi power saving or keep-alive too long | Adjust power save and keep-alive |
+| LED not changing | Wrong GPIO or addressable LED | Use correct pin or NeoPixel library |
+| Random disconnects | Router NAT timeout, weak Wi-Fi, broker overload | Improve network, reduce keep-alive, check broker logs |
+
+---
+
+## 14. Production Best Practices
+
+For a reliable ESP32-S3 MQTT product, consider the following.
+
+### Connectivity
+
+- Use static DHCP or DNS names where appropriate.
+- Implement reconnect backoff.
+- Avoid aggressive reconnect loops.
+- Monitor Wi-Fi RSSI.
+- Handle router reboots gracefully.
+- Use SNTP for time synchronization.
+
+### MQTT
+
+- Use unique client IDs.
+- Use LWT for offline detection.
+- Use retained messages only for state, not telemetry.
+- Prefer QoS 1 for commands.
+- Use QoS 0 for high-frequency telemetry if occasional loss is acceptable.
+- Keep payloads small.
+- Avoid deeply nested topics.
+- Version your firmware and include it in telemetry.
+
+### Security
+
+- Use TLS.
+- Use username/password or certificates.
+- Use broker ACLs.
+- Isolate IoT devices on a separate VLAN if possible.
+- Store secrets securely.
+- Enable secure boot and flash encryption if required.
+- Rotate credentials when possible.
+- Do not expose broker ports unnecessarily to the internet.
+
+### Firmware
+
+- Add OTA updates.
+- Add firmware version reporting.
+- Add safe rollback.
+- Log disconnect reasons.
+- Use non-blocking code where possible.
+- Avoid long delays in MQTT callbacks.
+- Use FreeRTOS tasks for sensor polling and publishing.
+- Test watchdog behavior.
+- Test power-loss recovery.
+
+### Monitoring
+
+- Publish device status.
+- Publish Wi-Fi RSSI.
+- Publish free heap.
+- Publish uptime.
+- Publish firmware version.
+- Track reconnect count.
+- Track publish failure count.
+
+Example telemetry payload:
+
+```json
+{
+  "fw": "1.0.3",
+  "uptime": 86400,
+  "rssi": -63,
+  "heap": 210000,
+  "temp": 24.7
+}
+```
+
+---
+
+## 15. Example System Architecture
+
+A complete ESP32-S3 MQTT system might look like this:
+
+```text
++----------------+        +----------------+        +----------------+
+|   Sensors      |        |   ESP32-S3     |        |   MQTT Broker  |
+|   Buttons      +------->+   Wi-Fi        +------->+   Mosquitto /  |
+|   Relays       |        |   MQTT Client  |        |   EMQX / Cloud |
++----------------+        +----------------+        +-------+--------+
+                                                            |
+                                                            v
+                                                    +-------+--------+
+                                                    | Dashboard /    |
+                                                    | Backend / App  |
+                                                    +----------------+
+```
+
+The device publishes:
+
+```text
+esp32s3/status
+esp32s3/telemetry
+esp32s3/led/state
+```
+
+The backend publishes:
+
+```text
+esp32s3/led/set
+esp32s3/ota/trigger
+esp32s3/config/set
+```
+
+---
+
+## 16. Simple Project Ideas
+
+Once the basic example works, you can extend it into these projects:
+
+### 16.1 Wi-Fi Temperature Sensor
+
+Publish:
+
+```text
+esp32s3/telemetry
+```
+
+Payload:
+
+```json
+{"temp":24.5,"humidity":55.1}
+```
+
+### 16.2 MQTT Relay Controller
+
+Subscribe:
+
+```text
+esp32s3/relay/set
+```
+
+Publish:
+
+```text
+esp32s3/relay/state
+```
+
+### 16.3 BLE-to-MQTT Gateway
+
+ESP32-S3 scans BLE sensors and publishes their data to MQTT.
+
+Example topic:
+
+```text
+gateway/ble/sensor-aabbcc/temperature
+```
+
+### 16.4 Home Automation Node
+
+Integrate with:
+
+- Home Assistant.
+- OpenHAB.
+- Node-RED.
+- ThingsBoard.
+- Custom MQTT dashboard.
+
+### 16.5 Industrial Status Monitor
+
+Publish:
+
+```text
+factory/line1/machine5/status
+factory/line1/machine5/fault
+factory/line1/machine5/counter
+```
+
+---
+
+## 17. Summary
+
+ESP32-S3 MQTT is a powerful and practical combination for IoT development. The ESP32-S3 provides Wi-Fi, BLE, enough processing power, and hardware security features, while MQTT provides a lightweight and reliable messaging model for device-to-cloud and cloud-to-device communication.
+
+A basic ESP32-S3 MQTT project needs:
+
+1. ESP32-S3 firmware.
+2. Wi-Fi connection.
+3. MQTT client library.
+4. MQTT broker.
+5. Topics for telemetry, status, and commands.
+6. Authentication and, preferably, TLS security.
+7. Robust reconnection and error handling.
+
+For learning, PubSubClient with Arduino IDE is simple and effective. For production firmware, ESP-IDF ESP-MQTT or an ESP-MQTT-based Arduino wrapper is usually the better choice because it provides stronger event handling, TLS support, and long-term maintainability.
