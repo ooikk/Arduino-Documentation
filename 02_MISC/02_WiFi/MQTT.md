@@ -1837,7 +1837,7 @@ A basic ESP32-S3 MQTT project needs:
 
 For learning, PubSubClient with Arduino IDE is simple and effective. For production firmware, ESP-IDF ESP-MQTT or an ESP-MQTT-based Arduino wrapper is usually the better choice because it provides stronger event handling, TLS support, and long-term maintainability.
 
-## Setting MQTT Broker
+## 18. Setting MQTT Broker
 
 The absolute quickest way to test MQTT without installing any software (like Mosquitto, MQTTX, or MQTT Explorer) is to use a **Public MQTT Broker** combined with a **Browser-based Web MQTT Client**.
 
@@ -1928,16 +1928,7 @@ Below is the screenshot
 4. You will instantly see the ESP32's telemetry and "online" status appear in your browser!
 5. Publish `1` to `myname/esp32s3/led/set` from the browser, and watch your ESP32's physical LED turn on.
 
-### 2B: In Your EMQX Cloud Console
-
-Look at the left-hand sidebar menu on your screen, located to the left of the deployment overview shown in your image.
-
-1. Click **Tools**.  
-   Depending on the console layout, this may be listed as **Data Integration**.
-
-2. Select **WebSocket Client** from the submenu.
-
-### 3B: Using the Web-Based Browser Tool Directly
+### 2B: Connect to MQTTX Web (More Modern UI)
 
 If you want to use the standalone web client, open [MQTTX Web](https://mqttx.app/web) in your browser.
 
@@ -1948,7 +1939,7 @@ If you want to use the standalone web client, open [MQTTX Web](https://mqttx.app
 3. Enter the following host:
 
    ```text
-   ffcebc18.ala.asia-southeast1.emqxsl.com
+   broker.emqx.io
    ```
 
 4. Enter the port:
@@ -1965,7 +1956,7 @@ If you want to use the standalone web client, open [MQTTX Web](https://mqttx.app
    /mqtt
    ```
 
-6. Enter the **Username** and **Password** that you created under **Authentication** in your EMQX console.
+6. Enter the **Username** and **Password** that you created.
 
 7. Click **Connect**.
 
@@ -1974,6 +1965,11 @@ If you want to use the standalone web client, open [MQTTX Web](https://mqttx.app
    ```text
    esp32s3/#
    ```
+
+<img width="1789" height="617" alt="image" src="https://github.com/user-attachments/assets/5796ec8c-7643-4cde-8d0c-94c5a5d056b3" />
+
+<img width="1406" height="805" alt="image" src="https://github.com/user-attachments/assets/732bfe93-761b-4b8b-b268-fef56c2fedc5" />
+
 ---
 
 ### ⚠️ Crucial Warnings for Public Brokers
