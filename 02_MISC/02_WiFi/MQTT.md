@@ -1986,9 +1986,41 @@ Below is the screenshot for subscriptions
 4. Enter the port: `8084`
 5. Enter Client ID
 6. Access Control/Authentication: register user name and password
-7. Add subscriptions
 
+To view the actual message content in your private EMQX Cloud deployment, use the built-in console tools or MQTTX:
 
+#### 1. View Retained Messages directly in EMQX Console
+Your screenshot shows **Retained messages: 2**. Because your ESP32 code publishes status messages with `retained = true`, the broker stores the last published payload for those topics.
+
+1. On the left menu under **Monitor**, click **Retained messages** (5th item down from Monitor).
+2. Click on the topic name (e.g., `esp32s3/status` or `esp32s3/led/state`) to view the exact payload stored by your ESP32.
+
+---
+
+#### 2. Live Stream Data via Diagnostics (WebSocket Client)
+To watch incoming telemetry streaming in real-time:
+
+1. Look at the left sidebar menu under **Diagnostics** (bottom section).
+2. Click on **Diagnostics** to expand the menu, then select **WebSocket Client**.
+3. Click **Connect** using your MQTT username (`esp32s3`) and password.
+4. Under **Subscriptions**, add a subscription to `esp32s3/#` and click **Subscribe**.
+5. As your ESP32 publishes every 10 seconds, the messages will appear in the **Received Messages** panel at the bottom.
+
+<img width="90%" height="auto" alt="image" src="https://github.com/user-attachments/assets/71caec08-cd7c-43c4-9914-3ae7b4f7f99b" />
+
+<img width="90%" height="auto" alt="image" src="https://github.com/user-attachments/assets/bebf3465-888f-4db4-97ce-70a8ea60a85e" />
+
+<img width="90%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e8245cfa-e88a-4dd7-9a92-f3fc0806a083" />
+
+---
+
+#### 3. View Live Data in MQTTX Web / Desktop
+If you are connected via MQTTX Web using your private broker host (`ffcebc18.ala.asia-southeast1.emqxsl.com` on port `8084`):
+
+1. Make sure your ESP32 code is also set to `MQTT_HOST = "ffcebc18.ala.asia-southeast1.emqxsl.com"`.
+2. Click **+ New Subscription** in MQTTX.
+3. Type `esp32s3/#` in the **Topic** field and save.
+4. Your ESP32's JSON telemetry `{"temp":...,"rssi":...}` will appear in the main chat view.
 
 ---
 
