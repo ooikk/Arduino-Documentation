@@ -3070,6 +3070,19 @@ void loop() {
 
 ## ESP32 MQTT     
 
+
+### MQTT Brokers
+
+https://mosquitto.org/
+
+https://www.hivemq.com/
+
+https://cookbook.nodered.org/#mqtt
+
+https://www.emqx.com/en/mqtt/public-mqtt5-broker
+
+
+### MQTT References
 https://www.luisllamas.es/como-usar-mqtt-en-el-esp8266-esp32/
 
 https://randomnerdtutorials.com/esp32-mqtt-publish-subscribe-arduino-ide/
