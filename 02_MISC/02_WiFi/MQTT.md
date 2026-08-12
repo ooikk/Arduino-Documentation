@@ -1970,10 +1970,10 @@ If you want to use the standalone web client, open [MQTTX Web](https://mqttx.app
    esp32s3/led/set
    ```      
 Below is the screenshot    
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/5796ec8c-7643-4cde-8d0c-94c5a5d056b3" />
+<img width="90%" height="auto" alt="image" src="https://github.com/user-attachments/assets/5796ec8c-7643-4cde-8d0c-94c5a5d056b3" />
 
 Below is the screenshot for subscriptions     
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/732bfe93-761b-4b8b-b268-fef56c2fedc5" />
+<img width="90%" height="auto" alt="image" src="https://github.com/user-attachments/assets/732bfe93-761b-4b8b-b268-fef56c2fedc5" />
 
 ---
 
