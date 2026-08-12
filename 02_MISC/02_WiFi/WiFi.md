@@ -2842,6 +2842,221 @@ void loop() {
 | **Delivery ACK** | No ACK from receivers | Hardware ACK per transmitted packet |
 | **Use Case** | System triggers, time sync, beacon signals | Reliable sensor data logging, commands |
 
+### Broadcast: One-to-Many (1:N) with Deep Sleep
+
+#### Timing Architecture
+
+```
+Broadcaster: |-- WAKE & TX --|-------------------- DEEP SLEEP (10,000 ms) --------------------|-- WAKE & TX --|
+                              \                                                                  /
+Receiver:    |-- CONTINUOUS LISTEN --|-- RX PACKET & CALC SLEEP --|-- DEEP SLEEP --|-- WAKE & LISTEN --|
+                                                                                    ^
+                                                                        (Wakes up WAKEUP_BUFFER_MS early)
+```
+
+1. **Broadcaster:** Records its wake time, calculates time remaining until the next scheduled broadcast cycle (`next_broadcast_ms`), sends the packet, and enters deep sleep.
+2. **Receiver (Initial Boot):** Stays continuously awake in listening mode until it receives the first broadcast packet.
+3. **Receiver (Synced State):** Extracts `next_broadcast_ms`, subtracts a safety margin (`WAKEUP_BUFFER_MS = 150 ms`), and enters deep sleep. It wakes up slightly before the broadcaster transmits to ensure zero packet loss.
+4. **Resynchronization:** If a receiver misses a broadcast due to RF interference, it stays awake past its timeout threshold until the next broadcast arrives to re-sync automatically.
+
+---
+
+#### 1. Broadcaster Code (1 - Broadcaster)
+
+Because the broadcaster enters deep sleep immediately after transmitting, all processing occurs within `setup()`.
+
+```cpp
+#include <WiFi.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+#define WIFI_CHANNEL 1
+#define BROADCAST_INTERVAL_MS 10000 // 10-second total cycle time
+
+uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+typedef struct struct_message {
+  uint32_t msg_id;
+  uint32_t next_broadcast_ms; // Remaining ms until the NEXT broadcast
+  float temperature;
+  char command[16];
+} struct_message;
+
+struct_message txData;
+esp_now_peer_info_t peerInfo;
+RTC_DATA_ATTR uint32_t msgCounter = 0; // Retain counter across deep sleep
+
+void goToSleepMs(int32_t sleepMs) {
+  const int32_t MIN_SLEEP_MS = 100;
+  if (sleepMs < MIN_SLEEP_MS) sleepMs = MIN_SLEEP_MS;
+
+  Serial.printf("Broadcaster entering deep sleep for %d ms...\n\n", sleepMs);
+  Serial.flush();
+
+  esp_wifi_stop();
+  esp_sleep_enable_timer_wakeup((uint64_t)sleepMs * 1000ULL);
+  esp_deep_sleep_start();
+}
+
+void setup() {
+  uint32_t startMs = millis();
+  Serial.begin(115200);
+
+  // Initialize Wi-Fi in Station Mode
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE);
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    goToSleepMs(BROADCAST_INTERVAL_MS);
+  }
+
+  // Register broadcast peer
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = WIFI_CHANNEL;
+  peerInfo.encrypt = false;
+  esp_now_add_peer(&peerInfo);
+
+  // Calculate elapsed active awake time before transmission
+  uint32_t activeElapsedMs = millis() - startMs;
+
+  // Prepare Payload
+  txData.msg_id = ++msgCounter;
+  txData.temperature = 24.2f + (rand() % 40) / 10.0f;
+  snprintf(txData.command, sizeof(txData.command), "SYNC_STATE");
+  
+  // Inform receivers how many milliseconds remain until the NEXT broadcast window
+  txData.next_broadcast_ms = BROADCAST_INTERVAL_MS - activeElapsedMs;
+
+  // Transmit Broadcast
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&txData, sizeof(txData));
+  
+  if (result == ESP_OK) {
+    Serial.printf("[%u] Broadcast Sent! Next broadcast in: %u ms\n", 
+                  txData.msg_id, txData.next_broadcast_ms);
+  } else {
+    Serial.println("Broadcast send failed!");
+  }
+
+  // Calculate Broadcaster's remaining sleep duration
+  uint32_t totalAwakeMs = millis() - startMs;
+  int32_t broadcasterSleepMs = (int32_t)BROADCAST_INTERVAL_MS - (int32_t)totalAwakeMs;
+
+  goToSleepMs(broadcasterSleepMs);
+}
+
+void loop() {
+  // Never reached due to deep sleep
+}
+```
+
+---
+
+#### 2. Receiver Code (N - Receivers)
+
+Receivers start in continuous listen mode. Once synchronized, they sleep and wake up `WAKEUP_BUFFER_MS` prior to each incoming transmission.
+
+```cpp
+#include <WiFi.h>
+#include <esp_now.h>
+#include <esp_wifi.h>
+
+#define WIFI_CHANNEL 1
+#define WAKEUP_BUFFER_MS 150         // Wake up 150 ms early to catch broadcast
+#define MISS_SYNC_TIMEOUT_MS 15000   // Stay awake if broadcast is missed (>15s)
+
+typedef struct struct_message {
+  uint32_t msg_id;
+  uint32_t next_broadcast_ms;
+  float temperature;
+  char command[16];
+} struct_message;
+
+struct_message rxData;
+volatile bool packetReceived = false;
+int32_t calculatedSleepMs = 0;
+
+void goToSleepMs(int32_t sleepMs) {
+  const int32_t MIN_SLEEP_MS = 10;
+  if (sleepMs < MIN_SLEEP_MS) sleepMs = MIN_SLEEP_MS;
+
+  Serial.printf("Receiver sleeping for %d ms (Buffer: %d ms)...\n\n", 
+                sleepMs, WAKEUP_BUFFER_MS);
+  Serial.flush();
+
+  esp_wifi_stop();
+  esp_sleep_enable_timer_wakeup((uint64_t)sleepMs * 1000ULL);
+  esp_deep_sleep_start();
+}
+
+// ESP32 Arduino Core v3.x Callback Signature
+void OnDataRecv(const esp_now_recv_info *recv_info, const uint8_t *incomingData, int len) {
+  memcpy(&rxData, incomingData, sizeof(rxData));
+
+  // Subtract wakeup margin from the broadcaster's remaining cycle time
+  int32_t targetSleepMs = (int32_t)rxData.next_broadcast_ms - WAKEUP_BUFFER_MS;
+
+  calculatedSleepMs = targetSleepMs;
+  packetReceived = true;
+}
+
+/* 
+// For ESP32 Arduino Core v2.x, use this signature instead:
+void OnDataRecv(const uint8_t *mac, const uint8_t *incomingData, int len) {
+  memcpy(&rxData, incomingData, sizeof(rxData));
+  calculatedSleepMs = (int32_t)rxData.next_broadcast_ms - WAKEUP_BUFFER_MS;
+  packetReceived = true;
+}
+*/
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  esp_wifi_set_channel(WIFI_CHANNEL, WIFI_SECOND_CHAN_NONE);
+
+  if (esp_now_init() != ESP_OK) {
+    Serial.println("Error initializing ESP-NOW");
+    return;
+  }
+
+  esp_now_register_recv_cb(OnDataRecv);
+
+  Serial.println("Receiver active. Listening for broadcast sync signal...");
+}
+
+void loop() {
+  // 1. If packet was received, enter synchronized deep sleep immediately
+  if (packetReceived) {
+    Serial.printf("Sync Received | Msg ID: %u | Temp: %.1f C | Cmd: %s\n",
+                  rxData.msg_id, rxData.temperature, rxData.command);
+    goToSleepMs(calculatedSleepMs);
+  }
+
+  // 2. If initial boot or missed sync, keep listening in awake state
+  static uint32_t lastWarningMs = 0;
+  if (millis() - lastWarningMs > 5000) {
+    lastWarningMs = millis();
+    Serial.printf("Listening... Awake time: %.2f sec\n", millis() / 1000.0f);
+  }
+
+  delay(10);
+}
+```
+
+---
+
+#### Key Operational Characteristics
+
+| Scenario | Broadcaster Behavior | Receiver Behavior |
+| :--- | :--- | :--- |
+| **Initial Power Up** | Sends broadcast with `next_broadcast_ms ≈ 9980` | Awake in continuous scan mode until packet arrives |
+| **Normal Cycle** | Wakes every `10,000 ms`, sends packet, sleeps | Wakes at `9,850 ms` (150 ms early), receives, sleeps |
+| **Missed Packet** | Continues normal sleep cycle | Misses window $\rightarrow$ stays awake until next broadcast re-syncs |
+
+
 ## ESP32 MQTT     
 
 https://www.luisllamas.es/como-usar-mqtt-en-el-esp8266-esp32/
