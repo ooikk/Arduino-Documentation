@@ -2596,7 +2596,7 @@ Node 1:   ------------|-- TX / RX ACK ---|---------------- DEEP SLEEP ----------
 
 **Step 1: Sensor Node Implementation**     
 
-Each Sensor Node reads sensors, transmits its payload via encrypted ESP-NOW, and listens briefly for a dynamic configuration command from the Gateway before entering deep sleep.
+Each Sensor Node reads sensors, transmits its payload via encrypted ESP-NOW, and listens briefly (150ms) for a dynamic configuration command from the Gateway before entering deep sleep.
 
 **1. Dynamic Deep Sleep Function**     
 
@@ -2648,7 +2648,7 @@ The Gateway powers on, pre-registers known Node MAC addresses, and opens a recei
 
 Upon packet arrival from a node, the Gateway:
 
-1. Records the precise elapsed time, \(t_{\text{elapsed}}\), since its own wake-up.
+1. Records the precise elapsed time, `t_elapsed`, since its own wake-up.
 2. Calculates the remaining time until the next scheduled Gateway wake-up cycle.
 3. Immediately replies with a `struct_command` containing the exact `sleep_duration_sec` tailored to that specific node.
 4. Waits until all nodes respond or `LISTEN_WINDOW_MS` expires.
