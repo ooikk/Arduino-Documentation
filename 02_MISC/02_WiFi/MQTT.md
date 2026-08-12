@@ -1918,7 +1918,7 @@ bool connected = mqtt.connect(clientId.c_str(), TOPIC_STATUS, 0, true, "offline"
 5. Under Publish, select topic (must match the code setting), eg `esp32s3/led/set`
 
 Below is the screenshot     
-<img width="958" height="871" alt="image" src="https://github.com/user-attachments/assets/204346ae-02f5-4bf4-a408-15d3df71a8d4" />
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/204346ae-02f5-4bf4-a408-15d3df71a8d4" />
 
 
 ### Step 5A: Test the ESP32 and Browser Together
@@ -1969,10 +1969,11 @@ If you want to use the standalone web client, open [MQTTX Web](https://mqttx.app
    ```text
    esp32s3/led/set
    ```      
+Below is the screenshot    
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/5796ec8c-7643-4cde-8d0c-94c5a5d056b3" />
 
-<img width="1789" height="617" alt="image" src="https://github.com/user-attachments/assets/5796ec8c-7643-4cde-8d0c-94c5a5d056b3" />
-
-<img width="1406" height="805" alt="image" src="https://github.com/user-attachments/assets/732bfe93-761b-4b8b-b268-fef56c2fedc5" />
+Below is the screenshot for subscriptions     
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/732bfe93-761b-4b8b-b268-fef56c2fedc5" />
 
 ---
 
