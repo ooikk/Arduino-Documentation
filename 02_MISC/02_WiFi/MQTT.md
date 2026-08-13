@@ -2080,3 +2080,16 @@ Create rule conditions directly inside EMQX to monitor critical threshold values
      clientid AS device_id
    FROM
      "esp32s3/telemetry"
+   ```
+
+
+Here is how the options compare for completely free setups:
+
+* **HTTP Server (Recommended):** Completely free. It allows you to push incoming ESP32 data straight to a custom web endpoint, such as a free **Google Apps Script Web App**, a **Pipedream / Make webhook**, or a local server on your network.
+* **EMQX Tables:** Internal to EMQX. While it doesn't incur an extra cloud database cost, storage is temporary (in-memory) and restricted to limited usage inside the cluster rather than a full long-term data store.
+* **Kafka Producer:** Requires running or paying for a managed Apache Kafka cluster (like Confluent Cloud), which is overkill and not completely free for simple projects.
+
+### How to set up HTTP Server with Google Apps Script:
+1. Choose **HTTP Server**.
+2. Set the URL to your deployed Google Apps Script Web App URL (`https://script.google.com/macros/s/.../exec`).
+3. Whenever your ESP32 publishes telemetry, EMQX will trigger an HTTP POST request to append that data directly into a Google Sheet.
