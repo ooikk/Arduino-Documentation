@@ -2174,11 +2174,12 @@ function doPost(e) {
    - **Headers**: `Add Content-Type: application/json`
    - **Request Body**: Use JSON matching your script keys:
 ```JSON
-   {
+{
+  "type": "telemetry",
   "temp": ${temp},
   "rssi": ${rssi},
   "uptime": ${uptime}
-  }
+}
 ```
 
 4. Click **Save** to complete rule creation.    
