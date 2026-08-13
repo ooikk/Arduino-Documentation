@@ -2200,11 +2200,10 @@ To handle both sensor telemetry and LED control/status messages in the same Goog
 In your Google Sheet, add two new columns to Row 1 so it accommodates both telemetry and LED status data:
 
 - Cell A1: Timestamp
-- Cell B1: Type
-- Cell C1: Temperature
-- Cell D1: RSSI
-- Cell E1: Uptime
-- Cell F1: LED State
+- Cell B1: Temperature
+- Cell C1: RSSI
+- Cell D1: Uptime
+- Cell E1: LED State
 
 ### Step 2: Update the Google Apps Script
 
@@ -2218,27 +2217,34 @@ function doPost(e) {
     var timestamp = new Date();
 
     if (data.type === "telemetry") {
-      // Append Telemetry Row
+      // Append a normal telemetry row
+
       sheet.appendRow([
         timestamp,
-        "Telemetry",
         data.temp,
         data.rssi,
         data.uptime,
-        "" // Empty LED State
+        "" // Column E stays blank until an LED event happens
       ]);
     } else if (data.type === "led_status") {
-      // Append LED Status Row
+      /* OR update at fix Cell
+      // Target fixed cell G3 for the latest LED state
+      sheet.getRange("G3").setValue(data.state);
+      
+      // Optional: If you also want to show the last updated timestamp right next to it in H3
+      sheet.getRange("F3").setValue(timestamp);
+      */
+      // Option: Use "-" or "EVENT" instead of blank quotes so it's clear it wasn't a missed telemetry reading
       sheet.appendRow([
         timestamp,
-        "LED Status",
-        "", // Empty Temp
-        "", // Empty RSSI
-        "", // Empty Uptime
-        data.state
+        "-", // Temp
+        "-", // RSSI
+        "-", // Uptime
+        data.state // Column E
       ]);
+      
     }
-    
+
     return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
   } catch (err) {
     return ContentService.createTextOutput("Error: " + err.message).setMimeType(ContentService.MimeType.TEXT);
@@ -2272,7 +2278,7 @@ To capture whenever the LED state changes or is toggled:
    SELECT
      payload.state as state
    FROM
-     "esp32s3/led/state", "esp32s3/led/set"
+     "esp32s3/led/state"
    ```
 
 3. Click **Add Action** (or **Add Sink**) and select your existing `google_sheets_connector`.
