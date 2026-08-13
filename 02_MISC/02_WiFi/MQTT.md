@@ -2287,4 +2287,86 @@ To capture whenever the LED state changes or is toggled:
 
 6. Click **Save**.
 
+
 Now, whenever telemetry is sent or the LED is toggled via `esp32s3/led/set` / `esp32s3/led/state`, the row will automatically append to your Google Sheet with the correct data columns filled in.
+
+---
+## Send a toggle command from Google Sheets back to your ESP32-S3
+To send a toggle command from Google Sheets back to your ESP32-S3 through EMQX, you will use Google Apps Script to make an HTTP POST request to the EMQX Cloud REST API, which then publishes the message to the `esp32s3/led/set` topic.
+
+### Step 1: Obtain EMQX REST API Credentials
+
+1. In your EMQX Cloud Console, go to **Management → API Keys** (or **Deployment Settings → API Keys**).
+2. Click **Create API Key**.
+3. Set the key description (e.g., `Google Sheets Control`) and assign **Publish** or **Admin** permissions.
+4. Copy the generated **API Key** (Username) and **Secret Key** (Password).
+
+### Step 2: Set Up the Control Interface in Google Sheets
+
+1. Open your Google Sheet.
+2. In a clean cell (e.g., **Cell H2**), type either `ON` or `OFF`.
+3. Highlight the cell, then go to **Insert → Drawing**.
+4. Draw a button (a rectangle with text like "Toggle LED"), click **Save and Close**, and position the drawing next to your cell.
+
+### Step 3: Add the Publish Script in Google Apps Script
+
+1. In your Google Sheet, open **Extensions → Apps Script**.
+2. At the bottom of `Code.gs`, append the following function:
+
+```javascript
+function sendLedToggle() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var ledCommand = sheet.getRange("H2").getValue().toString().trim().toUpperCase(); // Cell H2
+  
+  // EMQX Deployment API Configuration
+  var appKey = "YOUR_EMQX_API_KEY";
+  var appSecret = "YOUR_EMQX_SECRET_KEY";
+  var host = "ffcebc18.ala.asia-southeast1.emqxsl.com"; // Your EMQX Host domain (without http://)
+  
+  // EMQX Cloud v5 REST API endpoint for publishing
+  var url = "https://" + host + ":8084/api/v5/publish"; 
+  
+  var payload = JSON.stringify({
+    "topic": "esp32s3/led/set",
+    "payload": JSON.stringify({ "state": ledCommand }),
+    "qos": 1,
+    "retain": false
+  });
+  
+  var authHeader = "Basic " + Utilities.base64Encode(appKey + ":" + appSecret);
+  
+  var options = {
+    "method": "post",
+    "contentType": "application/json",
+    "headers": {
+      "Authorization": authHeader
+    },
+    "payload": payload,
+    "muteHttpExceptions": true
+  };
+  
+  try {
+    var response = UrlFetchApp.fetch(url, options);
+    Logger.log("Response: " + response.getContentText());
+  } catch (e) {
+    Logger.log("Error sending MQTT command: " + e.toString());
+  }
+}
+```
+
+3. Replace `YOUR_EMQX_API_KEY`, `YOUR_EMQX_SECRET_KEY`, and `host` with your actual credentials.
+4. Click **Save** (disk icon).
+
+### Step 4: Link the Function to the Button
+
+1. Go back to your Google Sheet.
+2. Right-click on the button drawing you created in Step 2.
+3. Click the three dots in the top-right corner of the drawing and select **Assign script**.
+4. Type `sendLedToggle` and click **OK**.
+
+### Step 5: Test the Setup
+
+1. Change **Cell H2** to `ON` or `OFF`.
+2. Click your **Toggle LED** button in Google Sheets.
+3. EMQX will receive the REST API call and publish `{"state":"ON"}` or `{"state":"OFF"}` to the topic `esp32s3/led/set`.
+4. Your ESP32-S3, which is subscribed to `esp32s3/led/set`, will receive the MQTT payload and toggle the physical pin.
