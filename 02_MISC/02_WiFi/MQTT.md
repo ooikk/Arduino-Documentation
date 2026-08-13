@@ -2460,6 +2460,11 @@ const char* TOPIC_LED_SET = "YOUR_ADAFRUIT_USERNAME/feeds/led-control";
 const char* TOPIC_LED = "YOUR_ADAFRUIT_USERNAME/feeds/led-control";   // Adafruit IO feeds are bidirectional:
 ```
 
+Use standard `WiFiClient` (Port 1883): If you are running home bench tests, prioritize low RAM usage, or want fast reconnection times.
+
+Use `WiFiClientSecure` (Port 8883): If this ESP32 is deployed on a public or shared network, or if you want to protect your Adafruit IO key from packet capture.
+
+
 #### 2. Connect Function
 
 ```cpp
