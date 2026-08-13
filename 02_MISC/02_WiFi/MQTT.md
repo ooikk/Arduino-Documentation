@@ -2311,7 +2311,7 @@ To send a toggle command from Google Sheets back to your ESP32-S3 through EMQX, 
 ### Step 2: Set Up the Control Interface in Google Sheets
 
 1. Open your Google Sheet.
-2. In a clean cell (e.g., **Cell H2**), type either `ON` or `OFF`.
+2. In a clean cell (e.g., **Cell H2**), type either "1", "0", `ON` or `OFF`.
 3. Highlight the cell, then go to **Insert → Drawing**.
 4. Draw a button (a rectangle with text like "Toggle LED"), click **Save and Close**, and position the drawing next to your cell.
 
@@ -2320,45 +2320,58 @@ To send a toggle command from Google Sheets back to your ESP32-S3 through EMQX, 
 1. In your Google Sheet, open **Extensions → Apps Script**.
 2. At the bottom of `Code.gs`, append the following function:
 
+
+  
 ```javascript
+
 function sendLedToggle() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var ledCommand = sheet.getRange("H2").getValue().toString().trim().toUpperCase(); // Cell H2
-  
-  // EMQX Deployment API Configuration
+  var rawValue = sheet.getRange("H2").getValue().toString().trim().toUpperCase(); // Cell H2
+
+  // Convert cell value to string "1" or "0"
+  var commandStr = "0";
+  if (rawValue === "ON" || rawValue === "1" || rawValue === "TRUE") {
+    commandStr = "1";
+  } else if (rawValue === "OFF" || rawValue === "0" || rawValue === "FALSE") {
+    commandStr = "0";
+  }
+
+  // EMQX API Credentials
   var appKey = "YOUR_EMQX_API_KEY";
   var appSecret = "YOUR_EMQX_SECRET_KEY";
-  var host = "ffcebc18.ala.asia-southeast1.emqxsl.com"; // Your EMQX Host domain (without http://)
-  
-  // EMQX Cloud v5 REST API endpoint for publishing
-  var url = "https://" + host + ":8084/api/v5/publish"; 
-  
-  var payload = JSON.stringify({
+
+  // Exact API Endpoint + "/publish"
+  var url = "https://ffcebc18.ala.asia-southeast1.emqxsl.com:8443/api/v5/publish";
+
+  var requestData = {
     "topic": "esp32s3/led/set",
-    "payload": JSON.stringify({ "state": ledCommand }),
+    "payload": commandStr,             // Sends plain string "1" or "0"
+    "payload_encoding": "plain",       // Tells EMQX to publish as plain text
     "qos": 1,
     "retain": false
-  });
-  
+  };
+
   var authHeader = "Basic " + Utilities.base64Encode(appKey + ":" + appSecret);
-  
+
   var options = {
     "method": "post",
     "contentType": "application/json",
     "headers": {
       "Authorization": authHeader
     },
-    "payload": payload,
+    "payload": JSON.stringify(requestData),
     "muteHttpExceptions": true
   };
-  
+
   try {
     var response = UrlFetchApp.fetch(url, options);
-    Logger.log("Response: " + response.getContentText());
+    Logger.log("Response Code: " + response.getResponseCode());
+    Logger.log("Response Body: " + response.getContentText());
   } catch (e) {
     Logger.log("Error sending MQTT command: " + e.toString());
   }
 }
+
 ```
 
 3. Replace `YOUR_EMQX_API_KEY`, `YOUR_EMQX_SECRET_KEY`, and `host` with your actual credentials.
