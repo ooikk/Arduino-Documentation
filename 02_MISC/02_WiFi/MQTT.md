@@ -2190,3 +2190,101 @@ Open your Google Sheet—new rows with the current timestamp, temperature, RSSI,
 **Here is the spreadsheet**:     
 https://docs.google.com/spreadsheets/d/1GANocTNqmIkN6JLxhaTbU2BrWMLX-QrQ-5-Tz_ssT1g/edit?gid=0#gid=0
 
+## Handle both sensor telemetry and LED control/status messages
+
+To handle both sensor telemetry and LED control/status messages in the same Google Sheet, update your Apps Script to dynamically process different MQTT topics, and add a second EMQX rule.
+
+### Step 1: Update the Google Sheet Header
+
+In your Google Sheet, add two new columns to Row 1 so it accommodates both telemetry and LED status data:
+
+- Cell A1: Timestamp
+- Cell B1: Type
+- Cell C1: Temperature
+- Cell D1: RSSI
+- Cell E1: Uptime
+- Cell F1: LED State
+
+### Step 2: Update the Google Apps Script
+
+Open **Extensions → Apps Script** and replace `Code.gs` with this updated script that checks the incoming `type` field:
+
+```javascript
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
+    var timestamp = new Date();
+
+    if (data.type === "telemetry") {
+      // Append Telemetry Row
+      sheet.appendRow([
+        timestamp,
+        "Telemetry",
+        data.temp,
+        data.rssi,
+        data.uptime,
+        "" // Empty LED State
+      ]);
+    } else if (data.type === "led_status") {
+      // Append LED Status Row
+      sheet.appendRow([
+        timestamp,
+        "LED Status",
+        "", // Empty Temp
+        "", // Empty RSSI
+        "", // Empty Uptime
+        data.state
+      ]);
+    }
+    
+    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.message).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+```
+
+**Important:** After updating the script, click **Deploy → Manage deployments → Edit (Pencil icon) → Change Version to New version → Click Deploy**.
+
+### Step 3: Update Rule 1 (Telemetry Rule Body Template in EMQX)
+
+Update the HTTP Action body template for your existing telemetry rule so it includes the `"type": "telemetry"` flag:
+
+```json
+{
+  "type": "telemetry",
+  "temp": ${temp},
+  "rssi": ${rssi},
+  "uptime": ${uptime}
+}
+```
+
+### Step 4: Create Rule 2 for LED Status (`esp32s3/led/state`)
+
+To capture whenever the LED state changes or is toggled:
+
+1. In EMQX, go to **Data Integration → Rules → Create Rule**.
+2. **SQL Editor:**
+
+   ```sql
+   SELECT
+     payload.state as state
+   FROM
+     "esp32s3/led/state", "esp32s3/led/set"
+   ```
+
+3. Click **Add Action** (or **Add Sink**) and select your existing `google_sheets_connector`.
+4. Set **Method** to `POST` and add Header `Content-Type: application/json`.
+5. **Request Body:**
+
+   ```json
+   {
+     "type": "led_status",
+     "state": "${state}"
+   }
+   ```
+
+6. Click **Save**.
+
+Now, whenever telemetry is sent or the LED is toggled via `esp32s3/led/set` / `esp32s3/led/state`, the row will automatically append to your Google Sheet with the correct data columns filled in.
