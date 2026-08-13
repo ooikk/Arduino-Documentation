@@ -2457,6 +2457,7 @@ const char* TOPIC_TEMP    = "YOUR_ADAFRUIT_USERNAME/feeds/temperature";
 const char* TOPIC_RSSI    = "YOUR_ADAFRUIT_USERNAME/feeds/rssi";
 const char* TOPIC_UPTIME  = "YOUR_ADAFRUIT_USERNAME/feeds/uptime";
 const char* TOPIC_LED_SET = "YOUR_ADAFRUIT_USERNAME/feeds/led-control";
+const char* TOPIC_LED = "YOUR_ADAFRUIT_USERNAME/feeds/led-control";   // Adafruit IO feeds are bidirectional:
 ```
 
 #### 2. Connect Function
@@ -2487,6 +2488,8 @@ mqttClient.publish(TOPIC_RSSI, String(rssi).c_str());
 mqttClient.publish(TOPIC_UPTIME, String(uptime).c_str());
 ```
 #### 4. Handling Callback for LED
+
+When the ESP32 receives a message from Adafruit IO, toggle the pin and publish the confirmed state back to Adafruit IO:     
 ```cpp
 void callback(char* topic, byte* payload, unsigned int length) {
   payload[length] = '\0';
@@ -2495,8 +2498,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   if (message == "1") {
     digitalWrite(LED_PIN, HIGH);
+    // Send state confirmation back to Adafruit IO
+    mqttClient.publish(TOPIC_LED, "1");
   } else if (message == "0") {
     digitalWrite(LED_PIN, LOW);
+    // Send state confirmation back to Adafruit IO
+    mqttClient.publish(TOPIC_LED, "0");
   }
 }
 ```
