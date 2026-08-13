@@ -2093,3 +2093,58 @@ Here is how the options compare for completely free setups:
 1. Choose **HTTP Server**.
 2. Set the URL to your deployed Google Apps Script Web App URL (`https://script.google.com/macros/s/.../exec`).
 3. Whenever your ESP32 publishes telemetry, EMQX will trigger an HTTP POST request to append that data directly into a Google Sheet.
+
+---
+## Setting up EMQX Tables
+
+Setting up **EMQX Tables** allows you to store your ESP32 telemetry in a managed time-series database directly within EMQX Cloud without needing an external database server.
+
+
+### Step 1: Create the Connector
+
+1. Select **EMQX Tables** under **Connector Type** and click **Next**.
+2. Set the deployment details:
+   * **Connector Name:** `emqx_tables_connector`
+   * **Database Name:** `public`
+   * **Username / Password:** Select or enter your EMQX Tables user credentials.
+3. Click **Test Connectivity**. Once verified, click **Create**.
+
+---
+
+### Step 2: Create the Rule SQL
+
+1. Go to **Data Integration** $\rightarrow$ **Rules** $\rightarrow$ **Create Rule**.
+2. In the **SQL Editor**, paste this query to parse your ESP32 JSON payload (`{"temp":23,"rssi":-69,"uptime_sec":50}`):
+
+```sql
+SELECT
+  timestamp as ts,
+  payload.temp as temp,
+  payload.rssi as rssi,
+  payload.uptime_sec as uptime
+FROM
+  "esp32s3/telemetry"
+```
+
+### Step 3: Add Action (Line Protocol)
+1. Click **Add Action** and select your `emqx_tables_connector`.
+2. Under **Write Syntax** (Line Protocol), define how the table should format incoming data:     
+```text
+esp32_telemetry temp=${temp},rssi=${rssi},uptime=${uptime}${ts}
+```
+
+- `esp32_telemetry` becomes the auto-created table name.
+- `temp`, `rssi`, and `uptime` are stored as numerical field values.
+- `${ts}` sets the timestamp index.
+
+3. Click **Save** to activate the rule.     
+
+### Step 4: Verify Saved Data
+1. Let your ESP32-S3 publish a few telemetry updates.
+2. Go to **EMQX Tables** in the left menu and select **Data Explorer**.
+3. Run the following SQL query to see your stored rows:
+
+```SQL
+SELECT * FROM esp32_telemetry ORDER BY time DESC LIMIT 10;
+```
+
