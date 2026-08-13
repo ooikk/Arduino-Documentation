@@ -2095,56 +2095,96 @@ Here is how the options compare for completely free setups:
 3. Whenever your ESP32 publishes telemetry, EMQX will trigger an HTTP POST request to append that data directly into a Google Sheet.
 
 ---
-## Setting up EMQX Tables
 
-Setting up **EMQX Tables** allows you to store your ESP32 telemetry in a managed time-series database directly within EMQX Cloud without needing an external database server.
+## Use Google Sheets via HTTP Server (100% Free & Fast)
 
+### Phase 1: Set Up the Google Sheet & Script
 
-### Step 1: Create the Connector
-
-1. Select **EMQX Tables** under **Connector Type** and click **Next**.
-2. Set the deployment details:
-   * **Connector Name:** `emqx_tables_connector`
-   * **Database Name:** `public`
-   * **Username / Password:** Select or enter your EMQX Tables user credentials.
-3. Click **Test Connectivity**. Once verified, click **Create**.
+#### Step 1: Create the Google Sheet
+1. Open [Google Sheets](https://sheets.new) and create a blank spreadsheet.
+2. Label the top row (Row 1) as follows:
+   * **Cell A1:** `Timestamp`
+   * **Cell B1:** `Temperature`
+   * **Cell C1:** `RSSI`
+   * **Cell D1:** `Uptime`
 
 ---
 
-### Step 2: Create the Rule SQL
+#### Step 2: Add Google Apps Script
+1. Click **Extensions** -> **Apps Script**.
+2. Replace all the code in `Code.gs` with the following script:
 
-1. Go to **Data Integration** $\rightarrow$ **Rules** $\rightarrow$ **Create Rule**.
-2. In the **SQL Editor**, paste this query to parse your ESP32 JSON payload (`{"temp":23,"rssi":-69,"uptime_sec":50}`):
+```javascript
+function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
+    
+    // Append a new row with the parsed fields
+    sheet.appendRow([
+      new Date(),
+      data.temp,
+      data.rssi,
+      data.uptime
+    ]);
+    
+    return ContentService.createTextOutput("Success").setMimeType(ContentService.MimeType.TEXT);
+  } catch (err) {
+    return ContentService.createTextOutput("Error: " + err.message).setMimeType(ContentService.MimeType.TEXT);
+  }
+}
+```
+#### Step 3: Deploy as a Web App   
+1. At the top right of the Apps Script window, click **Deploy** -> **New deployment**.
+2. Click the **Gear icon (Select type)** next to "Select type" and choose **Web app**.
+3. Configure the settings:
+   - **Description**: `EMQX Telemetry Logger`
+   - **Execute as**: `Me (your-email@gmail.com)`
+   - **Who has access**: `Anyone` (Crucial for EMQX to access it without authentication header issues)
+4. Click Deploy.
+5. Grant access permissions when prompted.
+6. Copy the **Web App URL** (starts with `https://script.google.com/macros/s/.../exec`).
 
-```sql
-SELECT
-  timestamp as ts,
-  payload.temp as temp,
-  payload.rssi as rssi,
-  payload.uptime_sec as uptime
-FROM
-  "esp32s3/telemetry"
+### Phase 2: Configure EMQX Cloud Integration
+#### Step 4: Create the HTTP Server Connector
+1. Go back to your **EMQX Cloud Console**.
+2. In the left menu, select **Data Integration** -> **Connectors** -> **New Connector**.
+3. Select **HTTP Server** as the Connector Type.
+4. Fill in the fields:
+   - **Connector Name**: `google_sheets_connector`
+   - **URL**: Paste your Google Apps Script Web App URL.
+5. Click **Test Connectivity** (it may return a success or direct code response) and click **Create**.
+#### Step 5: Create the Processing Rule
+1. Under **Data Integration**, go to **Rules** -> **Create Rule**.
+2. In the **SQL Editor**, enter:
+   ```SQL
+   SELECT
+    payload.temp as temp,
+    payload.rssi as rssi,
+    payload.uptime_sec as uptime
+   FROM
+    "esp32s3/telemetry"
+   ```
+
+#### Step 6: Attach Action & Body Template
+1. On the same page, click **Add Action** (or **Add Sink**) and select **HTTP Server**.
+2. Choose your `google_sheets_connector`.
+3. Configure the HTTP Action request settings:
+   - **Method**: `POST`
+   - **Headers**: `Add Content-Type: application/json`
+   - **Request Body**: Use JSON matching your script keys:
+```JSON
+   {
+  "temp": ${temp},
+  "rssi": ${rssi},
+  "uptime": ${uptime}
+  }
 ```
 
-### Step 3: Add Action (Line Protocol)
-1. Click **Add Action** and select your `emqx_tables_connector`.
-2. Under **Write Syntax** (Line Protocol), define how the table should format incoming data:     
-```text
-esp32_telemetry temp=${temp},rssi=${rssi},uptime=${uptime}${ts}
-```
+4. Click **Save** to complete rule creation.    
 
-- `esp32_telemetry` becomes the auto-created table name.
-- `temp`, `rssi`, and `uptime` are stored as numerical field values.
-- `${ts}` sets the timestamp index.
+#### Step 7: Verify Data Ingestion
+Ensure your ESP32-S3 is connected and publishing to `esp32s3/telemetry`.
+Open your Google Sheet—new rows with the current timestamp, temperature, RSSI, and uptime values will begin populating automatically as messages arrive.
 
-3. Click **Save** to activate the rule.     
-
-### Step 4: Verify Saved Data
-1. Let your ESP32-S3 publish a few telemetry updates.
-2. Go to **EMQX Tables** in the left menu and select **Data Explorer**.
-3. Run the following SQL query to see your stored rows:
-
-```SQL
-SELECT * FROM esp32_telemetry ORDER BY time DESC LIMIT 10;
-```
 
