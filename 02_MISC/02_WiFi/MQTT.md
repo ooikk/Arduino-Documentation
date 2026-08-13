@@ -2503,7 +2503,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 ### Summary of Data Flow
 
-
-$$\text{Dashboard Switch} \longrightarrow \text{io.adafruit.com} \xrightarrow{\text{feeds/led-control}} \text{ESP32 (Toggles Pin)}$$$$\text{ESP32 Sensors} \xrightarrow{\text{feeds/temperature, rssi, uptime}} \text{io.adafruit.com} \longrightarrow \text{Dashboard Gauges}$$
-
+```text
+                                         feeds/led-control
+Dashboard Switch ----> io.adafruit.com --------------------> ESP32 (Toggles Pin)
+              feeds/temperature, rssi, uptime
+ESP32 Sensors --------------------------------> io.adafruit.com --------> Dashboard Gauges
+```
 
