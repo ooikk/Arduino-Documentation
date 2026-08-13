@@ -2185,6 +2185,8 @@ function doPost(e) {
 
 #### Step 7: Verify Data Ingestion
 Ensure your ESP32-S3 is connected and publishing to `esp32s3/telemetry`.
-Open your Google Sheet—new rows with the current timestamp, temperature, RSSI, and uptime values will begin populating automatically as messages arrive.
+Open your Google Sheet—new rows with the current timestamp, temperature, RSSI, and uptime values will begin populating automatically as messages arrive.     
 
+**Here is the spreadsheet**:     
+https://docs.google.com/spreadsheets/d/1GANocTNqmIkN6JLxhaTbU2BrWMLX-QrQ-5-Tz_ssT1g/edit?gid=0#gid=0
 
