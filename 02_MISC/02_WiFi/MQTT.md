@@ -2390,3 +2390,120 @@ function sendLedToggle() {
 2. Click your **Toggle LED** button in Google Sheets.
 3. EMQX will receive the REST API call and publish `{"state":"ON"}` or `{"state":"OFF"}` to the topic `esp32s3/led/set`.
 4. Your ESP32-S3, which is subscribed to `esp32s3/led/set`, will receive the MQTT payload and toggle the physical pin.
+
+---
+## Adafruit IO Dashboard
+Here is a step-by-step guide to set up an **Adafruit IO Dashboard** for your ESP32-S3 setup. 
+
+Since Adafruit IO operates as a managed MQTT broker and dashboard platform, you can either connect your ESP32 **directly to Adafruit IO** or bridge it through your existing setup. Below is the standard, direct method using Adafruit IO's MQTT broker.
+
+---
+
+### Step 1: Get Your Adafruit IO Credentials
+
+1. Go to [io.adafruit.com](https://io.adafruit.com/) and log in (or create a free account).
+2. Click on **My Key** (yellow key icon in the top navigation bar).
+3. Copy down your:
+   * **Username**
+   * **Active Key** (this acts as your MQTT password)
+
+---
+
+### Step 2: Create Feeds in Adafruit IO
+
+Feeds hold your data streams. You will need feeds for Telemetry (Temperature, RSSI, Uptime) and LED Control/Status.
+
+1. Go to **Feeds** $\rightarrow$ **New Feed**.
+2. Create the following 4 feeds:
+   * `temperature`
+   * `rssi`
+   * `uptime`
+   * `led-control`
+
+---
+
+### Step 3: Create the Dashboard Widgets
+
+1. Go to **Dashboards** $\rightarrow$ **New Dashboard**.
+2. Name it (e.g., `ESP32 Control Panel`) and open it.
+3. Click the **Gear icon** (top right) $\rightarrow$ **Create New Block**.
+
+#### Add the Blocks:
+* **Toggle / Switch (For LED Control):**
+  * Select **Toggle**.
+  * Connect it to the `led-control` feed.
+  * Set **On Value** = `1`, **Off Value** = `0`.
+* **Gauge / Line Chart (For Temperature):**
+  * Select **Gauge** or **Line Chart**.
+  * Connect it to the `temperature` feed.
+* **Text / Gauge (For RSSI & Uptime):**
+  * Add blocks connecting to `rssi` and `uptime` feeds.
+
+---
+
+### Step 4: Update ESP32 Code for Adafruit IO
+
+To publish and subscribe directly to Adafruit IO via MQTT using `PubSubClient`, update your ESP32 configuration:
+
+#### 1. Connection Parameters
+```cpp
+const char* mqtt_server   = "io.adafruit.com";
+const int   mqtt_port     = 1883;
+const char* adafruit_user = "YOUR_ADAFRUIT_USERNAME";
+const char* adafruit_key  = "YOUR_ADAFRUIT_IO_KEY";
+
+// Adafruit IO Feed Topic Structure: USERNAME/feeds/FEED_NAME
+const char* TOPIC_TEMP    = "YOUR_ADAFRUIT_USERNAME/feeds/temperature";
+const char* TOPIC_RSSI    = "YOUR_ADAFRUIT_USERNAME/feeds/rssi";
+const char* TOPIC_UPTIME  = "YOUR_ADAFRUIT_USERNAME/feeds/uptime";
+const char* TOPIC_LED_SET = "YOUR_ADAFRUIT_USERNAME/feeds/led-control";
+```
+
+#### 2. Connect Function
+
+```cpp
+void reconnectMQTT() {
+  while (!mqttClient.connected()) {
+    Serial.print("Connecting to Adafruit IO...");
+    // Use username and key for MQTT auth
+    if (mqttClient.connect("ESP32S3_Client", adafruit_user, adafruit_key)) {
+      Serial.println("connected!");
+      // Subscribe to the toggle feed topic
+      mqttClient.subscribe(TOPIC_LED_SET);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      delay(2000);
+    }
+  }
+}
+```
+
+#### 3. Publishing Telemetry Data
+```cpp
+// Publishing individual feeds (Adafruit IO prefers individual feed updates)
+mqttClient.publish(TOPIC_TEMP, String(temp).c_str());
+mqttClient.publish(TOPIC_RSSI, String(rssi).c_str());
+mqttClient.publish(TOPIC_UPTIME, String(uptime).c_str());
+```
+#### 4. Handling Callback for LED
+```cpp
+void callback(char* topic, byte* payload, unsigned int length) {
+  payload[length] = '\0';
+  String message = String((char*)payload);
+  message.trim();
+
+  if (message == "1") {
+    digitalWrite(LED_PIN, HIGH);
+  } else if (message == "0") {
+    digitalWrite(LED_PIN, LOW);
+  }
+}
+```
+
+### Summary of Data Flow
+
+
+$$\text{Dashboard Switch} \longrightarrow \text{io.adafruit.com} \xrightarrow{\text{feeds/led-control}} \text{ESP32 (Toggles Pin)}$$$$\text{ESP32 Sensors} \xrightarrow{\text{feeds/temperature, rssi, uptime}} \text{io.adafruit.com} \longrightarrow \text{Dashboard Gauges}$$
+
+
