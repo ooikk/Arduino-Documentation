@@ -2525,3 +2525,49 @@ ESP32 Sensors --------------------------------> io.adafruit.com --------> Dashbo
 **Note**:     
 If you have connection error `5` or `6`, get a new Active Key from Adafruit.     
 
+### Clear Stored History Values  
+To reset or clear the stored historical values for your temperature chart on Adafruit IO, you need to **clear the feed data** associated with that chart. 
+
+In Adafruit IO, dashboard charts don't store data themselves—they simply render whatever data points are stored inside the underlying **Feed** (`temperature`). Clearing the feed empties the historical log and instantly resets your chart to a blank state.
+
+Here are the two ways to do it directly through the Adafruit IO web interface:
+
+---
+
+#### Method 1: Delete All Historical Data (Recommended)
+
+This clears the entire history for the `temperature` feed while leaving your dashboard, widgets, and feed setup completely intact.
+
+1. Log into [io.adafruit.com](https://io.adafruit.com/).
+2. Click on **Feeds** in the top menu bar.
+3. Click on your **`temperature`** feed (or whichever feed feeds into your chart).
+4. Look for the **Actions** dropdown menu near the top right of the feed page.
+5. Click **Clear Feed Data** (or **Delete All Data**).
+6. Confirm the prompt. 
+
+> **Result:** All past datapoints are deleted immediately. Your dashboard chart will reset to blank and will begin plotting again from the next incoming temperature message sent by your ESP32-S3.
+
+---
+
+#### Method 2: Delete Individual Outlier Values
+
+If you don't want to wipe the entire history and only want to delete invalid test readings (e.g., zero values or spikes caused during initial code debugging):
+
+1. Go to **Feeds** $\rightarrow$ **`temperature`**.
+2. Scroll down below the main chart to the **Data / History Table**.
+3. Select the specific data rows/timestamps you want to remove.
+4. Click **Delete Selected**.
+
+---
+
+#### Pro-Tip: Limit How Much Data the Chart Displays
+
+If you want to keep the historical log intact in the feed database but only want the chart to display recent data (e.g., only the last 1 hour or last 24 hours instead of all-time data):
+
+1. Go to your **Dashboard**.
+2. Click the **Gear icon** (top right) $\rightarrow$ **Edit Layout**.
+3. Click the **Gear icon on your Temperature Chart widget**.
+4. Look for the **History / Time History** setting.
+5. Change it from *All Time* to **1 Hour**, **24 Hours**, up to **60 Days** or **Live (Last 30-60 points)**.
+6. Click **Save Block**.
+
