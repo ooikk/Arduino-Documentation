@@ -3307,7 +3307,8 @@ void printLocalTime() {
   // %M = Minute
   // %S = Second
   // %A = Day of the week
-  char timeStringBuff;
+  // Ensure square brackets [] are used so timeStringBuff is a char array (char*)
+  char timeStringBuff[50];
 
   strftime(
     timeStringBuff,
