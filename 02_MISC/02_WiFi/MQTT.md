@@ -1,3 +1,266 @@
+## ESP32 MQTT     
+
+The **ESP32-S3** is a powerful dual-core microcontroller from Espressif designed for IoT applications, featuring 2.4 GHz Wi-Fi, Bluetooth 5 (LE), and dedicated vector instructions for AI acceleration. When combined with **MQTT** (Message Queuing Telemetry Transport), it forms one of the most efficient stacks for lightweight, real-time wireless communication.
+
+[![MQTT: QWEN](https://img.shields.io/badge/MQTT-QWEN-yellow)](./MQTT.md)   
+Refer to this link for description from QWen:     
+https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md
+
+---
+
+## 1. Basic Technology Overview
+
+### The MQTT Architecture
+
+MQTT is a lightweight, publish-subscribe messaging protocol designed for constrained network bandwidth and low memory footprints. Instead of communicating directly using a traditional client-server architecture (like HTTP GET/POST), endpoints route messages through a central **Broker**.
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/40c0b8e4-ad85-4213-93fe-2bc5ffe79dfb" />
+
+*MQTT Publish-Subscribe Architecture. Source: EMQX / Introduction to MQTT Publish-Subscribe Pattern | EMQ*
+
+* **Publisher:** An endpoint (e.g., an ESP32-S3 sensor) that sends data to a specific topic on the broker.
+* **Subscriber:** An endpoint (e.g., a dashboard or another ESP32) that registers interest in a topic to receive published data.
+* **Broker:** The central hub that receives published messages and dispatches them to all matched subscribers.
+* **Topics:** UTF-8 hierarchical strings separated by slashes (e.g., `home/livingroom/temperature`).
+* **Wildcards:**
+  * `+` (Single-level wildcard): `home/+/temperature` matches `home/livingroom/temperature` and `home/kitchen/temperature`.
+  * `#` (Multi-level wildcard): `home/#` matches anything under `home/`.
+
+---
+
+## 2. MQTT Libraries for ESP32-S3
+
+Depending on the development environment (Arduino IDE, PlatformIO, or ESP-IDF), several popular MQTT libraries exist:
+
+| Library | Framework | Features / Best Used For |
+| :--- | :--- | :--- |
+| **PubSubClient** | Arduino IDE / PlatformIO | Lightweight, easy to learn, synchronous. Best for simple projects. |
+| **ESP32MQTTClient** | Arduino Core 3.x / ESP-IDF | Thread-safe, non-blocking background task based on native `esp-mqtt`. |
+| **AsyncMQTT_ESP32** | Arduino IDE / PlatformIO | Non-blocking, event-driven async architecture for high-concurrency tasks. |
+| **esp-mqtt** | Native ESP-IDF C/C++ | Espressif's native C component with TLS support and low memory overhead. |
+
+---
+
+## 3. Key API Reference (`PubSubClient`)
+
+PubSubClient by Nick O’Leary:     
+https://github.com/knolleary/pubsubclient     
+
+When using the widely adopted `PubSubClient` library, the core API methods include:
+
+* `PubSubClient(Client& client)`: Constructor that accepts a `WiFiClient` or `WiFiClientSecure` network client.
+* `setServer(const char * domain, uint16_t port)`: Configures the MQTT broker address and port (default port `1883` for unencrypted, `8883` for TLS).
+* `setCallback(MQTT_CALLBACK_SIGNATURE)`: Sets the callback function triggered when a subscribed topic receives a message.
+* `connect(const char *id, [user], [pass], [willTopic], [willQos], [willRetain], [willMessage])`: Establishes a session with the broker.
+* `publish(const char* topic, const char* payload)`: Sends data to a topic.
+* `subscribe(const char* topic, [qos])`: Subscribes to a topic filter.
+* `loop()`: Must be called regularly in the `loop()` function to process incoming messages and maintain keep-alive signals.
+
+---
+
+## 4. MQTT Brokers
+
+An MQTT client cannot function without a broker. Common setups include:
+
+1. **Local Self-Hosted Brokers:**
+   * **Eclipse Mosquitto:** Lightweight open-source broker running on Raspberry Pi, local servers, or Docker containers.
+   * **EMQX:** Enterprise-grade broker with rich web UI and rule engine.
+2. **Cloud & Public Testing Brokers:**
+   * **Public Test Brokers:** `broker.emqx.io`, `test.mosquitto.org`, or `broker.hivemq.com` (for development only, not production).
+   * **Production Cloud Brokers:** HiveMQ Cloud, AWS IoT Core, Azure IoT Hub, Google Cloud IoT.
+
+---
+
+### 5. Critical Engineering Concepts
+
+* **Quality of Service (QoS):**
+  * **QoS 0 (At most once):** Fire-and-forget; no delivery acknowledgment.
+  * **QoS 1 (At least once):** Message delivery is guaranteed via acknowledgment (`PUBACK`), but duplicates can occur.
+  * **QoS 2 (Exactly once):** Handshake process ensures exact single delivery (higher memory/latency overhead).
+* **Last Will and Testament (LWT):** A pre-configured message registered with the broker during connection. If the ESP32-S3 loses power or abruptly disconnects, the broker automatically publishes the LWT message (e.g., `device/status` -> `"offline"`) to inform other clients.
+* **Security (MQTTS / TLS 1.2/1.3):** The ESP32-S3 features dedicated hardware encryption engines (AES, RSA, ECC). In production, always use `WiFiClientSecure` on port `8883` with Root CA certificates or X.509 client certificates to encrypt communication.
+
+---
+
+### 6. Practical Software Implementation Example
+
+This complete Arduino C++ example demonstrates how an ESP32-S3 connects to Wi-Fi, publishes periodic telemetry to an MQTT broker, and listens for control commands to toggle the built-in LED.
+
+#### Prerequisites
+In Arduino IDE, go to **Tools > Manage Libraries** and install:
+1. **PubSubClient** by Nick O'Leary
+2. **ArduinoJson** by Benoit Blanchon (optional, for structuring JSON payloads)
+
+#### Complete ESP32-S3 Code
+
+```cpp
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+// Configuration - Wi-Fi & MQTT
+const char* WIFI_SSID     = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+
+// Public MQTT Broker for testing
+const char* MQTT_BROKER   = "broker.emqx.io";
+const int   MQTT_PORT     = 1883;
+
+// Topics
+const char* TOPIC_PUB_TEMP = "esp32s3/telemetry/temperature";
+const char* TOPIC_SUB_LED  = "esp32s3/commands/led";
+
+// Hardware Configuration
+#define LED_PIN 2  // Onboard LED Pin for ESP32-S3
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+unsigned long lastMsgTime = 0;
+
+void setupWifi() {
+  delay(10);
+  Serial.print("Connecting to WiFi: ");
+  Serial.println(WIFI_SSID);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWiFi connected. IP Address: ");
+  Serial.println(WiFi.localIP());
+}
+
+// Callback executed when an incoming MQTT message arrives
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("]: ");
+
+  String message = "";
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+  Serial.println(message);
+
+  // Control LED based on incoming command
+  if (String(topic) == TOPIC_SUB_LED) {
+    if (message == "ON" || message == "1") {
+      digitalWrite(LED_PIN, HIGH);
+      Serial.println("Action: LED Turned ON");
+    } else if (message == "OFF" || message == "0") {
+      digitalWrite(LED_PIN, LOW);
+      Serial.println("Action: LED Turned OFF");
+    }
+  }
+}
+
+void reconnectMqtt() {
+  while (!client.connected()) {
+    // Generate a unique client ID based on ESP32 MAC address
+    String clientId = "ESP32S3Client-" + String(WiFi.macAddress());
+    Serial.print("Attempting MQTT connection as ");
+    Serial.print(clientId);
+    Serial.print("...");
+
+    // Connect with Last Will and Testament (LWT) setup
+    const char* lwtTopic   = "esp32s3/status";
+    const char* lwtPayload = "offline";
+    
+    if (client.connect(clientId.c_str(), lwtTopic, 0, true, lwtPayload)) {
+      Serial.println(" Connected!");
+      
+      // Publish online status
+      client.publish(lwtTopic, "online", true);
+
+      // Subscribe to control commands
+      client.subscribe(TOPIC_SUB_LED);
+      Serial.print("Subscribed to: ");
+      Serial.println(TOPIC_SUB_LED);
+    } else {
+      Serial.print(" Failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" Retrying in 5 seconds...");
+      delay(5000);
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+
+  setupWifi();
+
+  client.setServer(MQTT_BROKER, MQTT_PORT);
+  client.setCallback(mqttCallback);
+}
+
+void loop() {
+  // Reconnect Wi-Fi and MQTT automatically if connection drops
+  if (!client.connected()) {
+    reconnectMqtt();
+  }
+  client.loop(); // Keeps MQTT keep-alive active & processes incoming messages
+
+  // Publish telemetry every 5 seconds (non-blocking)
+  unsigned long now = millis();
+  if (now - lastMsgTime > 5000) {
+    lastMsgTime = now;
+
+    // Simulate reading temperature from a sensor connected to ESP32-S3
+    float simulatedTemp = 20.0 + (random(0, 100) / 10.0);
+    String payload = String(simulatedTemp, 2);
+
+    Serial.print("Publishing telemetry: ");
+    Serial.print(payload);
+    Serial.print(" to topic ");
+    Serial.println(TOPIC_PUB_TEMP);
+
+    client.publish(TOPIC_PUB_TEMP, payload.c_str());
+  }
+}
+```
+### 7. Testing the Implementation
+
+#### Upload the Code
+
+Select **ESP32S3 Dev Module** in the Arduino IDE and upload the program.
+
+#### Open the Serial Monitor
+
+Set the baud rate to `115200`. You will see connection messages and periodic telemetry publications.
+
+#### Use an MQTT Client Application
+
+You can use an MQTT client application such as **MQTTX** or the **Mosquitto CLI**.
+
+1. Connect to the MQTT broker:
+
+   ```text
+   Broker: broker.emqx.io
+   Port: 1883
+   ```
+
+2. Subscribe to the following topic to receive live sensor updates:
+
+   ```text
+   esp32s3/telemetry/temperature
+   ```
+
+3. Publish `ON` or `OFF` to the following topic to remotely toggle the ESP32-S3 onboard LED:
+
+   ```text
+   esp32s3/commands/led
+   ```
+   
+
+---
+
 # ESP32-S3 MQTT: Introduction, Description, and Tutorial
 
 This guide explains how to use MQTT with the ESP32-S3. It covers the basic technology, MQTT brokers, useful libraries, API documentation, a practical software implementation example, and additional production-related topics such as TLS security, OTA updates, power management, debugging, and best practices.
@@ -2571,3 +2834,28 @@ If you want to keep the historical log intact in the feed database but only want
 5. Change it from *All Time* to **1 Hour**, **24 Hours**, up to **60 Days** or **Live (Last 30-60 points)**.
 6. Click **Save Block**.
 
+---
+
+## MQTT Brokers
+
+https://io.adafruit.com/
+
+https://www.hivemq.com/
+
+https://mqttx.app/web-client#/
+
+https://www.emqx.com/en/mqtt/public-mqtt5-broker
+
+https://mosquitto.org/
+
+https://cookbook.nodered.org/#mqtt
+
+
+## MQTT References
+https://www.luisllamas.es/como-usar-mqtt-en-el-esp8266-esp32/
+
+https://randomnerdtutorials.com/esp32-mqtt-publish-subscribe-arduino-ide/
+
+https://www.emqx.com/en/blog/esp32-connects-to-the-free-public-mqtt-broker
+
+https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/protocols/mqtt.html
