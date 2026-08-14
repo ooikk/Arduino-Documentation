@@ -14,6 +14,38 @@
 #define SECURE_LOGIN
 #endif
 
+#ifdef ADAFRUIT
+#define ADAFRUIT_CA_CERT  // Optional
+#endif
+
+#ifdef ADAFRUIT_CA_CERT
+// --- ADD THIS CERTIFICATE BLOCK ---
+// Properly formatted DigiCert Global Root G2 CA for Adafruit IO
+const char adafruit_root_ca[] PROGMEM = R"KEY(
+-----BEGIN CERTIFICATE-----
+MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
+MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuzfNNNx7a8myaJCtSnX/RrohCgiN9RlUyfuI
+2/Ou8jqJkTx65qsGGmvPrC3oXgkkRLpimn7Wo6h+4FR1IAWsULecYxpsMNzaHxmx
+1x7e/dfgy5SDN67sH0NO3Xss0r0upS/kqbitOtSZpLYl6ZtrAGCSYP9PIUkY92eQ
+q2EGnI/yuum06ZIya7XzV+hdG82MHauVBJVJ8zUtluNJbd134/tJS7SsVQepj5Wz
+tCO7TG1F8PapspUwtP1MVYwnSlcUfIKdzXOS0xZKBgyMUNGPHgm+F6HmIcr9g+UQ
+vIOlCsRnKPZzFBQ9RnbDhxSJITRNrw9FDKZJobq7nMWxM4MphQIDAQABo0IwQDAP
+BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUTiJUIBiV
+5uNu5g/6+rkS7QYXjzkwDQYJKoZIhvcNAQELBQADggEBAGBnKJRvDkhj6zHd6mcY
+1Yl9PMWLSn/pvtsrF9+wX3N3KjITOYFnQoQj8kVnNeyIv/iPsGEMNKSuIEyExtv4
+NeF22d+mQrvHRAiGfzZ0JFrabA0UWTW98kndth/Jsw1HKj2ZL7tcu7XUIOGZX1NG
+Fdtom/DzMNU+MeKNhJ7jitralj41E6Vf8PlwUHBHQRFXGU7Aj64GxJUTFy8bJZ91
+8rGOmaFvE7FBcf6IKshPECBV1/MUReXgRPTqh5Uykw7+U0b6LJ3/iyK5S9kJRaTe
+pLiaWN0bfVKfjllDiIGknibVb63dDcY3fe0Dkhvld1927jyNxF1WW6LZZm6zNTfl
+MrY=
+-----END CERTIFICATE-----)KEY";
+#endif
+
 // ----------------------------
 // User configuration
 // ----------------------------
@@ -45,8 +77,8 @@ const uint16_t MQTT_PORT = 8883;            // Standard TCP port for ESP32
 
 #ifdef SECURE_LOGIN
 #ifdef ADAFRUIT
-const char* MQTT_USERNAME = "YOUR_ADAFRUIT_USERNAME";                             // YOUR_ADAFRUIT_USERNAME
-const char* MQTT_PASSWORD = "YOUR_ADAFRUIT_IO_KEY";  // YOUR_ADAFRUIT_IO_KEY
+const char* MQTT_USERNAME = "ooikk";                             // YOUR_ADAFRUIT_USERNAME
+const char* MQTT_PASSWORD = "aio_JOMB63R3OjbxFfvlXyywMyJgIRv4";  // YOUR_ADAFRUIT_IO_KEY
 #else
 const char* MQTT_USERNAME = "esp32s3";      // username
 const char* MQTT_PASSWORD = "esp11223344";  // password
@@ -214,8 +246,8 @@ void connectMQTT() {
   String clientId = "esp32s3-";
   clientId += WiFi.macAddress();
   clientId.replace(":", "");
-  //clientId += "-";
-  //clientId += String(random(1000, 9999));
+  clientId += "-";
+  clientId += String(random(1000, 9999));
 
   Serial.printf("Attempting MQTT connection as client ID: %s\n", clientId.c_str());
 
@@ -251,6 +283,15 @@ void connectMQTT() {
 
   } else {
     Serial.printf("MQTT connection failed, state code: %d\n", mqtt.state());
+
+#ifdef ADAFRUIT_CA_CERT
+    // Correct method call for ESP32 Core v3.3.11
+    char errBuf[100] = { 0 };
+    int errCode = secureClient.lastError(errBuf, sizeof(errBuf));
+
+    Serial.printf("MQTT connection failed, state code: %d | TLS Error (%d): %s\n",
+                  mqtt.state(), errCode, errBuf);
+#endif
   }
 }
 
@@ -263,7 +304,8 @@ void publishTelemetry() {
   }
 
   // Replace this with a real sensor reading.
-  int temperature = random(10, 40);
+  //int temperature = random(10, 40);
+  float temperature = random(100, 500) / 10.0;
 #ifdef ADAFRUIT
   // Publishing individual feeds (Adafruit IO prefers individual feed updates)
   mqtt.publish(TOPIC_STATUS, "online", true);  // true: retained
@@ -274,7 +316,7 @@ void publishTelemetry() {
   delay(2000);
   mqtt.publish(TOPIC_UPTIME, String((unsigned long long)(millis() / 1000)).c_str());
   delay(2000);
-  Serial.printf("Published Telemetry** Temp: %d C RSSI: %ld Uptime: %llu LED State: %s\n",
+  Serial.printf("Published Telemetry** Temp: %.1f C RSSI: %ld Uptime: %llu LED State: %s\n",
                 temperature,
                 (long)WiFi.RSSI(),
                 ((unsigned long long)(millis() / 1000)),
@@ -285,7 +327,7 @@ void publishTelemetry() {
   snprintf(
     payload,
     sizeof(payload),
-    "{\"temp\":%d,\"rssi\":%ld,\"uptime_sec\":%llu}",
+    "{\"temp\":%.1f,\"rssi\":%ld,\"uptime_sec\":%llu}",
     temperature,
     (long)WiFi.RSSI(),
     (unsigned long long)(millis() / 1000));
@@ -317,12 +359,33 @@ void setup() {
   connectWiFi();
 
 #ifdef SECURE_LOGIN
-  // --- Quick test mode: skip certificate verification ---
+
+#ifdef ADAFRUIT_CA_CERT
+  // Synchronize system time via NTP
+  // Mandatory for CA certificate validation
+
+
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+  Serial.print("Syncing time for TLS");
+  time_t now = time(nullptr);
+  while (now < 1650000000) {
+    delay(250);
+    Serial.print(".");
+    time(&now);
+  }
+  Serial.println(" -> Done!");
+  secureClient.setCACert(adafruit_root_ca);
+
+  // Attach the Adafruit Root CA for full TLS validation
+  //secureClient.setCACert(adafruit_root_ca);
+#else
+  // use setInsecure() if no CA certificate is defined
   secureClient.setInsecure();
+#endif  // #ifdef ADAFRUIT_CA_CERT
 
   // Increase SSL handshake timeout to handle cloud latency (in seconds)
   secureClient.setHandshakeTimeout(30);
-#endif
+#endif  // #ifdef SECURE_LOGIN
 
   mqtt.setServer(MQTT_HOST, MQTT_PORT);
   mqtt.setCallback(mqttCallback);
