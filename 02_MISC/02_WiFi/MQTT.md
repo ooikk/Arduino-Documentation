@@ -1,4 +1,4 @@
-## ESP32 MQTT     
+# ESP32 MQTT     
 
 The **ESP32-S3** is a powerful dual-core microcontroller from Espressif designed for IoT applications, featuring 2.4 GHz Wi-Fi, Bluetooth 5 (LE), and dedicated vector instructions for AI acceleration. When combined with **MQTT** (Message Queuing Telemetry Transport), it forms one of the most efficient stacks for lightweight, real-time wireless communication.
 
@@ -71,7 +71,7 @@ An MQTT client cannot function without a broker. Common setups include:
 
 ---
 
-### 5. Critical Engineering Concepts
+## 5. Critical Engineering Concepts
 
 * **Quality of Service (QoS):**
   * **QoS 0 (At most once):** Fire-and-forget; no delivery acknowledgment.
@@ -82,16 +82,16 @@ An MQTT client cannot function without a broker. Common setups include:
 
 ---
 
-### 6. Practical Software Implementation Example
+## 6. Practical Software Implementation Example
 
 This complete Arduino C++ example demonstrates how an ESP32-S3 connects to Wi-Fi, publishes periodic telemetry to an MQTT broker, and listens for control commands to toggle the built-in LED.
 
-#### Prerequisites
+### Prerequisites
 In Arduino IDE, go to **Tools > Manage Libraries** and install:
 1. **PubSubClient** by Nick O'Leary
 2. **ArduinoJson** by Benoit Blanchon (optional, for structuring JSON payloads)
 
-#### Complete ESP32-S3 Code
+### Complete ESP32-S3 Code
 
 ```cpp
 #include <WiFi.h>
@@ -225,17 +225,17 @@ void loop() {
   }
 }
 ```
-### 7. Testing the Implementation
+## 7. Testing the Implementation
 
-#### Upload the Code
+### Upload the Code
 
 Select **ESP32S3 Dev Module** in the Arduino IDE and upload the program.
 
-#### Open the Serial Monitor
+### Open the Serial Monitor
 
 Set the baud rate to `115200`. You will see connection messages and periodic telemetry publications.
 
-#### Use an MQTT Client Application
+### Use an MQTT Client Application
 
 You can use an MQTT client application such as **MQTTX** or the **Mosquitto CLI**.
 
@@ -2100,7 +2100,7 @@ A basic ESP32-S3 MQTT project needs:
 
 For learning, PubSubClient with Arduino IDE is simple and effective. For production firmware, ESP-IDF ESP-MQTT or an ESP-MQTT-based Arduino wrapper is usually the better choice because it provides stronger event handling, TLS support, and long-term maintainability.
 
-## 18. Setting MQTT Broker
+# 18. Setting MQTT Broker
 
 The absolute quickest way to test MQTT without installing any software (like Mosquitto, MQTTX, or MQTT Explorer) is to use a **Public MQTT Broker** combined with a **Browser-based Web MQTT Client**.
 
@@ -2108,7 +2108,7 @@ This method requires **zero installation**, bypasses local firewall/router port-
 
 ---
 
-### Use a Browser-Based Web Client
+## Use a Browser-Based Web Client
 Open one of these free, web-based MQTT clients in your browser. They connect to public brokers using WebSockets.
 
 **Option A: HiveMQ Web Client (Easiest)**
@@ -2124,8 +2124,8 @@ Open one of these free, web-based MQTT clients in your browser. They connect to 
 *   *Sign up:* Sign up for EMQX Platform, set Host to `ffcebc18.ala.asia-southeast1.emqxsl.com`, Port to `8084`, and ensure "WebSocket" is selected.
 ---
 
-### Option A: HiveMQ Web Client
-#### Step 1: Test Publishing and Subscribing (In the Browser)
+## Option A: HiveMQ Web Client
+### Step 1: Test Publishing and Subscribing (In the Browser)
 Using the **HiveMQ Web Client** as an example:
 
 1. **Subscribe to a topic:**
@@ -2139,7 +2139,7 @@ Using the **HiveMQ Web Client** as an example:
 
 ---
 
-#### Step2: Connect your ESP32-S3 to the Same Broker
+### Step2: Connect your ESP32-S3 to the Same Broker
 To test your ESP32-S3 without setting up a local server, simply point your ESP32 code to the public broker. The ESP32 will connect via standard TCP, while your browser is connected via WebSockets, but **they will see each other's messages**.
 
 Modify your ESP32 Arduino code configuration section to this:
@@ -2170,7 +2170,7 @@ bool connected = mqtt.connect(clientId.c_str(), TOPIC_STATUS, 0, true, "offline"
 ```
 
 ---
-#### Step 3: Setup HiveMQ Web Client       
+### Step 3: Setup HiveMQ Web Client       
 1. Set `Host: broker.hivemq.com`
 2. Copy `clientId` eg. `esp32s3-441BF6D63E30` from your Serial port.
    ```text
@@ -2188,14 +2188,14 @@ Below is the screenshot
 <img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/204346ae-02f5-4bf4-a408-15d3df71a8d4" />
 
 
-#### Step 4: Test the ESP32 and Browser Together
+### Step 4: Test the ESP32 and Browser Together
 1. Flash the updated code to your ESP32-S3 and open the Serial Monitor.
 2. Go back to your **HiveMQ Web Client** browser tab.
 3. Subscribe to `myname/esp32s3/#` (The `#` is a wildcard that catches all sub-topics).
 4. You will instantly see the ESP32's telemetry and "online" status appear in your browser!
 5. Publish `1` to `myname/esp32s3/led/set` from the browser, and watch your ESP32's physical LED turn on.
 
-### Option B: Connect to MQTTX Web (More Modern UI)
+## Option B: Connect to MQTTX Web (More Modern UI)
 
 If you want to use the standalone web client, open [MQTTX Web](https://mqttx.app/web) in your browser.
 
@@ -2242,7 +2242,7 @@ Below is the screenshot
 Below is the screenshot for subscriptions     
 <img width="90%" height="auto" alt="image" src="https://github.com/user-attachments/assets/732bfe93-761b-4b8b-b268-fef56c2fedc5" />
 
-### Option C: EMQX Web
+## Option C: EMQX Web
 1. Sign up for EMQX Platform at **Start Free**: https://www.emqx.com/en/cloud
 2. Create new project, select EMQX Broker
 3. Set Host: `ffcebc18.ala.asia-southeast1.emqxsl.com`
@@ -2252,7 +2252,7 @@ Below is the screenshot for subscriptions
 
 To view the actual message content in your private EMQX Cloud deployment, use the built-in console tools or MQTTX:
 
-#### 1. View Retained Messages directly in EMQX Console
+### 1. View Retained Messages directly in EMQX Console
 Your screenshot shows **Retained messages: 2**. Because your ESP32 code publishes status messages with `retained = true`, the broker stores the last published payload for those topics.
 
 1. On the left menu under **Monitor**, click **Retained messages** (5th item down from Monitor).
@@ -2260,7 +2260,7 @@ Your screenshot shows **Retained messages: 2**. Because your ESP32 code publishe
 
 ---
 
-#### 2. Live Stream Data via Diagnostics (WebSocket Client)
+### 2. Live Stream Data via Diagnostics (WebSocket Client)
 To watch incoming telemetry streaming in real-time:
 
 1. Look at the left sidebar menu under **Diagnostics** (bottom section).
@@ -2277,7 +2277,7 @@ To watch incoming telemetry streaming in real-time:
 
 ---
 
-#### 3. View Live Data in MQTTX Web / Desktop
+### 3. View Live Data in MQTTX Web / Desktop
 If you are connected via MQTTX Web using your private broker host (`ffcebc18.ala.asia-southeast1.emqxsl.com` on port `8084`):
 
 1. Make sure your ESP32 code is also set to `MQTT_HOST = "ffcebc18.ala.asia-southeast1.emqxsl.com"`.
@@ -2287,7 +2287,7 @@ If you are connected via MQTTX Web using your private broker host (`ffcebc18.ala
 
 ---
 
-### ⚠️ Crucial Warnings for Public Brokers
+## ⚠️ Crucial Warnings for Public Brokers
 1. **Zero Privacy:** Public brokers are exactly that—public. Anyone in the world who subscribes to `#` or guesses your topic name can see your messages. **Never send passwords, API keys, or sensitive personal data over a public broker.**
 2. **No Guarantees:** Public brokers are for testing only. They may restart, drop connections, or rate-limit you without warning.
 3. **Use Unique Topics:** Always prefix your test topics with something unique (like your name, a random string, or your MAC address, e.g., `john_doe_8472/esp32s3/...`) to avoid cross-talk with other developers testing at the same time.
@@ -2359,11 +2359,11 @@ Here is how the options compare for completely free setups:
 
 ---
 
-## Use Google Sheets via HTTP Server (100% Free & Fast)
+# Use Google Sheets via HTTP Server (100% Free & Fast)
 
-### Phase 1: Set Up the Google Sheet & Script
+## Phase 1: Set Up the Google Sheet & Script
 
-#### Step 1: Create the Google Sheet
+### Step 1: Create the Google Sheet
 1. Open [Google Sheets](https://sheets.new) and create a blank spreadsheet.
 2. Label the top row (Row 1) as follows:
    * **Cell A1:** `Timestamp`
@@ -2373,7 +2373,7 @@ Here is how the options compare for completely free setups:
 
 ---
 
-#### Step 2: Add Google Apps Script
+### Step 2: Add Google Apps Script
 1. Click **Extensions** -> **Apps Script**.
 2. Replace all the code in `Code.gs` with the following script:
 
@@ -2397,7 +2397,7 @@ function doPost(e) {
   }
 }
 ```
-#### Step 3: Deploy as a Web App   
+### Step 3: Deploy as a Web App   
 1. At the top right of the Apps Script window, click **Deploy** -> **New deployment**.
 2. Click the **Gear icon (Select type)** next to "Select type" and choose **Web app**.
 3. Configure the settings:
@@ -2408,8 +2408,8 @@ function doPost(e) {
 5. Grant access permissions when prompted.
 6. Copy the **Web App URL** (starts with `https://script.google.com/macros/s/.../exec`).
 
-### Phase 2: Configure EMQX Cloud Integration
-#### Step 4: Create the HTTP Server Connector
+## Phase 2: Configure EMQX Cloud Integration
+### Step 4: Create the HTTP Server Connector
 1. Go back to your **EMQX Cloud Console**.
 2. In the left menu, select **Data Integration** -> **Connectors** -> **New Connector**.
 3. Select **HTTP Server** as the Connector Type.
@@ -2417,7 +2417,7 @@ function doPost(e) {
    - **Connector Name**: `google_sheets_connector`
    - **URL**: Paste your Google Apps Script Web App URL.
 5. Click **Test Connectivity** (it may return a success or direct code response) and click **Create**.
-#### Step 5: Create the Processing Rule
+### Step 5: Create the Processing Rule
 1. Under **Data Integration**, go to **Rules** -> **Create Rule**.
 2. In the **SQL Editor**, enter:
    ```SQL
@@ -2429,7 +2429,7 @@ function doPost(e) {
     "esp32s3/telemetry"
    ```
 
-#### Step 6: Attach Action & Body Template
+### Step 6: Attach Action & Body Template
 1. On the same page, click **Add Action** (or **Add Sink**) and select **HTTP Server**.
 2. Choose your `google_sheets_connector`.
 3. Configure the HTTP Action request settings:
@@ -2447,7 +2447,7 @@ function doPost(e) {
 
 4. Click **Save** to complete rule creation.    
 
-#### Step 7: Verify Data Ingestion
+### Step 7: Verify Data Ingestion
 Ensure your ESP32-S3 is connected and publishing to `esp32s3/telemetry`.
 Open your Google Sheet—new rows with the current timestamp, temperature, RSSI, and uptime values will begin populating automatically as messages arrive.     
 
@@ -2655,14 +2655,14 @@ function sendLedToggle() {
 4. Your ESP32-S3, which is subscribed to `esp32s3/led/set`, will receive the MQTT payload and toggle the physical pin.
 
 ---
-## Adafruit IO Dashboard
+# Adafruit IO Dashboard
 Here is a step-by-step guide to set up an **Adafruit IO Dashboard** for your ESP32-S3 setup. 
 
 Since Adafruit IO operates as a managed MQTT broker and dashboard platform, you can either connect your ESP32 **directly to Adafruit IO** or bridge it through your existing setup. Below is the standard, direct method using Adafruit IO's MQTT broker.
 
 ---
 
-### Step 1: Get Your Adafruit IO Credentials
+## Step 1: Get Your Adafruit IO Credentials
 
 1. Go to [io.adafruit.com](https://io.adafruit.com/) and log in (or create a free account).
 2. Click on **My Key** (yellow key icon in the top navigation bar).
@@ -2672,7 +2672,7 @@ Since Adafruit IO operates as a managed MQTT broker and dashboard platform, you 
 
 ---
 
-### Step 2: Create Feeds in Adafruit IO
+## Step 2: Create Feeds in Adafruit IO
 
 Feeds hold your data streams. You will need feeds for Telemetry (Temperature, RSSI, Uptime) and LED Control/Status.
 
@@ -2684,14 +2684,13 @@ Feeds hold your data streams. You will need feeds for Telemetry (Temperature, RS
    * `led-control`
 
 ---
-
-### Step 3: Create the Dashboard Widgets
+## Step 3: Create the Dashboard Widgets
 
 1. Go to **Dashboards** $\rightarrow$ **New Dashboard**.
 2. Name it (e.g., `ESP32 Control Panel`) and open it.
 3. Click the **Gear icon** (top right) $\rightarrow$ **Create New Block**.
 
-#### Add the Blocks:
+### Add the Blocks:
 * **Toggle / Switch (For LED Control):**
   * Select **Toggle**.
   * Connect it to the `led-control` feed.
@@ -2704,11 +2703,11 @@ Feeds hold your data streams. You will need feeds for Telemetry (Temperature, RS
 
 ---
 
-### Step 4: Update ESP32 Code for Adafruit IO
+## Step 4: Update ESP32 Code for Adafruit IO
 
 To publish and subscribe directly to Adafruit IO via MQTT using `PubSubClient`, update your ESP32 configuration:
 
-#### 1. Connection Parameters
+### 1. Connection Parameters
 ```cpp
 const char* mqtt_server   = "io.adafruit.com";
 const int   mqtt_port     = 1883;
@@ -2728,7 +2727,7 @@ Use standard `WiFiClient` (Port 1883): If you are running home bench tests, prio
 Use `WiFiClientSecure` (Port 8883): If this ESP32 is deployed on a public or shared network, or if you want to protect your Adafruit IO key from packet capture.
 
 
-#### 2. Connect Function
+### 2. Connect Function
 
 ```cpp
 void reconnectMQTT() {
@@ -2748,14 +2747,14 @@ void reconnectMQTT() {
 }
 ```
 
-#### 3. Publishing Telemetry Data
+### 3. Publishing Telemetry Data
 ```cpp
 // Publishing individual feeds (Adafruit IO prefers individual feed updates)
 mqttClient.publish(TOPIC_TEMP, String(temp).c_str());
 mqttClient.publish(TOPIC_RSSI, String(rssi).c_str());
 mqttClient.publish(TOPIC_UPTIME, String(uptime).c_str());
 ```
-#### 4. Handling Callback for LED
+### 4. Handling Callback for LED
 
 When the ESP32 receives a message from Adafruit IO, toggle the pin and publish the confirmed state back to Adafruit IO:     
 ```cpp
@@ -2776,7 +2775,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 ```
 
-### Summary of Data Flow
+## Summary of Data Flow
 
 ```text
                                          feeds/led-control
@@ -2786,9 +2785,13 @@ ESP32 Sensors --------------------------------> io.adafruit.com --------> Dashbo
 ```
 
 **Note**:     
-If you have connection error `5` or `6`, get a new Active Key from Adafruit.     
+- If you have connection error `5` or `6`, get a new Active Key from Adafruit.
+- Adafruit IO (Free) plan limitation:
+  - 30 rate-limited data points per minute (avg. 1 request every 2 seconds). Send each telemetry at least every 2 seconds interval.
+  - 10 Feeds / 5 Dashboards
+  - Check here for detail. https://io.adafruit.com/ooikk/overview
 
-### Clear Stored History Values  
+## Clear Stored History Values  
 To reset or clear the stored historical values for your temperature chart on Adafruit IO, you need to **clear the feed data** associated with that chart. 
 
 In Adafruit IO, dashboard charts don't store data themselves—they simply render whatever data points are stored inside the underlying **Feed** (`temperature`). Clearing the feed empties the historical log and instantly resets your chart to a blank state.
@@ -2797,7 +2800,7 @@ Here are the two ways to do it directly through the Adafruit IO web interface:
 
 ---
 
-#### Method 1: Delete All Historical Data (Recommended)
+### Method 1: Delete All Historical Data (Recommended)
 
 This clears the entire history for the `temperature` feed while leaving your dashboard, widgets, and feed setup completely intact.
 
@@ -2812,7 +2815,7 @@ This clears the entire history for the `temperature` feed while leaving your das
 
 ---
 
-#### Method 2: Delete Individual Outlier Values
+### Method 2: Delete Individual Outlier Values
 
 If you don't want to wipe the entire history and only want to delete invalid test readings (e.g., zero values or spikes caused during initial code debugging):
 
@@ -2823,7 +2826,7 @@ If you don't want to wipe the entire history and only want to delete invalid tes
 
 ---
 
-#### Pro-Tip: Limit How Much Data the Chart Displays
+### Pro-Tip: Limit How Much Data the Chart Displays
 
 If you want to keep the historical log intact in the feed database but only want the chart to display recent data (e.g., only the last 1 hour or last 24 hours instead of all-time data):
 
@@ -2836,7 +2839,7 @@ If you want to keep the historical log intact in the feed database but only want
 
 ---
 
-## MQTT Brokers
+# MQTT Brokers
 
 https://io.adafruit.com/
 
@@ -2851,7 +2854,7 @@ https://mosquitto.org/
 https://cookbook.nodered.org/#mqtt
 
 
-## MQTT References
+# MQTT References
 https://www.luisllamas.es/como-usar-mqtt-en-el-esp8266-esp32/
 
 https://randomnerdtutorials.com/esp32-mqtt-publish-subscribe-arduino-ide/
