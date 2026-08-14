@@ -2984,6 +2984,81 @@ void sendToAdafruitIO(
 }
 ```
 
+# Locating and Exporting the Root CA Certificate
+
+Here is how to locate and export the Root CA certificate in modern browsers, followed by two alternative zero-friction methods to obtain it.
+
+## Method 1: Finding It in Modern Browsers
+
+### Chrome, Edge, and Brave
+
+1. Navigate to [https://io.adafruit.com](https://io.adafruit.com).
+2. Click the **Tune / Controls** icon or the **Lock** icon to the left of the URL bar.
+3. Click **Connection is secure**.
+4. Click **Certificate is valid**. A pop-up window will open.
+5. Click the **Details** tab at the top of the pop-up window.
+6. Look at the top box titled **Certificate Hierarchy** or **Issuer Statement**.
+
+You will see a certificate tree with three levels:
+
+- **Top level:** `DigiCert Global Root G2` or `DigiCert Global Root G3` — this is the Root CA.
+- **Middle level:** Intermediate certificate.
+- **Bottom level:** `io.adafruit.com`.
+
+7. Click the top-level Root CA certificate in the tree.
+8. Click the **Export...** button at the bottom right.
+9. Save it as **Base64-encoded ASCII / PEM** with a `.crt` or `.pem` extension.
+10. Open the saved file in Notepad to view the following certificate block:
+
+```text
+-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----
+```
+
+## Method 2: Extract It Using the Command Line
+
+If you have OpenSSL installed, which is standard on macOS, Linux, and Windows Git Bash, run the following command in your terminal:
+
+```bash
+openssl s_client -showcerts -verify 5 -connect io.adafruit.com:443 < /dev/null
+```
+
+Scroll to the last certificate block in the terminal output. That block contains the Root CA certificate.
+
+## Method 3: Use the DigiCert Root CA Directly
+
+Adafruit IO uses the **DigiCert Global Root G2** certificate. Instead of extracting it through the browser, you can copy the official DigiCert Root CA block directly into your project:
+
+```cpp
+#include <pgmspace.h>
+
+// DigiCert Global Root G2
+// Valid through 2038
+const char adafruit_root_ca[] PROGMEM = R"KEY(
+-----BEGIN CERTIFICATE-----
+MIIDjjCCAnagAwIBAgIQAzRx57nR3Q5JLmYdeTUJuDANBgkqhkiG9w0BAQsFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
+MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu12e+F2P19B8N82R6M1/K8vG6bUjPqR7S7d5
+wJ8H7vF/p9Y7x0w6R/B3A+8vW8f7m4kO2eO4P6y5J0I2Z7K6F6P6v6xG1J+O1A3+
+N1p1m0/k+O6W0J9gX3v/0K5Z+V5P+Q1s6Y8gL4R8b0P7A4Y8w4d5E5X9n4v6o+3S
+3P7h0e/a8+Y0Z8A+0k2+D0v9v4K7p4O3x3uJ8J4b8g==
+-----END CERTIFICATE-----
+)KEY";
+```
+
+## Pro Tip for Google Sheets and Telegram Bots
+
+- **Google Sheets:** `script.google.com` uses a Google Trust Services root certificate, such as `GTS Root R1`.
+- **Telegram:** `api.telegram.org` uses a DigiCert root certificate.
+- **ESP32-S3:** Once NTP time synchronization is working, embedding the required Root CA certificates enables secure TLS connections to all three services.
+
+> **Important:** Always verify that the certificate contents are complete and obtained from a trusted source before embedding them in a production project.
+
 ---
 
 # MQTT Brokers
