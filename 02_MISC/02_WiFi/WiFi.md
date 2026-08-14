@@ -1,7 +1,7 @@
 # WiFi
 
 [![MQTT: QWEN & Gemini](https://img.shields.io/badge/MQTT-QWEN-yellow)](./MQTT.md)   
-Refer to this link for description from QWen & Gemini:     
+Refer to this link for MQTT description from QWen & Gemini:     
 https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md
 
 
