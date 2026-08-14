@@ -3231,11 +3231,11 @@ while (now < 1650000000) {
 
 > **Rule of thumb:** Any hardcoded timestamp after approximately 2022 works well as a sanity check. It only needs to be far enough in the past for any valid TLS certificate to accept it, while also being far enough ahead of 1970 to confirm that NTP has synchronized successfully.
 
-## Display local time
+# Display local time
 
 To display the local time on your ESP32-S3 aligned with Singapore Time (SGT, which is UTC+8 with no Daylight Saving Time), pass Singapore's time zone configuration string to `configTime()` and format the resulting system time using C++ standard library functions.
 
-### 1. Time Zone Configuration String
+## 1. Time Zone Configuration String
 
 Singapore operates on a fixed offset of UTC+8 hours. In standard POSIX time zone format, the string for Singapore is:
 
@@ -3243,7 +3243,7 @@ Singapore operates on a fixed offset of UTC+8 hours. In standard POSIX time zone
 "SGT-8"
 ```
 
-#### How POSIX Strings Work
+### How POSIX Strings Work
 
 The offset sign is inverted relative to standard UTC notation. `SGT-8` tells the C runtime library that Singapore Time (SGT) is 8 hours ahead of UTC:
 
@@ -3253,7 +3253,7 @@ UTC = Local Time - 8 hours
 
 Because Singapore does not observe Daylight Saving Time, no additional DST rule is needed.
 
-### 2. Updated `configTime()` and Print Function
+## 2. Updated `configTime()` and Print Function
 
 Update your `configTime()` call to pass `SGT-8` as the time zone rule, and use `getLocalTime()` or `localtime_r()` to format and print the output.
 
@@ -3322,7 +3322,7 @@ void printLocalTime() {
 }
 ```
 
-### 3. Integration into Your Existing `setup()` and `loop()`
+## 3. Integration into Your Existing `setup()` and `loop()`
 
 Call `syncTimeSingapore()` inside `setup()` immediately after `connectWiFi()`. Call `printLocalTime()` whenever telemetry is published.
 
@@ -3372,7 +3372,7 @@ void loop() {
 }
 ```
 
-### `strftime()` Specifiers Quick Reference
+## `strftime()` Specifiers Quick Reference
 
 | Specifier | Description | Example |
 |---|---|---|
