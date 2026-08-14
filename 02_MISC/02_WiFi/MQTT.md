@@ -3061,6 +3061,104 @@ N1p1m0/k+O6W0J9gX3v/0K5Z+V5P+Q1s6Y8gL4R8b0P7A4Y8w4d5E5X9n4v6o+3S
 
 ---
 
+# Adding the Adafruit Root CA Certificate to Existing C++ Code
+
+Yes, the Root CA certificate method is fully compatible with your existing C++ code.
+
+Your code currently uses `secureClient.setInsecure()` in `setup()` to bypass SSL certificate checking. To incorporate the Adafruit Root CA certificate, you only need to make two small modifications to your existing code.
+
+## The Two Required Code Modifications
+
+### Modification 1: Add the Certificate at the Top of Your File
+
+Add the `adafruit_root_ca` definition near the top of your sketch, immediately after your `#include` directives:
+
+```cpp
+#include <WiFi.h>
+#include <PubSubClient.h>
+#include <WiFiClientSecure.h>
+
+// --- ADD THIS CERTIFICATE BLOCK ---
+const char adafruit_root_ca[] PROGMEM = R"KEY(
+-----BEGIN CERTIFICATE-----
+MIIDjjCCAnagAwIBAgIQAzRx57nR3Q5JLmYdeTUJuDANBgkqhkiG9w0BAQsFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
+MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu12e+F2P19B8N82R6M1/K8vG6bUjPqR7S7d5
+wJ8H7vF/p9Y7x0w6R/B3A+8vW8f7m4kO2eO4P6y5J0I2Z7K6F6P6v6xG1J+O1A3+
+N1p1m0/k+O6W0J9gX3v/0K5Z+V5P+Q1s6Y8gL4R8b0P7A4Y8w4d5E5X9n4v6o+3S
+3P7h0e/a8+Y0Z8A+0k2+D0v9v4K7p4O3x3uJ8J4b8g==
+-----END CERTIFICATE-----
+)KEY";
+```
+
+### Modification 2: Replace `secureClient.setInsecure()` in `setup()`
+
+In your `setup()` function, replace `secureClient.setInsecure()` with `secureClient.setCACert(adafruit_root_ca)` and add an NTP time-synchronization step.
+
+Replace this block in your current `setup()` function:
+
+```cpp
+#ifdef SECURE_LOGIN
+  // --- Quick test mode: skip certificate verification ---
+  secureClient.setInsecure();
+
+  // Increase SSL handshake timeout to handle cloud latency (in seconds)
+  secureClient.setHandshakeTimeout(30);
+#endif
+```
+
+With the following updated block:
+
+```cpp
+#ifdef SECURE_LOGIN
+  #ifdef ADAFRUIT
+    // Synchronize system time via NTP
+    // Mandatory for CA certificate validation
+    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+
+    Serial.print("Waiting for NTP time sync");
+
+    time_t now = time(nullptr);
+
+    while (now < 8 * 3600 * 2) {
+      delay(250);
+      Serial.print(".");
+      now = time(nullptr);
+    }
+
+    Serial.println("\nTime synced!");
+
+    // Attach the Adafruit Root CA for full TLS validation
+    secureClient.setCACert(adafruit_root_ca);
+
+  #else
+    // For other secure brokers, such as EMQX,
+    // use setInsecure() if no CA certificate is defined
+    secureClient.setInsecure();
+  #endif
+
+  // Increase SSL handshake timeout to handle cloud latency
+  // The timeout value is specified in seconds
+  secureClient.setHandshakeTimeout(30);
+#endif
+```
+
+## Why Is `configTime()` Required?
+
+When your ESP32-S3 validates a Root CA certificate, it compares the certificate's validity period with the current date and time.
+
+If the ESP32-S3 starts without NTP time synchronization, its internal clock defaults to **January 1, 1970**. Because 1970 is earlier than the certificate's issuance date in 2013, `WiFiClientSecure` will reject the certificate.
+
+This can cause `PubSubClient` to fail to connect and may produce an MQTT connection-state error such as `-2` or `-4`.
+
+Synchronizing the system clock with NTP before establishing the TLS connection resolves this certificate-validation problem.
+
+---
+
 # MQTT Brokers
 
 https://io.adafruit.com/
