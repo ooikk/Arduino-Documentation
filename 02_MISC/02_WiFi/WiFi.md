@@ -1,5 +1,10 @@
 # WiFi
 
+[![MQTT: QWEN & Gemini](https://img.shields.io/badge/MQTT-QWEN-yellow)](./MQTT.md)   
+Refer to this link for description from QWen & Gemini:     
+https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md
+
+
 ## Description of ESP32-S3 Wi-Fi
 The ESP32-S3 is a highly integrated, low-power Wi-Fi and Bluetooth MCU by Espressif. Its Wi-Fi subsystem is a significant upgrade over the original ESP32, featuring:
 - Standard Support: 2.4 GHz 802.11 b/g/n.
