@@ -2522,3 +2522,6 @@ Dashboard Switch ----> io.adafruit.com --------------------> ESP32 (Toggles Pin)
 ESP32 Sensors --------------------------------> io.adafruit.com --------> Dashboard Gauges
 ```
 
+**Note**:     
+If you have connection error `5` or `6`, get a new Active Key from Adafruit.     
+
