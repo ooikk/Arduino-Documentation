@@ -77,8 +77,8 @@ const uint16_t MQTT_PORT = 8883;            // Standard TCP port for ESP32
 
 #ifdef SECURE_LOGIN
 #ifdef ADAFRUIT
-const char* MQTT_USERNAME = "ooikk";                             // YOUR_ADAFRUIT_USERNAME
-const char* MQTT_PASSWORD = "aio_JOMB63R3OjbxFfvlXyywMyJgIRv4";  // YOUR_ADAFRUIT_IO_KEY
+const char* MQTT_USERNAME = "YOUR_ADAFRUIT_USERNAME";                             // YOUR_ADAFRUIT_USERNAME
+const char* MQTT_PASSWORD = "YOUR_ADAFRUIT_IO_KEY";  // YOUR_ADAFRUIT_IO_KEY
 #else
 const char* MQTT_USERNAME = "esp32s3";      // username
 const char* MQTT_PASSWORD = "esp11223344";  // password
