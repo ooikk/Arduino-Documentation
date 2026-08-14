@@ -3135,7 +3135,7 @@ With the following updated block:
 
 ```cpp
 #ifdef SECURE_LOGIN
-  #ifdef ADAFRUIT
+  #ifdef ADAFRUIT_CA_CERT
     // Synchronize system time via NTP
     // Mandatory for CA certificate validation
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
@@ -3144,7 +3144,7 @@ With the following updated block:
 
     time_t now = time(nullptr);
 
-    while (now < 8 * 3600 * 2) {
+    while (now < 1650000000) {
       delay(250);
       Serial.print(".");
       now = time(nullptr);
@@ -3176,6 +3176,41 @@ If the ESP32-S3 starts without NTP time synchronization, its internal clock defa
 This can cause `PubSubClient` to fail to connect and may produce an MQTT connection-state error such as `-2` or `-4`.
 
 Synchronizing the system clock with NTP before establishing the TLS connection resolves this certificate-validation problem.
+
+## What is 1650000000
+
+That number—`1650000000`—is a Unix Epoch Timestamp.
+
+In human time, `1650000000` corresponds to **April 18, 2022, at 22:40:00 UTC**.
+
+### Why Is It Used in Standard ESP32 Code?
+
+When an ESP32 boots up or resets, its internal system clock resets to `0`, which represents the Unix Epoch start:
+
+> January 1, 1970, 00:00:00 UTC
+
+When you call `configTime(...)`, the ESP32 sends a background request over Wi-Fi to Network Time Protocol (NTP) servers. However, fetching the time over the internet takes a few hundred milliseconds to a couple of seconds.
+
+If your code tries to run TLS functions, such as `WiFiClientSecure`, before NTP responds, the ESP32 still thinks the year is 1970. Because modern SSL/TLS certificates, such as Adafruit IO's DigiCert Root CA certificate, were issued recently and are valid through 2038, mbedTLS rejects the connection immediately because it thinks the current date is decades before the certificate became valid.
+
+### How the Guard Loop Works
+
+```cpp
+time_t now = time(nullptr);
+
+// Loop and delay until the system time passes April 18, 2022
+while (now < 1650000000) {
+  delay(250);
+  Serial.print(".");
+  time(&now);
+}
+```
+
+- If `now < 1650000000`, NTP has not finished updating the clock yet. The system time is still in 1970, so the ESP32 waits and prints a dot.
+- Once `now >= 1650000000`, NTP has successfully fetched the current internet time, such as 2026. The loop exits, and it is now safe to start TLS handshakes with brokers like Adafruit IO.
+
+> **Rule of thumb:** Any hardcoded timestamp after approximately 2022 works well as a sanity check. It only needs to be far enough in the past for any valid TLS certificate to accept it, while also being far enough ahead of 1970 to confirm that NTP has synchronized successfully.
+
 
 ---
 
