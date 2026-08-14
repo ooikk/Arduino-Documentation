@@ -2834,6 +2834,156 @@ If you want to keep the historical log intact in the feed database but only want
 5. Change it from *All Time* to **1 Hour**, **24 Hours**, up to **60 Days** or **Live (Last 30-60 points)**.
 6. Click **Save Block**.
 
+
+# Embedding the Adafruit Root CA Certificate in ESP32-S3
+
+Embedding the Adafruit Root CA certificate ensures your ESP32-S3 verifies Adafruit IO's identity during the TLS handshake, protecting your connection against Man-In-The-Middle (MITM) attacks.
+
+Here is the step-by-step guide to obtaining, embedding, and using the Adafruit server Root CA certificate in your C++ code.
+
+## Step 1: Identify and Extract the Root CA Certificate
+
+Adafruit IO (`io.adafruit.com`) currently uses certificates issued by DigiCert, specifically the **DigiCert Global Root G2** certificate.
+
+You can copy the PEM-encoded root certificate directly into your project:
+
+```text
+-----BEGIN CERTIFICATE-----
+MIIDjjCCAnagAwIBAgIQAzRx57nR3Q5JLmYdeTUJuDANBgkqhkiG9w0BAQsFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
+MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu12e+F2P19B8N82R6M1/K8vG6bUjPqR7S7d5
+wJ8H7vF/p9Y7x0w6R/B3A+8vW8f7m4kO2eO4P6y5J0I2Z7K6F6P6v6xG1J+O1A3+
+N1p1m0/k+O6W0J9gX3v/0K5Z+V5P+Q1s6Y8gL4R8b0P7A4Y8w4d5E5X9n4v6o+3S
+3P7h0e/a8+Y0Z8A+0k2+D0v9v4K7p4O3x3uJ8J4b8g==
+-----END CERTIFICATE-----
+```
+
+> **Note:** You can also extract this manually by navigating to [https://io.adafruit.com](https://io.adafruit.com) in your web browser, clicking the lock icon next to the URL, viewing the certificate hierarchy, and exporting the top-level Root CA as PEM.
+
+## Step 2: Define the CA Certificate in Your ESP32-S3 Code
+
+In your C++ file, or in a separate `certificates.h` header file, format the certificate as a multiline string stored in flash memory using `PROGMEM`:
+
+```cpp
+#include <pgmspace.h>
+
+const char adafruit_root_ca[] PROGMEM = R"KEY(
+-----BEGIN CERTIFICATE-----
+MIIDjjCCAnagAwIBAgIQAzRx57nR3Q5JLmYdeTUJuDANBgkqhkiG9w0BAQsFADBh
+MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
+d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
+MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
+MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
+b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu12e+F2P19B8N82R6M1/K8vG6bUjPqR7S7d5
+wJ8H7vF/p9Y7x0w6R/B3A+8vW8f7m4kO2eO4P6y5J0I2Z7K6F6P6v6xG1J+O1A3+
+N1p1m0/k+O6W0J9gX3v/0K5Z+V5P+Q1s6Y8gL4R8b0P7A4Y8w4d5E5X9n4v6o+3S
+3P7h0e/a8+Y0Z8A+0k2+D0v9v4K7p4O3x3uJ8J4b8g==
+-----END CERTIFICATE-----
+)KEY";
+```
+
+## Step 3: Attach the Certificate to `WiFiClientSecure`
+
+Instead of calling `client.setInsecure()`, assign the root certificate to `WiFiClientSecure` using `setCACert()`:
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+
+WiFiClientSecure secureClient;
+
+void setupSecureConnection() {
+  // Attach the Adafruit Root CA certificate for verification
+  secureClient.setCACert(adafruit_root_ca);
+}
+```
+
+## Step 4: Ensure Modern Time Synchronization
+
+When verifying certificates, the ESP32-S3 checks the certificate's validity dates against the current real-world time.
+
+If your ESP32-S3 clock is set to epoch 0, which corresponds to `1970-01-01`, certificate validation will fail immediately.
+
+You must synchronize the system time using SNTP before opening a TLS connection:
+
+```cpp
+#include <time.h>
+
+void syncTime() {
+  // Synchronize the system clock using NTP
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+
+  Serial.print("Waiting for NTP time sync...");
+
+  time_t now = time(nullptr);
+
+  // Wait until NTP updates the current time
+  // The condition checks whether the year is later than approximately 1970
+  while (now < 8 * 3600 * 2) {
+    delay(500);
+    Serial.print(".");
+    now = time(nullptr);
+  }
+
+  Serial.println("\nTime synchronized successfully!");
+}
+```
+
+## Complete Verification Integration
+
+The following example combines all four steps when making a verified HTTPS connection to Adafruit IO:
+
+```cpp
+void sendToAdafruitIO(
+  String feedKey,
+  float value,
+  String ioUsername,
+  String ioKey
+) {
+  // Ensure the system time is valid before starting TLS
+  syncTime();
+
+  WiFiClientSecure client;
+  client.setCACert(adafruit_root_ca);
+
+  HTTPClient http;
+
+  String url =
+    "https://io.adafruit.com/api/v2/" +
+    ioUsername +
+    "/feeds/" +
+    feedKey +
+    "/data";
+
+  if (http.begin(client, url)) {
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("X-AIO-Key", ioKey);
+
+    String payload = "{\"value\":" + String(value) + "}";
+    int httpCode = http.POST(payload);
+
+    if (httpCode > 0) {
+      Serial.printf(
+        "[Adafruit IO] POST Success, code: %d\n",
+        httpCode
+      );
+    } else {
+      Serial.printf(
+        "[Adafruit IO] TLS / HTTP Error: %s\n",
+        http.errorToString(httpCode).c_str()
+      );
+    }
+
+    http.end();
+  }
+}
+```
+
 ---
 
 # MQTT Brokers
