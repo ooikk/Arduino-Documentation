@@ -2,9 +2,6 @@
 
 The **ESP32-S3** is a powerful dual-core microcontroller from Espressif designed for IoT applications, featuring 2.4 GHz Wi-Fi, Bluetooth 5 (LE), and dedicated vector instructions for AI acceleration. When combined with **MQTT** (Message Queuing Telemetry Transport), it forms one of the most efficient stacks for lightweight, real-time wireless communication.
 
-[![MQTT: QWEN](https://img.shields.io/badge/MQTT-QWEN-yellow)](./MQTT.md)   
-Refer to this link for description from QWen:     
-https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md
 
 ---
 
