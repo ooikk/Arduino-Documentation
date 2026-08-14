@@ -2852,6 +2852,8 @@ https://cookbook.nodered.org/#mqtt
 
 
 # MQTT References
+https://learn.adafruit.com/
+
 https://www.luisllamas.es/como-usar-mqtt-en-el-esp8266-esp32/
 
 https://randomnerdtutorials.com/esp32-mqtt-publish-subscribe-arduino-ide/
