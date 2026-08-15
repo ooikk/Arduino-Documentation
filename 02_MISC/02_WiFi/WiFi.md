@@ -2,7 +2,7 @@
 
 <table>
   <tr>
-    <td >
+    <td align="center">
 
 #### MQTT description from Qwen &amp; Gemini
 
@@ -11,7 +11,7 @@
 [MQTT](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md)
 
     </td>
-    <td >
+    <td align="center">
 
 #### ESP-NOW descriptions
 
@@ -20,7 +20,7 @@
 [ESP Now](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Now.md)
 
     </td>
-    <td ">
+    <td align="center">
 
 #### Wi-Fi Application Examples
 
