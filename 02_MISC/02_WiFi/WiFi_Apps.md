@@ -1,4 +1,4 @@
-# Display Sync and Display Time
+# Time and Date Functions
 
 To display the local time on your ESP32-S3 aligned with Singapore Time (SGT, which is UTC+8 with no Daylight Saving Time), pass Singapore's time zone configuration string to `configTime()` and format the resulting system time using C++ standard library functions.
 
@@ -665,6 +665,139 @@ The `SD.exists()` check determines whether the daily file already exists. When a
 
 `SD.mkdir("/logs")` organizes daily log files in a dedicated directory, preventing clutter in the root directory of the FAT filesystem.
 
+
+# Calculating Elapsed Days on the ESP32-S3
+
+Here is a robust function for calculating the number of days elapsed from a past date, or the number of days remaining until a future date, relative to the current NTP-synchronized time on your ESP32-S3.
+
+## C++ Function Implementation
+
+This implementation uses the standard C library functions `mktime()` and `difftime()`. It automatically handles leap years and variations in month length.
+
+```cpp
+#include <Arduino.h>
+#include <time.h>
+
+/**
+ * Calculates the number of days elapsed since a given date (YYYY, MM, DD).
+ *
+ * Returns:
+ *   - A positive integer for past dates.
+ *   - A negative integer for future dates.
+ *   - -999999 if the time has not yet synchronized through NTP.
+ */
+long getDaysSince(int year, int month, int day) {
+  time_t now = time(nullptr);
+
+  // Guard check: Ensure that NTP has synchronized a valid time
+  if (now < 1650000000) {
+    Serial.println("Error: NTP time not synced!");
+    return -999999;
+  }
+
+  // 1. Build a struct tm for the target date at midnight
+  struct tm targetDate = {0};
+
+  targetDate.tm_year  = year - 1900; // Years since 1900
+  targetDate.tm_mon   = month - 1;   // Months 0-11 (0 = January)
+  targetDate.tm_mday  = day;         // Day of month, 1-31
+  targetDate.tm_hour  = 0;
+  targetDate.tm_min   = 0;
+  targetDate.tm_sec   = 0;
+  targetDate.tm_isdst = -1;          // Automatically detect DST
+
+  // 2. Convert the target date to Unix Epoch seconds
+  time_t targetEpoch = mktime(&targetDate);
+
+  // 3. Calculate the difference in seconds and convert it to days
+  double secondsDiff = difftime(now, targetEpoch);
+  long days = (long)(secondsDiff / 86400.0);
+
+  return days;
+}
+```
+
+## String Parsing Variant
+
+If the date is stored as a string, such as data read from an SD card or a configuration file, use `sscanf()` to parse it directly.
+
+The expected format is `YYYY-MM-DD`.
+
+```cpp
+long getDaysSinceString(const char* dateStr) {
+  int year;
+  int month;
+  int day;
+
+  // Parse the format "YYYY-MM-DD"
+  if (sscanf(dateStr, "%d-%d-%d", &year, &month, &day) == 3) {
+    return getDaysSince(year, month, day);
+  }
+
+  Serial.println("Error: Invalid date format. Use YYYY-MM-DD.");
+  return -999999;
+}
+```
+
+## Usage Example in a Sketch
+
+```cpp
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  // 1. Connect to Wi-Fi and synchronize NTP
+  WiFi.begin("YOUR_SSID", "YOUR_PASSWORD");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(250);
+  }
+
+  configTzTime("SGT-8", "pool.ntp.org", "time.nist.gov");
+
+  // Wait for the clock to synchronize
+  time_t now = time(nullptr);
+
+  while (now < 1650000000) {
+    delay(250);
+    time(&now);
+  }
+
+  // 2. Calculate the number of days since specific dates
+  long daysNewYear = getDaysSince(2026, 1, 1);
+
+  Serial.printf(
+    "Days since January 1, 2026: %ld days\n",
+    daysNewYear
+  );
+
+  long daysFromStr = getDaysSinceString("2024-02-28");
+
+  Serial.printf(
+    "Days since February 28, 2024: %ld days\n",
+    daysFromStr
+  );
+}
+
+void loop() {
+}
+```
+
+## Key Details
+
+### `mktime()` Normalization
+
+The standard library function `mktime()` automatically accounts for:
+
+- Different month lengths, including 28, 30, and 31 days.
+- Leap years.
+- Daylight Saving Time rules when applicable.
+
+### Division by `86400.0`
+
+Dividing by `86400.0`, the number of seconds in a standard day, converts the time difference from seconds to days.
+
+Casting the result to `long` truncates fractional days, preventing partial hours or seconds since midnight from affecting the integer day count.
 
 ---
 
