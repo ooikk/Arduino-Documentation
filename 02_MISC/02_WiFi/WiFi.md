@@ -2,7 +2,11 @@
 
 [![MQTT: QWEN & Gemini](https://img.shields.io/badge/MQTT-QWEN-yellow)](./MQTT.md)   
 Refer to this link for MQTT description from QWen & Gemini:     
-https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md
+[MQTT](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md)
+
+[![WiFi Apps: Other WiFi Applications](https://img.shields.io/badge/WiFi-Apps-red)](./WiFi_Apps.md)   
+Refer to this link for MQTT description from QWen & Gemini:     
+[WiFi Apps](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/WiFi_Apps.md)
 
 
 ## Description of ESP32-S3 Wi-Fi
