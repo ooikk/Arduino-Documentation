@@ -3727,6 +3727,377 @@ After provisioning, RainMaker can generate controls for:
 - Uptime.
 
 
+## Local Button and Cloud Control Synchronization
+
+To handle local hardware input, such as a tactile push button, alongside cloud controls:
+
+1. Monitor the button state inside the program.
+2. Toggle the LED state when the button is pressed.
+3. Explicitly update RainMaker with:
+
+   ```cpp
+   my_switch.updateAndReportParam("Power", newState);
+   ```
+
+This keeps the physical LED output and the mobile application UI synchronized.
+
+### Non-Blocking Button Handling with Debouncing
+
+The following complete sketch for ESP32 Arduino Core v3.x uses non-blocking button handling and software debouncing alongside RainMaker cloud callbacks.
+
+```cpp
+#include "RMaker.h"
+#include "WiFiProv.h"
+
+// -----------------------------------------------------------------------------
+// Hardware and Timing Configuration
+// -----------------------------------------------------------------------------
+const int LED_PIN    = 2;
+const int BUTTON_PIN = 0;
+
+// ESP32-S3 GPIO for the LED
+// ESP32-S3 GPIO for the push button, such as the BOOT button
+
+const uint32_t TELEMETRY_PERIOD_MS = 10000;
+uint32_t lastTelemetryMs = 0;
+
+// Button state tracking and debouncing
+bool currentLedState = false;
+bool lastButtonReading = HIGH;
+
+uint32_t lastDebounceTime = 0;
+const uint32_t DEBOUNCE_DELAY_MS = 50;
+
+// BLE provisioning credentials
+const char* service_name = "PROV_ESP32S3";
+const char* pop = "12345678";
+
+// -----------------------------------------------------------------------------
+// RainMaker Nodes and Devices
+// -----------------------------------------------------------------------------
+static Node my_node;
+
+static Switch my_switch(
+  "LED Control",
+  (void*)&LED_PIN
+);
+
+static TemperatureSensor my_temp_sensor(
+  "Temperature Sensor"
+);
+
+static Device sys_telemetry(
+  "System Stats",
+  "custom.device.system"
+);
+
+static Param* p_status = nullptr;
+static Param* p_rssi   = nullptr;
+static Param* p_uptime = nullptr;
+
+// -----------------------------------------------------------------------------
+// Provisioning Event Callback
+// -----------------------------------------------------------------------------
+void sysProvEvent(arduino_event_t* sys_event) {
+  switch (sys_event->event_id) {
+    case ARDUINO_EVENT_PROV_START:
+      Serial.printf(
+        "\n[PROV] Started! BLE Name: %s | POP PIN: %s\n",
+        service_name,
+        pop
+      );
+      break;
+
+    case ARDUINO_EVENT_PROV_CRED_RECV:
+      Serial.println(
+        "\n[PROV] Received Wi-Fi credentials from the app."
+      );
+      break;
+
+    case ARDUINO_EVENT_PROV_CRED_SUCCESS:
+      Serial.println(
+        "\n[PROV] Provisioning successful! Connected to Wi-Fi."
+      );
+      break;
+
+    default:
+      break;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Cloud Callback
+// Application or Cloud -> ESP32-S3
+// -----------------------------------------------------------------------------
+void write_callback(
+  Device* device,
+  Param* param,
+  const param_val_t val,
+  void* priv_data,
+  write_ctx_t* ctx
+) {
+  const char* device_name = device->getDeviceName();
+  const char* param_name = param->getParamName();
+
+  if (
+    strcmp(device_name, "LED Control") == 0 &&
+    strcmp(param_name, "Power") == 0
+  ) {
+    currentLedState = val.val.b;
+
+    digitalWrite(
+      LED_PIN,
+      currentLedState ? HIGH : LOW
+    );
+
+    // Confirm the state change to the cloud
+    param->updateAndReport(val);
+
+    Serial.printf(
+      "[Cloud Command] LED set to -> %s\n",
+      currentLedState ? "ON" : "OFF"
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Local Hardware Button Handler
+// -----------------------------------------------------------------------------
+void handleHardwareButton() {
+  bool reading = digitalRead(BUTTON_PIN);
+
+  // Reset the debounce timer if the reading changes
+  if (reading != lastButtonReading) {
+    lastDebounceTime = millis();
+  }
+
+  if (
+    millis() - lastDebounceTime >
+    DEBOUNCE_DELAY_MS
+  ) {
+    // Retains the confirmed button state between function calls
+    static bool steadyButtonState = HIGH;
+
+    // Detect a confirmed state change
+    if (reading != steadyButtonState) {
+      steadyButtonState = reading;
+
+      // Trigger the action when the active-LOW button is pressed
+      if (steadyButtonState == LOW) {
+        currentLedState = !currentLedState;
+
+        digitalWrite(
+          LED_PIN,
+          currentLedState ? HIGH : LOW
+        );
+
+        // Report the local state change to RainMaker
+        my_switch.updateAndReportParam(
+          "Power",
+          currentLedState
+        );
+
+        Serial.printf(
+          "[Local Button] Toggled LED -> %s "
+          "(Synced to App)\n",
+          currentLedState ? "ON" : "OFF"
+        );
+      }
+    }
+  }
+
+  lastButtonReading = reading;
+}
+
+// -----------------------------------------------------------------------------
+// Telemetry Publisher
+// -----------------------------------------------------------------------------
+void publishTelemetry() {
+  float temperature = random(100, 500) / 10.0f;
+
+  my_temp_sensor.updateAndReportParam(
+    "Temperature",
+    temperature
+  );
+
+  int rssi = WiFi.RSSI();
+
+  p_rssi->updateAndReport(
+    esp_rmaker_int(rssi)
+  );
+
+  int uptime_sec = static_cast<int>(
+    millis() / 1000
+  );
+
+  p_uptime->updateAndReport(
+    esp_rmaker_int(uptime_sec)
+  );
+
+  p_status->updateAndReport(
+    esp_rmaker_str("online")
+  );
+
+  Serial.printf(
+    "[Telemetry] Temp: %.1f C | RSSI: %d dBm | Uptime: %d s\n",
+    temperature,
+    rssi,
+    uptime_sec
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Setup
+// -----------------------------------------------------------------------------
+void setup() {
+  Serial.begin(115200);
+  delay(500);
+
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+
+  // Configure the button with the internal pull-up resistor
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  // 1. Initialize the RainMaker node
+  my_node = RMaker.initNode(
+    "ESP32S3_Node"
+  );
+
+  // 2. Configure devices
+  my_switch.addCb(write_callback);
+
+  my_node.addDevice(my_switch);
+  my_node.addDevice(my_temp_sensor);
+
+  // 3. Configure telemetry parameters
+  p_status = new Param(
+    "Status",
+    "custom.param.status",
+    esp_rmaker_str("online"),
+    PROP_FLAG_READ
+  );
+
+  p_rssi = new Param(
+    "RSSI",
+    "custom.param.rssi",
+    esp_rmaker_int(0),
+    PROP_FLAG_READ
+  );
+
+  p_uptime = new Param(
+    "Uptime",
+    "custom.param.uptime",
+    esp_rmaker_int(0),
+    PROP_FLAG_READ
+  );
+
+  sys_telemetry.addParam(*p_status);
+  sys_telemetry.addParam(*p_rssi);
+  sys_telemetry.addParam(*p_uptime);
+
+  my_node.addDevice(sys_telemetry);
+
+  // 4. Enable standard RainMaker services
+  RMaker.enableOTA(OTA_USING_TOPICS);
+  RMaker.enableTZService();
+  RMaker.enableSchedule();
+
+  // 5. Start RainMaker and provisioning
+  RMaker.start();
+
+  WiFi.onEvent(sysProvEvent);
+
+  WiFiProv.beginProvision(
+    NETWORK_PROV_SCHEME_BLE,
+    NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM,
+    NETWORK_PROV_SECURITY_1,
+    pop,
+    service_name
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Main Loop
+// -----------------------------------------------------------------------------
+void loop() {
+  // 1. Continuously check the local hardware input
+  handleHardwareButton();
+
+  // 2. Periodically publish system telemetry
+  if (
+    millis() - lastTelemetryMs >=
+    TELEMETRY_PERIOD_MS
+  ) {
+    lastTelemetryMs = millis();
+
+    if (WiFi.status() == WL_CONNECTED) {
+      publishTelemetry();
+    }
+  }
+
+  delay(10);
+}
+```
+
+### Key Implementation Details
+
+#### Active-LOW Pull-Up Configuration
+
+The following line enables the ESP32-S3's internal pull-up resistor:
+
+```cpp
+pinMode(BUTTON_PIN, INPUT_PULLUP);
+```
+
+The button behaves as follows:
+
+- Unpressed: The pin reads `HIGH`.
+- Pressed: The button connects the pin to ground, so it reads `LOW`.
+
+#### Synchronizing the Local State with the Cloud
+
+When the physical button is pressed, this call reports the new state to RainMaker:
+
+```cpp
+my_switch.updateAndReportParam(
+  "Power",
+  currentLedState
+);
+```
+
+The new state is sent to the RainMaker cloud, causing the toggle button in the mobile application to update automatically.
+
+#### Shared State Variable
+
+Both control paths use the same variable:
+
+```cpp
+bool currentLedState = false;
+```
+
+The variable is read and modified by:
+
+- `write_callback()`, which handles app or cloud commands.
+- `handleHardwareButton()`, which handles the physical button.
+
+Using one shared state variable keeps the physical LED and cloud interface synchronized.
+
+#### Non-Blocking Debouncing
+
+The button handler does not use a long blocking `delay()`. Instead, it compares elapsed time using `millis()`:
+
+```cpp
+if (
+  millis() - lastDebounceTime >
+  DEBOUNCE_DELAY_MS
+) {
+  // Confirm the button state
+}
+```
+
+This allows the ESP32-S3 to continue processing RainMaker communication, telemetry, and other tasks while the button input is being debounced.
+
 ## Step-by-Step Dashboard Setup on Evaluation Hub
 
 ### Access the Portal
