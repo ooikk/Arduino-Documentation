@@ -364,6 +364,308 @@ STDoffset[DST[offset][,start[/time],end[/time]]]
 | Sydney, Australia | `Australia/Sydney` | `AEST-10AEDT,M10.1.0,M4.1.0/3` |
 
 
+# Extracting Integer Time Values on the ESP32-S3
+
+To extract individual integer values—year, month, day, hour, minute, and second—from synchronized time on the ESP32-S3, read the member fields directly from the standard `struct tm` populated by `getLocalTime()`.
+
+## Structure of `struct tm`
+
+The `struct tm` structure in the C standard library breaks down date and time into integer fields:
+
+| Field | Variable Name | Data Type | Range / Note |
+|---|---|---|---|
+| Year | `timeinfo.tm_year` | `int` | Years since 1900; add 1900 |
+| Month | `timeinfo.tm_mon` | `int` | 0 to 11; `0 = January`, so add 1 |
+| Day of month | `timeinfo.tm_mday` | `int` | 1 to 31 |
+| Hour | `timeinfo.tm_hour` | `int` | 0 to 23; 24-hour format |
+| Minute | `timeinfo.tm_min` | `int` | 0 to 59 |
+| Second | `timeinfo.tm_sec` | `int` | 0 to 59 |
+| Day of week | `timeinfo.tm_wday` | `int` | 0 to 6; `0 = Sunday`, `1 = Monday`, etc. |
+| Day of year | `timeinfo.tm_yday` | `int` | 0 to 365; zero-based day index |
+
+> **Important:** Always add `1900` to `tm_year` and `1` to `tm_mon`.
+
+## C++ Function to Extract Integers
+
+The following standalone function extracts each time field as an integer:
+
+```cpp
+#include <Arduino.h>
+#include <time.h>
+
+void getTimeAsIntegers() {
+  struct tm timeinfo;
+
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to obtain time");
+    return;
+  }
+
+  // Extract individual fields into integers
+  int year   = timeinfo.tm_year + 1900; // tm_year is years since 1900
+  int month  = timeinfo.tm_mon + 1;     // tm_mon is zero-indexed (0 = January)
+  int day    = timeinfo.tm_mday;        // 1-31
+  int hour   = timeinfo.tm_hour;        // 0-23
+  int minute = timeinfo.tm_min;         // 0-59
+  int second = timeinfo.tm_sec;         // 0-59
+  int wday   = timeinfo.tm_wday;        // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+  // Print extracted integers
+  Serial.println("=== Extracted Time Integers ===");
+  Serial.printf("Year   : %d\n", year);
+  Serial.printf("Month  : %d\n", month);
+  Serial.printf("Day    : %d\n", day);
+  Serial.printf("Hour   : %d\n", hour);
+  Serial.printf("Minute : %d\n", minute);
+  Serial.printf("Second : %d\n", second);
+  Serial.printf("Day/Wk : %d\n", wday);
+
+  // Example: Combine into a single numeric timestamp format (YYYYMMDDHHMMSS)
+  uint64_t numericTimestamp = (uint64_t)year * 10000000000ULL +
+                              (uint64_t)month * 100000000ULL +
+                              (uint64_t)day * 1000000ULL +
+                              (uint64_t)hour * 10000ULL +
+                              (uint64_t)minute * 100ULL +
+                              (uint64_t)second;
+
+  Serial.printf("Compact Numeric ID: %llu\n", numericTimestamp);
+}
+```
+
+## Getting Raw Unix Epoch Time
+
+If you need a single 32-bit or 64-bit integer representing the total elapsed seconds since January 1, 1970, the Unix Epoch, use `time(nullptr)` or `mktime()`:
+
+```cpp
+time_t now = time(nullptr);
+
+// Returns the current Unix timestamp as an integer,
+// for example, 1786799416.
+Serial.printf("Unix Epoch Timestamp: %ld\n", (long)now);
+```
+
+# Date-Based SD Card Logging on the ESP32-S3
+
+Logging data to an SD card using date-based file names, such as `/logs/2026-08-15.csv`, is a reliable pattern for long-running ESP32-S3 data loggers.
+
+By extracting date integers from `struct tm`, you can automatically create a new CSV file at midnight or append data to the existing file for the current day.
+
+## SD Card Wiring
+
+### SPI Mode on the ESP32-S3
+
+| SD Card Module | ESP32-S3 Default SPI Pin |
+|---|---|
+| CS (Chip Select) | GPIO 10, or any available GPIO |
+| MOSI | GPIO 11 |
+| MISO | GPIO 13 |
+| SCK (CLK) | GPIO 12 |
+| VCC | 5V or 3.3V, depending on the module regulator |
+| GND | GND |
+
+## Complete Implementation
+
+This sketch initializes Wi-Fi and NTP, mounts the SD card, builds daily log file names based on date integers, and appends data entries.
+
+```cpp
+#include <Arduino.h>
+#include <WiFi.h>
+#include <time.h>
+#include <SPI.h>
+#include <SD.h>
+
+const char* ssid     = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+// SD card CS pin
+#define SD_CS_PIN 10
+
+// Track the current log file name to detect midnight transitions
+char currentFileName = "";
+
+// -------------------------------------------------------------
+// Initialize Wi-Fi and NTP Time Synchronization
+// -------------------------------------------------------------
+void initTime() {
+  WiFi.begin(ssid, password);
+
+  Serial.print("Connecting to Wi-Fi");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println(" Connected!");
+
+  // Set Singapore time zone (UTC+8) and synchronize using NTP
+  configTzTime("SGT-8", "pool.ntp.org", "time.nist.gov");
+
+  struct tm timeinfo;
+
+  while (!getLocalTime(&timeinfo)) {
+    Serial.print(".");
+    delay(500);
+  }
+
+  Serial.println("\nTime Synchronized!");
+}
+
+// -------------------------------------------------------------
+// Generate a Daily CSV Filename Using Date Integers
+// -------------------------------------------------------------
+void getDailyFileName(char* buffer, size_t maxLen) {
+  struct tm timeinfo;
+
+  if (!getLocalTime(&timeinfo)) {
+    snprintf(buffer, maxLen, "/logs/error.csv");
+    return;
+  }
+
+  // Extract year, month, and day integers
+  int year  = timeinfo.tm_year + 1900;
+  int month = timeinfo.tm_mon + 1;
+  int day   = timeinfo.tm_mday;
+
+  // Format filename: /logs/YYYY-MM-DD.csv
+  // Example: /logs/2026-08-15.csv
+  snprintf(
+    buffer,
+    maxLen,
+    "/logs/%04d-%02d-%02d.csv",
+    year,
+    month,
+    day
+  );
+}
+
+// -------------------------------------------------------------
+// Append a Log Entry to the Current Daily File
+// -------------------------------------------------------------
+void logData(float sensorValue) {
+  struct tm timeinfo;
+
+  if (!getLocalTime(&timeinfo)) {
+    Serial.println("Failed to get time for logging");
+    return;
+  }
+
+  // Determine today's file path
+  char fileName;
+  getDailyFileName(fileName, sizeof(fileName));
+
+  // Check whether the file exists before opening it
+  bool fileExists = SD.exists(fileName);
+
+  File file = SD.open(fileName, FILE_APPEND);
+
+  if (!file) {
+    Serial.printf("Failed to open file: %s\n", fileName);
+    return;
+  }
+
+  // Write the header if this is a newly created daily file
+  if (!fileExists) {
+    file.println(
+      "Timestamp,Year,Month,Day,Hour,Minute,Second,SensorValue"
+    );
+
+    Serial.printf("Created new daily log file: %s\n", fileName);
+  }
+
+  // Extract time integers for structured output
+  int year   = timeinfo.tm_year + 1900;
+  int month  = timeinfo.tm_mon + 1;
+  int day    = timeinfo.tm_mday;
+  int hour   = timeinfo.tm_hour;
+  int minute = timeinfo.tm_min;
+  int second = timeinfo.tm_sec;
+
+  // Write the CSV row
+  file.printf(
+    "%04d-%02d-%02dT%02d:%02d:%02d,%d,%d,%d,%d,%d,%d,%.2f\n",
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    sensorValue
+  );
+
+  file.close();
+
+  Serial.printf("Logged to %s: %.2f\n", fileName, sensorValue);
+}
+
+// -------------------------------------------------------------
+// Setup and Loop
+// -------------------------------------------------------------
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  initTime();
+
+  // Initialize the SD card
+  if (!SD.begin(SD_CS_PIN)) {
+    Serial.println("SD Card Mount Failed!");
+    return;
+  }
+
+  // Ensure that the /logs directory exists
+  if (!SD.exists("/logs")) {
+    SD.mkdir("/logs");
+  }
+
+  Serial.println("SD Card Logging Ready.");
+}
+
+void loop() {
+  // Simulate a sensor reading, such as voltage or temperature
+  float mockSensorData = random(200, 350) / 10.0;
+
+  // Log the data entry
+  logData(mockSensorData);
+
+  // Wait 10 seconds before the next log entry
+  delay(10000);
+}
+```
+
+## Key Operational Features
+
+### Zero-Padded Date Formatting
+
+Using `%04d-%02d-%02d` inside `snprintf()` ensures that dates such as August 5, 2026, are formatted as:
+
+```text
+2026-08-05.csv
+```
+
+instead of:
+
+```text
+2026-8-5.csv
+```
+
+This keeps directory listings naturally sorted by date.
+
+### Automatic Header Creation
+
+The `SD.exists()` check determines whether the daily file already exists. When a new day begins, the sketch automatically creates a new CSV file and writes its header before recording the first data row.
+
+### Directory Management
+
+`SD.mkdir("/logs")` organizes daily log files in a dedicated directory, preventing clutter in the root directory of the FAT filesystem.
+
+
 ---
 
 # References
