@@ -1,13 +1,15 @@
 # WiFi
 
-[![MQTT: QWEN & Gemini](https://img.shields.io/badge/MQTT-QWEN-yellow)](./MQTT.md)   
+---
+[![MQTT: QWEN & Gemini](https://img.shields.io/badge/MQTT-Notes-yellow)](./MQTT.md)   
 Refer to this link for MQTT description from QWen & Gemini:     
 [MQTT](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md)
 
-[![WiFi Apps: Other WiFi Applications](https://img.shields.io/badge/WiFi-Apps1-red)](./WiFi_Apps.md)   
+[![WiFi Apps: Other WiFi Applications](https://img.shields.io/badge/WiFi-Apps-red)](./WiFi_Apps.md)   
 Refer to this link for more WiFi Application Examples:     
 [WiFi Apps](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/WiFi_Apps.md)
 
+---
 
 ## Description of ESP32-S3 Wi-Fi
 The ESP32-S3 is a highly integrated, low-power Wi-Fi and Bluetooth MCU by Espressif. Its Wi-Fi subsystem is a significant upgrade over the original ESP32, featuring:
