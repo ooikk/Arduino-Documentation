@@ -3697,6 +3697,8 @@ Because ThingSpeak integrates MATLAB analytics with cloud channels, students can
 <img width="548" height="387" alt="image" src="https://github.com/user-attachments/assets/bf63fefc-de99-4f1d-ba3b-53475876c337" />
 
 
+https://www.mathworks.com/help/thingspeak/index.html
+
 
 ## Key Advantages for Teaching
 
