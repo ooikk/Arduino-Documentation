@@ -3557,6 +3557,108 @@ Instead of manually defining topic strings such as `TOPIC_TEMP` and `TOPIC_LED_S
 | `TOPIC_RSSI` | `Param* p_rssi` | Read-only integer parameter reporting signal strength in dBm. |
 | `TOPIC_UPTIME` | `Param* p_uptime` | Read-only integer parameter reporting seconds since boot. |
 
+##### ESP RainMaker Device Definitions
+
+ESP RainMaker provides two types of device definitions:
+
+1. **Standard pre-built device classes:** Include built-in UI controls and standard parameters.
+2. **Generic or custom devices:** Used to build custom device types and UI controls.
+
+###### 1. Pre-Defined Standard Device Classes
+
+These C++ wrapper classes automatically attach required standard parameters, such as `Power`, `Temperature`, and `Speed`. They also instruct the RainMaker mobile application to render appropriate native UI controls.
+
+| Class Name | Constructor Example | Primary Parameter | Default Additional Parameters and Description |
+|---|---|---|---|
+| `Switch` | `Switch my_switch("Onboard LED");` | `Power` (`Bool`) | Simple binary ON/OFF device for relays, power sockets, LEDs, and switches. The UI renders a large toggle button. |
+| `LightBulb` | `LightBulb my_light("Living Room Light");` | `Power` (`Bool`) | Smart-lighting device. It can be extended with `Brightness`, `Hue`, `Saturation`, or CCT, which represents color temperature. |
+| `TemperatureSensor` | `TemperatureSensor my_temp("Room Temp");` | `Temperature` (`Float`) | Environmental sensor device. The mobile app displays a live temperature gauge or card. |
+| `Fan` | `Fan my_fan("Ceiling Fan");` | `Power` (`Bool`) | Motor-control device. It can be extended with standard parameters such as `Speed` and `Direction`. |
+
+###### 2. Standard Device Types
+
+Under the hood, and in the underlying `esp_rmaker_standard_types.h` system, Espressif categorizes devices using string types in the form `esp.device.<type>`.
+
+When building applications, these device types help determine the dynamic UI template selected by the RainMaker cloud.
+
+| Device Type String | Primary Function | Typical Parameter UI Controls |
+|---|---|---|
+| `esp.device.switch` | General-purpose electrical switch | Toggle switch (`UI_TOGGLE`) |
+| `esp.device.outlet` | Smart wall socket or power plug | Toggle switch (`UI_TOGGLE`) |
+| `esp.device.lightbulb` | Dimmable or RGB light source | Toggle, sliders (`UI_SLIDER`), and hue picker |
+| `esp.device.fan` | Ventilation fan or exhaust fan | Toggle switch and speed slider |
+| `esp.device.temp-sensor` | Thermometer or temperature sensor node | Read-only value card or chart |
+| `esp.device.thermostat` | Climate controller | Setpoint slider and Heat/Cool/Off mode selector |
+| `esp.device.lock` | Smart door lock | Lock/Unlock toggle |
+| `esp.device.blind` | Window blinds or motorized curtains | Open/Close control and position slider |
+| `esp.device.garage-door` | Garage-door opener | Open/Close toggle state |
+| `esp.device.air-conditioner` | HVAC air-conditioning unit | Power, target temperature, fan speed, and mode dropdown |
+
+###### 3. Generic Custom Device Class
+
+When none of the pre-defined classes match your sensor or peripheral array, create a generic device container using the base `Device` class and attach custom parameters manually.
+
+```cpp
+// Constructor:
+// Device(const char *dev_name, const char *dev_type, void *priv_data);
+
+Device my_custom_device(
+  "System Stats",
+  "custom.device.system"
+);
+```
+
+###### Standard UI Types for Custom Parameters
+
+You can append `Param` objects to a generic device and control how the mobile application displays them by using UI type flags.
+
+| UI Type | Description |
+|---|---|
+| `ESP_RMAKER_UI_TOGGLE` | Displays a simple ON/OFF switch. |
+| `ESP_RMAKER_UI_SLIDER` | Displays an interactive horizontal slider, suitable for percentages, brightness, or setpoints. |
+| `ESP_RMAKER_UI_DROPDOWN` | Displays a list-selection menu for discrete operating modes. |
+| `ESP_RMAKER_UI_TEXT` | Displays text strings or status information, such as `online` or `error`. |
+
+###### Custom Telemetry Device Example
+
+The following example creates a custom sensor-hub device with temperature and mode parameters:
+
+```cpp
+Device my_sensor_hub(
+  "Sensor Hub",
+  "custom.device.hub"
+);
+
+Param temp_param(
+  "Temperature",
+  "esp.param.temperature",
+  value_f(25.5),
+  PROP_FLAG_READ
+);
+
+Param mode_param(
+  "Mode",
+  "custom.param.mode",
+  value_s("Auto"),
+  PROP_FLAG_READ | PROP_FLAG_WRITE
+);
+
+mode_param.addUIType(
+  ESP_RMAKER_UI_DROPDOWN
+);
+
+my_sensor_hub.addParam(temp_param);
+my_sensor_hub.addParam(mode_param);
+
+my_node.addDevice(my_sensor_hub);
+```
+
+###### Parameter Access Modes
+
+- `PROP_FLAG_READ`: The parameter can be read by the application but cannot be changed there.
+- `PROP_FLAG_WRITE`: The parameter can be modified by the application.
+- `PROP_FLAG_READ | PROP_FLAG_WRITE`: The parameter can be read and changed by the application.
+
 #### Step 2: Instantiating Devices and Parameters
 
 RainMaker provides standard device classes, such as `Switch` and `TemperatureSensor`, as well as a generic `Device` container for custom parameters.
