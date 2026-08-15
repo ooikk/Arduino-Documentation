@@ -799,6 +799,193 @@ Dividing by `86400.0`, the number of seconds in a standard day, converts the tim
 
 Casting the result to `long` truncates fractional days, preventing partial hours or seconds since midnight from affecting the integer day count.
 
+# Calculating Differences in Years, Months, and Days
+
+Calculating differences in terms of years, months, and days is slightly different from calculating total elapsed days because calendar months vary in length: 28, 30, or 31 days.
+
+To obtain an exact, human-readable breakdown, use standard date arithmetic to step from the past date to the current NTP-synchronized date.
+
+## Structure for Holding the Result
+
+First, define a `struct` to return all three integer components:
+
+```cpp
+struct DateDiff {
+  int years;
+  int months;
+  int days;
+  bool isValid;
+};
+```
+
+## C++ Function Implementation
+
+This function compares a target date with the current local date on the ESP32-S3:
+
+```cpp
+#include <Arduino.h>
+#include <time.h>
+
+struct DateDiff {
+  int years;
+  int months;
+  int days;
+  bool isValid;
+};
+
+/**
+ * Calculates the exact difference between a target date
+ * (YYYY, MM, DD) and the current NTP-synchronized local date.
+ *
+ * The result is returned as years, months, and days.
+ */
+DateDiff getDateDifference(
+  int startYear,
+  int startMonth,
+  int startDay
+) {
+  DateDiff diff = {0, 0, 0, false};
+
+  struct tm nowInfo;
+
+  if (!getLocalTime(&nowInfo)) {
+    Serial.println("Error: Failed to obtain local time from NTP!");
+    return diff;
+  }
+
+  // Current date integers
+  int endYear  = nowInfo.tm_year + 1900;
+  int endMonth = nowInfo.tm_mon + 1;
+  int endDay   = nowInfo.tm_mday;
+
+  // 1. Calculate the day difference, adjusting for month boundaries
+  if (endDay < startDay) {
+    // Determine the previous month to borrow days from
+    int prevMonth = endMonth - 1;
+    int prevYear = endYear;
+
+    if (prevMonth < 1) {
+      prevMonth = 12;
+      prevYear--;
+    }
+
+    // Number of days in each month
+    static const int daysInMonth[] = {
+      0, 31, 28, 31, 30, 31,
+      30, 31, 31, 30, 31, 30, 31
+    };
+
+    int daysInPrevMonth = daysInMonth[prevMonth];
+
+    // Check for a leap year in February
+    if (prevMonth == 2) {
+      bool isLeap =
+        (prevYear % 4 == 0 && prevYear % 100 != 0) ||
+        (prevYear % 400 == 0);
+
+      if (isLeap) {
+        daysInPrevMonth = 29;
+      }
+    }
+
+    endDay += daysInPrevMonth;
+    endMonth--;
+  }
+
+  diff.days = endDay - startDay;
+
+  // 2. Calculate the month difference, adjusting for year boundaries
+  if (endMonth < startMonth) {
+    endMonth += 12;
+    endYear--;
+  }
+
+  diff.months = endMonth - startMonth;
+
+  // 3. Calculate the year difference
+  diff.years = endYear - startYear;
+  diff.isValid = true;
+
+  return diff;
+}
+```
+
+## Practical Example
+
+The following function calls `getDateDifference()` and prints the formatted result:
+
+```cpp
+void printDateDifference(int year, int month, int day) {
+  DateDiff diff = getDateDifference(year, month, day);
+
+  if (diff.isValid) {
+    Serial.printf(
+      "Difference from %04d-%02d-%02d to today: ",
+      year,
+      month,
+      day
+    );
+
+    Serial.printf(
+      "%d year(s), %d month(s), and %d day(s)\n",
+      diff.years,
+      diff.months,
+      diff.days
+    );
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  // Connect to Wi-Fi and synchronize NTP
+  WiFi.begin("YOUR_SSID", "YOUR_PASSWORD");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(250);
+  }
+
+  configTzTime("SGT-8", "pool.ntp.org", "time.nist.gov");
+
+  // Wait until the time is synchronized
+  time_t now = time(nullptr);
+
+  while (now < 1650000000) {
+    delay(250);
+    time(&now);
+  }
+
+  // Example test dates
+  printDateDifference(2024, 2, 28);
+  // Example output:
+  // 2 year(s), 5 month(s), and 18 day(s)
+
+  printDateDifference(2025, 12, 1);
+}
+
+void loop() {
+}
+```
+
+## How the Borrowing Logic Works
+
+### Days
+
+If the current day of the month is smaller than the starting day—for example, today is the 15th but the target date was the 28th—the function borrows the exact number of days in the preceding month. It also accounts for leap years and decrements the ending month by one.
+
+### Months
+
+If the current month is smaller than the target month, the function borrows 12 months from the ending year and decrements the ending year by one.
+
+### Years
+
+The year difference is calculated by subtracting the starting year from the adjusted ending year:
+
+```cpp
+diff.years = endYear - startYear;
+```
+
 ---
 
 # References
