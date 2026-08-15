@@ -153,3 +153,14 @@ void loop() {
 | `%S` | Second | `58` |
 | `%A` | Full weekday name | `Friday` |
 
+---
+# References
+
+https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/esp32-hal-time.c
+
+https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/Time/SimpleTime/SimpleTime.ino
+
+https://github.com/espressif/newlib-esp32/blob/master/newlib/libc/time/strftime.c
+
+https://github.com/m5stack/azure_iothub_arduino_lib_esp32/blob/master/hardware/espressif/esp32/tools/sdk/include/newlib/time.h
+
