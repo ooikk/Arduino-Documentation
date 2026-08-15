@@ -3232,55 +3232,55 @@ while (now < 1650000000) {
 > **Rule of thumb:** Any hardcoded timestamp after approximately 2022 works well as a sanity check. It only needs to be far enough in the past for any valid TLS certificate to accept it, while also being far enough ahead of 1970 to confirm that NTP has synchronized successfully.
 
 ---
-## ESP RainMaker Overview
+# ESP RainMaker Overview
 
 ESP RainMaker is Espressif’s end-to-end IoT platform designed to deploy, manage, and control ESP32-based products. Unlike standard MQTT setups that require manual topic definitions, cloud broker provisioning, and custom dashboard development, RainMaker uses dynamic metadata models (nodes, devices, parameters) where the ESP32 automatically describes its capabilities to the cloud.
 
-### Key Features
+## Key Features
 
-#### Zero-Code Provisioning
+### Zero-Code Provisioning
 Built-in Wi-Fi commissioning over Bluetooth LE (BLE) using standard iOS/Android ESP RainMaker apps.
 
-#### Dynamic UI Generation
+### Dynamic UI Generation
 The mobile app automatically builds controls (switches, sliders, drop-downs) based on parameters reported by the firmware.
 
-#### Local & Cloud Control
+### Local & Cloud Control
 Supports local network control (via mDNS/HTTP) when internet connectivity is lost, alongside AWS IoT cloud relay for remote access.
 
-#### OTA Updates & Voice Assistants
+### OTA Updates & Voice Assistants
 Integrated support for remote firmware updates, Google Assistant, and Amazon Alexa.
 
-### Key Advantages
+## Key Advantages
 
-#### Native Integration
+### Native Integration
 Built into the ESP-IDF and ESP32 Arduino Core; no external libraries like PubSubClient or manual TLS certificate management are required.
 
-#### No MQTT Topic Mapping
+### No MQTT Topic Mapping
 Controls are mapped to simple C/C++ callback handlers rather than parsing raw JSON strings.
 
-#### Self-Claiming (ESP32-S3)
+### Self-Claiming (ESP32-S3)
 Uses hardware security features to auto-register certificates directly with Espressif’s cloud without manual token steps.
 
-### Limitations
+## Limitations
 
-#### Espressif Ecosystem Lock-in
+### Espressif Ecosystem Lock-in
 Native support is restricted exclusively to ESP32 family microcontrollers.
 
-#### Fair Usage Rate Limits
+### Fair Usage Rate Limits
 Subject to messaging limits (~25,000 messages/day per account) to prevent server abuse.
 
-#### Public Cloud Shared Infrastructure
+### Public Cloud Shared Infrastructure
 Cloud responsiveness depends on public server loads (private enterprise deployments require self-hosted AWS instances).
 
-### Free Account Limits
+## Free Account Limits
 
-#### Default Quota
+### Default Quota
 Up to 5 physical nodes (ESP32-S3 devices) under Assisted Claiming on a public account.
 
-#### Self-Claiming Advantage
+### Self-Claiming Advantage
 For ESP32-S3 devices using Self-Claiming, hardware-assisted credentials remove the strict 5-node limit for evaluation/hobbyist use.
 
-#### Quota Upgrades
+### Quota Upgrades
 Developers can request quota increases free of charge by contacting `esp-rainmaker-admin@espressif.com`.
 
 # Dual-Mode ESP32-S3 Sketch
