@@ -3305,241 +3305,150 @@ The following section presents a standalone ESP RainMaker sketch, followed by an
 #include "WiFiProv.h"
 
 // -----------------------------------------------------------------------------
-// Hardware and Timing Configuration
+// HARDWARE & TIMING CONFIG
 // -----------------------------------------------------------------------------
-const int LED_PIN = 2;
+const int LED_PIN = 2; // ESP32-S3 GPIO for onboard/external LED
 const uint32_t TELEMETRY_PERIOD_MS = 10000;
-
 uint32_t lastTelemetryMs = 0;
 
-// BLE provisioning credentials used for first-time pairing
-const char* service_name = "PROV_ESP32S3";
-const char* pop = "12345678";
+// BLE Provisioning Credentials (Used for first-time pairing via phone app)
+const char *service_name = "PROV_ESP32S3";
+const char *pop = "12345678"; // Proof of Possession / PIN
 
 // -----------------------------------------------------------------------------
-// RainMaker Nodes and Devices
-//
-// Mapping from the previous Adafruit IO feeds:
-//
-// - Switch: Handles LED control and LED state reporting.
-// - TemperatureSensor: Handles temperature data.
-// - Device named "System Stats": Handles status, RSSI, and uptime.
+// RAINMAKER NODES & DEVICES
 // -----------------------------------------------------------------------------
 static Node my_node;
+// FIX 1: Cast (void*)&LED_PIN to void* to prevent const void* conversion error
+static Switch my_switch("LED Control", (void*)&LED_PIN);
+static TemperatureSensor my_temp_sensor("Temperature Sensor");
 
-static Switch my_switch(
-  "LED Control",
-  &LED_PIN
-);
+// Generic device to hold system telemetry parameters
+static Device sys_telemetry("System Stats", "custom.device.system");
 
-static TemperatureSensor my_temp_sensor(
-  "Temperature Sensor"
-);
-
-// Generic device for system telemetry parameters
-static Device sys_telemetry(
-  "System Stats",
-  "custom.device.system"
-);
-
-// Parameter pointers for dynamic reporting
-static Param* p_status = nullptr;
-static Param* p_rssi   = nullptr;
-static Param* p_uptime = nullptr;
+// Parameter Pointers for dynamic reporting
+static Param *p_status = NULL;
+static Param *p_rssi   = NULL;
+static Param *p_uptime = NULL;
 
 // -----------------------------------------------------------------------------
-// Provisioning Event Callback
+// PROVISIONING EVENT CALLBACK
 // -----------------------------------------------------------------------------
-void sysProvEvent(arduino_event_t* sys_event) {
-  switch (sys_event->event_id) {
-    case ARDUINO_EVENT_PROV_START:
-      Serial.printf(
-        "\n[PROV] Started! BLE Name: %s | POP PIN: %s\n",
-        service_name,
-        pop
-      );
-      break;
-
-    case ARDUINO_EVENT_PROV_CRED_RECV:
-      Serial.println(
-        "\n[PROV] Received Wi-Fi credentials from the app."
-      );
-      break;
-
-    case ARDUINO_EVENT_PROV_CRED_SUCCESS:
-      Serial.println(
-        "\n[PROV] Provisioning successful! Connected to Wi-Fi."
-      );
-      break;
-
-    default:
-      break;
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Write Callback
-// App or Cloud -> ESP32-S3
-//
-// This replaces manual parsing of TOPIC_LED_SET MQTT messages.
-// -----------------------------------------------------------------------------
-void write_callback(
-  Device* device,
-  Param* param,
-  const param_val_t val,
-  void* priv_data,
-  write_ctx_t* ctx
-) {
-  const char* device_name = device->getDeviceName();
-  const char* param_name = param->getParamName();
-
-  if (strcmp(device_name, "LED Control") == 0) {
-    if (strcmp(param_name, "Power") == 0) {
-      bool newState = val.val.b;
-
-      digitalWrite(
-        LED_PIN,
-        newState ? HIGH : LOW
-      );
-
-      // Synchronize the hardware state with the cloud
-      param->updateAndReport(val);
-
-      Serial.printf(
-        "[RainMaker] LED toggled -> %s\n",
-        newState ? "ON" : "OFF"
-      );
+void sysProvEvent(arduino_event_t *sys_event) {
+    switch (sys_event->event_id) {
+        case ARDUINO_EVENT_PROV_START:
+            Serial.printf("\n[PROV] Started! BLE Name: %s | POP PIN: %s\n", service_name, pop);
+            break;
+        case ARDUINO_EVENT_PROV_CRED_RECV:
+            Serial.println("\n[PROV] Received Wi-Fi credentials from App.");
+            break;
+        case ARDUINO_EVENT_PROV_CRED_SUCCESS:
+            Serial.println("\n[PROV] Provisioning Successful! Connected to Wi-Fi.");
+            break;
+        default:
+            break;
     }
-  }
 }
 
 // -----------------------------------------------------------------------------
-// Telemetry Publisher
-// Periodically updates temperature, RSSI, uptime, and status.
+// WRITE CALLBACK (App/Cloud -> ESP32-S3)
+// -----------------------------------------------------------------------------
+void write_callback(Device *device, Param *param, const param_val_t val, void *priv_data, write_ctx_t *ctx) {
+    const char *device_name = device->getDeviceName();
+    const char *param_name = param->getParamName();
+
+    if (strcmp(device_name, "LED Control") == 0) {
+        if (strcmp(param_name, "Power") == 0) {
+            bool newState = val.val.b;
+            digitalWrite(LED_PIN, newState ? HIGH : LOW);
+            param->updateAndReport(val);
+            Serial.printf("[RainMaker] LED toggled -> %s\n", newState ? "ON" : "OFF");
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// TELEMETRY PUBLISHER
 // -----------------------------------------------------------------------------
 void publishTelemetry() {
-  // 1. Temperature feed
-  float temperature = random(100, 500) / 10.0f;
+    // 1. Temperature Feed
+    float temperature = random(100, 500) / 10.0f;
+    my_temp_sensor.updateAndReportParam("Temperature", temperature);
 
-  my_temp_sensor.updateAndReportParam(
-    "Temperature",
-    temperature
-  );
+    // 2. RSSI Feed (Wi-Fi Signal Strength in dBm)
+    // FIX 2: Use esp_rmaker_int() and esp_rmaker_str() helper functions in v3.x
+    int rssi = WiFi.RSSI();
+    p_rssi->updateAndReport(esp_rmaker_int(rssi));
 
-  // 2. RSSI feed
-  int rssi = WiFi.RSSI();
+    // 3. Uptime Feed (Seconds since boot)
+    int uptime_sec = (int)(millis() / 1000);
+    p_uptime->updateAndReport(esp_rmaker_int(uptime_sec));
 
-  p_rssi->updateAndReport(
-    param_val_t(rssi)
-  );
+    // 4. Status Feed
+    p_status->updateAndReport(esp_rmaker_str("online"));
 
-  // 3. Uptime feed
-  int uptime_sec = static_cast<int>(millis() / 1000);
-
-  p_uptime->updateAndReport(
-    param_val_t(uptime_sec)
-  );
-
-  // 4. Status feed
-  p_status->updateAndReport(
-    param_val_t("online")
-  );
-
-  Serial.printf(
-    "[Telemetry] Temp: %.1f C | RSSI: %d dBm | Uptime: %d s\n",
-    temperature,
-    rssi,
-    uptime_sec
-  );
+    Serial.printf("[Telemetry] Temp: %.1f C | RSSI: %d dBm | Uptime: %d s\n", 
+                  temperature, rssi, uptime_sec);
 }
 
 // -----------------------------------------------------------------------------
-// Setup
+// SETUP
 // -----------------------------------------------------------------------------
 void setup() {
-  Serial.begin(115200);
-  delay(500);
+    Serial.begin(115200);
+    delay(500);
 
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, LOW);
 
-  // 1. Initialize the RainMaker node
-  my_node = RMaker.initNode(
-    "ESP32S3_Node"
-  );
+    // 1. Initialize Node
+    my_node = RMaker.initNode("ESP32S3_Node");
 
-  // 2. Configure the LED switch device
-  my_switch.addCb(write_callback);
-  my_node.addDevice(my_switch);
+    // 2. Configure LED Switch Device
+    my_switch.addCb(write_callback);
+    my_node.addDevice(my_switch);
 
-  // 3. Configure the temperature-sensor device
-  my_node.addDevice(my_temp_sensor);
+    // 3. Configure Temperature Sensor Device
+    my_node.addDevice(my_temp_sensor);
 
-  // 4. Create system telemetry parameters
-  p_status = new Param(
-    "Status",
-    "custom.param.status",
-    value_s("online"),
-    PROP_FLAG_READ
-  );
+    // 4. Create System Telemetry Parameters using v3.x esp_rmaker_* value helpers
+    p_status = new Param("Status", "custom.param.status", esp_rmaker_str("online"), PROP_FLAG_READ);
+    p_rssi   = new Param("RSSI", "custom.param.rssi", esp_rmaker_int(0), PROP_FLAG_READ);
+    p_uptime = new Param("Uptime", "custom.param.uptime", esp_rmaker_int(0), PROP_FLAG_READ);
 
-  p_rssi = new Param(
-    "RSSI",
-    "custom.param.rssi",
-    value_i(0),
-    PROP_FLAG_READ
-  );
+    sys_telemetry.addParam(*p_status);
+    sys_telemetry.addParam(*p_rssi);
+    sys_telemetry.addParam(*p_uptime);
+    my_node.addDevice(sys_telemetry);
 
-  p_uptime = new Param(
-    "Uptime",
-    "custom.param.uptime",
-    value_i(0),
-    PROP_FLAG_READ
-  );
+    // 5. Enable Standard Services
+    RMaker.enableOTA(OTA_USING_TOPICS);
+    RMaker.enableTZService();
+    RMaker.enableSchedule();
 
-  sys_telemetry.addParam(*p_status);
-  sys_telemetry.addParam(*p_rssi);
-  sys_telemetry.addParam(*p_uptime);
+    // 6. Start RainMaker Stack
+    RMaker.start();
 
-  my_node.addDevice(sys_telemetry);
-
-  // 5. Enable standard RainMaker services
-  RMaker.enableOTA(OTA_USING_TOPICS);
-  RMaker.enableTZService();
-  RMaker.enableSchedule();
-
-  // 6. Start the RainMaker stack
-  RMaker.start();
-
-  // 7. Start BLE provisioning if Wi-Fi credentials are not saved
-  WiFi.onEvent(sysProvEvent);
-
-  WiFiProv.beginProvision(
-    WIFI_PROV_SCHEME_BLE,
-    WIFI_PROV_SCHEME_HANDLER_FREE_BTDM,
-    WIFI_PROV_SECURITY_1,
-    pop,
-    service_name
-  );
+    // 7. Start BLE Provisioning using updated NETWORK_PROV_* namespaces for core 3.x
+    WiFi.onEvent(sysProvEvent);
+    WiFiProv.beginProvision(NETWORK_PROV_SCHEME_BLE, 
+                            NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM, 
+                            NETWORK_PROV_SECURITY_1, 
+                            pop, 
+                            service_name);
 }
 
 // -----------------------------------------------------------------------------
-// Main Loop
+// MAIN LOOP
 // -----------------------------------------------------------------------------
 void loop() {
-  // RainMaker networking runs asynchronously through FreeRTOS tasks.
-  if (
-    millis() - lastTelemetryMs >=
-    TELEMETRY_PERIOD_MS
-  ) {
-    lastTelemetryMs = millis();
-
-    if (WiFi.status() == WL_CONNECTED) {
-      publishTelemetry();
+    if (millis() - lastTelemetryMs >= TELEMETRY_PERIOD_MS) {
+        lastTelemetryMs = millis();
+        if (WiFi.status() == WL_CONNECTED) {
+            publishTelemetry();
+        }
     }
-  }
-
-  delay(10);
+    delay(10);
 }
 ```
 
