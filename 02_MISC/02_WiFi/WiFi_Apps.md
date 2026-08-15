@@ -556,7 +556,7 @@ void logData(float sensorValue) {
 
   // Check whether the file exists before opening it
   bool fileExists = SD.exists(fileName);
-  // if file doesn't exist. The FILE_APPEND mode will creates a missing file.
+  // Open this file for appending. If it doesn't exist, create it.
   File file = SD.open(fileName, FILE_APPEND); 
 
   if (!file) {
