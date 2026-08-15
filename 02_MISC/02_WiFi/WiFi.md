@@ -3,7 +3,7 @@
 ---
   
 **MQTT description from QWen & Gemini:**     
-[![MQTT: QWEN & Gemini](https://img.shields.io/badge/MQTT-Notes-yellow)](./MQTT.md)   
+[![MQTT: QWEN & Gemini](https://img.shields.io/badge/WiFi-MQTT-yellow)](./MQTT.md)   
 [MQTT](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md) 
 
 **ESP Now descriptions:**      
