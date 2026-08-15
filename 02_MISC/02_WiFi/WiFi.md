@@ -2,31 +2,60 @@
 
 <table>
   <tr>
-    <td align="center">
+    <td align="center" valign="top" width="33%">
 
-#### MQTT description from Qwen &amp; Gemini
+      <h4>MQTT description from Qwen &amp; Gemini</h4>
 
-[![MQTT: Qwen &amp; Gemini](https://img.shields.io/badge/MQTT-Notes-yellow)](./MQTT.md)
+      <a href="./MQTT.md">
+        <img
+          src="https://img.shields.io/badge/MQTT-Notes-yellow"
+          alt="MQTT: Qwen and Gemini"
+        >
+      </a>
 
-[MQTT](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md)
+      <br><br>
+
+      <a href="https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md">
+        MQTT
+      </a>
 
     </td>
-    <td align="center">
 
-#### ESP-NOW descriptions
+    <td align="center" valign="top" width="33%">
 
-[![ESP-NOW](https://img.shields.io/badge/WiFi-ESP_Now-green)](./ESP_Now.md)
+      <h4>ESP-NOW descriptions</h4>
 
-[ESP Now](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Now.md)
+      <a href="./ESP_Now.md">
+        <img
+          src="https://img.shields.io/badge/WiFi-ESP_Now-green"
+          alt="ESP-NOW"
+        >
+      </a>
+
+      <br><br>
+
+      <a href="https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Now.md">
+        ESP Now
+      </a>
 
     </td>
-    <td align="center">
 
-#### Wi-Fi Application Examples
+    <td align="center" valign="top" width="33%">
 
-[![Wi-Fi Apps: Other Wi-Fi Applications](https://img.shields.io/badge/WiFi-Apps-red)](./WiFi_Apps.md)
+      <h4>Wi-Fi Application Examples</h4>
 
-[WiFi Apps](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/WiFi_Apps.md)
+      <a href="./WiFi_Apps.md">
+        <img
+          src="https://img.shields.io/badge/WiFi-Apps-red"
+          alt="Wi-Fi applications"
+        >
+      </a>
+
+      <br><br>
+
+      <a href="https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/WiFi_Apps.md">
+        WiFi Apps
+      </a>
 
     </td>
   </tr>
