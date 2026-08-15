@@ -1,16 +1,16 @@
 # WiFi
 
 ---
+## MQTT description from QWen & Gemini:     
 [![MQTT: QWEN & Gemini](https://img.shields.io/badge/MQTT-Notes-yellow)](./MQTT.md)   
-Refer to this link for MQTT description from QWen & Gemini:     
 [MQTT](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md) 
 
+## ESP Now descriptions:   
 [![ESPNow](https://img.shields.io/badge/WiFi-ESP_Now-green)](./ESP_Now.md)   
-Refer to this link for ESP Now descriptions:     
 [ESP Now](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Now.md) 
 
+## WiFi Application Examples: 
 [![WiFi Apps: Other WiFi Applications](https://img.shields.io/badge/WiFi-Apps-red)](./WiFi_Apps.md)   
-Refer to this link for more WiFi Application Examples:     
 [WiFi Apps](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/WiFi_Apps.md)
 
 ---
