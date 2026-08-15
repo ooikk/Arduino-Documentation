@@ -3283,696 +3283,438 @@ For ESP32-S3 devices using Self-Claiming, hardware-assisted credentials remove t
 ### Quota Upgrades
 Developers can request quota increases free of charge by contacting `esp-rainmaker-admin@espressif.com`.
 
-# Dual-Mode ESP32-S3 Sketch
+## ESP RainMaker Architecture
 
-The dual-mode sketch uses preprocessor directives, such as `#ifdef RAIN_MAKER`, to select either the ESP RainMaker platform or a standard MQTT stack.
+In ESP RainMaker, you move away from manually defined MQTT topic strings, such as `ooikk/feeds/...`.
 
-The following sections explain how both pathways are implemented.
+Instead, you create a single **Node**—your ESP32-S3—which contains individual **Devices** and **Parameters**.
 
-## Step 1: Macro-Switching Architecture
+When the ESP32-S3 connects to the mobile app or web dashboard, RainMaker automatically handles:
 
-The `#define RAIN_MAKER` statement at the top of the sketch controls which protocol stack is compiled.
+- State synchronization.
+- Cloud updates.
+- Device communication.
+- User-interface generation for parameters.
 
-```cpp
-//#define RAIN_MAKER
+The following section presents a standalone ESP RainMaker sketch, followed by an explanation of how its parameters map to the original MQTT feeds.
 
-#ifndef RAIN_MAKER
-  #define ADAFRUIT // Fallback target if RainMaker is disabled
-#endif
-```
-
-### RainMaker Enabled
-
-When `#define RAIN_MAKER` is uncommented:
-
-- The compiler includes Espressif's `RMaker.h` and `WiFiProv.h` libraries.
-- Standard MQTT clients are bypassed.
-- Manual broker configuration is not required.
-- The ESP RainMaker platform handles device communication and cloud integration.
-
-### RainMaker Disabled
-
-When `#define RAIN_MAKER` is commented out:
-
-- The `#ifndef` block activates the traditional MQTT stack.
-- The selected broker, such as Adafruit IO, becomes the target.
-- `PubSubClient.h` and `WiFiClientSecure.h` are included.
-- Wi-Fi, TLS, MQTT connections, subscriptions, and reconnections are handled manually.
-
-## Step 2: ESP RainMaker Execution Flow
-
-The ESP RainMaker pathway is compiled by `#ifdef RAIN_MAKER`.
-
-### 1. Device and Node Initialization
-
-ESP RainMaker organizes the infrastructure into the following hierarchy:
-
-- **Node:** The physical ESP32-S3 device.
-- **Device:** A component, such as a switch or sensor.
-- **Parameter:** The state or value associated with a device.
+### Standalone ESP RainMaker Sketch
 
 ```cpp
+#include "RMaker.h"
+#include "WiFiProv.h"
+
+// -----------------------------------------------------------------------------
+// Hardware and Timing Configuration
+// -----------------------------------------------------------------------------
+const int LED_PIN = 2;
+const uint32_t TELEMETRY_PERIOD_MS = 10000;
+
+uint32_t lastTelemetryMs = 0;
+
+// BLE provisioning credentials used for first-time pairing
+const char* service_name = "PROV_ESP32S3";
+const char* pop = "12345678";
+
+// -----------------------------------------------------------------------------
+// RainMaker Nodes and Devices
+//
+// Mapping from the previous Adafruit IO feeds:
+//
+// - Switch: Handles LED control and LED state reporting.
+// - TemperatureSensor: Handles temperature data.
+// - Device named "System Stats": Handles status, RSSI, and uptime.
+// -----------------------------------------------------------------------------
 static Node my_node;
-static Switch my_switch("LED Control", &LED_PIN);
-static TemperatureSensor my_temp_sensor("Temperature Sensor");
-```
 
-Pre-built standard objects, such as `Switch` and `TemperatureSensor`, automatically generate corresponding controls, including buttons and live charts, in the ESP RainMaker application.
+static Switch my_switch(
+  "LED Control",
+  &LED_PIN
+);
 
-### 2. Provisioning and Event Handler
+static TemperatureSensor my_temp_sensor(
+  "Temperature Sensor"
+);
 
-When Wi-Fi credentials have not been saved, the board starts Bluetooth Low Energy (BLE) provisioning:
+// Generic device for system telemetry parameters
+static Device sys_telemetry(
+  "System Stats",
+  "custom.device.system"
+);
 
-```cpp
-void sysProvEvent(arduino_event_t *sys_event) {
-  // Handle provisioning events here
+// Parameter pointers for dynamic reporting
+static Param* p_status = nullptr;
+static Param* p_rssi   = nullptr;
+static Param* p_uptime = nullptr;
+
+// -----------------------------------------------------------------------------
+// Provisioning Event Callback
+// -----------------------------------------------------------------------------
+void sysProvEvent(arduino_event_t* sys_event) {
+  switch (sys_event->event_id) {
+    case ARDUINO_EVENT_PROV_START:
+      Serial.printf(
+        "\n[PROV] Started! BLE Name: %s | POP PIN: %s\n",
+        service_name,
+        pop
+      );
+      break;
+
+    case ARDUINO_EVENT_PROV_CRED_RECV:
+      Serial.println(
+        "\n[PROV] Received Wi-Fi credentials from the app."
+      );
+      break;
+
+    case ARDUINO_EVENT_PROV_CRED_SUCCESS:
+      Serial.println(
+        "\n[PROV] Provisioning successful! Connected to Wi-Fi."
+      );
+      break;
+
+    default:
+      break;
+  }
 }
-```
 
-Important provisioning events include:
-
-- `ARDUINO_EVENT_PROV_START`: Displays the Proof of Possession (POP) PIN and BLE device name in the Serial Monitor.
-
-  ```text
-  POP PIN: 12345678
-  BLE device name: PROV_ESP32S3
-  ```
-
-- `ARDUINO_EVENT_PROV_CRED_RECV`: Handles Wi-Fi credentials received from the phone application.
-- `ARDUINO_EVENT_PROV_CRED_SUCCESS`: Indicates that provisioning completed successfully.
-
-### 3. Inbound Control: Application to Hardware Callback
-
-```cpp
+// -----------------------------------------------------------------------------
+// Write Callback
+// App or Cloud -> ESP32-S3
+//
+// This replaces manual parsing of TOPIC_LED_SET MQTT messages.
+// -----------------------------------------------------------------------------
 void write_callback(
-  Device *device,
-  Param *param,
+  Device* device,
+  Param* param,
   const param_val_t val,
-  void *priv_data,
-  write_ctx_t *ctx
+  void* priv_data,
+  write_ctx_t* ctx
 ) {
   const char* device_name = device->getDeviceName();
   const char* param_name = param->getParamName();
 
+  if (strcmp(device_name, "LED Control") == 0) {
+    if (strcmp(param_name, "Power") == 0) {
+      bool newState = val.val.b;
+
+      digitalWrite(
+        LED_PIN,
+        newState ? HIGH : LOW
+      );
+
+      // Synchronize the hardware state with the cloud
+      param->updateAndReport(val);
+
+      Serial.printf(
+        "[RainMaker] LED toggled -> %s\n",
+        newState ? "ON" : "OFF"
+      );
+    }
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Telemetry Publisher
+// Periodically updates temperature, RSSI, uptime, and status.
+// -----------------------------------------------------------------------------
+void publishTelemetry() {
+  // 1. Temperature feed
+  float temperature = random(100, 500) / 10.0f;
+
+  my_temp_sensor.updateAndReportParam(
+    "Temperature",
+    temperature
+  );
+
+  // 2. RSSI feed
+  int rssi = WiFi.RSSI();
+
+  p_rssi->updateAndReport(
+    param_val_t(rssi)
+  );
+
+  // 3. Uptime feed
+  int uptime_sec = static_cast<int>(millis() / 1000);
+
+  p_uptime->updateAndReport(
+    param_val_t(uptime_sec)
+  );
+
+  // 4. Status feed
+  p_status->updateAndReport(
+    param_val_t("online")
+  );
+
+  Serial.printf(
+    "[Telemetry] Temp: %.1f C | RSSI: %d dBm | Uptime: %d s\n",
+    temperature,
+    rssi,
+    uptime_sec
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Setup
+// -----------------------------------------------------------------------------
+void setup() {
+  Serial.begin(115200);
+  delay(500);
+
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+
+  // 1. Initialize the RainMaker node
+  my_node = RMaker.initNode(
+    "ESP32S3_Node"
+  );
+
+  // 2. Configure the LED switch device
+  my_switch.addCb(write_callback);
+  my_node.addDevice(my_switch);
+
+  // 3. Configure the temperature-sensor device
+  my_node.addDevice(my_temp_sensor);
+
+  // 4. Create system telemetry parameters
+  p_status = new Param(
+    "Status",
+    "custom.param.status",
+    value_s("online"),
+    PROP_FLAG_READ
+  );
+
+  p_rssi = new Param(
+    "RSSI",
+    "custom.param.rssi",
+    value_i(0),
+    PROP_FLAG_READ
+  );
+
+  p_uptime = new Param(
+    "Uptime",
+    "custom.param.uptime",
+    value_i(0),
+    PROP_FLAG_READ
+  );
+
+  sys_telemetry.addParam(*p_status);
+  sys_telemetry.addParam(*p_rssi);
+  sys_telemetry.addParam(*p_uptime);
+
+  my_node.addDevice(sys_telemetry);
+
+  // 5. Enable standard RainMaker services
+  RMaker.enableOTA(OTA_USING_TOPICS);
+  RMaker.enableTZService();
+  RMaker.enableSchedule();
+
+  // 6. Start the RainMaker stack
+  RMaker.start();
+
+  // 7. Start BLE provisioning if Wi-Fi credentials are not saved
+  WiFi.onEvent(sysProvEvent);
+
+  WiFiProv.beginProvision(
+    WIFI_PROV_SCHEME_BLE,
+    WIFI_PROV_SCHEME_HANDLER_FREE_BTDM,
+    WIFI_PROV_SECURITY_1,
+    pop,
+    service_name
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Main Loop
+// -----------------------------------------------------------------------------
+void loop() {
+  // RainMaker networking runs asynchronously through FreeRTOS tasks.
   if (
-    strcmp(device_name, "LED Control") == 0 &&
-    strcmp(param_name, "Power") == 0
+    millis() - lastTelemetryMs >=
+    TELEMETRY_PERIOD_MS
   ) {
-    ledState = val.val.b;
+    lastTelemetryMs = millis();
+
+    if (WiFi.status() == WL_CONNECTED) {
+      publishTelemetry();
+    }
+  }
+
+  delay(10);
+}
+```
+
+### Step-by-Step Architecture
+
+#### Step 1: Feed-Mapping Strategy
+
+Instead of manually defining topic strings such as `TOPIC_TEMP` and `TOPIC_LED_SET`, RainMaker represents inputs and outputs through standard devices and custom parameters.
+
+| Original MQTT Feed | RainMaker Structure | Behavior and Access |
+|---|---|---|
+| `TOPIC_LED_SET` and `TOPIC_LED_STATE` | `Switch my_switch("LED Control")` | Read/write. The mobile app displays a toggle button. Changing it invokes `write_callback()`, updates the hardware, and synchronizes the cloud state. |
+| `TOPIC_TEMP` | `TemperatureSensor my_temp_sensor` | Read-only. Accepts floating-point values through `updateAndReportParam()` and can display them on app graphs. |
+| `TOPIC_STATUS` | `Param* p_status` | Read-only string parameter returning `"online"`. |
+| `TOPIC_RSSI` | `Param* p_rssi` | Read-only integer parameter reporting signal strength in dBm. |
+| `TOPIC_UPTIME` | `Param* p_uptime` | Read-only integer parameter reporting seconds since boot. |
+
+#### Step 2: Instantiating Devices and Parameters
+
+RainMaker provides standard device classes, such as `Switch` and `TemperatureSensor`, as well as a generic `Device` container for custom parameters.
+
+```cpp
+// Preconfigured device types
+static Switch my_switch(
+  "LED Control",
+  &LED_PIN
+);
+
+static TemperatureSensor my_temp_sensor(
+  "Temperature Sensor"
+);
+
+// Custom container for system statistics
+static Device sys_telemetry(
+  "System Stats",
+  "custom.device.system"
+);
+
+p_status = new Param(
+  "Status",
+  "custom.param.status",
+  value_s("online"),
+  PROP_FLAG_READ
+);
+
+p_rssi = new Param(
+  "RSSI",
+  "custom.param.rssi",
+  value_i(0),
+  PROP_FLAG_READ
+);
+
+p_uptime = new Param(
+  "Uptime",
+  "custom.param.uptime",
+  value_i(0),
+  PROP_FLAG_READ
+);
+```
+
+`PROP_FLAG_READ` specifies that the parameters are read-only telemetry values sent from the ESP32-S3 to the cloud. The application cannot overwrite them.
+
+Adding the parameters to `sys_telemetry` groups them under a single system-statistics device in the RainMaker application.
+
+#### Step 3: Handling Direct Application Commands
+
+In a standard MQTT application, incoming JSON strings must be parsed inside a topic callback.
+
+In RainMaker, incoming cloud commands trigger a callback containing a typed `param_val_t` value:
+
+```cpp
+void write_callback(
+  Device* device,
+  Param* param,
+  const param_val_t val,
+  void* priv_data,
+  write_ctx_t* ctx
+) {
+  const char* param_name = param->getParamName();
+
+  if (strcmp(param_name, "Power") == 0) {
+    bool newState = val.val.b;
 
     digitalWrite(
       LED_PIN,
-      ledState ? HIGH : LOW
+      newState ? HIGH : LOW
     );
 
+    // Confirm the changed state to RainMaker
     param->updateAndReport(val);
   }
 }
 ```
 
-The callback is triggered automatically by the RainMaker task when a user changes a control in the application.
+`val.val.b` directly extracts the Boolean value, either `true` or `false`.
 
-- `val.val.b` extracts the Boolean value sent by the application.
-- `digitalWrite()` changes the physical LED state.
-- `param->updateAndReport(val)` sends the updated hardware state back to the cloud so that the user interface remains synchronized.
+Calling `param->updateAndReport(val)` acts as the equivalent of publishing the updated value to `TOPIC_LED_STATE`.
 
-### 4. RainMaker Setup Sequence
+#### Step 4: Provisioning and Initialization
 
 ```cpp
-Node my_node = RMaker.initNode("ESP32S3_Node");
+RMaker.initNode("ESP32S3_Node");
 
-my_switch.addCb(write_callback);
-
-my_node.addDevice(my_switch);
-my_node.addDevice(my_temp_sensor);
-
-RMaker.enableOTA(OTA_USING_TOPICS);
-RMaker.enableTZService();
-RMaker.enableSchedule();
+// Add devices and parameters here
 
 RMaker.start();
 
 WiFiProv.beginProvision(
   WIFI_PROV_SCHEME_BLE,
   // Additional provisioning arguments
+  pop,
+  service_name
 );
 ```
 
-The setup sequence performs the following actions:
+The initialization process works as follows:
 
-- `initNode()` registers the node with the Espressif cloud service.
-- `addDevice()` maps hardware objects to the node structure.
-- `enableOTA()` enables over-the-air firmware updates.
-- `enableTZService()` enables time-zone synchronization.
-- `enableSchedule()` enables cloud scheduling.
-- `RMaker.start()` starts the background FreeRTOS tasks responsible for state synchronization.
-- `beginProvision()` starts BLE advertising when Wi-Fi credentials are unavailable.
+- `initNode()` initializes the Espressif cloud entity for the ESP32-S3.
+- `my_node.addDevice()` attaches devices to the node.
+- RainMaker builds the device structure used to generate application controls.
+- If no Wi-Fi credentials are stored in non-volatile storage (NVS), `beginProvision()` starts BLE advertising.
+- The device advertises under the name `PROV_ESP32S3`.
+- The Proof of Possession PIN is `12345678`.
+- The RainMaker application securely sends the Wi-Fi credentials over BLE.
 
-## Step 3: Standard MQTT Execution Flow
-
-The standard MQTT pathway is compiled when RainMaker is disabled.
-
-When RainMaker is not being used, the sketch manually handles Wi-Fi, TLS, MQTT connections, and broker communication.
-
-### 1. TLS Certificate Setup and Time Synchronization
-
-```cpp
-configTime(
-  0,
-  0,
-  "pool.ntp.org",
-  "time.nist.gov"
-);
-
-secureClient.setCACert(adafruit_root_ca);
-```
-
-TLS certificate validation requires the ESP32-S3 clock to be synchronized through NTP before connecting to brokers such as Adafruit IO on port `8883`.
-
-### 2. Connection and Reconnection Handling
-
-The `connectWiFi()` function:
-
-- Connects to a standard Wi-Fi station network.
-- Uses the configured Wi-Fi SSID and password.
-- Waits for a successful connection.
-
-The `connectMQTT()` function:
-
-- Creates a unique client ID using the ESP32-S3 MAC address.
-- Produces an identifier such as:
-
-  ```text
-  esp32s3-AABBCCDDEEFF
-  ```
-
-- Configures a Last Will and Testament (LWT) message for connection-status tracking.
-- Subscribes to command feeds.
-
-### 3. Inbound MQTT Payload Callback
-
-```cpp
-void mqttCallback(
-  char* topic,
-  byte* payload,
-  unsigned int length
-) {
-  // Parse and process the incoming MQTT message here
-}
-```
-
-The callback:
-
-- Receives messages from subscribed topics.
-- Parses commands such as `1`, `on`, `0`, and `off`.
-- Updates the LED using `digitalWrite(LED_PIN, ...)`.
-- Publishes the resulting state to `TOPIC_LED_STATE`.
-
-Example command values:
-
-```text
-1
-on
-0
-off
-```
-
-## Step 4: Non-Blocking Main Loop
-
-Both modes use non-blocking timing checks based on `millis()`:
-
-```cpp
-millis() - lastTelemetryMs >= TELEMETRY_PERIOD_MS
-```
-
-```cpp
-void loop() {
-#ifdef RAIN_MAKER
-
-  if (
-    millis() - lastTelemetryMs >=
-    TELEMETRY_PERIOD_MS
-  ) {
-    lastTelemetryMs = millis();
-
-    publishRainMakerTelemetry();
-  }
-
-#else
-
-  if (WiFi.status() != WL_CONNECTED) {
-    connectWiFi();
-  }
-
-  if (!mqtt.connected()) {
-    connectMQTT();
-  }
-
-  mqtt.loop();
-
-  if (
-    millis() - lastTelemetryMs >=
-    TELEMETRY_PERIOD_MS
-  ) {
-    lastTelemetryMs = millis();
-
-    publishMqttTelemetry();
-  }
-
-#endif
-
-  delay(10);
-}
-```
-
-## Comparison of the Two Modes
-
-### RainMaker Mode
-
-In RainMaker mode:
-
-- Background communication is handled by FreeRTOS tasks.
-- Heartbeats are handled by Espressif's framework.
-- Incoming commands are processed by RainMaker callbacks.
-- The main loop only needs to publish telemetry periodically.
-
-Example telemetry update:
+#### Step 5: Simplified Telemetry Publishing
 
 ```cpp
 my_temp_sensor.updateAndReportParam(
   "Temperature",
-  temperatureValue
+  temperature
+);
+
+p_rssi->updateAndReport(
+  param_val_t(rssi)
+);
+
+p_uptime->updateAndReport(
+  param_val_t(uptime_sec)
+);
+
+p_status->updateAndReport(
+  param_val_t("online")
 );
 ```
 
-### MQTT Mode
+Calling `updateAndReport()` packages the updated value into RainMaker's internal format and sends it through the RainMaker communication system. This avoids manual string formatting, topic construction, and subscription management.
 
-In standard MQTT mode, the sketch explicitly handles:
+### RainMaker Mobile-App Provisioning Flow
 
-- Wi-Fi connection monitoring.
-- MQTT broker reconnection.
-- Subscription management.
-- Pending MQTT packets through `mqtt.loop()`.
-- JSON or feed-data construction.
-- Telemetry publishing every 10 seconds.
+1. Power on the ESP32-S3.
+2. Open the ESP RainMaker application on iOS or Android.
+3. Tap **Add Device**.
+4. Select **BLE Provisioning**.
+5. Allow the application to discover `PROV_ESP32S3`.
+6. Enter the Proof of Possession PIN:
 
-## Combined Code Implementation
+   ```text
+   12345678
+   ```
 
-The following code uses the `#define RAIN_MAKER` flag to toggle between your original MQTT stack (Adafruit IO / EMQX / HiveMQ) and ESP RainMaker.
+7. Select the local Wi-Fi network.
+8. Enter the Wi-Fi password.
+9. Wait for provisioning to complete.
+10. Open the device in the RainMaker application.
 
-### C++
+After provisioning, RainMaker can generate controls for:
 
-```cpp
-#include <WiFi.h>
+- LED Control.
+- Temperature Sensor.
+- System Stats.
+- Status.
+- RSSI.
+- Uptime.
 
-// =============================================================================
-// SELECT CLOUD PLATFORM / PROTOCOL
-// Direct activation: Uncomment RAIN_MAKER to compile for ESP RainMaker.
-// Comment out RAIN_MAKER to fall back to your existing MQTT setup.
-// =============================================================================
-//#define RAIN_MAKER 
-
-#ifndef RAIN_MAKER
-  // Select one MQTT Broker option
-  //#define HIVEMQ
-  //#define EMQX
-  //#define EMQX_CLOUD   // connect to Googlesheet
-  #define ADAFRUIT
-#endif
-
-// -----------------------------------------------------------------------------
-// HARDWARE & TIMING CONFIGURATION
-// -----------------------------------------------------------------------------
-const int LED_PIN = 2; // ESP32-S3 GPIO for onboard/external LED
-const uint32_t TELEMETRY_PERIOD_MS = 10000;
-bool ledState = true;
-uint32_t lastTelemetryMs = 0;
-
-// =============================================================================
-// ESP RAINMAKER PIPELINE
-// =============================================================================
-#ifdef RAIN_MAKER
-
-#include "RMaker.h"
-#include "WiFiProv.h"
-
-// Define RainMaker Device Node and Devices
-static Node my_node;
-static Switch my_switch("LED Control", &LED_PIN);
-static TemperatureSensor my_temp_sensor("Temperature Sensor");
-
-// Provisioning credentials (Used if BLE provisioning is triggered)
-const char *service_name = "PROV_ESP32S3";
-const char *pop = "12345678"; // Proof of Possession / PIN
-
-// RainMaker Write Callback Handler (App -> ESP32-S3)
-void sysProvEvent(arduino_event_t *sys_event) {
-    switch (sys_event->event_id) {
-        case ARDUINO_EVENT_PROV_START:
-            Serial.printf("\nProvisioning Started! Service Name: %s, POP: %s\n", service_name, pop);
-            break;
-        case ARDUINO_EVENT_PROV_CRED_RECV:
-            Serial.println("\nReceived Wi-Fi Credentials from App");
-            break;
-        case ARDUINO_EVENT_PROV_INIT:
-            wifi_prov_mgr_disable_auto_stop(10000);
-            break;
-        case ARDUINO_EVENT_PROV_CRED_SUCCESS:
-            Serial.println("\nProvisioning Successful!");
-            break;
-        default:
-            break;
-    }
-}
-
-// Write callback handling switch state updates from mobile app or cloud
-void write_callback(Device *device, Param *param, const param_val_t val, void *priv_data, write_ctx_t *ctx) {
-    const char *device_name = device->getDeviceName();
-    const char *param_name = param->getParamName();
-
-    if (strcmp(device_name, "LED Control") == 0) {
-        if (strcmp(param_name, "Power") == 0) {
-            ledState = val.val.b;
-            digitalWrite(LED_PIN, ledState ? HIGH : LOW);
-            param->updateAndReport(val);
-            Serial.printf("RainMaker: LED state changed to %s\n", ledState ? "ON" : "OFF");
-        }
-    }
-}
-
-void setupRainMaker() {
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, ledState ? HIGH : LOW);
-
-    Node my_node = RMaker.initNode("ESP32S3_Node");
-
-    // Configure Switch Device
-    my_switch.addCb(write_callback);
-    my_node.addDevice(my_switch);
-
-    // Configure Temperature Device
-    my_node.addDevice(my_temp_sensor);
-
-    // Enable Time Sync and RainMaker Service
-    RMaker.enableOTA(OTA_USING_TOPICS);
-    RMaker.enableTZService();
-    RMaker.enableSchedule();
-
-    RMaker.start();
-
-    // Start Provisioning over BLE if Wi-Fi isn't credentials-configured
-    WiFi.onEvent(sysProvEvent);
-    WiFiProv.beginProvision(WIFI_PROV_SCHEME_BLE, WIFI_PROV_SCHEME_HANDLER_FREE_BTDM, WIFI_PROV_SECURITY_1, pop, service_name);
-}
-
-void publishRainMakerTelemetry() {
-    float temperature = random(100, 500) / 10.0f;
-    my_temp_sensor.updateAndReportParam("Temperature", temperature);
-    Serial.printf("RainMaker Telemetry Published -> Temp: %.1f C\n", temperature);
-}
-
-// =============================================================================
-// STANDARD MQTT PIPELINE (Adafruit IO / EMQX / HiveMQ)
-// =============================================================================
-#else
-
-#include <PubSubClient.h>
-#include <WiFiClientSecure.h>
-
-#if defined(EMQX) || defined(EMQX_CLOUD) || defined(ADAFRUIT)
-#define SECURE_LOGIN
-#endif
-
-#ifdef ADAFRUIT
-#define ADAFRUIT_CA_CERT
-#endif
-
-#ifdef ADAFRUIT_CA_CERT
-const char adafruit_root_ca[] PROGMEM = R"KEY(
------BEGIN CERTIFICATE-----
-MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh
-MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
-d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
-MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
-MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
-b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuzfNNNx7a8myaJCtSnX/RrohCgiN9RlUyfuI
-2/Ou8jqJkTx65qsGGmvPrC3oXgkkRLpimn7Wo6h+4FR1IAWsULecYxpsMNzaHxmx
-1x7e/dfgy5SDN67sH0NO3Xss0r0upS/kqbitOtSZpLYl6ZtrAGCSYP9PIUkY92eQ
-q2EGnI/yuum06ZIya7XzV+hdG82MHauVBJVJ8zUtluNJbd134/tJS7SsVQepj5Wz
-tCO7TG1F8PapspUwtP1MVYwnSlcUfIKdzXOS0xZKBgyMUNGPHgm+F6HmIcr9g+UQ
-vIOlCsRnKPZzFBQ9RnbDhxSJITRNrw9FDKZJobq7nMWxM4MphQIDAQABo0IwQDAP
-BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUTiJUIBiV
-5uNu5g/6+rkS7QYXjzkwDQYJKoZIhvcNAQELBQADggEBAGBnKJRvDkhj6zHd6mcY
-1Yl9PMWLSn/pvtsrF9+wX3N3KjITOYFnQoQj8kVnNeyIv/iPsGEMNKSuIEyExtv4
-NeF22d+mQrvHRAiGfzZ0JFrabA0UWTW98kndth/Jsw1HKj2ZL7tcu7XUIOGZX1NG
-Fdtom/DzMNU+MeKNhJ7jitralj41E6Vf8PlwUHBHQRFXGU7Aj64GxJUTFy8bJZ91
-8rGOmaFvE7FBcf6IKshPECBV1/MUReXgRPTqh5Uykw7+U0b6LJ3/iyK5S9kJRaTe
-pLiaWN0bfVKfjllDiIGknibVb63dDcY3fe0Dkhvld1927jyNxF1WW6LZZm6zNTfl
-MrY=
------END CERTIFICATE-----)KEY";
-#endif
-
-const char* WIFI_SSID = "Nightingale_IoT";
-const char* WIFI_PASSWORD = "1122334455";
-
-#ifdef HIVEMQ
-const char* MQTT_HOST = "broker.hivemq.com";
-const uint16_t MQTT_PORT = 1883;
-#endif
-
-#ifdef EMQX_CLOUD
-const char* MQTT_HOST = "ffcebc18.ala.asia-southeast1.emqxsl.com";
-const uint16_t MQTT_PORT = 8883;
-#endif
-
-#ifdef EMQX
-const char* MQTT_HOST = "broker.emqx.io";
-const uint16_t MQTT_PORT = 8883;
-#endif
-
-#ifdef ADAFRUIT
-const char* MQTT_HOST = "io.adafruit.com";
-const uint16_t MQTT_PORT = 8883;
-#endif
-
-#ifdef SECURE_LOGIN
-#ifdef ADAFRUIT
-const char* MQTT_USERNAME = "YOUR_ADAFRUIT_USERNAME";
-const char* MQTT_PASSWORD = "YOUR_ADAFRUIT_IO_KEY";
-#else
-const char* MQTT_USERNAME = "esp32s3";
-const char* MQTT_PASSWORD = "esp11223344";
-#endif
-WiFiClientSecure secureClient;
-PubSubClient mqtt(secureClient);
-#else
-const char* MQTT_USERNAME = "";
-const char* MQTT_PASSWORD = "";
-WiFiClient tcpClient;
-PubSubClient mqtt(tcpClient);
-#endif
-
-#ifdef ADAFRUIT
-const char* TOPIC_STATUS = "ooikk/feeds/status";
-const char* TOPIC_TEMP = "ooikk/feeds/temperature";
-const char* TOPIC_RSSI = "ooikk/feeds/rssi";
-const char* TOPIC_UPTIME = "ooikk/feeds/uptime";
-const char* TOPIC_LED_SET = "ooikk/feeds/led-control";
-const char* TOPIC_LED_STATE = "ooikk/feeds/led-state";
-#else
-const char* TOPIC_STATUS = "esp32s3/status";
-const char* TOPIC_TELEMETRY = "esp32s3/telemetry";
-const char* TOPIC_LED_SET = "esp32s3/led/set";
-const char* TOPIC_LED_STATE = "esp32s3/led/state";
-#endif
-
-uint32_t lastMqttConnectAttemptMs = 0;
-const uint32_t MQTT_RECONNECT_INTERVAL_MS = 2000;
-
-void connectWiFi() {
-  if (WiFi.status() == WL_CONNECTED) return;
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.print("Connecting to Wi-Fi");
-  uint32_t startMs = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - startMs < 15000) {
-    delay(250);
-    Serial.print(".");
-  }
-  Serial.println();
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.print("Wi-Fi connected. IP: ");
-    Serial.println(WiFi.localIP());
-  } else {
-    Serial.println("Wi-Fi connection failed.");
-  }
-}
-
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
-  char message[length + 1];
-  memcpy(message, payload, length);
-  message[length] = '\0';
-  Serial.printf("MQTT RX topic: %s, payload: %s\n", topic, message);
-
-  if (strcmp(topic, TOPIC_LED_SET) == 0) {
-    String value = String(message);
-    value.trim();
-    value.toLowerCase();
-    bool turnOn = (value == "1" || value == "on" || value == "true");
-    bool turnOff = (value == "0" || value == "off" || value == "false");
-
-    if (turnOn) {
-      ledState = true;
-      digitalWrite(LED_PIN, HIGH);
-#ifdef ADAFRUIT
-      mqtt.publish(TOPIC_LED_STATE, "1", true);
-#else
-      mqtt.publish(TOPIC_LED_STATE, "{\"state\":\"1\"}");
-#endif
-      Serial.println("LED turned ON");
-    } else if (turnOff) {
-      ledState = false;
-      digitalWrite(LED_PIN, LOW);
-#ifdef ADAFRUIT
-      mqtt.publish(TOPIC_LED_STATE, "0", true);
-#else
-      mqtt.publish(TOPIC_LED_STATE, "{\"state\":\"0\"}");
-#endif
-      Serial.println("LED turned OFF");
-    }
-  }
-}
-
-void connectMQTT() {
-  if (mqtt.connected()) return;
-  if (millis() - lastMqttConnectAttemptMs < MQTT_RECONNECT_INTERVAL_MS) return;
-  lastMqttConnectAttemptMs = millis();
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  String clientId = "esp32s3-";
-  clientId += WiFi.macAddress();
-  clientId.replace(":", "");
-  clientId += "-";
-  clientId += String(random(1000, 9999));
-
-  Serial.printf("Attempting MQTT connection as: %s\n", clientId.c_str());
-
-  bool connected = mqtt.connect(
-    clientId.c_str(),
-#ifdef SECURE_LOGIN
-    MQTT_USERNAME, MQTT_PASSWORD,
-#endif
-    TOPIC_STATUS, 0, true, "offline"
-  );
-
-  if (connected) {
-    Serial.println("MQTT connected");
-    mqtt.publish(TOPIC_STATUS, "online", true);
-    mqtt.subscribe(TOPIC_LED_SET, 1);
-#ifdef ADAFRUIT
-    mqtt.publish(TOPIC_LED_STATE, ledState ? "1" : "0", true);
-#else
-    mqtt.publish(TOPIC_LED_STATE, ledState ? "{\"state\":\"1\"}" : "{\"state\":\"0\"}", true);
-#endif
-  } else {
-    Serial.printf("MQTT connection failed, state: %d\n", mqtt.state());
-  }
-}
-
-void publishMqttTelemetry() {
-  if (!mqtt.connected()) return;
-  float temperature = random(100, 500) / 10.0f;
-#ifdef ADAFRUIT
-  mqtt.publish(TOPIC_STATUS, "online", true);
-  delay(2000);
-  mqtt.publish(TOPIC_TEMP, String(temperature).c_str());
-  delay(2000);
-  mqtt.publish(TOPIC_RSSI, String((long)WiFi.RSSI()).c_str());
-  delay(2000);
-  mqtt.publish(TOPIC_UPTIME, String((unsigned long long)(millis() / 1000)).c_str());
-  delay(2000);
-  Serial.printf("Published Telemetry** Temp: %.1f C\n", temperature);
-#else
-  char payload[128];
-  snprintf(payload, sizeof(payload), "{\"temp\":%.1f,\"rssi\":%ld,\"uptime_sec\":%llu}",
-           temperature, (long)WiFi.RSSI(), (unsigned long long)(millis() / 1000));
-  mqtt.publish(TOPIC_TELEMETRY, payload);
-  Serial.printf("Published telemetry: %s\n", payload);
-#endif
-}
-
-#endif // RAIN_MAKER
-
-// =============================================================================
-// MAIN ENTRY POINTS
-// =============================================================================
-void setup() {
-  Serial.begin(115200);
-  delay(500);
-
-#ifdef RAIN_MAKER
-  Serial.println("\nESP32-S3 Running ESP RainMaker Engine");
-  setupRainMaker();
-#else
-  Serial.println("\nESP32-S3 Running Standard MQTT Engine");
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
-  connectWiFi();
-
-#ifdef SECURE_LOGIN
-#ifdef ADAFRUIT_CA_CERT
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.print("Syncing time for TLS");
-  time_t now = time(nullptr);
-  while (now < 1650000000) {
-    delay(250);
-    Serial.print(".");
-    time(&now);
-  }
-  Serial.println(" -> Done!");
-  secureClient.setCACert(adafruit_root_ca);
-#else
-  secureClient.setInsecure();
-#endif
-  secureClient.setHandshakeTimeout(30);
-#endif
-
-  mqtt.setServer(MQTT_HOST, MQTT_PORT);
-  mqtt.setCallback(mqttCallback);
-  mqtt.setBufferSize(512);
-  mqtt.setKeepAlive(30);
-  mqtt.setSocketTimeout(15);
-#endif
-}
-
-void loop() {
-#ifdef RAIN_MAKER
-  // ESP RainMaker runs its task scheduling in the background (FreeRTOS)
-  if (millis() - lastTelemetryMs >= TELEMETRY_PERIOD_MS) {
-    lastTelemetryMs = millis();
-    publishRainMakerTelemetry();
-  }
-#else
-  if (WiFi.status() != WL_CONNECTED) {
-    connectWiFi();
-  }
-  if (!mqtt.connected()) {
-    connectMQTT();
-  }
-  mqtt.loop();
-
-  if (millis() - lastTelemetryMs >= TELEMETRY_PERIOD_MS) {
-    lastTelemetryMs = millis();
-    publishMqttTelemetry();
-  }
-#endif
-
-  delay(10);
-}
-```
-
-> **Note:** The original code block is extremely large. For markdown conversion, preserve the complete source exactly as provided inside a single `cpp` code block.
 
 ## Step-by-Step Dashboard Setup on Evaluation Hub
 
