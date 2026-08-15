@@ -3686,6 +3686,146 @@ These tools teach students how to process MQTT messages into dashboards or autom
 4. Visualize sensor data with Node-RED or Adafruit IO.
 5. Introduce local Mosquitto deployment and security.
 6. Progress to ThingsBoard or AWS IoT Core for industrial and enterprise concepts.
+
+
+# ThingSpeak for Teaching IoT and MQTT
+
+ThingSpeak™ by MathWorks is an excellent platform for teaching IoT and MQTT, especially when the curriculum includes data analytics and signal processing alongside basic connectivity.
+
+Because ThingSpeak integrates MATLAB analytics with cloud channels, students can perform real-time calculations—such as FFT analysis, moving averages, and threshold alerts—directly in the cloud without setting up external servers.
+
+<img width="548" height="387" alt="image" src="https://github.com/user-attachments/assets/bf63fefc-de99-4f1d-ba3b-53475876c337" />
+
+
+
+## Key Advantages for Teaching
+
+### Built-In MATLAB Analysis and Visualization
+
+Students can write short MATLAB scripts directly in the browser to:
+
+- Plot incoming data.
+- Calculate moving averages.
+- Perform signal-processing operations.
+- Detect threshold conditions.
+- Trigger alerts.
+
+### Dual Protocol Support
+
+ThingSpeak accepts incoming data through:
+
+- Standard REST HTTP requests.
+- MQTT publish and subscribe operations.
+
+### Native ESP32 Library Support
+
+MathWorks maintains an official ThingSpeak library for Arduino and ESP32 platforms. This makes device code more readable and easier for students to understand.
+
+## Account Setup and Free-Tier Limits
+
+| Parameter | Details |
+|---|---|
+| Account required? | Yes. A free MathWorks account or institutional login is required. |
+| Is it free? | Yes. A free license is available for makers and students. |
+| Message limit | Up to 3 million messages per year, approximately 8,200 messages per day. |
+| Update interval | A minimum of 15 seconds between updates on free channels. |
+
+> **Pedagogical note:** The 15-second update limit is a useful opportunity to explain MQTT publish throttling, bandwidth management, and battery preservation.
+
+## How ThingSpeak MQTT Differs from Standard Brokers
+
+ThingSpeak organizes MQTT around **channels** and **fields** rather than completely arbitrary topic strings.
+
+### Publish Topic
+
+```text
+channels/<CHANNEL_ID>/publish
+```
+
+### Subscribe Topic
+
+```text
+channels/<CHANNEL_ID>/subscribe
+```
+
+### MQTT Credentials
+
+ThingSpeak requires an MQTT API key generated from the ThingSpeak user profile. This is used together with the standard Channel Write API Key.
+
+## ESP32 MQTT Code Example
+
+```cpp
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+const char* ssid     = "YOUR_WIFI";
+const char* password = "YOUR_PASSWORD";
+
+const char* mqttServer = "mqtt3.thingspeak.com";
+const int mqttPort = 1883;
+
+// Retrieve these values from the ThingSpeak MQTT Devices page
+const char* clientID = "YOUR_THINGSPEAK_MQTT_CLIENT_ID";
+const char* mqttUser = "YOUR_THINGSPEAK_MQTT_USERNAME";
+const char* mqttPass = "YOUR_THINGSPEAK_MQTT_PASSWORD";
+
+const char* channelID = "YOUR_CHANNEL_ID";
+const char* writeAPIKey = "YOUR_WRITE_API_KEY";
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+  }
+
+  client.setServer(mqttServer, mqttPort);
+}
+
+void loop() {
+  if (!client.connected()) {
+    client.connect(clientID, mqttUser, mqttPass);
+  }
+
+  client.loop();
+
+  // Publish a sensor value to Field 1 every 15 seconds
+  static unsigned long lastPub = 0;
+
+  if (millis() - lastPub > 15000) {
+    lastPub = millis();
+
+    int val = analogRead(34);
+
+    String topic =
+      "channels/" + String(channelID) + "/publish";
+
+    String payload =
+      "field1=" + String(val) +
+      "&status=MQTTPUBLISH";
+
+    client.publish(topic.c_str(), payload.c_str());
+  }
+}
+```
+
+## Data Flow
+
+The example follows this sequence:
+
+1. The ESP32 connects to the local Wi-Fi network.
+2. The MQTT client connects to `mqtt3.thingspeak.com`.
+3. The ESP32 reads an analog value from GPIO 34.
+4. The value is formatted as a ThingSpeak field payload.
+5. The value is published to the channel every 15 seconds.
+6. ThingSpeak stores and visualizes the data.
+7. MATLAB analysis can process the channel data in the cloud.
+8. 
 ---
 
 # MQTT Brokers
