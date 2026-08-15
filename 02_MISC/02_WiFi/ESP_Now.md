@@ -1,4 +1,4 @@
-## ESP32 ESP-NOW     
+# ESP32 ESP-NOW     
 
 ESP-NOW is a fast, connectionless 2.4 GHz wireless communication protocol developed by Espressif. It enables raw board-to-board data transmission without requiring a Wi-Fi router, IP address assignment, or DHCP handshakes.
 
@@ -8,7 +8,7 @@ By operating directly on the Data Link Layer (Layer 2) using vendor-specific IEE
 
 *ESP-NOW Protocol Model vs OSI Model. Source: Espressif Systems*
 
-### Technical Highlights      
+## Technical Highlights      
 - Payload Capacity: Up to 250 bytes per packet.
 - Latency: Extremely low, typically ~2ms to 10ms transmission time.
 - Power Consumption: Ideal for deep-sleep battery devices. A sensor can wake up, transmit data, receive confirmation, and sleep in less than 15ms.
@@ -29,7 +29,7 @@ typedef struct struct_message {
 ```
 Important ESP-NOW Limit: The total size of struct_message cannot exceed 250 bytes (the hard hardware payload limit for an ESP-NOW frame).
 
-### Application Topology Modes    
+## Application Topology Modes    
 ESP-NOW supports several flexible network topologies:     
 |	Topology Mode	|	Description	|	Typical Use Case	|
 |	-	|	-	|	-	|
@@ -38,15 +38,15 @@ ESP-NOW supports several flexible network topologies:
 |	Many-to-One (N:1)	|	Multiple battery-powered Nodes send readings to one central Receiver Hub.	|	Distributed soil moisture or temperature sensors.	|
 |	Bi-Directional (2-Way)	|	Every node registers the other as a peer, sending and receiving data back and forth.	|	Mesh-like telemetry, acknowledgment feedback systems.	|
 
-### ESP-NOW Header Source Code     
+## ESP-NOW Header Source Code     
 The header file esp_now.h is part of the Espressif ESP-IDF framework integrated directly into the Arduino ESP32 core:     
 Official GitHub Link: [espressif/esp-idf — esp_now.h](https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp_now.h)
 
 
-### ESP-NOW API Reference    
+## ESP-NOW API Reference    
 To use these functions, include the header in your sketch: ```#include <esp_now.h>```     
 
-**1. Core Lifecycle APIs**    
+### 1. Core Lifecycle APIs    
 ```cpp
 esp_err_t esp_now_init(void);
 ```
@@ -64,7 +64,7 @@ esp_err_t esp_now_get_version(uint32_t *version)
 - Usage: Gets the current ESP-NOW version.     
 
 
-**2. Peer Management APIs**    
+### 2. Peer Management APIs    
 Before sending a targeted message to another board, it must be registered as a peer using the ```esp_now_peer_info_t``` struct.       
 This is ```esp_now_peer_info_t``` struct.     
 ```cpp
@@ -110,7 +110,7 @@ int esp_now_get_peer_num(void)
 - Returns the current number of peers in the list.     
 
 
-**3. Data Transmission APIs**    
+### 3. Data Transmission APIs    
 ```cpp
 esp_err_t esp_now_send(const uint8_t *peer_addr, const uint8_t *data, size_t len);
 ```     
@@ -121,7 +121,7 @@ esp_err_t esp_now_send(const uint8_t *peer_addr, const uint8_t *data, size_t len
   - ```len```: Number of bytes to transmit (max 250 bytes).
 - Usage: Transmits data packet over raw 2.4 GHz frames.
 
-**4. Callback Registration APIs**    
+### 4. Callback Registration APIs    
 ```cpp
 esp_err_t esp_now_register_send_cb(esp_now_send_cb_t cb);
 ```
@@ -144,15 +144,15 @@ esp_err_t esp_now_unregister_recv_cb(void)
 
 
 
-**5. Security**     
+### 5. Security     
 ```cpp
 esp_err_t esp_now_set_pmk(const uint8_t *pmk)
 ```
 - Usage: Sets the Primary Master Key (PMK) for encrypting the Local Master Keys (LMK). If not set, a default PMK is used.     
 
 
-### Step-by-Step ESP-NOW Tutorial for ESP32-S3: One-Way Unicast (1:1) configuration     
-**Step 1**: Find the Receiver Board's MAC Address    
+## Step-by-Step ESP-NOW Tutorial for ESP32-S3: One-Way Unicast (1:1) configuration     
+###  Step 1: Find the Receiver Board's MAC Address    
 Upload this short utility code to your Receiver ESP32-S3 board and open the Serial Monitor (115200 baud) to copy its MAC address.    
 ```cpp
 #include <WiFi.h>
@@ -184,7 +184,7 @@ void loop() {
 
 ```
 
-**Step 2**: Sender Code (ESP32-S3)     
+### Step 2: Sender Code (ESP32-S3)     
 Paste your receiver's MAC address into the ```receiverAddress``` array below.     
 ```cpp
 #include <WiFi.h>
@@ -264,7 +264,7 @@ void loop() {
   delay(2000); // Send data every 2 seconds
 }
 ```
-**Step 3**: Receiver Code (ESP32-S3)    
+### Step 3: Receiver Code (ESP32-S3)    
 Upload this code to the Receiver ESP32-S3 board.     
 ```cpp
 #include <WiFi.h>
@@ -322,13 +322,13 @@ void loop() {
 
 Unlike standard Wi-Fi, ESP-NOW unicast requires the receiving node's radio to acknowledge the packet within milliseconds over the air.
 
-### ESP32 Core v3.x and Core v2.x     
+## ESP32 Core v3.x and Core v2.x     
 
 The core difference is that v2.x only provided the sender's MAC address, while v3.x provides a rich context structure that includes the sender's MAC, the destination MAC, and the Wi-Fi channel the packet was received on.
 
 Here is the detailed technical breakdown of the differences.
 
-#### 1. Core v2.x: The Legacy Approach (`const uint8_t * mac`)    
+### 1. Core v2.x: The Legacy Approach (`const uint8_t * mac`)    
 
 In v2.x, the callback signature was:
 
@@ -340,7 +340,7 @@ void OnDataReceived(const uint8_t * mac, const uint8_t *incomingData, int len);
 - **What it is**: `mac` is simply a raw pointer to a 6-byte array representing the **Source MAC address** (the MAC address of the device that sent the packet).
 - **Limitation**: It lacked context. If your ESP32 was running both Station (STA) and SoftAP modes simultaneously, or if it was scanning multiple channels, the callback had no way to tell you which interface received the packet or which channel it arrived on.
 
-#### 2. Core v3.x: The Modern Approach (`const esp_now_recv_info_t *info`)    
+### 2. Core v3.x: The Modern Approach (`const esp_now_recv_info_t *info`)    
 
 In v3.x, the callback signature was updated to:
 
@@ -351,7 +351,7 @@ void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData
 
 Instead of a simple MAC pointer, it passes a pointer to a new structure called `esp_now_recv_info_t`.
 
-#### The `esp_now_recv_info_t` Structure   
+### The `esp_now_recv_info_t` Structure   
 
 In Arduino ESP32 Core v3.x (ESP-IDF v5.x), the `esp_now_recv_info_t` structure is defined in `esp_now.h` as follows:
 
@@ -365,7 +365,7 @@ typedef struct esp_now_recv_info {
 
 ---
 
-#### Breakdown of Struct Fields
+### Breakdown of Struct Fields
 
 **1. `src_addr` (`uint8_t *`)**    
 Pointer to the 6-byte array containing the **transmitter's (sender's) MAC address**.
@@ -420,7 +420,7 @@ void OnDataRecv(const esp_now_recv_info_t *recv_info, const uint8_t *incomingDat
 - `info->channel`: The **Wi-Fi channel** (1–13/14) on which the packet was received. This is highly useful if your application implements channel hopping or if you are running a sniffer/monitor node.
 
 
-#### 3. How to Migrate Your Code (v2.x to v3.x)  
+### 3. How to Migrate Your Code (v2.x to v3.x)  
 
 If you are updating an old sketch to work with Arduino Core v3.x, you only need to change the callback function signature and how you access the MAC address.
 
@@ -467,7 +467,7 @@ void OnDataReceived(const esp_now_recv_info_t *info, const uint8_t *incomingData
 | Multi‑Interface Support | Poor (Ambiguous) | Excellent (Explicitly identifies interface) |
 | Underlying ESP‑IDF | v4.4 and older | v5.1 and newer |
 
-### Code Example for Bi-Directional (2-Way)    
+## Code Example for Bi-Directional (2-Way)    
 
 
 To make two ESP32-S3 boards communicate bi-directionally, both boards need to act as both Sender and Receiver.
@@ -476,7 +476,7 @@ The most practical and reliable way to implement 2-way communication is the Requ
 - Board A sends a command or query packet to Board B.
 - Board B receives the packet, processes it, and immediately transmits a response packet back to Board A.
 
-**1. Board A Code (Initiator / Controller)**    
+### 1. Board A Code (Initiator / Controller)    
 This board sends a command to Board B every 2 seconds and listens for the incoming status response.    
 
 *Note: Replace ```BOARD_B_MAC``` with the actual MAC address of your second ESP32-S3 board.*     
@@ -573,7 +573,7 @@ void loop() {
 }
 ```
 
-**2. Board B Code (Responder / Node)**     
+### 2. Board B Code (Responder / Node)     
 This board continuously listens for commands from Board A. As soon as a command arrives, it executes the request and transmits back a status payload.
 
 *Note: Replace ```BOARD_A_MAC``` with the actual MAC address of your first ESP32-S3 board.*     
@@ -670,21 +670,21 @@ void loop() {
 }
 ```
 
-**3. Best Practices for 2-Way Communication**    
+### 3. Best Practices for 2-Way Communication    
 - **Avoid Simultaneous Loops**: Having both boards continuously call ```esp_now_send()``` inside their ```loop()``` functions at arbitrary timers can cause RF packet collisions. Using the event-driven Request–Reply approach above eliminates radio congestion.
 - **Wi-Fi Channel Synchronization**: If one board is also connected to a home router, both boards must be pinned to the exact same Wi-Fi channel (1–13) using ```WiFi.printDiag(Serial)``` or ```esp_wifi_set_channel()```.
 - **Data Alignment**: Keep identical struct definitions across both sketches to prevent memory boundary alignment issues.
 
 
 
-### AES-128 key encryption on 2-way ESP-NOW between two ESP32-S3 boards     
+## AES-128 key encryption on 2-way ESP-NOW between two ESP32-S3 boards     
 To enable hardware-accelerated AES-128 (CCMP) encryption on ESP-NOW, Espressif uses a two-tier key system:     
 - Primary Master Key (PMK): A 16-byte global key used to encrypt the local master keys. Set via ```esp_now_set_pmk()```.
 - Local Master Key (LMK): A 16-byte device-to-device key stored in ```peerInfo.lmk``` for a specific peer.     
 
 Both boards must share the exact same PMK and LMK, and both must operate on the same fixed Wi-Fi channel (channel 0/auto-channel cannot negotiate encrypted handshake frames).
 
-**Encryption Configuration Steps**    
+### Encryption Configuration Steps    
 ```cpp
 // 1. Both keys MUST be exactly 16 bytes (16 chars) long
 static const char PMK_KEY[] = "PMK_123456789012"; // 16 bytes
@@ -703,7 +703,7 @@ memcpy(peerInfo.lmk, LMK_KEY, 16);
 esp_now_add_peer(&peerInfo);
 ```
 
-**Complete Encrypted 2-Way Examples**     
+### Complete Encrypted 2-Way Examples     
 1. Board A Code (Initiator)      
 *Note: Replace ```BOARD_B_MAC``` with Board B's MAC address.*    
 ```cpp
@@ -912,7 +912,7 @@ void loop() {
 }
 ```
 
-**Crucial Encryption Rules & Troubleshooting**    
+### Crucial Encryption Rules & Troubleshooting    
 
 | Rule | Why It Matters |
 |------|----------------|
@@ -921,13 +921,13 @@ void loop() {
 | **Peer Capacity Limit** | Unencrypted ESP‑NOW supports up to 20 total peers. Encrypted peers are limited to 6 peers maximum due to hardware key storage registers. |
 | **`memset(&peerInfo, 0, sizeof(peerInfo))`** | Always zero out the `peerInfo` structure before populating fields to avoid garbage memory in security parameters. |
 
-### Encrypted ESP-NOW with ESP32-S3 Deep Sleep for battery-powered sensor nodes
+## Encrypted ESP-NOW with ESP32-S3 Deep Sleep for battery-powered sensor nodes
 
 When using standard Wi-Fi, an ESP32 must wake up, scan for networks, negotiate WPA2 authentication, and wait for a DHCP IP assignment—a process that takes **2 to 5 seconds** at ~120 mA current draw.
 
 With **Encrypted ESP-NOW + Deep Sleep**, the ESP32-S3 wakes up, sets its radio directly to a fixed Wi-Fi channel, transmits an encrypted payload, receives hardware acknowledgment, and goes back to deep sleep in **less than 50 milliseconds**. This provides a **~99% reduction** in active energy consumption, allowing a single LiPo battery to power a sensor node for months or years.
 
-**Technical Execution Flow**    
+### Technical Execution Flow    
 
 ```text
    [Deep Sleep (~10µA)]
@@ -960,7 +960,7 @@ With **Encrypted ESP-NOW + Deep Sleep**, the ESP32-S3 wakes up, sets its radio d
 └───────────────────────┘
 ```
 
-**Complete Sensor Node Code Example**     
+### Complete Sensor Node Code Example     
 
 This code wakes up every 10 seconds (configurable), reads a simulated temperature sensor, increments a persistent boot counter stored in RTC memory, transmits the encrypted payload to the receiver board, and goes back to sleep immediately.
 
@@ -1094,7 +1094,7 @@ void loop() {
 }
 ```
 
-**Power Optimization Highlights in This Code**    
+### Power Optimization Highlights in This Code    
 
 *   **RTC_DATA_ATTR Variable:** Stores `bootCount` in the RTC slow memory that stays powered during deep sleep. When the chip wakes up, variables marked with `RTC_DATA_ATTR` retain their values without being reset.
 *   **Empty `loop()`:** Deep sleep turns off the main dual CPUs. When the wake-up timer fires, the ESP32 performs a cold boot and runs `setup()` from the top. Putting all logic in `setup()` eliminates unnecessary loop iterations.
@@ -1102,19 +1102,19 @@ void loop() {
 *   **`esp_wifi_stop()`:** Calling `esp_wifi_stop()` right before `esp_deep_sleep_start()` forces the Wi-Fi modem and radio synthesizers into full power-down mode immediately.
 
 
-**Receiver Compatibility**     
+### Receiver Compatibility     
 
 The receiver board uses standard encrypted ESP-NOW code (matching `PMK_KEY` and `LMK_KEY` on Channel 1). It remains powered on as a gateway and receives messages whenever the sleep node wakes up and transmits.
 
 
-**Encrypted ESP-NOW Receiver Designs**    
+### Encrypted ESP-NOW Receiver Designs    
 
 To receive encrypted data from a deep-sleep sensor node, the receiver design depends on your power setup:
 
 1.  **Always-On Gateway (Recommended & Most Common):** The receiver stays powered continuously so it can catch incoming packets from the sleeping sensor node at any moment.
 2.  **Synchronized Receiver Node:** The receiver also enters deep sleep and wakes up during aligned time windows to listen for a short burst before sleeping again.
 
-**1. Always-On Encrypted Receiver (Gateway)**      
+### 1. Always-On Encrypted Receiver (Gateway)      
 
 Because ESP-NOW AES-128 encryption requires hardware key handshake verification, the receiver **MUST** register the sender's MAC address as an encrypted peer with the exact same PMK and LMK keys.
 
@@ -1203,7 +1203,7 @@ void loop() {
 }
 ```
 
-**2. Low-Power "Synchronized Window" Receiver**     
+### 2. Low-Power "Synchronized Window" Receiver     
 
 If your receiver must also run on a battery and use Deep Sleep:
 
@@ -1299,7 +1299,7 @@ https://www.luisllamas.es/que-es-esp-now-esp32/
 
 https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
 
-### Many-to-One (N:1) - Star Topology: Encrypted ESP-NOW communication with deep sleep nodes
+## Many-to-One (N:1) - Star Topology: Encrypted ESP-NOW communication with deep sleep nodes
 
 An ESP32 in deep sleep completely powers off its Wi-Fi radio and cannot hear incoming ESP-NOW transmissions.
 
@@ -1309,7 +1309,7 @@ To put both the Gateway and the Sensor Nodes into deep sleep, you must implement
 - **Sensor Nodes:** Wake up at the exact same interval, burst their encrypted payloads to the Gateway during this window, collect replies, and go back to sleep.
 - **Gateway:** Closes its listening window after processing all incoming nodes and returns to deep sleep.
 
-#### Critical Design Considerations for Dual Deep Sleep
+### Critical Design Considerations for Dual Deep Sleep
 
 **Clock Drift Buffer (`LISTEN_WINDOW_MS`)**    
 
@@ -1323,7 +1323,7 @@ Both Gateway (`GATEWAY_SLEEP_SEC`) and Sensor Nodes (`currentSleepSec`) must use
 
 The Gateway's average active time drops from 100% (always on) down to ~2.5% (awake 1.5s every 60s), making it suitable for solar/battery power.
 
-#### Important Encrypted Deep Sleep Rules
+### Important Encrypted Deep Sleep Rules
 
 **LMK Key Requirements**   
 
@@ -1337,7 +1337,7 @@ Standard ESP32 hardware supports up to 6 encrypted peers simultaneously in legac
 
 Every node and gateway must remain strictly locked on `PEER_CHANNEL 1` via `esp_wifi_set_channel(1, WIFI_SECOND_CHAN_NONE);`. Encrypted frames cannot be parsed during channel hopping.
 
-#### ESP-NOW Closed-Loop Auto-Wakeup Synchronization Protocol
+### ESP-NOW Closed-Loop Auto-Wakeup Synchronization Protocol
 
 **Overview**     
 
@@ -1422,13 +1422,13 @@ Node Sleep (ms) = (GATEWAY_SLEEP_SEC x 1000) - t_elapsed_ms
 Gateway Sleep (ms) = ((GATEWAY_SLEEP_SEC - WAKEUP_BUFFER_SEC) x 1000) - t_gateway_elapsed_ms
 ```
 
-### Broadcast: One-to-Many (1:N)
+## Broadcast: One-to-Many (1:N)
 
 In an ESP-NOW **Broadcast (1:N)** topology, one Transmitter sends a single message to the universal broadcast MAC address (`FF:FF:FF:FF:FF:FF`). Every Receiver tuned to the same Wi-Fi channel receives the payload simultaneously without needing individual peer MAC registrations or handshakes.
 
 ---
 
-#### Core Rules for ESP-NOW Broadcasting
+### Core Rules for ESP-NOW Broadcasting
 
 1. **MAC Address:** Target address must be `FF:FF:FF:FF:FF:FF`.
 2. **Channel Matching:** All nodes (Transmitter and Receivers) **must** be on the exact same Wi-Fi channel.
@@ -1437,7 +1437,7 @@ In an ESP-NOW **Broadcast (1:N)** topology, one Transmitter sends a single messa
 
 ---
 
-#### 1. Transmitter Code (1 - Broadcaster)
+### 1. Transmitter Code (1 - Broadcaster)
 
 This code registers the broadcast peer and transmits a data payload every 2 seconds to all listening nodes.
 
@@ -1521,7 +1521,7 @@ void loop() {
 
 ---
 
-#### 2. Receiver Code (N - Multiple Receivers)
+### 2. Receiver Code (N - Multiple Receivers)
 
 Flash this exact same firmware onto **N separate ESP32 boards**. They will all listen on Channel 1 and process incoming broadcast packets.
 
@@ -1590,7 +1590,7 @@ void loop() {
 
 ---
 
-#### Comparison Summary
+### Comparison Summary
 
 | Feature | Broadcast (1:N) | Unicast Star (N:1 / 1:1) |
 | :--- | :--- | :--- |
@@ -1602,7 +1602,7 @@ void loop() {
 
 ### Broadcast: One-to-Many (1:N) with Deep Sleep
 
-#### Timing Architecture
+### Timing Architecture
 
 ```
 Broadcaster: |-- WAKE & TX --|-------------------- DEEP SLEEP (10,000 ms) --------------------|-- WAKE & TX --|
@@ -1619,7 +1619,7 @@ Receiver:    |-- CONTINUOUS LISTEN --|-- RX PACKET & CALC SLEEP --|-- DEEP SLEEP
 
 ---
 
-#### 1. Broadcaster Code (1 - Broadcaster)
+### 1. Broadcaster Code (1 - Broadcaster)
 
 Because the broadcaster enters deep sleep immediately after transmitting, all processing occurs within `setup()`.
 
@@ -1711,7 +1711,7 @@ void loop() {
 
 ---
 
-#### 2. Receiver Code (N - Receivers)
+### 2. Receiver Code (N - Receivers)
 
 Receivers start in continuous listen mode. Once synchronized, they sleep and wake up `WAKEUP_BUFFER_MS` prior to each incoming transmission.
 
@@ -1806,7 +1806,7 @@ void loop() {
 
 ---
 
-#### Key Operational Characteristics
+### Key Operational Characteristics
 
 | Scenario | Broadcaster Behavior | Receiver Behavior |
 | :--- | :--- | :--- |
