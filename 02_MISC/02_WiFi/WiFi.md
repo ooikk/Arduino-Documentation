@@ -4,8 +4,8 @@
 Refer to this link for MQTT description from QWen & Gemini:     
 [MQTT](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md)
 
-[![WiFi Apps: Other WiFi Applications](https://img.shields.io/badge/WiFi-Apps-red)](./WiFi_Apps.md)   
-Refer to this link for MQTT description from QWen & Gemini:     
+[![WiFi Apps: Other WiFi Applications](https://img.shields.io/badge/WiFi-Apps1-red)](./WiFi_Apps.md)   
+Refer to this link for more WiFi Application Examples:     
 [WiFi Apps](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/WiFi_Apps.md)
 
 
