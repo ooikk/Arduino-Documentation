@@ -556,8 +556,8 @@ void logData(float sensorValue) {
 
   // Check whether the file exists before opening it
   bool fileExists = SD.exists(fileName);
-
-  File file = SD.open(fileName, FILE_APPEND);
+  // if file doesn't exist. The FILE_APPEND mode will creates a missing file.
+  File file = SD.open(fileName, FILE_APPEND); 
 
   if (!file) {
     Serial.printf("Failed to open file: %s\n", fileName);
