@@ -1446,6 +1446,426 @@ esp_rmaker_param_update_and_report();
 ```
 ---
 
+# ESP RainMaker Web Dashboard
+
+Setting up the ESP RainMaker Web Dashboard allows you to monitor your ESP32-S3 from a desktop browser, view historical charts, and build custom control panels.
+
+The Web Dashboard and Mobile App use the same cloud backend, so you do not need to provision the device again. Since the `OOIKK ESP32-S3` node was already provisioned using the phone application, it should automatically appear on the web dashboard.
+
+This guide explains how to configure and customize the dashboard using the C++ code described earlier.
+
+## Step 1: Log In to the RainMaker Web Dashboard
+
+1. Open a web browser and visit:
+
+   [ESP RainMaker Web Dashboard](https://rainmaker.espressif.com/)
+
+2. Click **Sign In**.
+3. Use the same email address and password used to create the account in the ESP RainMaker mobile application.
+4. After signing in, you will see the main dashboard overview.
+
+## Step 2: Locate the Node
+
+1. In the left-hand navigation menu, click **Nodes**.
+2. Alternatively, look for the node in the main dashboard grid.
+3. Locate:
+
+   ```text
+   OOIKK ESP32-S3
+   ```
+
+4. The status indicator should show **Online** if the ESP32-S3 is powered on and connected to Wi-Fi.
+5. Click the `OOIKK ESP32-S3` node to expand it and view the devices created in the Arduino code.
+
+## Step 3: Explore the Auto-Generated User Interface
+
+Because the C++ code uses standard Espressif device types, the Web Dashboard automatically generates native UI widgets for those devices.
+
+### 3.1 LED Device
+
+Device type:
+
+```text
+esp.device.switch
+```
+
+#### What You Should See
+
+You should see:
+
+- A toggle-switch widget.
+- Possibly a secondary state indicator.
+
+#### Code Mapping
+
+The toggle switch controls:
+
+```text
+PARAM_LED_CONTROL
+```
+
+The secondary indicator displays:
+
+```text
+PARAM_LED_STATE
+```
+
+#### Test Action
+
+Click the toggle switch on the Web Dashboard.
+
+Within approximately 1–2 seconds:
+
+- The physical ESP32-S3 LED should turn on or off.
+- The Serial Monitor should display:
+
+  ```text
+  LED set to ON
+  ```
+
+  or:
+
+  ```text
+  LED set to OFF
+  ```
+
+### 3.2 Temperature Device
+
+Device type:
+
+```text
+esp.device.temperature-sensor
+```
+
+#### What You Should See
+
+The dashboard may display:
+
+- A thermometer icon.
+- The current temperature.
+- A time-series chart showing recent readings.
+
+#### Code Mapping
+
+The device uses:
+
+```text
+PARAM_TEMP
+```
+
+#### Test Action
+
+The temperature should update every 10 seconds when the Arduino `reportTelemetry()` function runs.
+
+## Step 4: View Custom Telemetry Data
+
+The C++ code creates a custom device:
+
+```text
+Telemetry
+```
+
+with the device type:
+
+```text
+custom.device.telemetry
+```
+
+Because this is a custom device type, the default dashboard may display the values as a list of key-value pairs rather than specialized widgets.
+
+Scroll to the **Telemetry** device section on the node page.
+
+You may see values such as:
+
+```text
+status: "online"
+rssi: -65
+uptime: 340
+button_event: "idle"
+```
+
+The values map to the following parameters:
+
+| Displayed Parameter | RainMaker Parameter | Meaning |
+|---|---|---|
+| `status` | `PARAM_STATUS` | Device status, such as `"online"` |
+| `rssi` | `PARAM_RSSI` | Wi-Fi signal strength in dBm |
+| `uptime` | `PARAM_UPTIME` | Seconds since boot |
+| `button_event` | `PARAM_BUTTON` | Button state or event |
+
+The raw list is useful for checking the data, but it may not be visually appealing. To improve the layout, create a custom dashboard.
+
+## Step 5: Build a Custom Dashboard
+
+The Web Dashboard allows custom layouts using drag-and-drop widgets.
+
+### 5.1 Create the Dashboard
+
+1. In the left-hand navigation menu, click **Dashboards**.
+2. Click **Create Dashboard** or **New Dashboard**.
+3. Enter a name, such as:
+
+   ```text
+   OOIKK Telemetry Monitor
+   ```
+
+4. Save the dashboard.
+5. Open the new dashboard.
+6. Enter **Edit Mode**.
+7. Click **Add Widget**.
+
+### 5.2 Widget A: Wi-Fi Signal Strength
+
+Configure the widget as follows:
+
+```text
+Widget Type: Gauge or Number
+Title:       Wi-Fi RSSI
+Node:        OOIKK ESP32-S3
+Device:      Telemetry
+Parameter:   rssi
+Minimum:     -100
+Maximum:     0
+Unit:        dBm
+```
+
+Click **Save** or **Add**.
+
+### 5.3 Widget B: Device Uptime
+
+Configure the widget as follows:
+
+```text
+Widget Type: Number or Text
+Title:       Uptime
+Node:        OOIKK ESP32-S3
+Device:      Telemetry
+Parameter:   uptime
+Unit:        seconds
+```
+
+Click **Save** or **Add**.
+
+### 5.4 Widget C: System Status
+
+Configure the widget as follows:
+
+```text
+Widget Type: Text or State
+Title:       System Status
+Node:        OOIKK ESP32-S3
+Device:      Telemetry
+Parameter:   status
+```
+
+Click **Save** or **Add**.
+
+Repeat the process to add another text widget for:
+
+```text
+button_event
+```
+
+After adding the widgets:
+
+- Drag and drop them to rearrange the dashboard grid.
+- Click **Save**.
+- Exit **Edit Mode**.
+
+## Step 6: View Historical Data and Charts
+
+One of the most useful features of the RainMaker Web Dashboard is historical-data analysis.
+
+1. Return to the **Nodes** view.
+2. Select:
+
+   ```text
+   OOIKK ESP32-S3
+   ```
+
+3. Open the **Temperature** device.
+4. Look for the **Time Series** or **Chart** view.
+5. Select a time range, such as:
+
+   ```text
+   Last 1 Hour
+   Last 24 Hours
+   Last 7 Days
+   ```
+
+The cloud should render a line graph using the temperature values sent by the ESP32-S3.
+
+### Optional RSSI Chart
+
+You can also add a line-chart widget to the custom dashboard and map it to:
+
+```text
+Telemetry → rssi
+```
+
+This allows you to observe Wi-Fi signal changes over time.
+
+## Step 7: Test the Complete System
+
+After configuring the dashboard, test each part of the system.
+
+### Test the Button
+
+1. Press the physical BOOT button on the ESP32-S3.
+2. Observe the **Button Event** widget.
+3. It should change from:
+
+   ```text
+   idle
+   ```
+
+   to:
+
+   ```text
+   pressed
+   ```
+
+   and then:
+
+   ```text
+   released
+   ```
+
+### Test the LED
+
+1. Click the LED toggle switch on the Web Dashboard.
+2. Observe the physical LED.
+3. Confirm that its state changes.
+4. Check the Serial Monitor for:
+
+   ```text
+   LED set to ON
+   ```
+
+   or:
+
+   ```text
+   LED set to OFF
+   ```
+
+### Test Offline Behavior
+
+1. Unplug the ESP32-S3.
+2. Wait approximately 30–60 seconds.
+3. Refresh the Web Dashboard.
+4. The node status should change from:
+
+   ```text
+   Online
+   ```
+
+   to:
+
+   ```text
+   Offline
+   ```
+
+5. Plug the ESP32-S3 back in.
+6. The device should reconnect automatically and update the dashboard.
+
+## Troubleshooting
+
+### The Node Is Missing
+
+Check the following:
+
+- You are logged in to the web portal.
+- You are using the same account as the ESP RainMaker mobile application.
+- The ESP32-S3 was provisioned successfully.
+- The node is powered on and connected to Wi-Fi.
+
+If a different account was used on the web portal, the node will not appear there.
+
+### Custom Parameters Display `Null` or `N/A`
+
+This usually means that the ESP32-S3 has not sent a telemetry update yet.
+
+The sketch uses:
+
+```cpp
+const uint32_t TELEMETRY_INTERVAL_MS = 10000;
+```
+
+Wait approximately 10 seconds after boot for the first `esp_rmaker_param_update_and_report()` message to reach the cloud.
+
+Also verify that:
+
+- The ESP32-S3 is connected to Wi-Fi.
+- `reportTelemetry()` is being called.
+- The parameter handles are not `nullptr`.
+- The Serial Monitor shows telemetry output.
+
+### The Web Toggle Changes but the LED Does Not
+
+Check the Serial Monitor.
+
+If it displays:
+
+```text
+LED set to ON
+```
+
+but the physical LED remains off, the configured LED pin may be incorrect.
+
+Check:
+
+```cpp
+const int LED_PIN = 2;
+```
+
+The correct pin depends on the specific ESP32-S3 development board.
+
+Also verify whether the board uses:
+
+- A normal digital LED.
+- An active-low LED.
+- An addressable RGB or NeoPixel LED.
+
+### Charts Are Empty
+
+Historical charts require stored data points.
+
+Check that:
+
+- The ESP32-S3 has remained powered on.
+- The device has stayed connected to Wi-Fi.
+- Telemetry has been running for several minutes.
+- The selected time range contains data.
+- The correct device and parameter were selected.
+
+The amount of historical data retained may also depend on the RainMaker cloud service or account configuration.
+
+## Dashboard Data Flow
+
+The overall data flow is:
+
+```text
+ESP32-S3
+    │
+    ├── LED state
+    ├── Temperature
+    ├── RSSI
+    ├── Uptime
+    └── Button events
+    │
+    ▼
+ESP RainMaker Cloud
+    │
+    ├── Mobile application
+    ├── Web Dashboard
+    ├── Historical charts
+    └── Custom dashboard widgets
+```
+
+The Web Dashboard and mobile application use the same RainMaker cloud data. Therefore, provisioning the node once through the mobile application is sufficient for accessing it from the web dashboard.
+
+---
+
 # ESP RainMaker Overview (Gemini)
 
 ESP RainMaker is Espressif’s end-to-end IoT platform designed to deploy, manage, and control ESP32-based products. Unlike standard MQTT setups that require manual topic definitions, cloud broker provisioning, and custom dashboard development, RainMaker uses dynamic metadata models (nodes, devices, parameters) where the ESP32 automatically describes its capabilities to the cloud.
@@ -2312,15 +2732,15 @@ if (
 
 This allows the ESP32-S3 to continue processing RainMaker communication, telemetry, and other tasks while the button input is being debounced.
 
-## Step-by-Step Dashboard Setup on Evaluation Hub
+# Step-by-Step Dashboard Setup on Evaluation Hub
 
-### Access the Portal
+## Access the Portal
 
 Navigate to:
 
 https://evaluation.rainmaker.espressif.com/
 
-### Login / User Creation
+## Login / User Creation
 
 Sign in using your existing ESP RainMaker account credentials.
 
@@ -2329,14 +2749,14 @@ If you do not have one:
 - Register through the ESP RainMaker Mobile App (iOS or Android), or
 - Create an account through the RainMaker Dashboard.
 
-### Select Evaluation / Tryout Center
+## Select Evaluation / Tryout Center
 
 Under the **Evaluation Hub** menu, open:
 
 - **Tryout Center**, or
 - **Studio**
 
-### Choose a Template
+## Choose a Template
 
 Select a pre-configured template such as:
 
@@ -2346,7 +2766,7 @@ Select a pre-configured template such as:
 
 Ensure the template matches the parameters registered by your firmware.
 
-### Provision and Pair the Node
+## Provision and Pair the Node
 
 1. Power on your ESP32-S3 running the RainMaker firmware.
 2. Open the ESP RainMaker mobile app.
@@ -2359,7 +2779,7 @@ Alternatively, manually enter:
 POP: 12345678
 ```
 
-### Link Dashboard with Account
+## Link Dashboard with Account
 
 Once the ESP32-S3 node is associated with your account:
 
@@ -2373,7 +2793,7 @@ Once the ESP32-S3 node is associated with your account:
    - Associated Nodes
    - User Devices
 
-### Verify Operation
+## Verify Operation
 
 You should now be able to:
 
