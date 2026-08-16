@@ -1,10 +1,165 @@
+# Samples copy-paste-ready
+Here are copy-paste-ready Markdown code samples for every Shields.io format and parameter variation:
+
+Styles
+text
+<!-- flat (default) -->
+![flat](https://img.shields.io/badge/build-passing-brightgreen?style=flat)
+
+```<!-- flat (default) -->
+![flat](https://img.shields.io/badge/build-passing-brightgreen?style=flat)
+```
+
+<!-- flat-square -->
+![flat-square](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
+
+<!-- plastic -->
+![plastic](https://img.shields.io/badge/build-passing-brightgreen?style=plastic)
+
+<!-- for-the-badge -->
+![for-the-badge](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)
+
+<!-- social -->
+![social](https://img.shields.io/badge/build-passing-brightgreen?style=social)
+Color Formats
+text
+<!-- Named color -->
+![named](https://img.shields.io/badge/coverage-95%25-orange)
+
+<!-- Hex 3-digit (no #) -->
+![hex3](https://img.shields.io/badge/coverage-95%25-4c1)
+
+<!-- Hex 6-digit (no #) -->
+![hex6](https://img.shields.io/badge/coverage-95%25-007ec6)
+
+<!-- Hex with # encoded as %23 -->
+![hex-hash](https://img.shields.io/badge/coverage-95%25-%23007ec6)
+
+<!-- RGB (URL-encoded in path) -->
+![rgb](https://img.shields.io/badge/coverage-95%25-rgb%2846%2C164%2C79%29)
+
+<!-- RGBA -->
+![rgba](https://img.shields.io/badge/coverage-95%25-rgba%2846%2C164%2C79%2C0.5%29)
+
+<!-- HSL (URL-encoded in path) -->
+![hsl](https://img.shields.io/badge/coverage-95%25-hsl%28270%2C60%25%2C70%25%29)
+
+<!-- HSLA -->
+![hsla](https://img.shields.io/badge/coverage-95%25-hsla%28270%2C60%25%2C70%25%2C0.5%29)
+
+<!-- CSS named color -->
+![css-named](https://img.shields.io/badge/coverage-95%25-violet)
+Semantic Color Aliases
+text
+<!-- success (= brightgreen) -->
+![success](https://img.shields.io/badge/build-passing-success)
+
+<!-- important (= orange) -->
+![important](https://img.shields.io/badge/build-pending-important)
+
+<!-- critical (= red) -->
+![critical](https://img.shields.io/badge/build-failed-critical)
+
+<!-- informational (= blue) -->
+![informational](https://img.shields.io/badge/status-stable-informational)
+
+<!-- inactive (= lightgrey) -->
+![inactive](https://img.shields.io/badge/status-archived-inactive)
+Logos
+text
+<!-- Simple Icons logo -->
+![logo](https://img.shields.io/badge/github-repo-blue?logo=github)
+
+<!-- logo + logoColor (Simple Icons only) -->
+![logo-color](https://img.shields.io/badge/github-repo-blue?logo=github&logoColor=white)
+
+<!-- logoSize=auto (wide logos like amd) -->
+![logo-size](https://img.shields.io/badge/amd-ryzen-ED1C24?logo=amd&logoSize=auto)
+
+<!-- logo + logoColor + style combined -->
+![logo-full](https://img.shields.io/badge/python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=ffdd54)
+Custom Base64 Logo
+text
+<!-- Custom SVG as base64 data URI -->
+![custom-logo](https://img.shields.io/badge/my-project-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTEyIDJMMiA3bDEwIDUgMTAtNXoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=)
+Label & Color Overrides
+text
+<!-- label override -->
+![label-override](https://img.shields.io/badge/build-passing-brightgreen?label=healthiness)
+
+<!-- labelColor override -->
+![label-color](https://img.shields.io/badge/build-passing-brightgreen?labelColor=abcdef)
+
+<!-- color override -->
+![color-override](https://img.shields.io/badge/build-passing-brightgreen?color=fedcba)
+
+<!-- labelColor + color both overridden -->
+![both-colors](https://img.shields.io/badge/build-passing-brightgreen?labelColor=282c34&color=61DAFB)
+Path Encoding Variations
+text
+<!-- Underscore = space -->
+![underscore-space](https://img.shields.io/badge/build_passing-brightgreen)
+
+<!-- Double underscore = literal underscore -->
+![double-underscore](https://img.shields.io/badge/node__js-blue)
+
+<!-- Double dash = literal dash -->
+![double-dash](https://img.shields.io/badge/v1--0--0-blue)
+
+<!-- %20 = space -->
+![percent20](https://img.shields.io/badge/just%20the%20message-8A2BE2)
+
+<!-- %25 = percent sign -->
+![percent](https://img.shields.io/badge/coverage-95%25-brightgreen)
+Message-Only Badges
+text
+<!-- No label, just message + color -->
+![message-only](https://img.shields.io/badge/-live-brightgreen)
+
+<!-- Message-only with logo -->
+![message-only-logo](https://img.shields.io/badge/-v2.0.0-blue?logo=npm&logoColor=white)
+Linked Badges
+text
+<!-- Single link target (Markdown) -->
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/your-repo)
+
+<!-- Linked badge with logo -->
+[![License](https://img.shields.io/badge/license-MIT-blue?logo=github)](https://opensource.org/licenses/MIT)
+
+<!-- Linked badge with style -->
+[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](https://github.com/your-repo/releases)
+Split Link Targets (HTML only, not in Markdown)
+xml
+<!-- Left click → GitHub, right click → Travis CI -->
+<object data="https://img.shields.io/badge/build-passing-brightgreen?link=https://github.com&amp;link=https://travis-ci.org" type="image/svg+xml">
+  <img alt="Build" src="https://img.shields.io/badge/build-passing-brightgreen">
+</object>
+cacheSeconds
+text
+<!-- Set cache lifetime to 1 hour -->
+![cached](https://img.shields.io/badge/build-passing-brightgreen?cacheSeconds=3600)
+Full Kitchen-Sink Combinations
+text
+<!-- for-the-badge + logo + logoColor + labelColor + cacheSeconds -->
+![full-1](https://img.shields.io/badge/my_project-v2.0.0-007ec6?style=for-the-badge&logo=react&logoColor=61DAFB&labelColor=282c34&cacheSeconds=3600)
+
+<!-- flat-square + logo + logoColor + logoSize=auto -->
+![full-2](https://img.shields.io/badge/python-3.12-3776AB?style=flat-square&logo=python&logoColor=ffdd54&logoSize=auto)
+
+<!-- plastic + label override + labelColor + hex color -->
+![full-3](https://img.shields.io/badge/build-passing-brightgreen?style=plastic&label=healthiness&labelColor=abcdef&color=fedcba)
+
+<!-- social + logo (follow-style badge) -->
+![full-4](https://img.shields.io/badge/follow-1.2k-blue?style=social&logo=twitter&logoColor=1DA1F2)
+All of these are ready to paste directly into a GitHub README. The only one that won't work in GitHub Markdown is the split-link <object> example — for READMEs, use the single-link [![badge](url)](link) pattern instead.
+
+---
 # Shields.io Parameter Reference & URL Builder Cheatsheet
 
 > A comprehensive, verified guide to every Shields.io static badge parameter, with Markdown and HTML code examples, color format rules, logo options, and GitHub README pitfalls.
 >
 > **Sources:** [Shields.io Static Badge docs](https://shields.io/badges/static-badge), [Shields.io Logos docs](https://shields.io/docs/logos), [Shields.io Endpoint docs](https://shields.io/endpoint), [badge-maker source (GitHub issue #11261)](https://github.com/badges/shields/issues/11261), [Shields.io CHANGELOG](https://github.com/badges/shields/blob/master/CHANGELOG.md), [logoWidth removal issue #11092](https://github.com/badges/shields/issues/11092).
 
----
 
 ## Table of Contents
 
@@ -21,6 +176,8 @@
 - [Parameter-by-Parameter Examples](#parameter-by-parameter-examples)
 - [Copy-Paste Recipes](#copy-paste-recipes)
 - [GitHub README Pitfalls & Troubleshooting](#github-readme-pitfalls--troubleshooting)
+
+---
 
 ---
 
@@ -860,158 +1017,6 @@ https://img.shields.io/badge/my_project-v2.0.0-007ec6?style=for-the-badge&logo=r
 *This guide is based on the official Shields.io documentation and source code as of August 2026. For the latest changes, always check the [Shields.io website](https://shields.io) and the [badges/shields GitHub repo](https://github.com/badges/shields).*
 
 
----
-
-# Samples copy-paste-ready
-Here are copy-paste-ready Markdown code samples for every Shields.io format and parameter variation:
-
-Styles
-text
-<!-- flat (default) -->
-![flat](https://img.shields.io/badge/build-passing-brightgreen?style=flat)
-
-<!-- flat-square -->
-![flat-square](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
-
-<!-- plastic -->
-![plastic](https://img.shields.io/badge/build-passing-brightgreen?style=plastic)
-
-<!-- for-the-badge -->
-![for-the-badge](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)
-
-<!-- social -->
-![social](https://img.shields.io/badge/build-passing-brightgreen?style=social)
-Color Formats
-text
-<!-- Named color -->
-![named](https://img.shields.io/badge/coverage-95%25-orange)
-
-<!-- Hex 3-digit (no #) -->
-![hex3](https://img.shields.io/badge/coverage-95%25-4c1)
-
-<!-- Hex 6-digit (no #) -->
-![hex6](https://img.shields.io/badge/coverage-95%25-007ec6)
-
-<!-- Hex with # encoded as %23 -->
-![hex-hash](https://img.shields.io/badge/coverage-95%25-%23007ec6)
-
-<!-- RGB (URL-encoded in path) -->
-![rgb](https://img.shields.io/badge/coverage-95%25-rgb%2846%2C164%2C79%29)
-
-<!-- RGBA -->
-![rgba](https://img.shields.io/badge/coverage-95%25-rgba%2846%2C164%2C79%2C0.5%29)
-
-<!-- HSL (URL-encoded in path) -->
-![hsl](https://img.shields.io/badge/coverage-95%25-hsl%28270%2C60%25%2C70%25%29)
-
-<!-- HSLA -->
-![hsla](https://img.shields.io/badge/coverage-95%25-hsla%28270%2C60%25%2C70%25%2C0.5%29)
-
-<!-- CSS named color -->
-![css-named](https://img.shields.io/badge/coverage-95%25-violet)
-Semantic Color Aliases
-text
-<!-- success (= brightgreen) -->
-![success](https://img.shields.io/badge/build-passing-success)
-
-<!-- important (= orange) -->
-![important](https://img.shields.io/badge/build-pending-important)
-
-<!-- critical (= red) -->
-![critical](https://img.shields.io/badge/build-failed-critical)
-
-<!-- informational (= blue) -->
-![informational](https://img.shields.io/badge/status-stable-informational)
-
-<!-- inactive (= lightgrey) -->
-![inactive](https://img.shields.io/badge/status-archived-inactive)
-Logos
-text
-<!-- Simple Icons logo -->
-![logo](https://img.shields.io/badge/github-repo-blue?logo=github)
-
-<!-- logo + logoColor (Simple Icons only) -->
-![logo-color](https://img.shields.io/badge/github-repo-blue?logo=github&logoColor=white)
-
-<!-- logoSize=auto (wide logos like amd) -->
-![logo-size](https://img.shields.io/badge/amd-ryzen-ED1C24?logo=amd&logoSize=auto)
-
-<!-- logo + logoColor + style combined -->
-![logo-full](https://img.shields.io/badge/python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=ffdd54)
-Custom Base64 Logo
-text
-<!-- Custom SVG as base64 data URI -->
-![custom-logo](https://img.shields.io/badge/my-project-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTEyIDJMMiA3bDEwIDUgMTAtNXoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=)
-Label & Color Overrides
-text
-<!-- label override -->
-![label-override](https://img.shields.io/badge/build-passing-brightgreen?label=healthiness)
-
-<!-- labelColor override -->
-![label-color](https://img.shields.io/badge/build-passing-brightgreen?labelColor=abcdef)
-
-<!-- color override -->
-![color-override](https://img.shields.io/badge/build-passing-brightgreen?color=fedcba)
-
-<!-- labelColor + color both overridden -->
-![both-colors](https://img.shields.io/badge/build-passing-brightgreen?labelColor=282c34&color=61DAFB)
-Path Encoding Variations
-text
-<!-- Underscore = space -->
-![underscore-space](https://img.shields.io/badge/build_passing-brightgreen)
-
-<!-- Double underscore = literal underscore -->
-![double-underscore](https://img.shields.io/badge/node__js-blue)
-
-<!-- Double dash = literal dash -->
-![double-dash](https://img.shields.io/badge/v1--0--0-blue)
-
-<!-- %20 = space -->
-![percent20](https://img.shields.io/badge/just%20the%20message-8A2BE2)
-
-<!-- %25 = percent sign -->
-![percent](https://img.shields.io/badge/coverage-95%25-brightgreen)
-Message-Only Badges
-text
-<!-- No label, just message + color -->
-![message-only](https://img.shields.io/badge/-live-brightgreen)
-
-<!-- Message-only with logo -->
-![message-only-logo](https://img.shields.io/badge/-v2.0.0-blue?logo=npm&logoColor=white)
-Linked Badges
-text
-<!-- Single link target (Markdown) -->
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/your-repo)
-
-<!-- Linked badge with logo -->
-[![License](https://img.shields.io/badge/license-MIT-blue?logo=github)](https://opensource.org/licenses/MIT)
-
-<!-- Linked badge with style -->
-[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](https://github.com/your-repo/releases)
-Split Link Targets (HTML only, not in Markdown)
-xml
-<!-- Left click → GitHub, right click → Travis CI -->
-<object data="https://img.shields.io/badge/build-passing-brightgreen?link=https://github.com&amp;link=https://travis-ci.org" type="image/svg+xml">
-  <img alt="Build" src="https://img.shields.io/badge/build-passing-brightgreen">
-</object>
-cacheSeconds
-text
-<!-- Set cache lifetime to 1 hour -->
-![cached](https://img.shields.io/badge/build-passing-brightgreen?cacheSeconds=3600)
-Full Kitchen-Sink Combinations
-text
-<!-- for-the-badge + logo + logoColor + labelColor + cacheSeconds -->
-![full-1](https://img.shields.io/badge/my_project-v2.0.0-007ec6?style=for-the-badge&logo=react&logoColor=61DAFB&labelColor=282c34&cacheSeconds=3600)
-
-<!-- flat-square + logo + logoColor + logoSize=auto -->
-![full-2](https://img.shields.io/badge/python-3.12-3776AB?style=flat-square&logo=python&logoColor=ffdd54&logoSize=auto)
-
-<!-- plastic + label override + labelColor + hex color -->
-![full-3](https://img.shields.io/badge/build-passing-brightgreen?style=plastic&label=healthiness&labelColor=abcdef&color=fedcba)
-
-<!-- social + logo (follow-style badge) -->
-![full-4](https://img.shields.io/badge/follow-1.2k-blue?style=social&logo=twitter&logoColor=1DA1F2)
-All of these are ready to paste directly into a GitHub README. The only one that won't work in GitHub Markdown is the split-link <object> example — for READMEs, use the single-link [![badge](url)](link) pattern instead.
 
 
 
