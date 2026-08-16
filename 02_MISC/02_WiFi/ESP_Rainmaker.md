@@ -2732,6 +2732,7 @@ if (
 
 This allows the ESP32-S3 to continue processing RainMaker communication, telemetry, and other tasks while the button input is being debounced.
 
+--- 
 # Step-by-Step Dashboard Setup on Evaluation Hub
 
 ## Access the Portal
