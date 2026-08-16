@@ -5,13 +5,13 @@
 [![Contents](https://img.shields.io/badge/18_Setting_MQTT_Broker-brightgreen)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#18-setting-mqtt-broker)
 
 
-[![Contents](https://img.shields.io/badge/Use_Google_Sheets_via_HTTP_Server_(100%_Free_&_Fast)-brightgreen)]([https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#18-setting-mqtt-broker](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#use-google-sheets-via-http-server-100-free--fast))
+[![Contents](https://img.shields.io/badge/Use_Google_Sheets_via_HTTP_Server_(100%_Free_&_Fast)-brightgreen)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#use-google-sheets-via-http-server-100-free--fast))
 
 
-[![Contents](https://img.shields.io/badge/Adafruit_IO_Dashboard-brightgreen)]([https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#18-setting-mqtt-broker](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#adafruit-io-dashboard))
+[![Contents](https://img.shields.io/badge/Adafruit_IO_Dashboard-brightgreen)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#adafruit-io-dashboard))
 
 
-[![Contents](https://img.shields.io/badge/ESP_Rainmaker_overview-brightgreen)]([https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#18-setting-mqtt-broker](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#esp-rainmaker-overview))
+[![Contents](https://img.shields.io/badge/ESP_Rainmaker_overview-brightgreen)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#esp-rainmaker-overview))
 
 ---
 
