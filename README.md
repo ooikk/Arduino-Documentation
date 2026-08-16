@@ -15,6 +15,7 @@
    - **Flash Mode**: ```QIO 80MHz```
    - **Flash Size**: ```16MB```
    - **PSRAM**: ```OPI PSRAM``` (if your board has Octal SPI PSRAM) or ```Disabled```.
+   - **Partition Scheme**: See detail here
    - **Upload Mode**: ```UART0 / Hardware CDC``` (or ```USB-OTG(TinyUSB)``` if using the TinyUSB stack).
    - **USB Mode**: ```Hardware CDC and JTAG```.      
 7. Connect the ESP32S3 Dev Module to your computer using a USB cable. Then, go to **Tools > Port** and select the COM port that the ESP32S3 Dev Module is connected to.
@@ -251,6 +252,339 @@ R8         8 MB PSRAM (Octal SPI/OPI on most ESP32-S3 modules)
 https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/Esp.h?
 
 
+## ESP32-S3 Partition Scheme
+
+In Arduino IDE, a **Partition Scheme**, also called a **Partition Table**, determines how the physical flash memory on the ESP32-S3 is divided into logical sections.
+
+Think of the ESP32-S3 flash memory as a computer hard drive. Just as a hard drive can be divided into a `C:` drive for Windows and a `D:` drive for files, the partition scheme tells the ESP32 how much space to allocate for:
+
+- The bootloader.
+- Application code.
+- Wi-Fi credentials.
+- File storage.
+- Over-the-Air (OTA) updates.
+- Debugging information.
+
+### 1. Why Is the Partition Scheme Important?
+
+ESP32-S3 boards commonly include 4 MB, 8 MB, or 16 MB of flash memory. However, the Arduino compiler does not automatically know how that memory should be used.
+
+If the wrong partition scheme is selected, several problems may occur.
+
+#### `Sketch too big` Error
+
+Your application, such as one using ESP RainMaker, may be larger than the space allocated to the application partition.
+
+#### Boot Loops or Crashes
+
+The ESP32 may try to read Wi-Fi credentials, non-volatile storage, or file-system data from a memory address that is not valid for the selected partition scheme.
+
+#### OTA Failures
+
+An OTA update generally requires a second application partition. The new firmware is downloaded to the unused application partition while the current firmware continues running.
+
+If no second application partition exists, OTA updates cannot work in the normal way.
+
+### 2. Anatomy of an ESP32 Partition Table
+
+A standard partition table may include the following sections.
+
+#### Bootloader
+
+A small protected section that initializes the chip and determines which application should run.
+
+#### NVS
+
+**NVS**, or Non-Volatile Storage, stores data that must survive a reboot, such as:
+
+- Wi-Fi SSIDs and passwords.
+- ESP RainMaker credentials.
+- Device configuration.
+- Calibration data.
+- Other persistent settings.
+
+#### Application
+
+The application partition stores the compiled Arduino C++ firmware.
+
+When OTA is enabled, the application space is normally divided into two partitions:
+
+```text
+App0
+App1
+```
+
+One partition runs the current firmware while the other receives the new firmware.
+
+#### SPIFFS or LittleFS
+
+A file system used to store:
+
+- HTML and CSS files.
+- JavaScript files.
+- JSON configuration files.
+- Sensor logs.
+- Other user data.
+
+#### Core Dump and PHY Initialization
+
+Reserved areas may be used for:
+
+- Crash debugging.
+- Core dumps.
+- Wi-Fi and Bluetooth radio initialization data.
+
+## 3. Common Arduino IDE Partition Schemes
+
+Open:
+
+```text
+Tools → Partition Scheme
+```
+
+You may see options similar to the following:
+
+| Scheme Name | Approximate App Size | OTA | File Storage | Best Used For |
+|---|---:|---:|---:|---|
+| Default 4 MB with SPIFFS | 1.2 MB | Yes | 1.2 MB | Basic IoT projects and simple sensors |
+| Minimal SPIFFS | 1.8 MB | Yes | 190 KB | Larger applications that need little file storage |
+| No OTA (2 MB APP) | 2.0 MB | No | 1 MB | Medium-sized applications that do not require wireless updates |
+| Huge APP (3 MB No OTA) | 3.0 MB | No | 1 MB | Large libraries such as ESP RainMaker, AWS IoT, and audio libraries |
+| 8 MB Flash (3 MB APP, 1.5 MB FAT) | 3.0 MB | No | 1.5 MB | ESP32-S3 boards with 8 MB of physical flash |
+| 16 MB Flash (3 MB APP, 9 MB FAT) | 3.0 MB | No | 9.0 MB | ESP32-S3 boards with 16 MB of flash and large data-logging requirements |
+
+The exact names and sizes may vary according to the ESP32 Arduino core version and board package.
+
+### 4. Which Scheme Should You Use for ESP RainMaker?
+
+ESP RainMaker is a relatively large framework. It may include:
+
+- TLS and SSL encryption.
+- MQTT clients.
+- Wi-Fi provisioning.
+- BLE or SoftAP provisioning.
+- JSON processing.
+- AWS IoT Core components.
+- Cloud certificates.
+- Device-management services.
+
+A compiled ESP RainMaker sketch can consume a significant amount of flash space.
+
+#### ESP32-S3 with 4 MB Flash
+
+For a board with 4 MB of flash, select:
+
+```text
+Huge APP (3 MB No OTA / 1 MB SPIFFS)
+```
+
+If the default scheme is used, the compiler may report:
+
+```text
+Sketch too big
+```
+
+The firmware may also fail to boot if the application or required data cannot fit into the selected partitions.
+
+#### ESP32-S3 with 8 MB or 16 MB Flash
+
+For an ESP32-S3 board with 8 MB or 16 MB of flash, select the corresponding scheme if it is available in your Arduino core version:
+
+```text
+8 MB Flash
+```
+
+or:
+
+```text
+16 MB Flash
+```
+
+These schemes provide approximately 3 MB for the application, along with additional space for:
+
+- Logs.
+- Configuration files.
+- Local web pages.
+- Sensor data.
+- File-system storage.
+
+> **Note:** No-OTA schemes, such as `Huge APP`, provide more application space but sacrifice the normal dual-partition OTA layout. You will usually need to connect the ESP32-S3 to a computer through USB to upload new firmware.
+
+### 5. OTA Considerations
+
+A no-OTA partition scheme typically contains only one large application partition:
+
+```text
+Large App
+```
+
+An OTA-capable layout normally requires two application partitions:
+
+```text
+App0
+App1
+```
+
+With two application partitions:
+
+1. The ESP32 runs firmware from `App0`.
+2. New firmware is downloaded to `App1`.
+3. The device verifies the update.
+4. The ESP32 reboots into `App1`.
+5. The previous firmware remains available as a fallback.
+
+Therefore:
+
+- **No OTA:** More space for one application.
+- **OTA enabled:** Less space per application, but wireless firmware updates are possible.
+
+For production ESP RainMaker devices, use an OTA-capable partition scheme if the firmware fits. If the application is too large, you may need to reduce the firmware size, use a larger flash device, or choose a different OTA layout.
+
+### 6. How to Change the Partition Scheme
+
+1. Open the sketch in Arduino IDE.
+2. Select the correct board:
+
+   ```text
+   Tools → Board → ESP32 Arduino → ESP32S3 Dev Module
+   ```
+
+3. Open:
+
+   ```text
+   Tools → Partition Scheme
+   ```
+
+4. Select:
+
+   ```text
+   Huge APP (3 MB No OTA / 1 MB SPIFFS)
+   ```
+
+   or select the appropriate 8 MB or 16 MB scheme if supported by the board.
+
+5. Compile the sketch.
+6. Upload the firmware.
+
+### 7. Erase Flash When Changing Schemes
+
+When changing partition schemes, it is often best to erase the existing flash contents.
+
+In Arduino IDE, look for an option similar to:
+
+```text
+Tools → Erase All Flash Before Sketch Upload → Enabled
+```
+
+Then upload the sketch again.
+
+This removes old:
+
+- NVS data.
+- Wi-Fi credentials.
+- RainMaker provisioning data.
+- File-system contents.
+- Partition-dependent configuration.
+
+> **Warning:** Erasing the flash removes stored Wi-Fi credentials, RainMaker provisioning information, and files. The device will need to be provisioned again.
+
+### 8. Troubleshooting Partition Problems
+
+#### `Sketch too big`
+
+The application does not fit in the selected application partition.
+
+Try:
+
+1. Open:
+
+   ```text
+   Tools → Partition Scheme
+   ```
+
+2. Select a scheme with a larger application partition.
+3. For example, move from:
+
+   ```text
+   Default
+   ```
+
+   to:
+
+   ```text
+   Huge APP
+   ```
+
+4. Compile and upload again.
+
+#### Guru Meditation Error or Core Panic During Boot
+
+This may occur when the partition scheme was changed but old flash data remains.
+
+Try:
+
+1. Enable:
+
+   ```text
+   Erase All Flash Before Sketch Upload
+   ```
+
+2. Upload the firmware again.
+3. Provision the ESP32-S3 again.
+
+#### RainMaker Provisioning Fails
+
+If RainMaker cannot save Wi-Fi credentials, the NVS partition may be missing, corrupted, or incompatible with the new partition layout.
+
+Try:
+
+1. Erase the entire flash.
+2. Upload the firmware again.
+3. Open the Serial Monitor.
+4. Start provisioning from the ESP RainMaker application.
+
+#### Wi-Fi Credentials Are Lost After Reboot
+
+Check that:
+
+- The selected partition scheme includes an NVS partition.
+- The flash was not being erased during every upload.
+- The firmware is not explicitly clearing NVS at startup.
+- The partition table matches the flash size of the board.
+
+### 9. Practical Recommendations
+
+| Project Requirement | Recommended Approach |
+|---|---|
+| Small sensor application | Default partition scheme |
+| Large ESP32-S3 application without OTA | Huge APP |
+| ESP RainMaker prototype with 4 MB flash | Huge APP, then provision again after erasing flash |
+| ESP RainMaker product requiring OTA | OTA-capable scheme with sufficient application space |
+| Large log files | 8 MB or 16 MB flash with a large file-system partition |
+| Local web server plus RainMaker | Larger flash device and a scheme with sufficient app and file-system space |
+| Frequent wireless firmware updates | OTA-capable partition scheme |
+
+### 10. Summary
+
+The partition scheme determines how the ESP32-S3 allocates flash memory for:
+
+```text
+Bootloader
+NVS
+Application
+OTA application
+SPIFFS or LittleFS
+Core dump
+PHY initialization
+```
+
+For ESP RainMaker:
+
+- Use **Huge APP** when the firmware is too large for the default application partition.
+- Use an **OTA-capable scheme** when wireless updates are required.
+- Use an **8 MB or 16 MB scheme** when the board has additional flash and needs file storage.
+- Erase the flash after changing partition schemes if boot or provisioning problems occur.
+- Verify the selected flash size and partition scheme match the physical ESP32-S3 board.
 
 
 
