@@ -1,6 +1,11 @@
 # WiFi
 
 ---
+## TO DO
+1. ThingsBoard
+2. HTTP Google Sheet
+3. Telegram
+
   
 **MQTT description from QWen & Gemini:**     
 [![MQTT](https://img.shields.io/badge/WiFi-MQTT-yellow)](./MQTT.md)   
