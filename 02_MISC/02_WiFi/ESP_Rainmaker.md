@@ -1547,7 +1547,7 @@ The dashboard may display:
 
 #### Code Mapping
 
-The device uses:
+ Maps to the `temperature` parameter:
 
 ```text
 PARAM_TEMP
@@ -1571,7 +1571,7 @@ with the device type:
 custom.device.telemetry
 ```
 
-Because this is a custom device type, the default dashboard may display the values as a list of key-value pairs rather than specialized widgets.
+Because this is a *custom* device type, the default dashboard may display the values as a raw list of key-value pairs rather than specialized widgets.
 
 Scroll to the **Telemetry** device section on the node page.
 
@@ -1591,7 +1591,7 @@ The values map to the following parameters:
 | `status` | `PARAM_STATUS` | Device status, such as `"online"` |
 | `rssi` | `PARAM_RSSI` | Wi-Fi signal strength in dBm |
 | `uptime` | `PARAM_UPTIME` | Seconds since boot |
-| `button_event` | `PARAM_BUTTON` | Button state or event |
+| `button_event` | `PARAM_BUTTON` | Button state or event, `"idle"` or `"pressed"` |
 
 The raw list is useful for checking the data, but it may not be visually appealing. To improve the layout, create a custom dashboard.
 
