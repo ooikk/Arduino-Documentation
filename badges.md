@@ -1,7 +1,7 @@
 # Samples copy-paste-ready
 Here are copy-paste-ready Markdown code samples for every Shields.io format and parameter variation:
 
-### Styles
+### Style
 <!-- flat (default) -->
 ![flat](https://img.shields.io/badge/build-passing-brightgreen?style=flat)
 
@@ -141,7 +141,7 @@ Here are copy-paste-ready Markdown code samples for every Shields.io format and 
 ```
 
 
-### Logos
+### Logo
 
 <!-- Simple Icons logo -->
 ![logo](https://img.shields.io/badge/github-repo-blue?logo=github)
