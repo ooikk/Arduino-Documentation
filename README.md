@@ -15,7 +15,7 @@
    - **Flash Mode**: ```QIO 80MHz```
    - **Flash Size**: ```16MB```
    - **PSRAM**: ```OPI PSRAM``` (if your board has Octal SPI PSRAM) or ```Disabled```.
-   - **Partition Scheme**: See detail here
+   - **Partition Scheme**: [See detail here](https://github.com/ooikk/Arduino-Documentation/blob/main/README.md#esp32-s3-partition-scheme)
    - **Upload Mode**: ```UART0 / Hardware CDC``` (or ```USB-OTG(TinyUSB)``` if using the TinyUSB stack).
    - **USB Mode**: ```Hardware CDC and JTAG```.      
 7. Connect the ESP32S3 Dev Module to your computer using a USB cable. Then, go to **Tools > Port** and select the COM port that the ESP32S3 Dev Module is connected to.
