@@ -309,18 +309,35 @@ cacheSeconds
 ```
 
 Full Kitchen-Sink Combinations
-
 <!-- for-the-badge + logo + logoColor + labelColor + cacheSeconds -->
 ![full-1](https://img.shields.io/badge/my_project-v2.0.0-007ec6?style=for-the-badge&logo=react&logoColor=61DAFB&labelColor=282c34&cacheSeconds=3600)
+```
+<!-- for-the-badge + logo + logoColor + labelColor + cacheSeconds -->
+![full-1](https://img.shields.io/badge/my_project-v2.0.0-007ec6?style=for-the-badge&logo=react&logoColor=61DAFB&labelColor=282c34&cacheSeconds=3600)
+```
 
 <!-- flat-square + logo + logoColor + logoSize=auto -->
 ![full-2](https://img.shields.io/badge/python-3.12-3776AB?style=flat-square&logo=python&logoColor=ffdd54&logoSize=auto)
+```
+<!-- flat-square + logo + logoColor + logoSize=auto -->
+![full-2](https://img.shields.io/badge/python-3.12-3776AB?style=flat-square&logo=python&logoColor=ffdd54&logoSize=auto)
+```
 
 <!-- plastic + label override + labelColor + hex color -->
 ![full-3](https://img.shields.io/badge/build-passing-brightgreen?style=plastic&label=healthiness&labelColor=abcdef&color=fedcba)
+```
+<!-- plastic + label override + labelColor + hex color -->
+![full-3](https://img.shields.io/badge/build-passing-brightgreen?style=plastic&label=healthiness&labelColor=abcdef&color=fedcba)
+```
 
 <!-- social + logo (follow-style badge) -->
 ![full-4](https://img.shields.io/badge/follow-1.2k-blue?style=social&logo=twitter&logoColor=1DA1F2)
+```
+<!-- social + logo (follow-style badge) -->
+![full-4](https://img.shields.io/badge/follow-1.2k-blue?style=social&logo=twitter&logoColor=1DA1F2)
+```
+
+
 All of these are ready to paste directly into a GitHub README. The only one that won't work in GitHub Markdown is the split-link <object> example — for READMEs, use the single-link [![badge](url)](link) pattern instead.
 
 ---
