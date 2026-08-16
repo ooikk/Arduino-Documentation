@@ -1498,13 +1498,13 @@ You should see:
 
 #### Code Mapping
 
-The toggle switch controls:
+The toggle switch controls the `power` parameter:
 
 ```text
 PARAM_LED_CONTROL
 ```
 
-The secondary indicator displays:
+The secondary indicator shows the `led-state` parameter:
 
 ```text
 PARAM_LED_STATE
