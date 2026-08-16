@@ -1,8 +1,7 @@
 # Samples copy-paste-ready
 Here are copy-paste-ready Markdown code samples for every Shields.io format and parameter variation:
 
-Styles
-text
+### Styles
 <!-- flat (default) -->
 ![flat](https://img.shields.io/badge/build-passing-brightgreen?style=flat)
 
@@ -38,8 +37,8 @@ text
 ![social](https://img.shields.io/badge/build-passing-brightgreen?style=social)
 ```
 
-Color Formats
-text
+### Color Formats
+
 <!-- Named color -->
 ![named](https://img.shields.io/badge/coverage-95%25-orange)
 ```
@@ -103,8 +102,8 @@ text
 ![css-named](https://img.shields.io/badge/coverage-95%25-violet)
 ```
 
-Semantic Color Aliases
-text
+### Semantic Color Aliases
+
 <!-- success (= brightgreen) -->
 ![success](https://img.shields.io/badge/build-passing-success)
 ```
@@ -142,8 +141,8 @@ text
 ```
 
 
-Logos
-text
+### Logos
+
 <!-- Simple Icons logo -->
 ![logo](https://img.shields.io/badge/github-repo-blue?logo=github)
 ```
@@ -172,8 +171,8 @@ text
 ![logo-full](https://img.shields.io/badge/python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=ffdd54)
 ```
 
-Custom Base64 Logo
-text
+### Custom Base64 Logo
+
 <!-- Custom SVG as base64 data URI -->
 ![custom-logo](https://img.shields.io/badge/my-project-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTEyIDJMMiA3bDEwIDUgMTAtNXoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=)
 ```
@@ -181,8 +180,8 @@ text
 ![custom-logo](https://img.shields.io/badge/my-project-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PHBhdGggZD0iTTEyIDJMMiA3bDEwIDUgMTAtNXoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=)
 ```
 
-Label & Color Overrides
-text
+### Label & Color Overrides
+
 <!-- label override -->
 ![label-override](https://img.shields.io/badge/build-passing-brightgreen?label=healthiness)
 ```
@@ -211,8 +210,8 @@ text
 ![both-colors](https://img.shields.io/badge/build-passing-brightgreen?labelColor=282c34&color=61DAFB)
 ```
 
-Path Encoding Variations
-text
+### Path Encoding Variations
+
 <!-- Underscore = space -->
 ![underscore-space](https://img.shields.io/badge/build_passing-brightgreen)
 ```
@@ -248,8 +247,8 @@ text
 ![percent](https://img.shields.io/badge/coverage-95%25-brightgreen)
 ```
 
-Message-Only Badges
-text
+### Message-Only Badges
+
 <!-- No label, just message + color -->
 ![message-only](https://img.shields.io/badge/-live-brightgreen)
 ```
@@ -264,8 +263,8 @@ text
 ![message-only-logo](https://img.shields.io/badge/-v2.0.0-blue?logo=npm&logoColor=white)
 ```
 
-Linked Badges
-text
+### Linked Badges
+
 <!-- Single link target (Markdown) -->
 [![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/your-repo)
 ```
@@ -287,7 +286,7 @@ text
 [![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](https://github.com/your-repo/releases)
 ```
 
-Split Link Targets (HTML only, not in Markdown)
+### Split Link Targets (HTML only, not in Markdown)
 <!-- Left click → GitHub, right click → Travis CI -->
 <object data="https://img.shields.io/badge/build-passing-brightgreen?link=https://github.com&amp;link=https://travis-ci.org" type="image/svg+xml">
   <img alt="Build" src="https://img.shields.io/badge/build-passing-brightgreen">
@@ -300,7 +299,7 @@ Split Link Targets (HTML only, not in Markdown)
 </object>
 ```
 
-cacheSeconds
+### cacheSeconds
 <!-- Set cache lifetime to 1 hour -->
 ![cached](https://img.shields.io/badge/build-passing-brightgreen?cacheSeconds=3600)
 ```
@@ -308,7 +307,7 @@ cacheSeconds
 ![cached](https://img.shields.io/badge/build-passing-brightgreen?cacheSeconds=3600)
 ```
 
-Full Kitchen-Sink Combinations
+### Full Kitchen-Sink Combinations
 <!-- for-the-badge + logo + logoColor + labelColor + cacheSeconds -->
 ![full-1](https://img.shields.io/badge/my_project-v2.0.0-007ec6?style=for-the-badge&logo=react&logoColor=61DAFB&labelColor=282c34&cacheSeconds=3600)
 ```
@@ -337,8 +336,7 @@ Full Kitchen-Sink Combinations
 ![full-4](https://img.shields.io/badge/follow-1.2k-blue?style=social&logo=twitter&logoColor=1DA1F2)
 ```
 
-
-All of these are ready to paste directly into a GitHub README. The only one that won't work in GitHub Markdown is the split-link <object> example — for READMEs, use the single-link [![badge](url)](link) pattern instead.
+All of these are ready to paste directly into a GitHub README. The only one that won't work in GitHub Markdown is the split-link `<object>` example — for READMEs, use the single-link `[![badge](url)](link)` pattern instead.
 
 ---
 # Shields.io Parameter Reference & URL Builder Cheatsheet
