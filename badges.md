@@ -110,7 +110,7 @@ text
 ```
 <!-- success (= brightgreen) -->
 ![success](https://img.shields.io/badge/build-passing-success)
-``
+```
 
 <!-- important (= orange) -->
 ![important](https://img.shields.io/badge/build-pending-important)
