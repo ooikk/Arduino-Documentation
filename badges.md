@@ -292,7 +292,8 @@ Split Link Targets (HTML only, not in Markdown)
 <object data="https://img.shields.io/badge/build-passing-brightgreen?link=https://github.com&amp;link=https://travis-ci.org" type="image/svg+xml">
   <img alt="Build" src="https://img.shields.io/badge/build-passing-brightgreen">
 </object>
-```
+
+```xml
 <!-- Left click → GitHub, right click → Travis CI -->
 <object data="https://img.shields.io/badge/build-passing-brightgreen?link=https://github.com&amp;link=https://travis-ci.org" type="image/svg+xml">
   <img alt="Build" src="https://img.shields.io/badge/build-passing-brightgreen">
