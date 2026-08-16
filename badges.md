@@ -288,24 +288,27 @@ text
 ```
 
 Split Link Targets (HTML only, not in Markdown)
-<!-- Linked badge with style -->
-[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](https://github.com/your-repo/releases)
-```
-<!-- Linked badge with style -->
-[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](https://github.com/your-repo/releases)
-```
-
-xml
 <!-- Left click → GitHub, right click → Travis CI -->
 <object data="https://img.shields.io/badge/build-passing-brightgreen?link=https://github.com&amp;link=https://travis-ci.org" type="image/svg+xml">
   <img alt="Build" src="https://img.shields.io/badge/build-passing-brightgreen">
 </object>
+```
+<!-- Left click → GitHub, right click → Travis CI -->
+<object data="https://img.shields.io/badge/build-passing-brightgreen?link=https://github.com&amp;link=https://travis-ci.org" type="image/svg+xml">
+  <img alt="Build" src="https://img.shields.io/badge/build-passing-brightgreen">
+</object>
+```
+
 cacheSeconds
-text
 <!-- Set cache lifetime to 1 hour -->
 ![cached](https://img.shields.io/badge/build-passing-brightgreen?cacheSeconds=3600)
+```
+<!-- Set cache lifetime to 1 hour -->
+![cached](https://img.shields.io/badge/build-passing-brightgreen?cacheSeconds=3600)
+```
+
 Full Kitchen-Sink Combinations
-text
+
 <!-- for-the-badge + logo + logoColor + labelColor + cacheSeconds -->
 ![full-1](https://img.shields.io/badge/my_project-v2.0.0-007ec6?style=for-the-badge&logo=react&logoColor=61DAFB&labelColor=282c34&cacheSeconds=3600)
 
