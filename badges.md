@@ -12,19 +12,40 @@ text
 
 <!-- flat-square -->
 ![flat-square](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
+```
+<!-- flat-square -->
+![flat-square](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
+```
 
 <!-- plastic -->
 ![plastic](https://img.shields.io/badge/build-passing-brightgreen?style=plastic)
+```
+<!-- plastic -->
+![plastic](https://img.shields.io/badge/build-passing-brightgreen?style=plastic)
+```
 
 <!-- for-the-badge -->
 ![for-the-badge](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)
 
+```
+<!-- for-the-badge -->
+![for-the-badge](https://img.shields.io/badge/build-passing-brightgreen?style=for-the-badge)
+```
 <!-- social -->
 ![social](https://img.shields.io/badge/build-passing-brightgreen?style=social)
+```
+<!-- social -->
+![social](https://img.shields.io/badge/build-passing-brightgreen?style=social)
+```
+
 Color Formats
 text
 <!-- Named color -->
 ![named](https://img.shields.io/badge/coverage-95%25-orange)
+```
+<!-- Named color -->
+![named](https://img.shields.io/badge/coverage-95%25-orange)
+```
 
 <!-- Hex 3-digit (no #) -->
 ![hex3](https://img.shields.io/badge/coverage-95%25-4c1)
