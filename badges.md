@@ -282,11 +282,17 @@ text
 
 <!-- Linked badge with style -->
 [![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](https://github.com/your-repo/releases)
-Split Link Targets (HTML only, not in Markdown)
 ```
 <!-- Linked badge with style -->
 [![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](https://github.com/your-repo/releases)
+```
+
 Split Link Targets (HTML only, not in Markdown)
+<!-- Linked badge with style -->
+[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](https://github.com/your-repo/releases)
+```
+<!-- Linked badge with style -->
+[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](https://github.com/your-repo/releases)
 ```
 
 xml
