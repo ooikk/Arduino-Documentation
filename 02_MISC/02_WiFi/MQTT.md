@@ -3,6 +3,8 @@
 **Main Topics**     
 [18 Setting MQTT Broker](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#18-setting-mqtt-broker)
 
+[![Build](https://img.shields.io/badge/18_Setting_MQTT_Broker-brightgreen)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#18-setting-mqtt-broker)
+
 [Use Google Sheets via HTTP Server (100% Free & Fast)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#use-google-sheets-via-http-server-100-free--fast)
 
 [Adafruit IO Dashboard](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#adafruit-io-dashboard)
