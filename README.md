@@ -334,7 +334,7 @@ Reserved areas may be used for:
 - Core dumps.
 - Wi-Fi and Bluetooth radio initialization data.
 
-## 3. Common Arduino IDE Partition Schemes
+### 3. Common Arduino IDE Partition Schemes
 
 Open:
 
