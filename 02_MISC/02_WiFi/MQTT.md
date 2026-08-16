@@ -2,7 +2,7 @@
 
 **Main Topics**     
 
-[![Contents](https://img.shields.io/badge/18_Setting_MQTT_Broker-brightgreen)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#18-setting-mqtt-broker)
+[![Contents](https://img.shields.io/badge/18_Setting_MQTT_Broker-brightgreen?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#18-setting-mqtt-broker)
 
 
 [![Contents](https://img.shields.io/badge/Use_Google_Sheets_via_HTTP_Server-brightgreen)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#use-google-sheets-via-http-server-100-free--fast)
