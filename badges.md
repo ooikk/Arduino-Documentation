@@ -860,9 +860,10 @@ https://img.shields.io/badge/my_project-v2.0.0-007ec6?style=for-the-badge&logo=r
 *This guide is based on the official Shields.io documentation and source code as of August 2026. For the latest changes, always check the [Shields.io website](https://shields.io) and the [badges/shields GitHub repo](https://github.com/badges/shields).*
 
 
-
+---
 
 ---
+# Old Source
 
 These are **README badges** (often called **shields**), commonly used on GitHub, GitLab, and Bitbucket to display project metadata, status, dependencies, or hardware/software specifications. Most repository badges are generated using **[Shields.io](https://shields.io)**.
 
