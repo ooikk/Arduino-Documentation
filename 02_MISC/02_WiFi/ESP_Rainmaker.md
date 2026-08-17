@@ -1866,6 +1866,385 @@ The Web Dashboard and mobile application use the same RainMaker cloud data. Ther
 
 ---
 
+# ESP RainMaker Provisioning and Wi-Fi Credentials
+
+You can use a known Wi-Fi SSID and password to connect the ESP32-S3 to Wi-Fi.
+
+However, for ESP RainMaker, Wi-Fi credentials alone are not enough for the normal end-to-end setup.
+
+ESP RainMaker requires two separate things:
+
+1. Wi-Fi network access.
+2. RainMaker cloud and user-account association.
+
+## 1. Wi-Fi Network Access
+
+The ESP32-S3 needs your SSID and password to connect to the local router and access the internet.
+
+```cpp
+const char* WIFI_SSID = "YOUR_WIFI_SSID";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+```
+
+This gives the ESP32-S3 network access, but it does not automatically register the device with ESP RainMaker.
+
+## 2. RainMaker Cloud and User Association
+
+The ESP32-S3 must also be securely associated with your RainMaker user account and node.
+
+This allows:
+
+- The device to appear in the RainMaker application.
+- The application to control the device.
+- Telemetry to be displayed.
+- The device to use RainMaker cloud services.
+- Secure communication between the device and RainMaker.
+
+The BLE or SoftAP provisioning process, together with the RainMaker application, handles both Wi-Fi configuration and RainMaker association.
+
+## What BLE Provisioning Does
+
+When using the ESP RainMaker application with BLE provisioning, the application sends information such as:
+
+```text
+1. Wi-Fi SSID
+2. Wi-Fi password
+3. Device provisioning information
+4. RainMaker claiming or association data
+```
+
+The ESP32-S3 stores this information, usually in NVS flash.
+
+After successful provisioning, the ESP32-S3 can:
+
+```text
+1. Reconnect to the configured Wi-Fi network.
+2. Authenticate with the RainMaker cloud.
+3. Reconnect to the RainMaker MQTT endpoint.
+4. Report telemetry.
+5. Receive commands from the mobile or web application.
+```
+
+Therefore, the BLE and application step is not only for Wi-Fi login. It also securely registers the device with your RainMaker account.
+
+## Why Hardcoded Wi-Fi Credentials Are Not Enough
+
+You could write:
+
+```cpp
+#include <WiFi.h>
+
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+void setup() {
+  WiFi.begin(ssid, password);
+}
+```
+
+This allows the ESP32-S3 to connect to the router.
+
+However, for ESP RainMaker, this does not automatically provide:
+
+```text
+1. RainMaker cloud claiming.
+2. Device certificates.
+3. RainMaker user-node association.
+4. Secure cloud authentication.
+```
+
+That association step is normally completed by the RainMaker application during provisioning.
+
+## Wi-Fi Login versus RainMaker Association
+
+These are two different processes.
+
+### Wi-Fi Login
+
+```text
+SSID + password
+```
+
+This gives the ESP32-S3 access to the local network and internet.
+
+### RainMaker Cloud Association
+
+```text
+RainMaker account + node association + secure device credentials
+```
+
+This allows the ESP32-S3 to appear in your RainMaker account and communicate securely with the RainMaker cloud.
+
+Knowing the Wi-Fi password does not prove to RainMaker that the user owns or is authorized to manage the ESP32-S3.
+
+## Can BLE and SoftAP Provisioning Be Skipped?
+
+### Short Answer
+
+For normal ESP RainMaker onboarding, not easily, unless the device has already been provisioned or has been correctly pre-provisioned and claimed.
+
+### You Can Skip Provisioning If
+
+You can skip BLE or SoftAP provisioning on later boots if:
+
+- The device has already been provisioned.
+- Wi-Fi credentials are stored in NVS.
+- The RainMaker user-node association is stored.
+- RainMaker certificates and claim data are stored.
+- The flash contents have not been erased.
+
+For a new or factory-erased ESP32-S3, you normally need a provisioning mechanism.
+
+## What Happens After First Provisioning?
+
+After successful first-time provisioning, you normally do not need to use BLE or the application again unless:
+
+- You erase the flash or NVS.
+- You change the Wi-Fi router or password.
+- You perform a factory reset.
+- You reflash the board with erase-all-flash enabled.
+- You move the device to another RainMaker account.
+
+During a normal reboot, the ESP32-S3 should automatically:
+
+```text
+1. Read the stored Wi-Fi credentials.
+2. Reconnect to the Wi-Fi network.
+3. Read the stored RainMaker credentials.
+4. Reconnect to the RainMaker cloud.
+```
+
+## Why Not Hardcode Wi-Fi Credentials?
+
+Hardcoding credentials can work for simple experiments, but it has several disadvantages.
+
+### 1. Security Risk
+
+If you put credentials directly in the source code:
+
+```cpp
+const char* ssid = "MyHomeWiFi";
+const char* password = "MySecretPassword";
+```
+
+Anyone who reads the source code may see the Wi-Fi password.
+
+The credentials may also be extracted from the compiled firmware binary.
+
+### 2. No Secure Per-Device Onboarding
+
+If you build 100 devices, you must decide whether to place the same Wi-Fi password into every device.
+
+That approach is difficult to scale and creates a security risk.
+
+### 3. Wi-Fi Changes Require Reflashing
+
+If the Wi-Fi password changes, you would need to:
+
+1. Modify the source code.
+2. Recompile the firmware.
+3. Reflash the ESP32-S3.
+
+With RainMaker provisioning, you can usually reconfigure the device through the application.
+
+### 4. RainMaker Association Is Missing
+
+Even if the ESP32-S3 connects to Wi-Fi, it still needs to be associated with your RainMaker account.
+
+Hardcoding the Wi-Fi credentials does not automatically complete this association.
+
+## Use SoftAP Provisioning Instead of BLE
+
+If the problem is specifically BLE, you can use SoftAP provisioning.
+
+Replace the BLE provisioning call:
+
+```cpp
+WiFiProv.beginProvision(
+  WIFI_PROV_SCHEME_BLE,
+  WIFI_PROV_SCHEME_HANDLER_NONE,
+  WIFI_PROV_SECURITY_1,
+  PROV_POP,
+  PROV_SERVICE_NAME,
+  nullptr
+);
+```
+
+with SoftAP provisioning:
+
+```cpp
+WiFiProv.beginProvision(
+  WIFI_PROV_SCHEME_SOFTAP,
+  WIFI_PROV_SCHEME_HANDLER_NONE,
+  WIFI_PROV_SECURITY_1,
+  PROV_POP,
+  PROV_SERVICE_NAME,
+  "your_ap_password"
+);
+```
+
+The ESP32-S3 creates its own temporary Wi-Fi access point, for example:
+
+```text
+PROV_OOIKK
+```
+
+The RainMaker application connects to this access point and sends the actual home Wi-Fi credentials to the ESP32-S3.
+
+This method still uses the RainMaker application, but it avoids BLE.
+
+## Can Known Wi-Fi Credentials Be Used Without the App?
+
+For a normal ESP RainMaker beginner setup, this is not recommended.
+
+You would need to handle several advanced tasks yourself:
+
+```text
+1. Wi-Fi connection.
+2. RainMaker claiming.
+3. Device certificates.
+4. MQTT endpoint configuration.
+5. RainMaker user-node association.
+6. Secure credential storage in NVS.
+7. Reconnection logic.
+8. Factory-reset handling.
+9. Re-provisioning logic.
+```
+
+The RainMaker application and unified provisioning system handle these tasks for you.
+
+## Consider Plain MQTT Instead
+
+If your real requirement is:
+
+```text
+1. Hardcoded Wi-Fi credentials.
+2. User-defined MQTT topics.
+3. Direct telemetry publishing.
+4. Direct command subscriptions.
+5. No RainMaker mobile application.
+6. No RainMaker cloud association.
+7. A simple Arduino IDE workflow.
+```
+
+then plain MQTT may be a better fit than ESP RainMaker.
+
+For example, with Adafruit IO, HiveMQ, EMQX, Mosquitto, or another MQTT broker, you can use:
+
+```cpp
+#include <WiFi.h>
+#include <PubSubClient.h>
+
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+const char* mqttServer = "your-mqtt-broker.example.com";
+const int mqttPort = 1883;
+
+WiFiClient wifiClient;
+PubSubClient mqttClient(wifiClient);
+```
+
+You can then publish to custom topics:
+
+```cpp
+mqttClient.publish(
+  "ooikk/feeds/temperature",
+  "25.4"
+);
+
+mqttClient.publish(
+  "ooikk/feeds/status",
+  "online"
+);
+```
+
+and subscribe to a command topic:
+
+```cpp
+mqttClient.subscribe(
+  "ooikk/feeds/led-control"
+);
+```
+
+This model uses the exact user-defined topics you specify.
+
+ESP RainMaker uses a different structure:
+
+```text
+RainMaker Node
+ ├─ Device
+ │   └─ Parameter
+ └─ Device
+     └─ Parameter
+```
+
+It does not normally expose arbitrary user-defined MQTT feed topics such as:
+
+```text
+ooikk/feeds/temperature
+```
+
+## Practical Recommendation
+
+### If You Want to Use ESP RainMaker
+
+Use provisioning once:
+
+```text
+1. Install the ESP RainMaker application.
+2. Start BLE or SoftAP provisioning.
+3. Send Wi-Fi credentials to the ESP32-S3.
+4. Associate the device with your RainMaker account.
+5. Confirm that the node appears in the application.
+```
+
+After that, the ESP32-S3 should reconnect automatically without using BLE or the application on every boot.
+
+If BLE is unstable, use SoftAP provisioning:
+
+```cpp
+WiFiProv.beginProvision(
+  WIFI_PROV_SCHEME_SOFTAP,
+  WIFI_PROV_SCHEME_HANDLER_NONE,
+  WIFI_PROV_SECURITY_1,
+  PROV_POP,
+  PROV_SERVICE_NAME,
+  "your_ap_password"
+);
+```
+
+### If You Want to Avoid the Application Completely
+
+ESP RainMaker may not be the best fit unless you are prepared to implement:
+
+- Device claiming.
+- Manufacturing provisioning.
+- Secure credential storage.
+- A custom backend.
+- A custom mobile or web application.
+- Certificate and endpoint management.
+- Factory-reset and re-provisioning support.
+
+For this use case, plain MQTT may be simpler.
+
+## Final Summary
+
+You can use known Wi-Fi credentials to connect the ESP32-S3 to Wi-Fi, but ESP RainMaker requires more than network access.
+
+The BLE or SoftAP provisioning process and the RainMaker application are used to:
+
+- Send Wi-Fi credentials.
+- Configure the device.
+- Securely associate the device with your RainMaker account.
+- Store credentials and cloud information.
+
+After first-time provisioning, the ESP32-S3 can reconnect automatically without BLE or the application.
+
+If you want to avoid BLE, use SoftAP provisioning. If you want to avoid the RainMaker application completely, use a custom production-provisioning system or choose plain MQTT instead of ESP RainMaker.
+
+---
+
 # ESP RainMaker Overview (Gemini)
 
 ESP RainMaker is Espressif’s end-to-end IoT platform designed to deploy, manage, and control ESP32-based products. Unlike standard MQTT setups that require manual topic definitions, cloud broker provisioning, and custom dashboard development, RainMaker uses dynamic metadata models (nodes, devices, parameters) where the ESP32 automatically describes its capabilities to the cloud.
