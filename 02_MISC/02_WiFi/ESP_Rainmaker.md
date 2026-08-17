@@ -2195,7 +2195,7 @@ This guide explains how to configure and customize the dashboard using the C++ c
 
 1. Open a web browser and visit:
 
-   [ESP RainMaker Web Dashboard](https://rainmaker.espressif.com/)
+   [ESP RainMaker Web Dashboard](https://dashboard.rainmaker.espressif.com/login)
 
 2. Click **Sign In**.
 3. Use the same email address and password used to create the account in the ESP RainMaker mobile application.
