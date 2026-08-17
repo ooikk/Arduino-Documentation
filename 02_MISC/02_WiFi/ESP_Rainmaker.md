@@ -1815,6 +1815,372 @@ Anything else, such as a telemetry device containing status, RSSI, uptime, and b
 
 Custom devices still work with the RainMaker cloud, but the official applications generally display them with generic rendering instead of dedicated icons and specialized widgets.
 
+# C API to Generic Wrapper Mapping
+
+The following table maps the raw ESP RainMaker C API functions to their equivalent generic Arduino wrapper methods.
+
+## API Mapping
+
+| Concept | Raw C API | Generic Wrapper |
+|---|---|---|
+| Create node | `esp_rmaker_node_create()` | `Node.setNodeInfo()` |
+| Create device | `esp_rmaker_device_create()` | `Device led("LED", "esp.device.switch")` |
+| Create parameter | `esp_rmaker_param_create()` | `Param p(name, type, val, flags)` |
+| Attach parameter | `esp_rmaker_device_add_param()` | `device.addParam(p)` |
+| Attach device to node | `esp_rmaker_node_add_device()` | `Node.addDevice(d)` |
+| Register write callback | `esp_rmaker_device_assign_write_cb()` | `device.addCb(cb)` |
+| Report a value | `esp_rmaker_param_update_and_report(handle, val)` | `device.updateAndReportParam(&p, val)` |
+| Start the RainMaker stack | `esp_rmaker_start()` | `RMaker.start()` |
+
+## Notes and Important Details
+
+### Same Names, Different Types
+
+The same identifiers can be used in both branches of a dual-mode sketch:
+
+```cpp
+status_param
+temp_param
+rssi_param
+uptime_param
+```
+
+In wrapper mode, these are `Param` objects:
+
+```cpp
+Param status_param;
+Param temp_param;
+```
+
+In C API mode, they are pointers or handles:
+
+```cpp
+esp_rmaker_param_t* status_param;
+esp_rmaker_param_t* temp_param;
+```
+
+The `#ifdef` blocks make the two implementations mutually exclusive, allowing the remaining code to use consistent names.
+
+Example:
+
+```cpp
+#ifdef USE_WRAPPER_API
+  Param* temp_param;
+#else
+  esp_rmaker_param_t* temp_param;
+#endif
+```
+
+### Callback Prototypes Differ
+
+The callback signatures differ between the two API styles.
+
+#### Wrapper-Style Callback
+
+The wrapper API passes `Device*` and `Param*` objects:
+
+```cpp
+void led_write_cb(
+  Device* device,
+  Param* param,
+  const param_val_t val,
+  void* priv_data,
+  write_ctx_t* ctx
+) {
+  bool state = val.val.b;
+  digitalWrite(LED_PIN, state ? HIGH : LOW);
+
+  param->updateAndReport(val);
+}
+```
+
+#### C-Style Callback
+
+The C API passes device and parameter handles:
+
+```cpp
+esp_err_t led_write_cb(
+  device_handle_t device,
+  param_handle_t param,
+  const param_val_t* val,
+  void* priv_data,
+  write_ctx_t* ctx
+) {
+  bool state = val->val.b;
+  digitalWrite(LED_PIN, state ? HIGH : LOW);
+
+  esp_rmaker_param_update_and_report(
+    param,
+    esp_rmaker_bool(state)
+  );
+
+  return ESP_OK;
+}
+```
+
+This is why a dual-mode sketch requires two callback implementations.
+
+### Keep `Param` and `Device` Objects Alive
+
+`Device` and `Param` objects should normally be declared as global or static objects:
+
+```cpp
+static Device led_device(
+  "LED",
+  "esp.device.switch"
+);
+
+static Param status_param(
+  "Status",
+  "custom.param.status",
+  value_s("boot"),
+  PROP_FLAG_READ
+);
+```
+
+Their internal handles must remain valid for the lifetime of the program.
+
+Avoid creating long-lived RainMaker objects as local variables inside `setup()`:
+
+```cpp
+void setup() {
+  Device temporary_device(
+    "LED",
+    "esp.device.switch"
+  );
+
+  // The object is destroyed when setup() returns.
+}
+```
+
+A local object may be destroyed when `setup()` finishes, leaving invalid references or handles.
+
+### `updateAndReportParam()` Overloads
+
+The generic wrapper provides overloaded versions of `updateAndReportParam()` for common data types, including:
+
+```cpp
+bool
+int
+float
+const char*
+```
+
+Examples:
+
+```cpp
+led_device.updateAndReportParam(
+  "Power",
+  true
+);
+
+telemetry_device.updateAndReportParam(
+  "RSSI",
+  -65
+);
+
+temperature_device.updateAndReportParam(
+  "Temperature",
+  25.4f
+);
+
+telemetry_device.updateAndReportParam(
+  "Status",
+  "online"
+);
+```
+
+This is why the same call style can be used for:
+
+- LED state.
+- RSSI.
+- Temperature.
+- Uptime.
+- Status strings.
+
+### Specialized Classes Are Wrappers
+
+The specialized classes are convenience subclasses of `Device`.
+
+Examples include:
+
+```cpp
+Switch
+Outlet
+LightBulb
+Fan
+TemperatureSensor
+```
+
+They pre-create standard device parameters.
+
+For example:
+
+```cpp
+Switch my_switch(
+  "LED Control"
+);
+```
+
+is a convenient wrapper around a standard switch device with a standard `Power` parameter.
+
+The generic form gives more control:
+
+```cpp
+Device my_device(
+  "LED Control",
+  "esp.device.switch"
+);
+
+Param power_param(
+  "Power",
+  "esp.param.power",
+  value_b(false),
+  PROP_FLAG_READ | PROP_FLAG_WRITE
+);
+
+my_device.addParam(power_param);
+```
+
+The generic `Device` and `Param` form maps more directly to the underlying C API.
+
+### C-Style Callback Fallback
+
+If the installed library version does not accept the wrapper-style callback typedef with `addCb()`, register a C-style callback directly through the device handle:
+
+```cpp
+esp_rmaker_device_assign_write_cb(
+  led_device.getDeviceHandle(),
+  c_style_cb
+);
+```
+
+Example:
+
+```cpp
+esp_err_t c_style_cb(
+  device_handle_t device,
+  param_handle_t param,
+  const param_val_t* val,
+  void* priv_data,
+  write_ctx_t* ctx
+) {
+  if (!val) {
+    return ESP_ERR_INVALID_ARG;
+  }
+
+  bool state = val->val.b;
+
+  digitalWrite(
+    LED_PIN,
+    state ? HIGH : LOW
+  );
+
+  esp_rmaker_param_update_and_report(
+    param,
+    esp_rmaker_bool(state)
+  );
+
+  return ESP_OK;
+}
+```
+
+### The Cloud Model Is Identical
+
+The wrapper API and the C API create the same RainMaker cloud model.
+
+You can upload the sketch twice:
+
+1. With the mode-selection macro commented out.
+2. With the mode-selection macro uncommented.
+
+For example:
+
+```cpp
+//#define USE_C_API
+```
+
+or:
+
+```cpp
+#define USE_C_API
+```
+
+The Serial Monitor can display which mode is active:
+
+```cpp
+#ifdef USE_C_API
+  Serial.println("Running in C API mode");
+#else
+  Serial.println("Running in generic wrapper mode");
+#endif
+```
+
+Regardless of which API branch is compiled, the RainMaker application and web dashboard should show the same logical:
+
+- Node.
+- Devices.
+- Parameters.
+- Controls.
+- Telemetry values.
+
+## Example Dual-Mode Structure
+
+```cpp
+//#define USE_C_API
+
+#ifdef USE_C_API
+
+  esp_rmaker_param_t* temp_param;
+  esp_rmaker_device_t* temp_device;
+
+#else
+
+  Param temp_param(
+    "Temperature",
+    "esp.param.temperature",
+    value_f(0.0f),
+    PROP_FLAG_READ
+  );
+
+  Device temp_device(
+    "Temperature",
+    "esp.device.temperature-sensor"
+  );
+
+#endif
+```
+
+The preprocessor includes only one implementation during compilation.
+
+```text
+USE_C_API disabled
+    └── Generic Arduino wrapper API
+
+USE_C_API enabled
+    └── Raw ESP RainMaker C API
+```
+
+## Summary
+
+The generic Arduino wrapper is a higher-level interface over the same RainMaker concepts exposed by the C API.
+
+The corresponding operations are:
+
+```text
+Create node       → Node / esp_rmaker_node_create()
+Create device     → Device / esp_rmaker_device_create()
+Create parameter  → Param / esp_rmaker_param_create()
+Attach parameter  → addParam() / esp_rmaker_device_add_param()
+Attach device     → addDevice() / esp_rmaker_node_add_device()
+Add callback      → addCb() / esp_rmaker_device_assign_write_cb()
+Report value      → updateAndReportParam() /
+                    esp_rmaker_param_update_and_report()
+Start stack       → RMaker.start() / esp_rmaker_start()
+```
+
+Use the wrapper classes for simpler Arduino code. Use the generic `Device` and `Param` classes when you need more control while still preferring an object-oriented API. Use the raw C API when you need exact control over RainMaker handles, callback signatures, and low-level integration.\
+
 ---
 
 # ESP RainMaker Web Dashboard
