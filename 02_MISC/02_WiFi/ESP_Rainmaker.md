@@ -1444,6 +1444,377 @@ Telemetry is reported with:
 ```cpp
 esp_rmaker_param_update_and_report();
 ```
+
+# ESP RainMaker Standard Device Types
+
+In ESP RainMaker, standard device types are predefined in the SDK files:
+
+```text
+esp_rmaker_standard_types.h
+esp_rmaker_standard_devices.h
+```
+
+They are also exposed in the Arduino library through wrapper classes.
+
+ESP RainMaker provides five standard device types.
+
+## Standard Device Types Overview
+
+| # | Device | Type String | C Helper Function | Arduino Class |
+|---:|---|---|---|---|
+| 1 | Switch | `esp.device.switch` | `esp_rmaker_switch_device_create()` | `Switch` |
+| 2 | Outlet | `esp.device.outlet` | `esp_rmaker_outlet_device_create()` | `Outlet` |
+| 3 | Light Bulb | `esp.device.lightbulb` | `esp_rmaker_lightbulb_device_create()` | `LightBulb` |
+| 4 | Fan | `esp.device.fan` | `esp_rmaker_fan_device_create()` | `Fan` |
+| 5 | Temperature Sensor | `esp.device.temperature-sensor` | `esp_rmaker_temperature_sensor_device_create()` | `TemperatureSensor` |
+
+## Detailed Descriptions
+
+### 1. Switch — `esp.device.switch`
+
+A switch is a generic binary ON/OFF control device.
+
+It is commonly used for:
+
+- Relays.
+- Contactors.
+- LEDs.
+- Appliances.
+- Any device that simply turns ON or OFF.
+
+#### Standard Parameter
+
+```text
+power
+```
+
+Parameter type:
+
+```text
+esp.param.power
+```
+
+Data type and access:
+
+```text
+Boolean
+Read/write
+```
+
+#### Application UI
+
+The RainMaker application normally renders a switch as a toggle control.
+
+#### Arduino Example
+
+```cpp
+Switch my_switch("LED Control");
+```
+
+## 2. Outlet — `esp.device.outlet`
+
+An outlet represents a smart power plug or wall socket.
+
+It is functionally similar to a switch but semantically represents a socket supplying power to a connected appliance.
+
+#### Standard Parameter
+
+```text
+power
+```
+
+Parameter type:
+
+```text
+esp.param.power
+```
+
+Data type and access:
+
+```text
+Boolean
+Read/write
+```
+
+#### Application UI
+
+The application usually displays an outlet or smart-plug icon.
+
+#### Arduino Example
+
+```cpp
+Outlet my_outlet("Living Room Outlet");
+```
+
+## 3. Light Bulb — `esp.device.lightbulb`
+
+A light-bulb device represents a lighting product.
+
+In addition to ON/OFF control, it can optionally support dimming and color control, depending on the parameters added.
+
+#### Standard Parameters
+
+| Parameter | Type | Function |
+|---|---|---|
+| `power` | `esp.param.power` | Turns the light ON or OFF |
+| `brightness` | `esp.param.brightness` | Controls brightness |
+| `hue` | `esp.param.hue` | Controls the color hue |
+| `saturation` | `esp.param.saturation` | Controls color saturation |
+| `intensity` | `esp.param.intensity` | Controls light intensity |
+| `cct` | `esp.param.cct` | Controls correlated color temperature |
+
+#### Application UI
+
+The RainMaker application normally displays a bulb icon.
+
+Adding color parameters may enable:
+
+- A color wheel.
+- Brightness sliders.
+- Color-temperature controls.
+
+#### Arduino Example
+
+```cpp
+LightBulb my_light("Living Room Light");
+```
+
+## 4. Fan — `esp.device.fan`
+
+A fan device represents a motorized fan with ON/OFF control and optional speed regulation.
+
+#### Standard Parameters
+
+| Parameter | Type | Function |
+|---|---|---|
+| `power` | `esp.param.power` | Turns the fan ON or OFF |
+| `speed` | `esp.param.speed` | Controls fan speed |
+
+The `speed` parameter is generally an integer and can represent multiple fan-speed levels.
+
+#### Application UI
+
+The RainMaker application normally displays:
+
+- A fan icon.
+- A toggle control.
+- A speed slider if the `speed` parameter is available.
+
+#### Arduino Example
+
+```cpp
+Fan my_fan("Ceiling Fan");
+```
+
+## 5. Temperature Sensor — `esp.device.temperature-sensor`
+
+A temperature sensor is a read-only device that reports temperature measurements.
+
+This is the device type used for the temperature device in the ESP32-S3 RainMaker sketch.
+
+#### Standard Parameter
+
+```text
+temperature
+```
+
+Parameter type:
+
+```text
+esp.param.temperature
+```
+
+Data type and access:
+
+```text
+Floating-point value
+Read-only
+```
+
+The value is normally expressed in degrees Celsius.
+
+#### Application UI
+
+The RainMaker application may display:
+
+- A thermometer icon.
+- The current temperature.
+- A historical time-series chart.
+
+#### Arduino Example
+
+```cpp
+TemperatureSensor my_temp_sensor("Room Temperature");
+```
+
+## Standard Device Creation Methods
+
+In the Arduino ESP RainMaker library, devices can be created with wrapper classes:
+
+```cpp
+Switch my_switch("LED Control");
+
+Outlet my_outlet("Smart Outlet");
+
+LightBulb my_light("Living Room Light");
+
+Fan my_fan("Ceiling Fan");
+
+TemperatureSensor my_temp("Room Temperature");
+```
+
+Alternatively, devices can be created generically using a device type string:
+
+```cpp
+Device my_switch(
+  "LED Control",
+  "esp.device.switch"
+);
+```
+
+The C API can also be used:
+
+```cpp
+esp_rmaker_device_t* device =
+  esp_rmaker_device_create(
+    "LED Control",
+    "esp.device.switch",
+    nullptr
+  );
+```
+
+## Important Notes
+
+### Standard Types Provide Dedicated UI
+
+These five standard device types have dedicated creation helpers and polished application UI widgets:
+
+```text
+Switch
+Outlet
+LightBulb
+Fan
+TemperatureSensor
+```
+
+Other devices can still be created, but they are generally custom device types.
+
+For example:
+
+```text
+custom.device.telemetry
+```
+
+can be used for:
+
+- Status.
+- RSSI.
+- Uptime.
+- Button events.
+
+Custom devices are fully supported by the RainMaker cloud, but the official applications may render them generically as parameter lists rather than providing dedicated icons and specialized widgets.
+
+### Device Behavior Comes from Parameters
+
+The device type string mainly tells the RainMaker application how to represent the device.
+
+The actual behavior is determined by its parameters.
+
+For example, you could add a temperature parameter to a switch device:
+
+```cpp
+Device custom_device(
+  "Combined Device",
+  "esp.device.switch"
+);
+
+Param temperature_param(
+  "Temperature",
+  "esp.param.temperature",
+  value_f(25.0f),
+  PROP_FLAG_READ
+);
+
+custom_device.addParam(temperature_param);
+```
+
+Although this is technically possible, using semantically appropriate device types usually produces a clearer application interface.
+
+### Standard UI Types
+
+Standard UI types can be combined with standard parameters to create application controls such as:
+
+```text
+esp.ui.toggle
+esp.ui.slider
+esp.ui.dropdown
+esp.ui.text
+esp.ui.trigger
+```
+
+Examples:
+
+- `esp.ui.toggle`: ON/OFF switch.
+- `esp.ui.slider`: Adjustable numeric value.
+- `esp.ui.dropdown`: Selection menu.
+- `esp.ui.text`: Text or status display.
+- `esp.ui.trigger`: Momentary action or event control.
+
+## Arduino and C API Options
+
+You can use either the Arduino wrapper classes:
+
+```cpp
+Switch
+Outlet
+LightBulb
+Fan
+TemperatureSensor
+```
+
+or create devices generically with:
+
+```cpp
+Device(
+  name,
+  "esp.device.xxx"
+);
+```
+
+The lower-level C API uses:
+
+```cpp
+esp_rmaker_device_create();
+```
+
+The wrapper classes are generally easier to read, while the generic `Device` class and C API provide more flexibility for custom device structures.
+
+## Summary
+
+The five standard ESP RainMaker device types are:
+
+```text
+1. Switch
+2. Outlet
+3. Light Bulb
+4. Fan
+5. Temperature Sensor
+```
+
+Their type strings are:
+
+```text
+esp.device.switch
+esp.device.outlet
+esp.device.lightbulb
+esp.device.fan
+esp.device.temperature-sensor
+```
+
+Anything else, such as a telemetry device containing status, RSSI, uptime, and button parameters, is a custom device type.
+
+Custom devices still work with the RainMaker cloud, but the official applications generally display them with generic rendering instead of dedicated icons and specialized widgets.
+
 ---
 
 # ESP RainMaker Web Dashboard
