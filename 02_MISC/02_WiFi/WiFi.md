@@ -5,6 +5,8 @@
 1. [ThingsBoard](https://thingsboard.io/)
 2. HTTP Google Sheet
 3. Telegram
+4. Weather
+5. SG Bus Arrival
 
   
 **MQTT description from QWen & Gemini:**     
