@@ -2243,6 +2243,191 @@ After first-time provisioning, the ESP32-S3 can reconnect automatically without 
 
 If you want to avoid BLE, use SoftAP provisioning. If you want to avoid the RainMaker application completely, use a custom production-provisioning system or choose plain MQTT instead of ESP RainMaker.
 
+
+## Does Mobile have to login to the same IoT network?
+
+No, your mobile phone does not need to be connected to the IoT Wi-Fi network.
+
+Yes, you can and should manually enter the IoT SSID and password directly into the ESP RainMaker application during setup.
+
+## How the Provisioning Flow Works
+
+The ESP RainMaker application is designed for this situation. It uses your phone as a bridge to transfer the credentials to the ESP32-S3.
+
+The phone and ESP32-S3 do not need to be connected to the same Wi-Fi network at the same time.
+
+### 1. Phone-to-ESP32 Connection
+
+Your phone temporarily connects to the ESP32-S3 using either:
+
+- Bluetooth Low Energy (BLE).
+- The ESP32-S3's temporary Wi-Fi access point through SoftAP provisioning.
+
+### 2. Credential Transfer
+
+The application asks for the target Wi-Fi details.
+
+Manually enter:
+
+```text
+IoT SSID:      MyHouse_IOT
+IoT Password:  YOUR_IOT_PASSWORD
+```
+
+The application encrypts the credentials and sends them to the ESP32-S3 through the temporary BLE or SoftAP connection.
+
+### 3. ESP32-to-IoT-Router Connection
+
+The ESP32-S3:
+
+1. Receives the credentials.
+2. Disconnects from the temporary phone connection.
+3. Connects to the IoT Wi-Fi router.
+4. Obtains internet access.
+5. Connects to the ESP RainMaker cloud.
+
+### 4. Cloud Synchronization
+
+Your phone uses its own internet connection, such as:
+
+- Your main home Wi-Fi.
+- Mobile data.
+- Another available internet connection.
+
+The ESP32-S3 uses the IoT Wi-Fi network to communicate with the RainMaker cloud.
+
+Both devices meet through the cloud:
+
+```text
+Phone ───────────────┐
+                     ├── ESP RainMaker Cloud
+ESP32-S3 ────────────┘
+```
+
+The ESP32-S3 can therefore appear in the RainMaker application even when the phone and device are connected to different Wi-Fi networks.
+
+## Important: Avoid the Auto-Fill Trap
+
+When you reach the Wi-Fi setup screen in the ESP RainMaker application, the application may automatically fill in the SSID of the Wi-Fi network currently used by your phone.
+
+For example:
+
+```text
+Phone's current network: Main_Home_WiFi
+Target device network:    MyHouse_IOT
+```
+
+Before continuing:
+
+1. Delete the automatically filled SSID.
+2. Enter the IoT SSID manually.
+3. Enter the IoT Wi-Fi password manually.
+4. Confirm that the credentials belong to the intended IoT network.
+
+If the IoT network is hidden, look for an option such as:
+
+```text
+Enter network manually
+```
+
+Then type the hidden SSID instead of selecting a network from the scanned list.
+
+## Four Requirements for the IoT Network
+
+The IoT Wi-Fi network must meet the following requirements.
+
+### 1. It Must Support 2.4 GHz Wi-Fi
+
+The ESP32-S3 supports 2.4 GHz Wi-Fi but cannot connect to a 5 GHz-only network.
+
+If the router broadcasts one combined SSID for both 2.4 GHz and 5 GHz, the connection may work. However, a dedicated 2.4 GHz SSID is generally more reliable.
+
+Recommended configuration:
+
+```text
+Main Wi-Fi:  Main_Home_WiFi
+IoT Wi-Fi:   MyHouse_IOT_2G
+```
+
+### 2. It Must Provide Internet Access
+
+The IoT network cannot be a completely isolated local network.
+
+The ESP32-S3 needs internet access to communicate with the ESP RainMaker cloud servers.
+
+A local-only network may allow the ESP32-S3 to connect to the router but prevent it from completing RainMaker cloud synchronization.
+
+### 3. It Must Not Use a Captive Portal
+
+The ESP32-S3 cannot normally use networks that require a web-browser login, such as:
+
+- Hotel Wi-Fi.
+- Dormitory Wi-Fi.
+- Coffee-shop Wi-Fi.
+- Airport Wi-Fi.
+- Guest networks requiring terms acceptance.
+- Networks requiring a room number or access code through a web page.
+
+The ESP32-S3 expects a standard Wi-Fi connection using a normal password.
+
+Supported example:
+
+```text
+Security: WPA2-Personal
+SSID:     MyHouse_IOT
+Password: YOUR_PASSWORD
+```
+
+### 4. It Must Not Require WPA-Enterprise
+
+Standard WPA2-Personal or WPA3-Personal authentication normally uses one password and is suitable for this setup.
+
+WPA-Enterprise commonly requires:
+
+- A username.
+- A password.
+- Certificates.
+- An authentication server.
+
+It is often used by universities and large corporations and is not supported by standard ESP RainMaker provisioning out of the box.
+
+## Recommended Setup
+
+Use the following arrangement:
+
+```text
+Phone:
+  Connected to main home Wi-Fi or mobile data
+
+ESP RainMaker app:
+  Connected to the ESP32-S3 through BLE or SoftAP during provisioning
+
+ESP32-S3:
+  Configured with the IoT SSID and password
+
+IoT router:
+  Connected to the internet
+```
+
+During setup:
+
+1. Keep your phone connected to your normal home Wi-Fi or mobile data.
+2. Open the ESP RainMaker application.
+3. Use BLE or SoftAP to find the ESP32-S3.
+4. When prompted for Wi-Fi details, delete any automatically filled SSID.
+5. Manually enter the IoT SSID.
+6. Enter the IoT Wi-Fi password.
+7. Complete provisioning.
+8. Wait for the ESP32-S3 to connect to the IoT router and RainMaker cloud.
+
+## Summary
+
+Your phone does not need to be connected to the IoT Wi-Fi network.
+
+Keep the phone connected to your main Wi-Fi or use mobile data. Use BLE or SoftAP to connect temporarily to the ESP32-S3, then manually enter the IoT SSID and password in the RainMaker application.
+
+The ESP32-S3 will use those credentials to connect to the IoT router and communicate with the RainMaker cloud.
+
 ---
 
 # ESP RainMaker Overview (Gemini)
