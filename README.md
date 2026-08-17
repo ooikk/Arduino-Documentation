@@ -587,6 +587,304 @@ For ESP RainMaker:
 - Verify the selected flash size and partition scheme match the physical ESP32-S3 board.
 
 
+## Partition Schemes Options and Custom Partitions
+
+These questions come down to understanding that every entry in the Arduino IDE partition menu is a fixed, pre-written CSV file—a partition table—not a layout that automatically adapts to your chip.
+
+### 1. Why Does `Huge APP` Stop at 3 MB?
+
+The following entry was designed for boards with 4 MB of flash:
+
+```text
+Huge APP (3 MB No OTA / 1 MB SPIFFS)
+```
+
+It uses a layout similar to:
+
+```text
+Bootloader and partition table
+NVS
+PHY initialization
+3 MB application partition
+1 MB SPIFFS partition
+```
+
+The 3 MB size is not a hardware limit of the ESP32-S3. It is simply the size Espressif selected when designing that particular 4 MB partition layout.
+
+The menu entries do not automatically scale to the available flash size. Each menu entry refers to a static CSV file stored in the Arduino ESP32 core, typically in:
+
+```text
+tools/partitions/*.csv
+```
+
+The ESP32-S3 flash cache and MMU can execute applications considerably larger than 3 MB.
+
+The important rules are:
+
+- Application partitions must start at a `0x10000`-aligned offset.
+- The first approximately 64 KB is reserved for the bootloader, partition table, and early data.
+- The total size of all partitions must fit within the flash size selected under:
+
+  ```text
+  Tools → Flash Size
+  ```
+
+- OTA requires two application slots, such as `ota_0` and `ota_1`.
+- Because OTA needs two application partitions, OTA layouts generally provide less space for each individual application.
+
+For example:
+
+```text
+No OTA:
+  One large application partition
+
+OTA:
+  ota_0 + ota_1
+  Two smaller application partitions
+```
+
+### Recommended Settings for an N16R8
+
+For an ESP32-S3 N16R8, which generally has 16 MB of flash and 8 MB of PSRAM, use:
+
+```text
+Tools → Flash Size: 16 MB
+Tools → PSRAM:      OPI PSRAM
+Partition Scheme:   16M Flash (3 MB APP / 9.9 MB FATFS)
+```
+
+The predefined 16 MB scheme may still keep the application partition at approximately 3 MB because the remaining flash space is assigned to FATFS storage instead of the application.
+
+For most projects, 3 MB is already sufficient. A complete RainMaker build commonly fits within approximately 1.4–2 MB, depending on the selected features and libraries.
+
+### 2. What Is the `Custom` Partition Scheme?
+
+The `Custom` option allows you to write your own partition CSV instead of using one of Espressif's predefined layouts.
+
+This is the solution if you need an application partition larger than 3 MB.
+
+#### How Custom Partitions Work in Arduino IDE
+
+1. Create a file named:
+
+   ```text
+   partitions.csv
+   ```
+
+2. Place it in the same folder as your `.ino` sketch.
+3. Select:
+
+   ```text
+   Tools → Partition Scheme → Custom
+   ```
+
+4. The Arduino build system will use your custom CSV file instead of a preset partition table.
+
+### 3. Partition CSV Format
+
+The CSV format is based on the ESP-IDF partition-table format:
+
+```csv
+# Name,     Type, SubType, Offset,   Size,     Flags
+nvs,        data, nvs,     0x9000,   0x6000,
+otadata,    data, ota,     0xe000,   0x2000,
+app0,       app,  ota_0,   0x10000,  6M,
+spiffs,     data, spiffs,  0x610000, 0x9F0000,
+```
+
+The exact offsets and sizes must be calculated so that the partitions do not overlap and fit within the selected flash size.
+
+### 4. CSV Column Meanings
+
+| Column | Meaning |
+|---|---|
+| `Name` | Partition label. You can choose a suitable name. |
+| `Type` | `app` for firmware or `data` for configuration and storage. |
+| `SubType` | For applications: `factory`, `ota_0`, or `ota_1`. For data: `nvs`, `phy`, `spiffs`, or `fat`. |
+| `Offset` | Starting address. A blank value allows automatic placement after the preceding partition. |
+| `Size` | Partition size, specified in hexadecimal or using `K` and `M`, such as `0x6000`, `6M`, or `512K`. |
+| `Flags` | Usually left empty. |
+
+### 5. Important Partition Rules
+
+#### Keep NVS
+
+The NVS partition stores important persistent information, including:
+
+- Wi-Fi credentials.
+- RainMaker data.
+- Device configuration.
+- Other non-volatile settings.
+
+Without a valid NVS partition, Wi-Fi and RainMaker provisioning may not work correctly.
+
+#### Keep PHY Initialization Data
+
+The PHY initialization partition stores radio calibration data used by Wi-Fi and Bluetooth.
+
+A typical entry is:
+
+```csv
+phy_init, data, phy, 0xf000, 0x1000,
+```
+
+#### Start the First Application at `0x10000`
+
+Application partitions must use a 64 KB-aligned address.
+
+A typical starting offset is:
+
+```text
+0x10000
+```
+
+#### Keep the First Data Partition Near `0x9000`
+
+A common partition layout begins with:
+
+```text
+nvs,      data, nvs,  0x9000,  0x6000
+phy_init, data, phy,  0xf000, 0x1000
+```
+
+The space before `0x9000` is reserved for the bootloader and partition table.
+
+#### Stay Within the Flash Size
+
+For a 16 MB flash device:
+
+```text
+16 MB = 0x1000000 bytes
+```
+
+The total size of all partitions must not exceed:
+
+```text
+0x1000000
+```
+
+#### OTA Layouts Require Two Application Partitions
+
+If OTA is required, replace a single `factory` partition with two application partitions:
+
+```text
+ota_0
+ota_1
+```
+
+You must also include an `otadata` partition.
+
+Example structure:
+
+```csv
+# Name,     Type, SubType, Offset,   Size,   Flags
+nvs,        data, nvs,     0x9000,   0x6000,
+otadata,    data, ota,     0xe000,   0x2000,
+app0,       app,  ota_0,   0x10000,  3M,
+app1,       app,  ota_1,   0x310000, 3M,
+spiffs,     data, spiffs,  0x610000, 9.9M,
+```
+
+The exact values must be adjusted so that all partitions fit within the physical flash.
+
+### 6. Example Large-Application Layout
+
+If you later need a large application—for example, because you add TensorFlow Lite, audio processing, or a large local web interface—you could create a layout with a larger application partition.
+
+Example concept:
+
+```csv
+# Name,     Type, SubType, Offset,   Size,   Flags
+nvs,        data, nvs,     0x9000,   0x6000,
+phy_init,   data, phy,     0xf000,   0x1000,
+factory,    app,  factory, 0x10000,  6M,
+fatfs,      data, fat,     0x610000, 9.9M,
+```
+
+This layout provides:
+
+```text
+Application: approximately 6 MB
+Data storage: approximately 9.9 MB
+```
+
+The actual layout must be calculated carefully to avoid overlapping partitions and to remain within the 16 MB flash limit.
+
+### 7. Practical Tips
+
+#### Erase Flash After Changing the Partition Scheme
+
+After changing from a preset to another preset or to a custom partition table, perform one upload with:
+
+```text
+Tools → Erase All Flash Before Sketch Upload → Enabled
+```
+
+Old NVS data at incompatible offsets can cause:
+
+- Boot loops.
+- Provisioning failures.
+- Wi-Fi credentials not being saved.
+- RainMaker association problems.
+- Unexpected crashes.
+
+> **Warning:** Erasing all flash removes stored Wi-Fi credentials, RainMaker provisioning data, and file-system contents.
+
+#### Fixing `Sketch too big`
+
+The `Sketch too big` error means the compiled firmware is larger than the application partition in the selected scheme.
+
+To fix it:
+
+1. Create a custom `partitions.csv`.
+2. Assign a larger application partition.
+3. Select:
+
+   ```text
+   Tools → Partition Scheme → Custom
+   ```
+
+4. Erase the flash.
+5. Compile and upload again.
+
+#### RainMaker Presets
+
+The RainMaker 4 MB and RainMaker 8 MB entries are tuned layouts for boards with those flash sizes.
+
+They are not necessarily the best choices for a 16 MB N16R8 board.
+
+For an N16R8, use either:
+
+```text
+16M Flash (3 MB APP / 9.9 MB FATFS)
+```
+
+or a custom CSV layout.
+
+### 8. Bottom Line
+
+The 3 MB application limit in `Huge APP` is a preset-layout choice, not a limitation of the ESP32-S3 chip.
+
+The ESP32-S3 can run applications larger than 3 MB when the flash size and partition table support it.
+
+For an N16R8 board:
+
+```text
+Flash Size:      16 MB
+PSRAM:           OPI PSRAM
+Partition Scheme: 16M Flash or Custom
+```
+
+The `Custom` partition scheme allows you to create an application partition of:
+
+```text
+6 MB
+10 MB
+```
+
+or another size that fits within the 16 MB flash device.
+
+The essential requirement is that all partitions—including NVS, PHY initialization, application storage, OTA data, and file storage—fit within the selected flash size without overlapping.
 
 ## ESP32-S3 References
 
