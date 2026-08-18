@@ -5,6 +5,8 @@
 [![Link](https://img.shields.io/badge/Rainmaker_Gemini-blue?logo=github)](
 https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Rainmaker.md#esp-rainmaker-overview-gemini)
 
+[![Link](https://img.shields.io/badge/Rainmaker_Espressif-red?logo=github)](https://github.com/espressif/esp-rainmaker/blob/master/README.md)
+
 This is a practical, step-by-step guide for building an ESP RainMaker device with an ESP32-S3 and Arduino IDE. The device reports telemetry and controls an LED from the ESP RainMaker application.
 
 > **Important clarification:** The `TOPIC_*` strings below look like Adafruit IO MQTT feed topics. ESP RainMaker does **not** normally allow arbitrary MQTT topics such as `ooikk/feeds/temperature`. RainMaker uses a **node/device/parameter model** and manages MQTT topics internally.
