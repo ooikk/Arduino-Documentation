@@ -1408,21 +1408,7 @@ TemperatureSensor my_temp("Room Temperature");
 Alternatively, devices can be created generically using a device type string:
 
 ```cpp
-Device my_switch(
-  "LED Control",
-  "esp.device.switch"
-);
-```
-
-The C API can also be used:
-
-```cpp
-esp_rmaker_device_t* device =
-  esp_rmaker_device_create(
-    "LED Control",
-    "esp.device.switch",
-    nullptr
-  );
+my_switch = new Device("LED Control", "esp.device.switch");
 ```
 
 ## Important Notes
