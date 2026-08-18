@@ -943,7 +943,7 @@ Provisioning service: PROV_OOIKK, PoP: abcd1234
 2. Open the ESP RainMaker application.
 3. Tap **Add Device**.
 4. Scan the QR Code from the browser.
-5. Allow the application to scan for BLE devices. Skip 6 and 7 is use QR Code
+5. Allow the application to scan for BLE devices. Skip 6 and 7 if use QR Code
 6. Select:
 
    ```text
