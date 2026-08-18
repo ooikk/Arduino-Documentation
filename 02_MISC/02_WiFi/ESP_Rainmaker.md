@@ -1451,19 +1451,9 @@ The actual behavior is determined by its parameters.
 For example, you could add a temperature parameter to a switch device:
 
 ```cpp
-Device custom_device(
-  "Combined Device",
-  "esp.device.switch"
-);
-
-Param temperature_param(
-  "Temperature",
-  "esp.param.temperature",
-  value_f(25.0f),
-  PROP_FLAG_READ
-);
-
-custom_device.addParam(temperature_param);
+custom_device = new Device("Combined Device", "esp.device.switch");
+Param temp_param(PARAM_TEMP, "esp.param.temperature", value(0.0f), PROP_FLAG_READ);
+custom_device->addParam(temp_param);
 ```
 
 Although this is technically possible, using semantically appropriate device types usually produces a clearer application interface.
@@ -1503,16 +1493,7 @@ TemperatureSensor
 or create devices generically with:
 
 ```cpp
-Device(
-  name,
-  "esp.device.xxx"
-);
-```
-
-The lower-level C API uses:
-
-```cpp
-esp_rmaker_device_create();
+mydevice = new Device(name, "esp.device.xxx");
 ```
 
 The wrapper classes are generally easier to read, while the generic `Device` class and C API provide more flexibility for custom device structures.
