@@ -1846,7 +1846,7 @@ This guide explains how to configure and customize the dashboard using the C++ c
    OOIKK ESP32-S3
    ```
 
-   <img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/026d2aff-2cfd-4ffe-8edb-cd2a63ad42ea" />
+   <img width="100%" height="auto" alt="image" src="https://github.com/user-attachments/assets/026d2aff-2cfd-4ffe-8edb-cd2a63ad42ea" />
 
 
 4. The status indicator should show **Online** if the ESP32-S3 is powered on and connected to Wi-Fi.
@@ -1855,6 +1855,9 @@ This guide explains how to configure and customize the dashboard using the C++ c
 ## Step 3: Explore the Auto-Generated User Interface
 
 Because the C++ code uses standard Espressif device types, the Web Dashboard automatically generates native UI widgets for those devices.
+
+<img width="1878" height="818" alt="image" src="https://github.com/user-attachments/assets/d0b125f0-76a5-4429-b04f-fc2d1f0d69af" />
+
 
 ### 3.1 LED Device
 
