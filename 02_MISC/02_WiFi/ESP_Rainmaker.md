@@ -48,10 +48,8 @@ mqtt.publish(TOPIC_TEMP, "25.4");
 In RainMaker, you instead report a parameter:
 
 ```cpp
-esp_rmaker_param_update_and_report(
-  temp_param,
-  esp_rmaker_float(25.4)
-);
+float temp_c = temperatureRead();
+temp_device->updateAndReportParam(PARAM_TEMP, temp_c);
 ```
 
 Instead of subscribing to `TOPIC_LED_SET`, RainMaker invokes your LED write callback when the application changes the LED parameter.
@@ -87,31 +85,11 @@ Instead of subscribing to `TOPIC_LED_SET`, RainMaker invokes your LED write call
 
 6. Install **esp32 by Espressif Systems**.
 
-Use a recent version because ESP RainMaker support is updated frequently.
+**Use a version 2.0.17 because ESP RainMaker compatibilty issue with BLE Provision and ESP32 S3 Reboot bugs.**    
+<img width="351" height="287" alt="image" src="https://github.com/user-attachments/assets/86d77a0e-fd9f-4e05-ad97-5683d34e21dc" />
 
-### 2.2 Install the ESP RainMaker Library
 
-1. Go to:
-
-   ```text
-   Sketch → Include Library → Manage Libraries
-   ```
-
-2. Search for:
-
-   ```text
-   ESP RainMaker
-   ```
-
-3. Install:
-
-   ```text
-   ESP RainMaker by Espressif Systems
-   ```
-
-This library provides the Arduino-facing ESP RainMaker APIs.
-
-### 2.3 Select the ESP32-S3 Board
+### 2.2 Select the ESP32-S3 Board
 
 Go to:
 
@@ -133,10 +111,11 @@ USB CDC On Boot:    Enabled
 CPU Frequency:      240 MHz
 Flash Mode:         QIO 80 MHz
 Flash Size:         4 MB or 8 MB, depending on the board
-Partition Scheme:   Huge APP (3 MB No OTA) or a larger scheme
+Partition Scheme:   RainMaker or Huge APP (3 MB No OTA) or a larger scheme
 Upload Speed:       921600
 Port:               Your ESP32-S3 COM port
 ```
+<img width="456" height="579" alt="image" src="https://github.com/user-attachments/assets/b47a2527-cc71-4d66-948e-a04d98452042" />
 
 Important notes:
 
@@ -144,6 +123,7 @@ Important notes:
 - If you encounter flash or partition errors, choose a larger partition scheme.
 - If Arduino OTA is not required, `Huge APP` is usually the easiest option.
 - If the board has 8 MB of flash, select an 8 MB partition scheme when available.
+- `Erase All Flash Before Sketch Upload: "Enable"` for fresh upload. This is to delete old reserve flash setting for provisioning
 
 ## 3. Hardware Used
 
@@ -154,13 +134,13 @@ This example assumes the following hardware.
 Use an external LED on GPIO 2:
 
 ```text
-GPIO2 ---- resistor ---- LED ---- GND
+GPIO1 ---- resistor ---- LED ---- GND
 ```
 
 You can change the LED pin with:
 
 ```cpp
-const int LED_PIN = 2;
+const int LED_PIN = 1;
 ```
 
 Notes:
@@ -174,10 +154,10 @@ Notes:
 This example uses the BOOT button on GPIO 0:
 
 ```cpp
-const int BUTTON_PIN = 0;
+const int BUTTON_PIN = 2;
 ```
 
-GPIO 0 can be used as a runtime button input with the internal pull-up resistor:
+GPIO 2 can be used as a runtime button input with the internal pull-up resistor:
 
 ```cpp
 pinMode(BUTTON_PIN, INPUT_PULLUP);
@@ -200,7 +180,8 @@ Pressed     = LOW
    Add Device
    ```
 
-The application provisions the ESP32-S3 over BLE or SoftAP and sends it the Wi-Fi credentials.
+The application provisions the ESP32-S3 over BLE or SoftAP and sends it the Wi-Fi credentials.    
+**Do not use SoftAP as it has some issue with WiFi provisioning.**
 
 This example uses BLE provisioning by default.
 
@@ -215,30 +196,33 @@ RainMakerTelemetry.ino
 Paste the following code:
 
 ```cpp
-#include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiProv.h>
 #include <RMaker.h>
+#include <WiFiProv.h>
+
+//#define PROVISION_WIFI
 
 // ------------------------------------------------------------------
 // Original topic names kept for reference.
 //
 // ESP RainMaker does not publish directly to these topics.
 // ------------------------------------------------------------------
-const char* TOPIC_STATUS    = "ooikk/feeds/status";
-const char* TOPIC_TEMP      = "ooikk/feeds/temperature";
-const char* TOPIC_RSSI      = "ooikk/feeds/rssi";
-const char* TOPIC_UPTIME    = "ooikk/feeds/uptime";
-const char* TOPIC_LED_SET   = "ooikk/feeds/led-control";
+/*
+const char* TOPIC_STATUS = "ooikk/feeds/status";
+const char* TOPIC_TEMP = "ooikk/feeds/temperature";
+const char* TOPIC_RSSI = "ooikk/feeds/rssi";
+const char* TOPIC_UPTIME = "ooikk/feeds/uptime";
+const char* TOPIC_LED_SET = "ooikk/feeds/led-control";
 const char* TOPIC_LED_STATE = "ooikk/feeds/led-state";
-const char* TOPIC_BUTTON    = "ooikk/feeds/button";
+const char* TOPIC_BUTTON = "ooikk/feeds/button";
+*/
 
 // ------------------------------------------------------------------
 // RainMaker parameter names
 // ------------------------------------------------------------------
 const char* PARAM_STATUS = "status";
-const char* PARAM_TEMP   = "temperature";
-const char* PARAM_RSSI   = "rssi";
+const char* PARAM_TEMP = "temperature";
+const char* PARAM_RSSI = "rssi";
 const char* PARAM_UPTIME = "uptime";
 
 // RainMaker standard switch devices normally use "power".
@@ -259,8 +243,8 @@ const char* PROV_POP = "abcd1234";
 // ------------------------------------------------------------------
 // Hardware pins
 // ------------------------------------------------------------------
-const int LED_PIN = 2;
-const int BUTTON_PIN = 0;
+const int LED_PIN = 1;
+const int BUTTON_PIN = 2;
 
 // ------------------------------------------------------------------
 // Timing
@@ -269,69 +253,41 @@ const uint32_t TELEMETRY_INTERVAL_MS = 10000;
 const uint32_t BUTTON_DEBOUNCE_MS = 50;
 
 // ------------------------------------------------------------------
-// RainMaker parameter handles
-// ------------------------------------------------------------------
-static esp_rmaker_param_t* status_param = nullptr;
-static esp_rmaker_param_t* temp_param = nullptr;
-static esp_rmaker_param_t* rssi_param = nullptr;
-static esp_rmaker_param_t* uptime_param = nullptr;
-static esp_rmaker_param_t* button_param = nullptr;
-static esp_rmaker_param_t* led_power_param = nullptr;
-static esp_rmaker_param_t* led_state_param = nullptr;
-
-// ------------------------------------------------------------------
 // Runtime state
 // ------------------------------------------------------------------
 static bool led_state = false;
 static volatile bool wifi_connected = false;
 
+
 // ------------------------------------------------------------------
-// RainMaker write callback for LED control
-//
-// This is the RainMaker equivalent of subscribing to TOPIC_LED_SET.
+// RainMaker parameter handles
 // ------------------------------------------------------------------
-static esp_err_t led_write_cb(
-  device_handle_t device,
-  param_handle_t param,
-  const param_val_t* val,
-  void* priv_data,
-  write_ctx_t* ctx
-) {
-  if (!param || !val) {
-    return ESP_ERR_INVALID_ARG;
+
+// Dynamic device pointers (Allocated after RMaker.initNode)
+static Device* led_device = NULL;
+static Device* temp_device = NULL;
+static Device* telemetry_device = NULL;
+static Device* button_device = NULL;
+
+// ==================================================================
+// LED control
+// ==================================================================
+static void applyLedState(bool state) {
+  led_state = state;
+  digitalWrite(LED_PIN, led_state);
+  led_device->updateAndReportParam(PARAM_LED_STATE, led_state);
+  led_device->updateAndReportParam(PARAM_LED_CONTROL, led_state);
+  Serial.printf("LED set to %s\n", led_state ? "ON" : "OFF");
+}
+
+static void led_write_cb(Device* device, Param* param,
+                         const param_val_t val,
+                         void* priv_data, write_ctx_t* ctx) {
+  if (!param) return;
+  //const char *device_name = device->getDeviceName();
+  if (strcmp(param->getParamName(), PARAM_LED_CONTROL) == 0) {
+    applyLedState(val.val.b);  // if your header uses a plain union: val.b
   }
-
-  const char* name = esp_rmaker_param_get_name(param);
-
-  if (strcmp(name, PARAM_LED_CONTROL) == 0) {
-    led_state = val->val.b;
-
-    digitalWrite(
-      LED_PIN,
-      led_state ? HIGH : LOW
-    );
-
-    // Report the extra led-state parameter
-    if (led_state_param) {
-      esp_rmaker_param_update_and_report(
-        led_state_param,
-        esp_rmaker_bool(led_state)
-      );
-    }
-
-    // Acknowledge and update the standard power parameter
-    esp_rmaker_param_update_and_report(
-      param,
-      esp_rmaker_bool(led_state)
-    );
-
-    Serial.printf(
-      "LED set to %s\n",
-      led_state ? "ON" : "OFF"
-    );
-  }
-
-  return ESP_OK;
 }
 
 // ------------------------------------------------------------------
@@ -340,51 +296,28 @@ static esp_err_t led_write_cb(
 // This is the RainMaker equivalent of publishing to the feed topics.
 // ------------------------------------------------------------------
 void reportTelemetry() {
-  if (
-    !status_param ||
-    !temp_param ||
-    !rssi_param ||
-    !uptime_param
-  ) {
-    return;
+  if (WiFi.status() != WL_CONNECTED || !telemetry_device) return;
+
+  float temp_c = random(200, 500) / 10.0f;  //temperatureRead();
+  long rssi = WiFi.RSSI();
+  int uptime_seconds = (int)(millis() / 1000);
+
+  telemetry_device->updateAndReportParam(PARAM_STATUS, "online");
+
+  if (temp_device) {
+    temp_device->updateAndReportParam(PARAM_TEMP, temp_c);
   }
 
-  if (WiFi.status() != WL_CONNECTED) {
-    // If Wi-Fi is down, the device usually cannot publish "offline".
-    // RainMaker detects the node as offline through the MQTT disconnect.
-    return;
-  }
+  char rssi_str[16];
+  snprintf(rssi_str, sizeof(rssi_str), "%ld dBm", rssi);
+  telemetry_device->updateAndReportParam(PARAM_RSSI, rssi_str);
 
-  float temp_c = temperatureRead();
-  int rssi = WiFi.RSSI();
-  int uptime_seconds = static_cast<int>(millis() / 1000);
+  char uptime_str[16];
+  snprintf(uptime_str, sizeof(uptime_str), "%d s", uptime_seconds);
+  telemetry_device->updateAndReportParam(PARAM_UPTIME, uptime_str);
 
-  esp_rmaker_param_update_and_report(
-    status_param,
-    esp_rmaker_str("online")
-  );
-
-  esp_rmaker_param_update_and_report(
-    temp_param,
-    esp_rmaker_float(temp_c)
-  );
-
-  esp_rmaker_param_update_and_report(
-    rssi_param,
-    esp_rmaker_int(rssi)
-  );
-
-  esp_rmaker_param_update_and_report(
-    uptime_param,
-    esp_rmaker_int(uptime_seconds)
-  );
-
-  Serial.printf(
-    "Telemetry: temp=%.2f C, RSSI=%d dBm, uptime=%d s\n",
-    temp_c,
-    rssi,
-    uptime_seconds
-  );
+  Serial.printf("Telemetry: temp=%.2f C, RSSI=%d dBm, uptime=%d s\n",
+                temp_c, rssi, uptime_seconds);
 }
 
 // ------------------------------------------------------------------
@@ -396,64 +329,95 @@ void handleButton() {
   static bool pressed = false;
   static uint32_t last_check = 0;
 
-  if (millis() - last_check < BUTTON_DEBOUNCE_MS) {
-    return;
-  }
-
+  if (millis() - last_check < BUTTON_DEBOUNCE_MS) return;
   last_check = millis();
 
-  bool active = digitalRead(BUTTON_PIN) == LOW;
+  bool active = (digitalRead(BUTTON_PIN) == LOW);
 
   if (active && !pressed) {
     pressed = true;
-
-    if (button_param) {
-      esp_rmaker_param_update_and_report(
-        button_param,
-        esp_rmaker_str("pressed")
-      );
+    if (button_device) {
+      button_device->updateAndReportParam(PARAM_BUTTON, "pressed");
     }
-
     Serial.println("Button pressed");
-
-    // Optional:
-    // Uncomment this block if the physical button should toggle the LED.
-    /*
-    led_state = !led_state;
-
-    digitalWrite(
-      LED_PIN,
-      led_state ? HIGH : LOW
-    );
-
-    if (led_power_param) {
-      esp_rmaker_param_update_and_report(
-        led_power_param,
-        esp_rmaker_bool(led_state)
-      );
-    }
-
-    if (led_state_param) {
-      esp_rmaker_param_update_and_report(
-        led_state_param,
-        esp_rmaker_bool(led_state)
-      );
-    }
-    */
-  }
-  else if (!active && pressed) {
+  } else if (!active && pressed) {
     pressed = false;
-
-    if (button_param) {
-      esp_rmaker_param_update_and_report(
-        button_param,
-        esp_rmaker_str("released")
-      );
+    if (button_device) {
+      button_device->updateAndReportParam(PARAM_BUTTON, "released");
     }
-
     Serial.println("Button released");
   }
 }
+
+
+void sysProvEvent(arduino_event_t* sys_event) {
+  Serial.printf("EVENT: %d\n", sys_event->event_id);
+
+  switch (sys_event->event_id) {
+    case ARDUINO_EVENT_PROV_INIT:
+      //wifi_prov_mgr_disable_auto_stop(10000);
+      Serial.println("PROV_INIT");
+      break;
+
+    case ARDUINO_EVENT_PROV_START:
+#ifdef PROVISION_WIFI
+      Serial.println("WiFi Provisioning Started: PROV_START");
+      WiFiProv.printQR(PROV_SERVICE_NAME, PROV_POP, "softap");
+      // Manual fallback (if needed)
+      Serial.println("Manual print QR Code link");
+      char payload[150];
+      snprintf(payload, sizeof(payload),
+               "{\"ver\":\"v1\",\"name\":\"%s\",\"pop\":\"%s\",\"transport\":\"%s\"}",
+               PROV_SERVICE_NAME, PROV_POP, "softap");
+      Serial.printf("QR URL: https://rainmaker.espressif.com/qrcode.html?data=%s\n", payload);
+
+#else
+      Serial.println("BLE Provisioning Started: PROV_START");
+      WiFiProv.printQR(PROV_SERVICE_NAME, PROV_POP, "ble");
+      // Manual fallback (if needed)
+      Serial.println("Manual print QR Code link");
+      char payload[150];
+      snprintf(payload, sizeof(payload),
+               "{\"ver\":\"v1\",\"name\":\"%s\",\"pop\":\"%s\",\"transport\":\"%s\"}",
+               PROV_SERVICE_NAME, PROV_POP, "ble");
+      Serial.printf("QR URL: https://rainmaker.espressif.com/qrcode.html?data=%s\n", payload);
+
+#endif
+      break;
+    case ARDUINO_EVENT_PROV_CRED_RECV:
+      Serial.println("PROV_CRED_RECV");
+      break;
+
+    case ARDUINO_EVENT_PROV_CRED_SUCCESS:
+      //wifi_prov_mgr_stop_provisioning();
+      Serial.println("WiFi credentials received: PROV_CRED_SUCCESS");
+      break;
+    case ARDUINO_EVENT_PROV_END:
+      Serial.println("PROV_END");
+      break;
+
+    case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+      Serial.println("WIFI_CONNECTED");
+      break;
+
+    case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+      Serial.println("WIFI_DISCONNECTED");
+      break;
+    case ARDUINO_EVENT_PROV_CRED_FAIL:
+      Serial.println("[PROV] Wi-Fi provisioning failed (Check SSID/Password)");
+      break;
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+      Serial.printf("GOT_IP: %s\n",
+                    WiFi.localIP().toString().c_str());
+      break;
+
+    default:
+      Serial.printf("Unknown event: %d\n", sys_event->event_id);
+      break;
+  }
+}
+
+
 
 // ------------------------------------------------------------------
 // Setup
@@ -462,284 +426,128 @@ void setup() {
   Serial.begin(115200);
   delay(2000);
 
-  Serial.println();
+  Serial.println("\n----------------------------------------");
+  Serial.println("ESP32-S3 ESP RainMaker Telemetry");
   Serial.println("----------------------------------------");
-  Serial.println("ESP32-S3 ESP RainMaker telemetry example");
-  Serial.println("----------------------------------------");
-
-  // Keep compiler quiet when the topic constants are only documentation
-  (void)TOPIC_STATUS;
-  (void)TOPIC_TEMP;
-  (void)TOPIC_RSSI;
-  (void)TOPIC_UPTIME;
-  (void)TOPIC_LED_SET;
-  (void)TOPIC_LED_STATE;
-  (void)TOPIC_BUTTON;
 
   pinMode(LED_PIN, OUTPUT);
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  digitalWrite(LED_PIN, led_state);
 
-  digitalWrite(
-    LED_PIN,
-    led_state ? HIGH : LOW
-  );
 
   // ----------------------------------------------------------------
   // 1. Create the RainMaker node
   // ----------------------------------------------------------------
-  esp_rmaker_node_t* node = esp_rmaker_node_create(
-    "OOIKK ESP32-S3",
-    "esp.node",
-    "1.0"
-  );
+  // 1. Initialize Node
+  Node my_node = RMaker.initNode("OOIKK ESP32-S3");
 
-  if (!node) {
-    Serial.println("Failed to create RainMaker node");
+  // 2. LED Device Setup
+  led_device = new Device("LED", "esp.device.switch");
+  if (led_device) {
+    led_device->addNameParam();
+    Param led_power_param(PARAM_LED_CONTROL, "esp.param.power", value(false), PROP_FLAG_READ | PROP_FLAG_WRITE | PROP_FLAG_PERSIST);
+    Param led_state_param(PARAM_LED_STATE, "custom.param.led_state", value(false), PROP_FLAG_READ);
 
-    while (true) {
-      delay(1000);
-    }
+    led_device->addParam(led_power_param);
+    led_device->addParam(led_state_param);
+    led_device->addCb(led_write_cb);
+    my_node.addDevice(*led_device);
   }
 
-  // ----------------------------------------------------------------
-  // 2. Create the LED device
-  //
-  // This replaces:
-  // TOPIC_LED_SET   -> LED/power writable parameter
-  // TOPIC_LED_STATE -> LED/led-state readable parameter
-  // ----------------------------------------------------------------
-  esp_rmaker_device_t* led_dev =
-    esp_rmaker_device_create(
-      "LED",
-      "esp.device.switch",
-      nullptr
-    );
+  // 3. Temperature Device Setup
+  temp_device = new Device("Temperature", "esp.device.temperature-sensor");
+  if (temp_device) {
+    temp_device->addNameParam();
+    Param temp_param(PARAM_TEMP, "esp.param.temperature", value(0.0f), PROP_FLAG_READ);
+    temp_device->addParam(temp_param);
+    my_node.addDevice(*temp_device);
+  }
 
-  led_power_param =
-    esp_rmaker_param_create(
-      PARAM_LED_CONTROL,
-      "esp.param.power",
-      esp_rmaker_bool(false),
-      PROP_FLAG_READ |
-      PROP_FLAG_WRITE |
-      PROP_FLAG_PERSIST
-    );
+  // 4. Custom Telemetry Device Setup
+  telemetry_device = new Device("Telemetry", "custom.device.telemetry");
+  if (telemetry_device) {
+    telemetry_device->addNameParam();
 
-  led_state_param =
-    esp_rmaker_param_create(
-      PARAM_LED_STATE,
-      "custom.param.led_state",
-      esp_rmaker_bool(false),
-      PROP_FLAG_READ
-    );
+    Param status_param(PARAM_STATUS, "esp.param.text", value("boot"), PROP_FLAG_READ);
+    status_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-  esp_rmaker_device_add_param(
-    led_dev,
-    led_power_param
-  );
+    Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ);
+    rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-  esp_rmaker_device_add_param(
-    led_dev,
-    led_state_param
-  );
+    Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
+    uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-  esp_rmaker_device_assign_write_cb(
-    led_dev,
-    led_write_cb
-  );
+    telemetry_device->addParam(status_param);
+    telemetry_device->addParam(rssi_param);
+    telemetry_device->addParam(uptime_param);
 
-  esp_rmaker_node_add_device(
-    node,
-    led_dev
-  );
+    my_node.addDevice(*telemetry_device);
+  }
 
-  // ----------------------------------------------------------------
-  // 3. Create the temperature device
-  //
-  // This replaces TOPIC_TEMP.
-  // ----------------------------------------------------------------
-  esp_rmaker_device_t* temp_dev =
-    esp_rmaker_device_create(
-      "Temperature",
-      "esp.device.temperature-sensor",
-      nullptr
-    );
+  // 5. Custom Button Device Setup (Appears as a separate card in app)
+  button_device = new Device("Button", "custom.device.button");
+  if (button_device) {
+    button_device->addNameParam();
 
-  temp_param =
-    esp_rmaker_param_create(
-      PARAM_TEMP,
-      "esp.param.temperature",
-      esp_rmaker_float(0.0f),
-      PROP_FLAG_READ
-    );
+    Param button_param(PARAM_BUTTON, "esp.param.text", value("idle"), PROP_FLAG_READ);
+    button_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-  esp_rmaker_device_add_param(
-    temp_dev,
-    temp_param
-  );
+    button_device->addParam(button_param);
+    my_node.addDevice(*button_device);
+  }
 
-  esp_rmaker_node_add_device(
-    node,
-    temp_dev
-  );
+  Serial.println("Telemetry device added");
 
-  // ----------------------------------------------------------------
-  // 4. Create the telemetry device
-  //
-  // This replaces:
-  // TOPIC_STATUS
-  // TOPIC_RSSI
-  // TOPIC_UPTIME
-  // TOPIC_BUTTON
-  // ----------------------------------------------------------------
-  esp_rmaker_device_t* telemetry_dev =
-    esp_rmaker_device_create(
-      "Telemetry",
-      "custom.device.telemetry",
-      nullptr
-    );
 
-  status_param =
-    esp_rmaker_param_create(
-      PARAM_STATUS,
-      "custom.param.status",
-      esp_rmaker_str("boot"),
-      PROP_FLAG_READ
-    );
+  // Enable Services
 
-  rssi_param =
-    esp_rmaker_param_create(
-      PARAM_RSSI,
-      "custom.param.rssi",
-      esp_rmaker_int(0),
-      PROP_FLAG_READ
-    );
+  //RMaker.enableOTA(OTA_USING_TOPICS);
+  RMaker.enableTZService();
+  RMaker.enableSchedule();
+  RMaker.enableScenes();
 
-  uptime_param =
-    esp_rmaker_param_create(
-      PARAM_UPTIME,
-      "custom.param.uptime",
-      esp_rmaker_int(0),
-      PROP_FLAG_READ
-    );
 
-  button_param =
-    esp_rmaker_param_create(
-      PARAM_BUTTON,
-      "custom.param.button_event",
-      esp_rmaker_str("idle"),
-      PROP_FLAG_READ
-    );
+  // Start RainMaker now that WiFi is ready
+  if (RMaker.start() == ESP_OK) {
+    Serial.println("RMaker started successfully");
+  } else {
+    Serial.println("Failed to start RMaker");
+  }
 
-  esp_rmaker_device_add_param(
-    telemetry_dev,
-    status_param
-  );
-
-  esp_rmaker_device_add_param(
-    telemetry_dev,
-    rssi_param
-  );
-
-  esp_rmaker_device_add_param(
-    telemetry_dev,
-    uptime_param
-  );
-
-  esp_rmaker_device_add_param(
-    telemetry_dev,
-    button_param
-  );
-
-  esp_rmaker_node_add_device(
-    node,
-    telemetry_dev
-  );
-
-  // ----------------------------------------------------------------
-  // 5. Start RainMaker
-  // ----------------------------------------------------------------
-  esp_err_t err = esp_rmaker_start();
-
-  Serial.printf(
-    "esp_rmaker_start() returned %d\n",
-    err
-  );
-
-  // ----------------------------------------------------------------
-  // 6. Wi-Fi event handling
-  // ----------------------------------------------------------------
-  WiFi.onEvent(
-    [](WiFiEvent_t event, WiFiEventInfo_t info) {
-      switch (event) {
-        case ARDUINO_EVENT_WIFI_STA_CONNECTED:
-          Serial.println("Wi-Fi STA connected");
-          break;
-
-        case ARDUINO_EVENT_WIFI_STA_GOT_IP:
-          Serial.print("IP address: ");
-          Serial.println(WiFi.localIP());
-          wifi_connected = true;
-          break;
-
-        case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-          Serial.println("Wi-Fi STA disconnected");
-          wifi_connected = false;
-          break;
-
-        default:
-          break;
-      }
-    }
-  );
-
-  // ----------------------------------------------------------------
-  // 7. Start provisioning
-  //
-  // The default method here is BLE provisioning.
-  // ----------------------------------------------------------------
-  Serial.println("Starting BLE provisioning");
-  Serial.printf(
-    "Service name: %s\n",
-    PROV_SERVICE_NAME
-  );
-
-  Serial.printf(
-    "PoP:          %s\n",
-    PROV_POP
-  );
+  WiFi.onEvent(sysProvEvent);
 
   WiFiProv.beginProvision(
-    WIFI_PROV_SCHEME_BLE,
-    WIFI_PROV_SCHEME_HANDLER_NONE,
+#ifdef PROVISION_WIFI
+    WIFI_PROV_SCHEME_SOFTAP,        // for WiFi
+    WIFI_PROV_SCHEME_HANDLER_NONE,  // for WiFi
+#else
+    WIFI_PROV_SCHEME_BLE,                // for BLE
+    WIFI_PROV_SCHEME_HANDLER_FREE_BTDM,  // for BLE
+#endif
     WIFI_PROV_SECURITY_1,
     PROV_POP,
-    PROV_SERVICE_NAME,
-    nullptr
-  );
+    PROV_SERVICE_NAME);
 
-  // Initialize the Wi-Fi stack
-  wifiLowLevelInit(false);
+
+  Serial.printf("Provisioning service: %s, PoP: %s\n", PROV_SERVICE_NAME, PROV_POP);
 }
+
+
 
 // ------------------------------------------------------------------
 // Main loop
 // ------------------------------------------------------------------
 void loop() {
-  static uint32_t last_telemetry = 0;
 
-  if (
-    millis() - last_telemetry >=
-    TELEMETRY_INTERVAL_MS
-  ) {
+  static uint32_t last_telemetry = 0;
+  if (millis() - last_telemetry >= TELEMETRY_INTERVAL_MS) {
     last_telemetry = millis();
     reportTelemetry();
   }
-
   handleButton();
-
   delay(10);
 }
+
 ```
 
 ## 6. Code Explanation
@@ -821,12 +629,7 @@ For production devices:
 ### 6.5 RainMaker Node
 
 ```cpp
-esp_rmaker_node_t* node =
-  esp_rmaker_node_create(
-    "OOIKK ESP32-S3",
-    "esp.node",
-    "1.0"
-  );
+Node my_node = RMaker.initNode("OOIKK ESP32-S3");
 ```
 
 A node represents the physical ESP32-S3 device.
@@ -843,12 +646,17 @@ Node
 ### 6.6 LED Device
 
 ```cpp
-esp_rmaker_device_t* led_dev =
-  esp_rmaker_device_create(
-    "LED",
-    "esp.device.switch",
-    nullptr
-  );
+led_device = new Device("LED", "esp.device.switch");
+if (led_device) {
+  led_device->addNameParam();
+  Param led_power_param(PARAM_LED_CONTROL, "esp.param.power", value(false), PROP_FLAG_READ | PROP_FLAG_WRITE | PROP_FLAG_PERSIST);
+  Param led_state_param(PARAM_LED_STATE, "custom.param.led_state", value(false), PROP_FLAG_READ);
+
+  led_device->addParam(led_power_param);
+  led_device->addParam(led_state_param);
+  led_device->addCb(led_write_cb);
+  my_node.addDevice(*led_device);
+}
 ```
 
 This creates a standard switch device.
@@ -870,10 +678,7 @@ This parameter reports the current LED state.
 The following line assigns the write callback:
 
 ```cpp
-esp_rmaker_device_assign_write_cb(
-  led_dev,
-  led_write_cb
-);
+led_device->addCb(led_write_cb);
 ```
 
 When the application changes the LED parameter, RainMaker calls `led_write_cb()`.
@@ -889,21 +694,16 @@ TOPIC_LED_SET
 When the application sends a new LED state:
 
 ```cpp
-led_state = val->val.b;
+led_state = val.val.b;
 
-digitalWrite(
-  LED_PIN,
-  led_state ? HIGH : LOW
-);
+digitalWrite(LED_PIN,led_state);
 ```
 
 The device then reports the state back:
 
 ```cpp
-esp_rmaker_param_update_and_report(
-  led_state_param,
-  esp_rmaker_bool(led_state)
-);
+led_device->updateAndReportParam(PARAM_LED_STATE, led_state);
+led_device->updateAndReportParam(PARAM_LED_CONTROL, led_state);
 ```
 
 This is conceptually equivalent to publishing to:
@@ -915,12 +715,13 @@ TOPIC_LED_STATE
 ### 6.8 Temperature Device
 
 ```cpp
-esp_rmaker_device_t* temp_dev =
-  esp_rmaker_device_create(
-    "Temperature",
-    "esp.device.temperature-sensor",
-    nullptr
-  );
+  temp_device = new Device("Temperature", "esp.device.temperature-sensor");
+  if (temp_device) {
+    temp_device->addNameParam();
+    Param temp_param(PARAM_TEMP, "esp.param.temperature", value(0.0f), PROP_FLAG_READ);
+    temp_device->addParam(temp_param);
+    my_node.addDevice(*temp_device);
+  }
 ```
 
 This uses a standard RainMaker temperature-sensor device type.
@@ -928,13 +729,7 @@ This uses a standard RainMaker temperature-sensor device type.
 The temperature parameter is created with:
 
 ```cpp
-temp_param =
-  esp_rmaker_param_create(
-    PARAM_TEMP,
-    "esp.param.temperature",
-    esp_rmaker_float(0.0f),
-    PROP_FLAG_READ
-  );
+Param temp_param(PARAM_TEMP, "esp.param.temperature", value(0.0f), PROP_FLAG_READ);
 ```
 
 This replaces:
@@ -956,12 +751,25 @@ This reads the ESP32-S3 internal temperature sensor.
 ### 6.9 Telemetry Device
 
 ```cpp
-esp_rmaker_device_t* telemetry_dev =
-  esp_rmaker_device_create(
-    "Telemetry",
-    "custom.device.telemetry",
-    nullptr
-  );
+  telemetry_device = new Device("Telemetry", "custom.device.telemetry");
+  if (telemetry_device) {
+    telemetry_device->addNameParam();
+
+    Param status_param(PARAM_STATUS, "esp.param.text", value("boot"), PROP_FLAG_READ);
+    status_param.addUIType(ESP_RMAKER_UI_TEXT);
+
+    Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ);
+    rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
+
+    Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
+    uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
+
+    telemetry_device->addParam(status_param);
+    telemetry_device->addParam(rssi_param);
+    telemetry_device->addParam(uptime_param);
+
+    my_node.addDevice(*telemetry_device);
+  }
 ```
 
 This custom device contains:
@@ -970,7 +778,6 @@ This custom device contains:
 status
 rssi
 uptime
-button
 ```
 
 These parameters replace:
@@ -979,7 +786,6 @@ These parameters replace:
 TOPIC_STATUS
 TOPIC_RSSI
 TOPIC_UPTIME
-TOPIC_BUTTON
 ```
 
 ### 6.10 Reporting Telemetry
@@ -987,29 +793,15 @@ TOPIC_BUTTON
 The main RainMaker reporting function is:
 
 ```cpp
-esp_rmaker_param_update_and_report(
-  parameter,
-  value
-);
+telemetry_device->updateAndReportParam(parameter, value);
 ```
 
 Examples:
 
 ```cpp
-esp_rmaker_param_update_and_report(
-  temp_param,
-  esp_rmaker_float(temp_c)
-);
-
-esp_rmaker_param_update_and_report(
-  rssi_param,
-  esp_rmaker_int(rssi)
-);
-
-esp_rmaker_param_update_and_report(
-  uptime_param,
-  esp_rmaker_int(uptime_seconds)
-);
+temp_device->updateAndReportParam(PARAM_TEMP, temp_c);
+telemetry_device->updateAndReportParam(PARAM_RSSI, rssi_str);
+telemetry_device->updateAndReportParam(PARAM_UPTIME, uptime_str);
 ```
 
 This replaces MQTT publishing such as:
@@ -1020,34 +812,66 @@ mqtt.publish(TOPIC_RSSI, payload);
 mqtt.publish(TOPIC_UPTIME, payload);
 ```
 
-### 6.11 Starting RainMaker
+### 6.11 Button
 
 ```cpp
-esp_rmaker_start();
+  button_device = new Device("Button", "custom.device.button");
+  if (button_device) {
+    button_device->addNameParam();
+
+    Param button_param(PARAM_BUTTON, "esp.param.text", value("idle"), PROP_FLAG_READ);
+    button_param.addUIType(ESP_RMAKER_UI_TEXT);
+
+    button_device->addParam(button_param);
+    my_node.addDevice(*button_device);
+  }
+```
+This custom device contains:
+```text
+button
+```
+
+These parameters replace:
+```text
+TOPIC_BUTTON
+```
+### 6.12 Reporting Button
+```cpp
+button_device->updateAndReportParam(PARAM_BUTTON, "pressed");
+OR
+button_device->updateAndReportParam(PARAM_BUTTON, "released");
+```
+
+### 6.13 Enable Other Services and Starting RainMaker
+
+```cpp
+ //RMaker.enableOTA(OTA_USING_TOPICS);
+  RMaker.enableTZService();
+  RMaker.enableSchedule();
+  RMaker.enableScenes();
+  // Start RainMaker now that WiFi is ready
+  if (RMaker.start() == ESP_OK) {
+    Serial.println("RMaker started successfully");
+  } else {
+    Serial.println("Failed to start RMaker");
+  }
 ```
 
 This starts the RainMaker core, MQTT handling, cloud-association logic, and related background services.
 
-### 6.12 Starting Provisioning
+### 6.14 Starting Provisioning
 
 The example uses BLE provisioning:
 
 ```cpp
-WiFiProv.beginProvision(
-  WIFI_PROV_SCHEME_BLE,
-  WIFI_PROV_SCHEME_HANDLER_NONE,
+  WiFiProv.beginProvision(
+  WIFI_PROV_SCHEME_BLE,                // for BLE
+  WIFI_PROV_SCHEME_HANDLER_FREE_BTDM,  // for BLE
   WIFI_PROV_SECURITY_1,
   PROV_POP,
-  PROV_SERVICE_NAME,
-  nullptr
-);
+  PROV_SERVICE_NAME);
 ```
 
-The Wi-Fi stack is then initialized with:
-
-```cpp
-wifiLowLevelInit(false);
-```
 
 ## 7. Uploading and Provisioning
 
@@ -1064,6 +888,8 @@ If the board does not enter upload mode automatically:
 3. Release the BOOT button.
 4. Upload the sketch again.
 
+>Set the `Erase All Flash Before Sketch Upload: "Enable"` to delete old residual NVC settings.
+
 ### 7.2 Open the Serial Monitor
 
 Set the baud rate to:
@@ -1075,33 +901,64 @@ Set the baud rate to:
 You should see output similar to:
 
 ```text
-ESP32-S3 ESP RainMaker telemetry example
-esp_rmaker_start() returned 0
-Starting BLE provisioning
-Service name: PROV_OOIKK
-PoP:          abcd1234
+----------------------------------------
+ESP32-S3 ESP RainMaker Telemetry
+----------------------------------------
+Telemetry device added
+RMaker started successfully
+EVENT: 33
+PROV_INIT
+EVENT: 2
+Unknown event: 2
+EVENT: 35
+BLE Provisioning Started: PROV_START
+                                      
+  █▀▀▀▀▀█ ▀▄▄▀▀▀█ ▀▀▄▄█ ▀▀  █▀▀▀▀▀█   
+  █ ███ █   ▀ ██▄▀ ▄▄▀█▀ █▄ █ ███ █   
+  █ ▀▀▀ █  ▀▄▀▄█  █▀▄▀▄▄▄█  █ ▀▀▀ █   
+  ▀▀▀▀▀▀▀ █ █▄▀▄█▄▀ █ █ █▄▀ ▀▀▀▀▀▀▀   
+  ▀▀▄██▄▀ ▄█▀▀▄ ▄█ ▀▀█ █▄▀▀ ▀▄▄ ▄▄▀   
+   ▀▄▀  ▀ ▀▄██▄▀▀█▀▄▀▄▀  ▀ █  ▄█▄█▀   
+  ▄   ▄▄▀█ ▀ ▀▀▄▄▄█ ▀▀▀ ▀  ▄▀█ ▀▄▄▀   
+  █▀  █▀▀▀▀███▀ ▄▀█ ▄▀█ █▄▀▄▄█  ▄     
+   ▀ ▀▀█▀███▀▄▄█ █▀▄█▄█▄▄█  ███▄ ██   
+  ▀█▀ ▄█▀▄ ▀█▀▄█▄█  █▀█▀ █ █▀▀ ▀▄▄▀   
+  █ ▀▀▀█▀███▀ ▀ ██ ███▄ █▀▀█ ▀▄ ▄▀    
+  █ ▄ █ ▀▄█   ▀ ▄█ █▄▄▀ ▄▀█ ▄█ ▀▄▄█   
+  ▀▀▀ ▀ ▀▀▄▄  ▄▄█▄█ █ ▄ ▄██▀▀▀█▄▄▀    
+  █▀▀▀▀▀█  ▀█ ▄ ▄▀▄▀██▄▀█▄█ ▀ █ ▄▄    
+  █ ███ █ █ ██▀█▄█ ▄ ▄▀▄███▀▀▀▀▄▄ ▀   
+  █ ▀▀▀ █ ▄▀█▄▀█ █▀▀▄██ ▄███▄▀█ █▄█   
+  ▀▀▀▀▀▀▀ ▀ ▀▀▀▀ ▀ ▀ ▀▀  ▀▀▀▀▀▀       
+                                      
+
+Manual print QR Code link
+QR URL: https://rainmaker.espressif.com/qrcode.html?data={"ver":"v1","name":"PROV_OOIKK","pop":"abcd1234","transport":"ble"}
+Provisioning service: PROV_OOIKK, PoP: abcd1234
 ```
 
 ### 7.3 Add the Device in the ESP RainMaker App
 
-1. Open the ESP RainMaker application.
-2. Tap **Add Device**.
-3. Allow the application to scan for BLE devices.
-4. Select:
+1. Copy the attached QR URL to a browser. `https://rainmaker.espressif.com/qrcode.html?data={"ver":"v1","name":"PROV_OOIKK","pop":"abcd1234","transport":"ble"}`
+2. Open the ESP RainMaker application.
+3. Tap **Add Device**.
+4. Scan the QR Code from the browser.
+5. Allow the application to scan for BLE devices. Skip 6 and 7 is use QR Code
+6. Select:
 
    ```text
    PROV_OOIKK
    ```
 
-5. Enter the Proof of Possession code if requested:
+7. Enter the Proof of Possession code if requested:
 
    ```text
    abcd1234
    ```
 
-6. Select the local Wi-Fi network.
-7. Enter the Wi-Fi password.
-8. Wait for provisioning to complete.
+8. Select the local Wi-Fi network.
+9. Enter the Wi-Fi password.
+10. Wait for provisioning to complete.
 
 > **Important:** The ESP32-S3 supports 2.4 GHz Wi-Fi. A 5 GHz-only network will not work.
 
@@ -1117,8 +974,8 @@ IP address: 192.168.x.x
 Telemetry should then appear every 10 seconds:
 
 ```text
-Telemetry: temp=31.20 C, RSSI=-58 dBm, uptime=10 s
-Telemetry: temp=31.40 C, RSSI=-60 dBm, uptime=20 s
+Telemetry: temp=22.00 C, RSSI=-64 dBm, uptime=10 s
+Telemetry: temp=44.60 C, RSSI=-64 dBm, uptime=20 s
 ```
 
 In the ESP RainMaker application, you should see:
@@ -1126,6 +983,9 @@ In the ESP RainMaker application, you should see:
 - An LED device.
 - A Temperature device.
 - A Telemetry device, depending on the application's support for custom parameters.
+
+<img width="467" height="909" alt="image" src="https://github.com/user-attachments/assets/79f71771-41fb-4edf-80f8-71aa02cdc803" />
+
 
 When the LED is toggled in the application:
 
@@ -1170,75 +1030,10 @@ To visualize custom values such as `status`, `rssi`, `uptime`, and `button`, you
 - A backend bridge.
 - A separate MQTT dashboard.
 
-## 10. Publishing to the Original Topics
 
-If your backend or dashboard requires these exact MQTT topics:
+## 10. Optional Improvements
 
-```cpp
-ooikk/feeds/status
-ooikk/feeds/temperature
-ooikk/feeds/rssi
-ooikk/feeds/uptime
-ooikk/feeds/led-control
-ooikk/feeds/led-state
-ooikk/feeds/button
-```
-
-then you are probably using an Adafruit IO-style MQTT broker rather than native ESP RainMaker.
-
-In that case, use a regular MQTT client such as:
-
-```cpp
-#include <PubSubClient.h>
-```
-
-Publish values with:
-
-```cpp
-mqtt.publish(
-  TOPIC_STATUS,
-  "online"
-);
-
-mqtt.publish(
-  TOPIC_TEMP,
-  String(temp_c).c_str()
-);
-
-mqtt.publish(
-  TOPIC_RSSI,
-  String(WiFi.RSSI()).c_str()
-);
-
-mqtt.publish(
-  TOPIC_UPTIME,
-  String(millis() / 1000).c_str()
-);
-
-mqtt.publish(
-  TOPIC_LED_STATE,
-  led_state ? "1" : "0"
-);
-
-mqtt.publish(
-  TOPIC_BUTTON,
-  "pressed"
-);
-```
-
-Subscribe to the LED-control topic:
-
-```cpp
-mqtt.subscribe(TOPIC_LED_SET);
-```
-
-This is a standard MQTT solution, not a native ESP RainMaker solution.
-
-It is possible to run both systems, but doing so requires additional RAM, flash, code, and connection management.
-
-## 11. Optional Improvements
-
-### 11.1 Use SoftAP Provisioning
+### 10.1 Use SoftAP Provisioning
 
 If BLE provisioning is unstable, use SoftAP provisioning instead:
 
@@ -1261,7 +1056,7 @@ PROV_OOIKK
 
 The phone application can connect to this access point and provision the Wi-Fi credentials.
 
-### 11.2 Use an External Temperature Sensor
+### 10.2 Use an External Temperature Sensor
 
 Replace:
 
@@ -1281,32 +1076,30 @@ or:
 float temp_c = ds18b20.getTempC();
 ```
 
-### 11.3 Enable OTA
+### 10.3 Enable OTA
 
 To enable OTA updates:
 
 1. Select an OTA-capable partition scheme.
-2. Enable RainMaker OTA before calling `esp_rmaker_start()`.
+2. Enable RainMaker OTA before calling `RMaker.start()`.
 
 Conceptually:
 
 ```cpp
-esp_rmaker_ota_enable(OTA_USING_TOPICS);
+RMaker.enableOTA(OTA_USING_TOPICS);
+
+RMaker.start();
 ```
 
 Check the ESP RainMaker examples installed with your library because the exact OTA API and partition requirements can vary by library version.
 
-### 11.4 Enable Schedules and Scenes
+### 10.4 Enable Schedules and Scenes
 
 RainMaker supports scheduling and scenes. Enable the required RainMaker services before starting RainMaker.
 
 The exact API may depend on the installed library version, so consult the ESP RainMaker examples included with the library.
 
-## 12. Troubleshooting
-
-### `RMaker.h: No such file or directory`
-
-Install **ESP RainMaker by Espressif Systems** through the Arduino Library Manager and restart Arduino IDE.
+## 11. Troubleshooting
 
 ### Partition-Size Compilation Error
 
@@ -1314,29 +1107,11 @@ Select a larger partition scheme:
 
 ```text
 Tools → Partition Scheme → Huge APP
+or
+Tools → Partition Scheme → RainMaker
 ```
 
 Alternatively, choose a larger 8 MB scheme if one is available for the board.
-
-### ESP32-S3 Does Not Appear as a COM Port
-
-Try the following:
-
-- Use a USB data cable rather than a charge-only cable.
-- Install the required USB-UART driver.
-- Hold BOOT while pressing RESET to enter download mode.
-- Try a different USB port.
-
-### Serial Monitor Shows Nothing
-
-Check that:
-
-```text
-Baud rate: 115200
-USB CDC On Boot: Enabled
-```
-
-Press RESET after opening the Serial Monitor.
 
 ### The Application Cannot Find `PROV_OOIKK`
 
@@ -1347,7 +1122,7 @@ Try the following:
 - Move the phone closer to the ESP32-S3.
 - Restart the ESP32-S3.
 - Retry provisioning.
-- Use SoftAP provisioning as an alternative.
+- Use QR Code provisioning with BLE as an alternative.
 
 ### Wi-Fi Provisioning Fails
 
@@ -1358,18 +1133,6 @@ Check the following:
 - Avoid captive-portal, hotel, campus, or enterprise networks.
 - Move the ESP32-S3 closer to the router.
 - Restart both the phone and ESP32-S3.
-
-### The LED Does Not Toggle
-
-Check:
-
-```cpp
-const int LED_PIN = 2;
-```
-
-Make sure this matches the actual LED GPIO.
-
-If the board uses an addressable RGB LED, `digitalWrite()` will not work. Use `Adafruit_NeoPixel` or `FastLED`.
 
 ### The Temperature Is Inaccurate
 
@@ -1415,36 +1178,13 @@ Node
  ├─ Device: Temperature
  │   └─ Param: temperature   ← replaces TOPIC_TEMP
  │
- └─ Device: Telemetry
-     ├─ Param: status        ← replaces TOPIC_STATUS
-     ├─ Param: rssi          ← replaces TOPIC_RSSI
-     ├─ Param: uptime        ← replaces TOPIC_UPTIME
+ ├─ Device: Telemetry
+ │   ├─ Param: status        ← replaces TOPIC_STATUS
+ │   ├─ Param: rssi          ← replaces TOPIC_RSSI
+ │   └─ Param: uptime        ← replaces TOPIC_UPTIME
+ │
+ └─Device: Button
      └─ Param: button        ← replaces TOPIC_BUTTON
-```
-
-The most important RainMaker functions are:
-
-```cpp
-esp_rmaker_node_create();
-esp_rmaker_device_create();
-esp_rmaker_param_create();
-esp_rmaker_device_add_param();
-esp_rmaker_node_add_device();
-esp_rmaker_device_assign_write_cb();
-esp_rmaker_start();
-esp_rmaker_param_update_and_report();
-```
-
-The LED command is received in:
-
-```cpp
-led_write_cb();
-```
-
-Telemetry is reported with:
-
-```cpp
-esp_rmaker_param_update_and_report();
 ```
 
 # ESP RainMaker Standard Device Types
