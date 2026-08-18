@@ -692,7 +692,7 @@ For ESP RainMaker:
 - Erase the flash after changing partition schemes if boot or provisioning problems occur.
 - Verify the selected flash size and partition scheme match the physical ESP32-S3 board.
 
-
+---
 # Partition Schemes Options and Custom Partitions
 
 These questions come down to understanding that every entry in the Arduino IDE partition menu is a fixed, pre-written CSV file—a partition table—not a layout that automatically adapts to your chip.
