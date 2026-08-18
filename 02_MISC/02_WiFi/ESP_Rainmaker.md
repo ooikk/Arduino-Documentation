@@ -2324,14 +2324,12 @@ After that, the ESP32-S3 should reconnect automatically without using BLE or the
 If BLE is unstable, use SoftAP provisioning:
 
 ```cpp
-WiFiProv.beginProvision(
-  WIFI_PROV_SCHEME_SOFTAP,
-  WIFI_PROV_SCHEME_HANDLER_NONE,
+  WiFiProv.beginProvision(
+  WIFI_PROV_SCHEME_SOFTAP,        // for WiFi
+  WIFI_PROV_SCHEME_HANDLER_NONE,  // for WiFi
   WIFI_PROV_SECURITY_1,
   PROV_POP,
-  PROV_SERVICE_NAME,
-  "your_ap_password"
-);
+  PROV_SERVICE_NAME);
 ```
 
 ### If You Want to Avoid the Application Completely
