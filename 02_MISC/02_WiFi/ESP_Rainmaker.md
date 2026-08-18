@@ -1846,6 +1846,9 @@ This guide explains how to configure and customize the dashboard using the C++ c
    OOIKK ESP32-S3
    ```
 
+   <img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/026d2aff-2cfd-4ffe-8edb-cd2a63ad42ea" />
+
+
 4. The status indicator should show **Online** if the ESP32-S3 is powered on and connected to Wi-Fi.
 5. Click the `OOIKK ESP32-S3` node to expand it and view the devices created in the Arduino code.
 
