@@ -1326,7 +1326,29 @@ RMakerFactoryReset(
 
 Use the Serial Monitor method when:
 
-- The board is
+- The board is physically difficult to access.
+- You want to trigger the reset remotely through a serial connection.
+- You want to avoid changing the hardware.
+
+Use `nvs_flash_erase()` only when:
+
+- RainMaker factory reset does not resolve the problem.
+- NVS data is corrupted.
+- You intentionally want to erase all NVS-stored configuration.
+
+### Important Warning
+
+A factory reset removes stored credentials and may require the device to be provisioned again.
+
+After resetting, the ESP32-S3 may need:
+
+```text
+1. Wi-Fi provisioning.
+2. RainMaker account association.
+3. Device claiming.
+4. Application configuration.
+```
+
 
 ## 12. Troubleshooting
 
