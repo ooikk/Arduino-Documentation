@@ -249,7 +249,7 @@ const int BUTTON_PIN = 2;
 // ------------------------------------------------------------------
 // Timing
 // ------------------------------------------------------------------
-const uint32_t TELEMETRY_INTERVAL_MS = 10000;
+const uint32_t TELEMETRY_INTERVAL_MS = 30000;
 const uint32_t BUTTON_DEBOUNCE_MS = 50;
 
 // ------------------------------------------------------------------
@@ -1158,6 +1158,13 @@ Possible solutions include:
 - Build a custom dashboard using RainMaker cloud APIs.
 - Forward data to another backend using AWS IoT rules.
 - Use plain MQTT and Adafruit IO if exact feed topics are required.
+
+### Out of MQTT Budget    
+RainMaker's backend rate limit of 10 MQTT messages per minute per node (with a maximum burst capacity of 10 messages).
+```text
+E (730234) esp_rmaker_mqtt: Out of MQTT Budget. Dropping publish message.
+```
+Solution: Increase the Telemetry Interval `TELEMETRY_INTERVAL_MS` in your sketch from 10 seconds to 30 or 60 seconds.     
 
 ## 13. Summary
 
