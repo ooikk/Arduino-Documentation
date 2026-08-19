@@ -1223,13 +1223,17 @@ void loop() {
 
       // Erase RainMaker node credentials,
       // Wi-Fi details, and restart the ESP32
-      esp_rmaker_factory_reset();
+      esp_rmaker_factory_reset(0,2);
     }
   }
 
   // Continue with the rest of loop()
 }
 ```
+
+- 0 (reset_seconds): Delay before erasing RainMaker credentials from NVS (0 = immediate).
+- 2 (reboot_seconds): Delay before restarting the board (2 seconds allows the Serial print statement to flush completely before rebooting).
+
 
 #### Usage
 
@@ -1318,10 +1322,7 @@ void setup() {
 Use the BOOT-button method for normal development:
 
 ```cpp
-RMakerFactoryReset(
-  BOOT_BUTTON_PIN,
-  3
-);
+RMakerFactoryReset(3);
 ```
 
 Use the Serial Monitor method when:
