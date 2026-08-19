@@ -222,7 +222,7 @@ void sysProvEvent(arduino_event_t* sys_event) {
       Serial.printf("GOT_IP: %s\n",
                     WiFi.localIP().toString().c_str());
       break;
-
+    case 34:
     default:
       Serial.printf("Unknown event: %d\n", sys_event->event_id);
       break;
@@ -237,6 +237,9 @@ void sysProvEvent(arduino_event_t* sys_event) {
 void setup() {
   Serial.begin(115200);
   delay(2000);
+  // Press and hold BOOT for 3 seconds to erase
+  // RainMaker credentials and enter provisioning mode
+  //RMakerFactoryReset(3);
 
   /*
   // 1. Initialize Default NVS Flash
@@ -293,17 +296,28 @@ void setup() {
 
     Param status_param(PARAM_STATUS, "esp.param.text", value("boot"), PROP_FLAG_READ);
     status_param.addUIType(ESP_RMAKER_UI_TEXT);
+    telemetry_device->addParam(status_param);
 
+    // 1. RSSI as a read-only range (Renders as a numeric card, not a slider)
+    //Param rssi_param(PARAM_RSSI, "esp.param.range", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    //rssi_param.addBounds(value(-100), value(0), value(1));
+
+    // 1. RSSI as a read-only range and enable timeseries
     Param rssi_param(PARAM_RSSI, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+
     //Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ );
     //rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
+    telemetry_device->addParam(rssi_param);
 
+    // 2. Uptime as a read-only range
+    //Param uptime_param(PARAM_UPTIME, "esp.param.range", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    //uptime_param.addBounds(value(0), value(2147483647), value(1));
+
+    // 2. Uptime as a read-only range and enable timeseries
     Param uptime_param(PARAM_UPTIME, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+
     //Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
     //uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
-
-    telemetry_device->addParam(status_param);
-    telemetry_device->addParam(rssi_param);
     telemetry_device->addParam(uptime_param);
 
     my_node.addDevice(*telemetry_device);
@@ -363,6 +377,17 @@ void setup() {
 // Main loop
 // ------------------------------------------------------------------
 void loop() {
+  // Safe Factory Reset: Type 'r' in the Serial Monitor to erase RainMaker NVS
+
+  if (Serial.available() > 0) {
+    char ch = Serial.read();
+    if (ch == 'r' || ch == 'R') {
+      Serial.println("\n[RESET] Clearing RainMaker credentials and rebooting...");
+      delay(1000);
+      esp_rmaker_factory_reset(0, 2);  // Standard SDK reset call
+    }
+  }
+
 
   static uint32_t last_telemetry = 0;
   if (millis() - last_telemetry >= TELEMETRY_INTERVAL_MS) {
