@@ -199,6 +199,7 @@ Paste the following code:
 #include <WiFi.h>
 #include <RMaker.h>
 #include <WiFiProv.h>
+#include <esp_wifi.h>
 
 //#define PROVISION_WIFI
 
@@ -248,6 +249,7 @@ const int BUTTON_PIN = 2;
 
 // ------------------------------------------------------------------
 // Timing
+// RainMaker's backend rate limit of 10 MQTT messages per minute per node (with a maximum burst capacity of 10 messages).
 // ------------------------------------------------------------------
 const uint32_t TELEMETRY_INTERVAL_MS = 30000;
 const uint32_t BUTTON_DEBOUNCE_MS = 50;
@@ -296,27 +298,35 @@ static void led_write_cb(Device* device, Param* param,
 // This is the RainMaker equivalent of publishing to the feed topics.
 // ------------------------------------------------------------------
 void reportTelemetry() {
-  if (WiFi.status() != WL_CONNECTED || !telemetry_device) return;
+  //if (WiFi.status() != WL_CONNECTED || !telemetry_device) return;
+  // Query ESP-IDF Wi-Fi driver directly
+  wifi_ap_record_t ap_info;
+  if (!telemetry_device || esp_wifi_sta_get_ap_info(&ap_info) != ESP_OK) return;
 
   float temp_c = random(200, 500) / 10.0f;  //temperatureRead();
-  long rssi = WiFi.RSSI();
-  int uptime_seconds = (int)(millis() / 1000);
+  //int rssi = (int)WiFi.RSSI();
+  int rssi = ap_info.rssi;
+  uint32_t uptime_seconds = millis() / 1000;  // Use uint32_t for rollover safety
 
   telemetry_device->updateAndReportParam(PARAM_STATUS, "online");
 
   if (temp_device) {
     temp_device->updateAndReportParam(PARAM_TEMP, temp_c);
   }
-
+  /*
   char rssi_str[16];
-  snprintf(rssi_str, sizeof(rssi_str), "%ld dBm", rssi);
+  snprintf(rssi_str, sizeof(rssi_str), "%d dBm", rssi);
   telemetry_device->updateAndReportParam(PARAM_RSSI, rssi_str);
 
   char uptime_str[16];
   snprintf(uptime_str, sizeof(uptime_str), "%d s", uptime_seconds);
   telemetry_device->updateAndReportParam(PARAM_UPTIME, uptime_str);
+*/
+  // Send raw numeric values so the dashboard can chart them
+  telemetry_device->updateAndReportParam(PARAM_RSSI, rssi);
+  telemetry_device->updateAndReportParam(PARAM_UPTIME, (int)uptime_seconds);
 
-  Serial.printf("Telemetry: temp=%.2f C, RSSI=%d dBm, uptime=%d s\n",
+  Serial.printf("Telemetry: temp=%.2f C, RSSI=%d dBm, uptime=%u s\n",
                 temp_c, rssi, uptime_seconds);
 }
 
@@ -426,6 +436,16 @@ void setup() {
   Serial.begin(115200);
   delay(2000);
 
+  /*
+  // 1. Initialize Default NVS Flash
+  esp_err_t err = nvs_flash_init();
+  if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    err = nvs_flash_init();
+  }
+  ESP_ERROR_CHECK(err);
+*/
+
   Serial.println("\n----------------------------------------");
   Serial.println("ESP32-S3 ESP RainMaker Telemetry");
   Serial.println("----------------------------------------");
@@ -458,10 +478,11 @@ void setup() {
   temp_device = new Device("Temperature", "esp.device.temperature-sensor");
   if (temp_device) {
     temp_device->addNameParam();
-    Param temp_param(PARAM_TEMP, "esp.param.temperature", value(0.0f), PROP_FLAG_READ);
+    Param temp_param(PARAM_TEMP, "esp.param.temperature", value(0.0f), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
     temp_device->addParam(temp_param);
     my_node.addDevice(*temp_device);
   }
+
 
   // 4. Custom Telemetry Device Setup
   telemetry_device = new Device("Telemetry", "custom.device.telemetry");
@@ -471,11 +492,29 @@ void setup() {
     Param status_param(PARAM_STATUS, "esp.param.text", value("boot"), PROP_FLAG_READ);
     status_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-    Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ);
-    rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
+    // Use standard "esp.param.rssi" with bounds (-100 dBm to 0 dBm)
+    Param rssi_param(PARAM_RSSI, "esp.param.rssi", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    rssi_param.addBounds(value(-100), value(0), value(1));
 
-    Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
-    uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
+    //Param rssi_param(PARAM_RSSI, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+
+    //Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ );
+    //rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
+
+
+    // Use numeric bounds for Uptime (0 to 2,147,483,647 seconds)
+    Param uptime_param(PARAM_UPTIME, "custom.param.uptime", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    uptime_param.addBounds(value(0), value(2147483647), value(1));
+
+    // Param uptime_param(PARAM_UPTIME, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+
+    //Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
+    //uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
+
+
+
+
+
 
     telemetry_device->addParam(status_param);
     telemetry_device->addParam(rssi_param);
@@ -547,6 +586,7 @@ void loop() {
   handleButton();
   delay(10);
 }
+
 
 ```
 
@@ -758,11 +798,28 @@ This reads the ESP32-S3 internal temperature sensor.
     Param status_param(PARAM_STATUS, "esp.param.text", value("boot"), PROP_FLAG_READ);
     status_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-    Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ);
-    rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
+    // Use standard "esp.param.rssi" with bounds (-100 dBm to 0 dBm) for auto-updates parameters in real-time
+    Param rssi_param(PARAM_RSSI, "esp.param.rssi", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    rssi_param.addBounds(value(-100), value(0), value(1));
 
-    Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
-    uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
+    // Use PROP_FLAG_TIME_SERIES to enable Timeseries
+    //Param rssi_param(PARAM_RSSI, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+
+    // Send as text string
+    //Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ );
+    //rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
+
+
+    // Use numeric bounds for Uptime (0 to 2,147,483,647 seconds) for auto-updates parameters in real-time
+    Param uptime_param(PARAM_UPTIME, "custom.param.uptime", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    uptime_param.addBounds(value(0), value(2147483647), value(1));
+
+    // Use PROP_FLAG_TIME_SERIES to enable Timeseries
+    // Param uptime_param(PARAM_UPTIME, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+
+    // Send as text string
+    //Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
+    //uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
 
     telemetry_device->addParam(status_param);
     telemetry_device->addParam(rssi_param);
