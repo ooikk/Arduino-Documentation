@@ -1160,7 +1160,175 @@ RainMaker supports scheduling and scenes. Enable the required RainMaker services
 
 The exact API may depend on the installed library version, so consult the ESP RainMaker examples included with the library.
 
-## 11. Troubleshooting
+## 11. Resetting ESP RainMaker Credentials Without Reflashing
+
+You can reset ESP RainMaker NVS credentials programmatically without reflashing the firmware.
+
+There are three common methods:
+
+1. Bind the reset function to the BOOT button.
+2. Trigger a reset through the Serial Monitor.
+3. Perform a one-time NVS wipe during startup.
+
+### Method 1: Bind the Reset to the BOOT Button
+
+#### Recommended Method
+
+ESP RainMaker provides a factory-reset helper that monitors a GPIO pin.
+
+Pressing and holding the BOOT button on GPIO 0 for three seconds clears the Wi-Fi and RainMaker NVS data, then reboots the board into provisioning mode.
+
+Add the following code inside `setup()` before `RMaker.start()`:
+
+```cpp
+#define BOOT_BUTTON_PIN 0
+
+void setup() {
+  Serial.begin(115200);
+
+  // Press and hold BOOT for 3 seconds to erase
+  // RainMaker credentials and enter provisioning mode
+  RMakerFactoryReset(
+    BOOT_BUTTON_PIN,
+    3
+  );
+
+  // Continue with the rest of setup()
+}
+```
+
+On many ESP32-S3 development boards:
+
+```text
+GPIO 0 = BOOT button
+```
+
+### Method 2: Trigger a Reset Through the Serial Monitor
+
+If you do not want to press a physical button, trigger a factory reset by sending `R` or `r` through the Arduino Serial Monitor.
+
+```cpp
+void loop() {
+  // Check for a serial reset command
+  if (Serial.available() > 0) {
+    char c = Serial.read();
+
+    if (c == 'R' || c == 'r') {
+      Serial.println(
+        "\n*** Factory reset requested! "
+        "Erasing RainMaker NVS... ***"
+      );
+
+      delay(1000);
+
+      // Erase RainMaker node credentials,
+      // Wi-Fi details, and restart the ESP32
+      esp_rmaker_factory_reset();
+    }
+  }
+
+  // Continue with the rest of loop()
+}
+```
+
+#### Usage
+
+1. Open the Serial Monitor.
+2. Set the baud rate to the value used by `Serial.begin()`.
+3. Send:
+
+   ```text
+   R
+   ```
+
+4. The ESP32-S3 erases the RainMaker credentials and restarts.
+5. Provision the device again through the RainMaker application.
+
+### Method 3: One-Time Startup NVS Wipe
+
+Use this method to erase NVS during startup without using a physical button or the Serial Monitor.
+
+```cpp
+#include <nvs_flash.h>
+
+// Set this to true for one boot only
+bool FORCE_PROVISION_RESET = false;
+
+void setup() {
+  Serial.begin(115200);
+
+  if (FORCE_PROVISION_RESET) {
+    Serial.println("Forcing NVS erase...");
+
+    nvs_flash_erase();
+    nvs_flash_init();
+
+    Serial.println(
+      "NVS erased! Set FORCE_PROVISION_RESET to false "
+      "and re-upload the sketch."
+    );
+
+    // Stop execution so the flag can be changed
+    while (true) {
+      delay(1000);
+    }
+  }
+
+  // Continue with the rest of setup()
+}
+```
+
+#### Usage
+
+1. Temporarily change:
+
+   ```cpp
+   bool FORCE_PROVISION_RESET = false;
+   ```
+
+   to:
+
+   ```cpp
+   bool FORCE_PROVISION_RESET = true;
+   ```
+
+2. Upload the firmware.
+3. Allow the ESP32-S3 to erase NVS.
+4. Change the flag back to:
+
+   ```cpp
+   bool FORCE_PROVISION_RESET = false;
+   ```
+
+5. Upload the sketch again.
+6. Provision the device through the RainMaker application.
+
+> **Warning:** `nvs_flash_erase()` removes the entire NVS partition. Use it carefully.
+
+### Difference Between the Reset Methods
+
+| Function | Effect |
+|---|---|
+| `esp_rmaker_factory_reset()` | Erases RainMaker node credentials, Wi-Fi credentials, and local claiming keys while leaving unrelated NVS data intact. |
+| `RMakerFactoryReset()` | Monitors a GPIO button and invokes the RainMaker factory-reset process after the button is held for the configured duration. |
+| `nvs_flash_erase()` | Completely erases and formats the entire NVS partition. |
+
+### Recommended Choice
+
+Use the BOOT-button method for normal development:
+
+```cpp
+RMakerFactoryReset(
+  BOOT_BUTTON_PIN,
+  3
+);
+```
+
+Use the Serial Monitor method when:
+
+- The board is
+
+## 12. Troubleshooting
 
 ### Partition-Size Compilation Error
 
@@ -1602,25 +1770,6 @@ Examples:
 - `esp.ui.text`: Text or status display.
 - `esp.ui.trigger`: Momentary action or event control.
 
-## Arduino and C API Options
-
-You can use either the Arduino wrapper classes:
-
-```cpp
-Switch
-Outlet
-LightBulb
-Fan
-TemperatureSensor
-```
-
-or create devices generically with:
-
-```cpp
-mydevice = new Device(name, "esp.device.xxx");
-```
-
-The wrapper classes are generally easier to read, while the generic `Device` class and C API provide more flexibility for custom device structures.
 
 ## Summary
 
