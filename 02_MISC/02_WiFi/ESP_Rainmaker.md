@@ -1363,7 +1363,7 @@ The RainMaker application normally renders a switch as a toggle control.
 Switch my_switch("LED Control");
 ```
 
-## 2. Outlet — `esp.device.outlet`
+### 2. Outlet — `esp.device.outlet`
 
 An outlet represents a smart power plug or wall socket.
 
@@ -1398,7 +1398,7 @@ The application usually displays an outlet or smart-plug icon.
 Outlet my_outlet("Living Room Outlet");
 ```
 
-## 3. Light Bulb — `esp.device.lightbulb`
+### 3. Light Bulb — `esp.device.lightbulb`
 
 A light-bulb device represents a lighting product.
 
@@ -1431,7 +1431,7 @@ Adding color parameters may enable:
 LightBulb my_light("Living Room Light");
 ```
 
-## 4. Fan — `esp.device.fan`
+### 4. Fan — `esp.device.fan`
 
 A fan device represents a motorized fan with ON/OFF control and optional speed regulation.
 
@@ -1458,7 +1458,7 @@ The RainMaker application normally displays:
 Fan my_fan("Ceiling Fan");
 ```
 
-## 5. Temperature Sensor — `esp.device.temperature-sensor`
+### 5. Temperature Sensor — `esp.device.temperature-sensor`
 
 A temperature sensor is a read-only device that reports temperature measurements.
 
@@ -1520,6 +1520,20 @@ Alternatively, devices can be created generically using a device type string:
 ```cpp
 my_switch = new Device("LED Control", "esp.device.switch");
 ```
+
+## Standard `esp.param.*` Types
+
+Espressif defines a specific set of standard system parameter types.
+
+| Parameter Type | Data Type | Default UI Behavior |
+|---|---|---|
+| `esp.param.range` | Integer or floating-point value | Slider for read/write parameters or numeric field for read-only parameters |
+| `esp.param.temperature` | Floating-point value | Gauge or temperature card |
+| `esp.param.power` | Boolean | Toggle switch |
+| `esp.param.text` | String | Text display box |
+| `esp.param.speed` | Integer | Numeric control |
+| `esp.param.brightness` | Integer | Percentage slider |
+
 
 ## Important Notes
 
