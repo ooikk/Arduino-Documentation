@@ -1166,6 +1166,48 @@ E (730234) esp_rmaker_mqtt: Out of MQTT Budget. Dropping publish message.
 ```
 Solution: Increase the Telemetry Interval `TELEMETRY_INTERVAL_MS` in your sketch from 10 seconds to 30 or 60 seconds.     
 
+### Data Type Mismatch
+
+This error occurs when you update a parameter using a data type that does not match the data type defined when the parameter was created in `setup()`.
+```text
+E (196774) esp_rmaker_param: New param value type not same as the existing one.
+```
+Match the updated value type in `reportTelemetry()` with its initial constructor type in `setup()`.
+
+### System Clock Synchronization
+```text
+E (4536) esp_rmaker_param: Current time not yet available. Cannot report time series data.
+```
+This error occurs because parameters with `PROP_FLAG_TIME_SERIES` require a valid Unix timestamp (NTP time) to plot data points on the cloud timeline. At 4.5 seconds after boot (4536 ms), your ESP32-S3 has not yet completed clock synchronization with internet NTP time servers.
+
+Until the system clock is synchronized, RainMaker drops the time-series payload to prevent tagging telemetry points with invalid pre-1970 default timestamps.
+**How to Resolve It**     
+1. Enable Timezone/Time Service in `setup()`
+Ensure ESP RainMaker's internal SNTP time synchronization service is initialized:
+```cpp
+// Add this in setup() before RMaker.start()
+RMaker.enableTZService();
+```
+2. Guard Telemetry Reporting in `reportTelemetry()`
+Prevent reporting time-series parameters until system time is successfully fetched:
+```cpp
+#include <time.h>
+
+void reportTelemetry() {
+  // Check if system clock has synced (year > 2020 / Unix epoch > 1600000000)
+  time_t now;
+  time(&now);
+  if (now < 1600000000) {
+    Serial.println("Waiting for NTP time sync...");
+    return; // Skip reporting until time is valid
+  }
+
+  // Proceed with normal updateAndReportParam calls...
+}
+```
+Once internet time sync completes (typically 2 to 5 seconds after Wi-Fi connects), this error will stop and the dashboard will accept your time-series data.
+
+
 ## 13. Summary
 
 For ESP RainMaker, do not think in terms of raw MQTT topics such as:
