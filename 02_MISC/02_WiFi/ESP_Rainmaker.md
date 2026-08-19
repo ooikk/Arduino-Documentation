@@ -492,33 +492,20 @@ void setup() {
     Param status_param(PARAM_STATUS, "esp.param.text", value("boot"), PROP_FLAG_READ);
     status_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-    // Use standard "esp.param.rssi" with bounds (-100 dBm to 0 dBm) for live update
-    Param rssi_param(PARAM_RSSI, "esp.param.rssi", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
-    rssi_param.addBounds(value(-100), value(0), value(1));
 
     // To enable timeseries
-    //Param rssi_param(PARAM_RSSI, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    Param rssi_param(PARAM_RSSI, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
 
     // Send as string
     //Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ );
     //rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-
-    // Use numeric bounds for Uptime (0 to 2,147,483,647 seconds) for live update
-    Param uptime_param(PARAM_UPTIME, "custom.param.uptime", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
-    uptime_param.addBounds(value(0), value(2147483647), value(1));
-
     // To enable timeseries
-    // Param uptime_param(PARAM_UPTIME, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    Param uptime_param(PARAM_UPTIME, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
 
     // Send as string
     //Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
     //uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
-
-
-
-
-
 
     telemetry_device->addParam(status_param);
     telemetry_device->addParam(rssi_param);
@@ -802,24 +789,15 @@ This reads the ESP32-S3 internal temperature sensor.
     Param status_param(PARAM_STATUS, "esp.param.text", value("boot"), PROP_FLAG_READ);
     status_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-    // Use standard "esp.param.rssi" with bounds (-100 dBm to 0 dBm) for auto-updates parameters in real-time
-    Param rssi_param(PARAM_RSSI, "esp.param.rssi", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
-    rssi_param.addBounds(value(-100), value(0), value(1));
-
     // Use PROP_FLAG_TIME_SERIES to enable Timeseries
-    //Param rssi_param(PARAM_RSSI, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    Param rssi_param(PARAM_RSSI, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
 
     // Send as text string
     //Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ );
     //rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
 
-
-    // Use numeric bounds for Uptime (0 to 2,147,483,647 seconds) for auto-updates parameters in real-time
-    Param uptime_param(PARAM_UPTIME, "custom.param.uptime", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
-    uptime_param.addBounds(value(0), value(2147483647), value(1));
-
     // Use PROP_FLAG_TIME_SERIES to enable Timeseries
-    // Param uptime_param(PARAM_UPTIME, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+    Param uptime_param(PARAM_UPTIME, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
 
     // Send as text string
     //Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
