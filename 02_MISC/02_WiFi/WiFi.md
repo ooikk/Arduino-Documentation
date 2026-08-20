@@ -18,7 +18,7 @@
 [ESP Now](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Now.md) 
 
 **ESP32 Wi-Fi Provisioning**    
-[![WiFi Provisioning](https://img.shields.io/badge/WiFi-ESP_Now-red)](https://randomnerdtutorials.com/esp32-wi-fi-provisioning-ble-arduino/)   
+[![WiFi Provisioning](https://img.shields.io/badge/WiFi-Provision-red)](https://randomnerdtutorials.com/esp32-wi-fi-provisioning-ble-arduino/)   
 [WiFi Provisioning](https://randomnerdtutorials.com/esp32-wi-fi-provisioning-ble-arduino/)
 
 
