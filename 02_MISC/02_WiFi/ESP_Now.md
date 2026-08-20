@@ -1814,3 +1814,7 @@ void loop() {
 | **Normal Cycle** | Wakes every `10,000 ms`, sends packet, sleeps | Wakes at `9,850 ms` (150 ms early), receives, sleeps |
 | **Missed Packet** | Continues normal sleep cycle | Misses window $\rightarrow$ stays awake until next broadcast re-syncs |
 
+---
+# References
+
+https://randomnerdtutorials.com/esp-now-esp32-arduino-ide/
