@@ -4,6 +4,7 @@
 #include <esp_wifi.h>
 
 //#define PROVISION_WIFI
+//#define TELEMETRY_VALUE
 
 // ------------------------------------------------------------------
 // Original topic names kept for reference.
@@ -115,7 +116,12 @@ void reportTelemetry() {
   if (temp_device) {
     temp_device->updateAndReportParam(PARAM_TEMP, temp_c);
   }
-  /*
+  
+#ifdef TELEMETRY_VALUE
+  // Send raw numeric values so the dashboard can chart them
+  telemetry_device->updateAndReportParam(PARAM_RSSI, rssi);
+  telemetry_device->updateAndReportParam(PARAM_UPTIME, (int)uptime_seconds);
+#else // Display as text string
   char rssi_str[16];
   snprintf(rssi_str, sizeof(rssi_str), "%d dBm", rssi);
   telemetry_device->updateAndReportParam(PARAM_RSSI, rssi_str);
@@ -123,10 +129,8 @@ void reportTelemetry() {
   char uptime_str[16];
   snprintf(uptime_str, sizeof(uptime_str), "%d s", uptime_seconds);
   telemetry_device->updateAndReportParam(PARAM_UPTIME, uptime_str);
-*/
-  // Send raw numeric values so the dashboard can chart them
-  telemetry_device->updateAndReportParam(PARAM_RSSI, rssi);
-  telemetry_device->updateAndReportParam(PARAM_UPTIME, (int)uptime_seconds);
+#endif
+
 
   Serial.printf("Telemetry: temp=%.2f C, RSSI=%d dBm, uptime=%u s\n",
                 temp_c, rssi, uptime_seconds);
@@ -298,26 +302,32 @@ void setup() {
     status_param.addUIType(ESP_RMAKER_UI_TEXT);
     telemetry_device->addParam(status_param);
 
+#ifdef TELEMETRY_VALUE
     // 1. RSSI as a read-only range (Renders as a numeric card, not a slider)
     //Param rssi_param(PARAM_RSSI, "esp.param.range", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
     //rssi_param.addBounds(value(-100), value(0), value(1));
 
     // 1. RSSI as a read-only range and enable timeseries
     Param rssi_param(PARAM_RSSI, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
-
-    //Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ );
-    //rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
+    //Param rssi_param(PARAM_RSSI, "esp.param.speed", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+#else
+    Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ );
+    rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
+#endif
     telemetry_device->addParam(rssi_param);
 
+#ifdef TELEMETRY_VALUE
     // 2. Uptime as a read-only range
     //Param uptime_param(PARAM_UPTIME, "esp.param.range", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
     //uptime_param.addBounds(value(0), value(2147483647), value(1));
 
     // 2. Uptime as a read-only range and enable timeseries
     Param uptime_param(PARAM_UPTIME, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
-
-    //Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
-    //uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
+    //Param uptime_param(PARAM_UPTIME, "esp.param.speed", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
+#else
+    Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
+    uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
+#endif    
     telemetry_device->addParam(uptime_param);
 
     my_node.addDevice(*telemetry_device);
