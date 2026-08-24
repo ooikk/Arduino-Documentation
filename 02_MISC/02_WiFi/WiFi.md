@@ -17,7 +17,7 @@
 [![ESPNow](https://img.shields.io/badge/WiFi-ESP_Now-green)](./ESP_Now.md)
 [ESP Now](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Now.md) 
 
-**ESP32 Wi-Fi Provisioning**
+**ESP32 Wi-Fi Provisioning:**
 [![WiFi Provisioning](https://img.shields.io/badge/WiFi-Provision-brightgreen)](https://randomnerdtutorials.com/esp32-wi-fi-provisioning-ble-arduino/)
 [WiFi Provisioning](https://randomnerdtutorials.com/esp32-wi-fi-provisioning-ble-arduino/)
 [![WiFi Provisioning](https://img.shields.io/badge/WiFi-Provision-blue)](https://www.circuitschools.com/esp32-wi-fi-provisioning-via-ble-easy-to-change-wifi-credentials/)
