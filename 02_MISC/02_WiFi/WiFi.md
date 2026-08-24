@@ -20,7 +20,6 @@
 **ESP32 Wi-Fi Provisioning**
 [![WiFi Provisioning](https://img.shields.io/badge/WiFi-Provision-brightgreen)](https://randomnerdtutorials.com/esp32-wi-fi-provisioning-ble-arduino/)
 [WiFi Provisioning](https://randomnerdtutorials.com/esp32-wi-fi-provisioning-ble-arduino/)
-
 [![WiFi Provisioning](https://img.shields.io/badge/WiFi-Provision-blue)](https://www.circuitschools.com/esp32-wi-fi-provisioning-via-ble-easy-to-change-wifi-credentials/)
 [WiFi Provisioning](https://www.circuitschools.com/esp32-wi-fi-provisioning-via-ble-easy-to-change-wifi-credentials/)
 
