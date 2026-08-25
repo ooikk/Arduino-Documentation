@@ -914,6 +914,106 @@ void loop() {
 }
 ```
 
+### Native Protocol Key Mappings
+
+#### Telemetry
+
+```text
+v1/devices/me/telemetry
+```
+
+Use telemetry for time-series values that change over time, such as:
+
+- Temperature.
+- Wi-Fi RSSI.
+- Device uptime.
+- Button events.
+
+Example telemetry payload:
+
+```json
+{
+  "temperature": 25.4,
+  "rssi": -62,
+  "uptime": 3600,
+  "button": "pressed"
+}
+```
+
+#### Attributes
+
+```text
+v1/devices/me/attributes
+```
+
+Use attributes for device state and metadata, such as:
+
+- Device status.
+- LED state.
+- Configuration values.
+- Device information.
+
+Example attribute payload:
+
+```json
+{
+  "status": "online",
+  "led-state": "ON"
+}
+```
+
+#### Control Downlink
+
+Use the following mechanisms to send LED-control commands from ThingsBoard to the ESP32-S3:
+
+```text
+Shared Attribute Updates:
+v1/devices/me/attributes
+```
+
+```text
+RPC Commands:
+v1/devices/me/rpc/request/+
+```
+
+The ESP32-S3 can listen to both topics.
+
+##### Shared Attribute Example
+
+Sending this shared attribute from a ThingsBoard switch widget:
+
+```json
+{
+  "led-control": true
+}
+```
+
+causes the ESP32-S3 to toggle the physical LED pin.
+
+##### RPC Command Example
+
+Sending this RPC command from a ThingsBoard button or switch widget:
+
+```json
+{
+  "method": "led-control",
+  "params": true
+}
+```
+
+causes the ESP32-S3 to toggle the physical LED pin.
+
+#### Topic Summary
+
+| Purpose | ThingsBoard MQTT Topic | Example Keys |
+|---|---|---|
+| Telemetry | `v1/devices/me/telemetry` | `temperature`, `rssi`, `uptime`, `button` |
+| Attributes | `v1/devices/me/attributes` | `status`, `led-state` |
+| Shared attribute control | `v1/devices/me/attributes` | `led-control` |
+| RPC control command | `v1/devices/me/rpc/request/+` | `method: "led-control"` |
+
+
+
 ## Step 4: Verify Telemetry and Build Dashboards
 
 1. Return to the device page in ThingsBoard Cloud.
