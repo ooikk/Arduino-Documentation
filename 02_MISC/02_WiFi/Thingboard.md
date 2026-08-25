@@ -1017,6 +1017,206 @@ In ThingsBoard's Direct Device MQTT API, the ThingsBoard MQTT Topic is a hardcod
 
 If you publish to `v1/devices/esp32s3/telemetry`, the broker will not recognize esp32s3 as a valid endpoint and will silently drop or reject your messages.
 
+### ThingsBoard MQTT Topic Subscription Rules
+
+You do not need to subscribe to:
+
+```text
+v1/devices/me/telemetry
+```
+
+Telemetry is write-only from the device's perspective.
+
+The ESP32-S3 publishes telemetry to ThingsBoard, but ThingsBoard does not send standard telemetry back to the device through this topic.
+
+#### Direction Breakdown
+
+| Purpose | MQTT Topic | ESP32-S3 Action | Direction |
+|---|---|---|---|
+| Telemetry | `v1/devices/me/telemetry` | Publish only | Device → ThingsBoard |
+| Attributes | `v1/devices/me/attributes` | Publish and subscribe | Device ↔ ThingsBoard |
+| RPC requests | `v1/devices/me/rpc/request/+` | Subscribe only | ThingsBoard → Device |
+
+#### Telemetry
+
+##### Publish Only
+
+```text
+v1/devices/me/telemetry
+```
+
+The ESP32-S3 publishes time-series values, such as:
+
+- Temperature.
+- Wi-Fi RSSI.
+- Device uptime.
+- Button status.
+- Sensor readings.
+- Battery voltage.
+
+Example:
+
+```cpp
+mqttClient.publish(
+  "v1/devices/me/telemetry",
+  "{\"temperature\":25.4,\"rssi\":-62}"
+);
+```
+
+ThingsBoard stores and visualizes the telemetry, but it does not normally send telemetry messages back to the ESP32-S3 through this topic.
+
+```text
+ESP32-S3
+    │
+    │ Publish telemetry
+    ▼
+ThingsBoard Cloud
+```
+
+#### Attributes
+
+##### Publish and Subscribe
+
+```text
+v1/devices/me/attributes
+```
+
+The ESP32-S3 can publish device state and metadata.
+
+Example published attributes:
+
+```json
+{
+  "status": "online",
+  "led-state": "ON"
+}
+```
+
+Example:
+
+```cpp
+mqttClient.publish(
+  "v1/devices/me/attributes",
+  "{\"status\":\"online\",\"led-state\":\"ON\"}"
+);
+```
+
+The ESP32-S3 can also subscribe to receive shared-attribute updates from ThingsBoard.
+
+For example, a dashboard switch may update:
+
+```json
+{
+  "led-control": true
+}
+```
+
+The ESP32-S3 receives the update and changes the physical LED state.
+
+```text
+ThingsBoard Dashboard
+    │
+    │ Shared attribute update
+    ▼
+v1/devices/me/attributes
+    │
+    ▼
+ESP32-S3
+```
+
+#### RPC Requests
+
+##### Subscribe Only
+
+```text
+v1/devices/me/rpc/request/+
+```
+
+The ESP32-S3 subscribes to this wildcard topic to receive real-time Remote Procedure Call commands from ThingsBoard.
+
+Example command payload:
+
+```json
+{
+  "method": "led-control",
+  "params": true
+}
+```
+
+Example subscription:
+
+```cpp
+mqttClient.subscribe(
+  "v1/devices/me/rpc/request/+"
+);
+```
+
+The `+` wildcard matches RPC request IDs, such as:
+
+```text
+v1/devices/me/rpc/request/1
+v1/devices/me/rpc/request/42
+v1/devices/me/rpc/request/123
+```
+
+```text
+ThingsBoard Dashboard
+    │
+    │ RPC command
+    ▼
+v1/devices/me/rpc/request/+
+    │
+    ▼
+ESP32-S3
+```
+
+#### Recommended Subscriptions
+
+Subscribe only to actionable downlink topics:
+
+```cpp
+mqttClient.subscribe(
+  "v1/devices/me/attributes"
+);
+
+mqttClient.subscribe(
+  "v1/devices/me/rpc/request/+"
+);
+```
+
+Do not subscribe to the telemetry topic:
+
+```cpp
+// Not required
+// mqttClient.subscribe("v1/devices/me/telemetry");
+```
+
+#### Summary
+
+```text
+Telemetry:
+  ESP32-S3 → ThingsBoard
+  Publish only
+
+Attributes:
+  ESP32-S3 ↔ ThingsBoard
+  Publish device state and subscribe to shared updates
+
+RPC:
+  ThingsBoard → ESP32-S3
+  Subscribe only for real-time commands
+```
+
+Subscribing only to:
+
+```text
+v1/devices/me/attributes
+v1/devices/me/rpc/request/+
+```
+
+keeps the MQTT client lightweight and ensures that the ESP32-S3 receives only actionable control messages.
+
+
 
 ### Key Technical Changes for Secure MQTT
 
