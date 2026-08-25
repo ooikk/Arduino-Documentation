@@ -80,6 +80,9 @@ CoAP is a lightweight UDP-based protocol intended for constrained devices and ne
 
 ## 2. IoT Gateway Connection
 
+<img width="903" height="87" alt="image" src="https://github.com/user-attachments/assets/1a7a6fde-04ce-4b03-acc1-2ad138797bde" />
+
+
 If a deployment contains multiple low-power sensor nodes or legacy protocols, the ESP32-S3 can be used inside a gateway architecture.
 
 ### ESP32-S3 as an Edge Gateway
@@ -125,6 +128,303 @@ In this arrangement:
 - The Raspberry Pi runs ThingsBoard IoT Gateway software.
 - The gateway decodes the payload.
 - The gateway forwards the data to ThingsBoard Cloud.
+
+## 3. Platform Integrations
+
+<img width="756" height="89" alt="image" src="https://github.com/user-attachments/assets/e32d6314-c56f-4b4b-9485-35bcbf75c866" />
+
+
+Connecting an external MQTT broker, such as Mosquitto, HiveMQ, EMQX, or AWS IoT Core, serves a similar purpose to an external gateway: it bridges external device data into ThingsBoard.
+
+However, in the ThingsBoard ecosystem, **Platform MQTT Integration** and the **ThingsBoard IoT Gateway** are two distinct architectural features.
+
+### 1. Comparing the Two Patterns
+
+| Feature | Pattern A: Platform MQTT Integration | Pattern B: ThingsBoard IoT Gateway |
+|---|---|---|
+| How it works | ThingsBoard acts as an MQTT client that connects to an external broker, subscribes to selected topics, and decodes messages with Uplink Data Converters. | A standalone ThingsBoard IoT Gateway application runs on local hardware, connects to local brokers or sensors, processes data, and pushes it to ThingsBoard. |
+| Where decoder logic runs | Inside ThingsBoard, using JavaScript or TBEL scripts in Data Converters. | Locally on the gateway device, using JSON or Python mapping configurations. |
+| Network location | Suitable for a publicly accessible broker, or a broker reachable through a Remote Integration worker on the LAN. | Installed in the same local network as the devices and local broker. |
+| Primary use case | Devices already publish to an established cloud or external MQTT broker, and device firmware should not be changed. | Connecting constrained local devices, serial devices, RS485 or Modbus equipment, or LAN-isolated brokers without a public IP address. |
+
+### 2. ESP32-S3 in External Broker Architectures
+
+If the ESP32-S3 publishes telemetry to an external broker, such as Mosquitto or HiveMQ, instead of directly to the ThingsBoard MQTT API, the architecture can look like this:
+
+```text
++-----------------------------------------------------------------------------------+
+|                         EXTERNAL BROKER ARCHITECTURE                              |
++-----------------------------------------------------------------------------------+
+|                                                                                   |
+|  [ Scenario 1: Cloud or Public Broker ]                                           |
+|                                                                                   |
+|  ESP32-S3 ---> Public Broker ---> TB MQTT Integration ---> ThingsBoard Core       |
+|                 HiveMQ / AWS IoT / EMQX                                           |
+|                                                                                   |
+|  [ Scenario 2: LAN or Private Broker ]                                            |
+|                                                                                   |
+|  ESP32-S3 ---> Local Broker ---> Remote Integration or IoT Gateway ---> TB Cloud  |
+|                                                                                   |
++-----------------------------------------------------------------------------------+
+```
+
+### Scenario 1: Public External Broker
+
+#### Direct Cloud Integration
+
+In this scenario, the ESP32-S3 publishes to a public or cloud-hosted MQTT broker.
+
+Example topic:
+
+```text
+sensors/esp32-s3/telemetry
+```
+
+Example architecture:
+
+```text
+ESP32-S3
+    │
+    ▼
+Public MQTT Broker
+    │
+    ▼
+ThingsBoard MQTT Integration
+    │
+    ▼
+ThingsBoard Cloud
+```
+
+Typical setup process:
+
+1. Configure the ESP32-S3 to publish telemetry to an external MQTT broker.
+2. Create an MQTT Integration in ThingsBoard Cloud.
+3. Configure the integration to connect to the external broker.
+4. Subscribe to the required MQTT topic or topic wildcard.
+5. Create an Uplink Data Converter.
+6. Use the converter to:
+   - Read the topic name.
+   - Extract a device identifier.
+   - Decode the payload.
+   - Create or update the corresponding ThingsBoard device.
+   - Convert the payload into ThingsBoard telemetry.
+
+For example, the device may publish:
+
+```json
+{
+  "temperature": 25.4,
+  "humidity": 61.2,
+  "rssi": -58
+}
+```
+
+to:
+
+```text
+sensors/esp32-s3/telemetry
+```
+
+The ThingsBoard Data Converter can transform the message into telemetry associated with the correct ThingsBoard device.
+
+### Scenario 2: Private Local Broker
+
+#### Remote Integration or IoT Gateway
+
+If the external broker is hosted on a private LAN, such as a Mosquitto broker on a local Raspberry Pi or server, ThingsBoard Cloud cannot normally reach it directly.
+
+Example architecture:
+
+```text
+ESP32-S3
+    │
+    ▼
+Local Mosquitto Broker
+    │
+    ▼
+Local Integration Worker or ThingsBoard IoT Gateway
+    │
+    ▼
+ThingsBoard Cloud
+```
+
+A private broker may not be directly reachable because it has:
+
+- No public IP address.
+- NAT protection.
+- Firewall restrictions.
+- LAN-only network access.
+
+You have two main options.
+
+#### Option A: Remote Integration
+
+Run a lightweight ThingsBoard Integration worker inside the local network.
+
+The worker:
+
+1. Connects to the local MQTT broker.
+2. Subscribes to local topics.
+3. Streams data securely to ThingsBoard Cloud.
+4. Allows ThingsBoard Cloud integrations to work with LAN-only brokers.
+
+#### Option B: ThingsBoard IoT Gateway
+
+Run the open-source ThingsBoard IoT Gateway on a local device, such as:
+
+```text
+Raspberry Pi
+Local Linux server
+Industrial gateway
+Docker host
+```
+
+The gateway:
+
+1. Subscribes to the local Mosquitto broker.
+2. Reads incoming MQTT messages.
+3. Converts or maps the messages.
+4. Sends them to ThingsBoard through the Gateway MQTT API.
+
+The gateway telemetry topic is:
+
+```text
+v1/gateway/telemetry
+```
+
+3## 3. Availability on ThingsBoard Cloud and CE
+
+The availability of these approaches depends on the selected ThingsBoard edition.
+
+#### ThingsBoard Cloud Free or Maker Plan
+
+| Feature | Availability |
+|---|---|
+| Platform Integrations | Supported |
+| MQTT Integration | Supported |
+| Free integration quota | 1 integration |
+| Free data-converter quota | 3 data converters |
+| External MQTT broker testing | Supported within the free quota |
+
+With the free cloud plan, you can connect one external MQTT broker to ThingsBoard Cloud for testing.
+
+#### ThingsBoard Community Edition
+
+ThingsBoard Community Edition, or CE, is self-hosted and open source.
+
+| Feature | Community Edition Availability |
+|---|---|
+| Platform Integrations UI | Not included |
+| Data Converters UI | Not included |
+| MQTT Integration UI | Not included |
+| ThingsBoard IoT Gateway | Supported |
+| Custom bridge script | Supported |
+
+The Platform Integrations and Data Converters user interface is generally a ThingsBoard Professional Edition or Cloud feature.
+
+For Community Edition users, common alternatives are:
+
+- ThingsBoard IoT Gateway.
+- Custom MQTT bridge scripts.
+- Node-RED.
+- Python applications using `paho-mqtt`.
+- A local service that converts MQTT payloads into ThingsBoard telemetry.
+
+### 4. Choosing the Right Architecture
+
+#### Use a Direct ESP32-S3 Connection When Starting Fresh
+
+If you are writing the ESP32-S3 firmware yourself, the simplest architecture is usually:
+
+```text
+ESP32-S3
+    │
+    ▼
+ThingsBoard Cloud MQTT API
+```
+
+The ESP32-S3 connects directly to:
+
+```text
+thingsboard.cloud:1883
+```
+
+and uses the ThingsBoard access token as its MQTT username.
+
+Benefits include:
+
+- Fewer components.
+- Lower latency.
+- Less maintenance.
+- Simpler troubleshooting.
+- No external broker required.
+- Direct support for ThingsBoard telemetry, attributes, RPC, and OTA features.
+
+#### Use Platform MQTT Integration When Firmware Cannot Be Changed
+
+Use ThingsBoard Platform MQTT Integration when:
+
+- Devices already use a legacy MQTT broker.
+- Firmware cannot be changed.
+- Devices are managed by a third party.
+- Existing MQTT topics and payloads must remain unchanged.
+- You want ThingsBoard to consume data from an established cloud MQTT broker.
+
+In this case, use the available integration quota in ThingsBoard Cloud.
+
+```text
+ESP32-S3
+    │
+    ▼
+Existing MQTT Broker
+    │
+    ▼
+ThingsBoard MQTT Integration
+    │
+    ▼
+ThingsBoard Cloud
+```
+
+#### Use ThingsBoard IoT Gateway for Local or Offline Networks
+
+Use the ThingsBoard IoT Gateway when:
+
+- Devices use a local broker.
+- The broker does not have a public IP address.
+- Devices are on an isolated LAN.
+- Devices communicate through RS485, Modbus, BLE, LoRa, or serial connections.
+- You need local data processing before forwarding to the cloud.
+- You want to use ThingsBoard Community Edition without paid Platform Integrations.
+
+```text
+ESP32-S3 and Sensor Nodes
+    │
+    ▼
+Local MQTT Broker
+    │
+    ▼
+ThingsBoard IoT Gateway
+    │
+    ▼
+ThingsBoard Cloud or Self-Hosted CE
+```
+
+### 5. Summary
+
+| Situation | Recommended Approach |
+|---|---|
+| New ESP32-S3 project | Connect directly to ThingsBoard MQTT API |
+| Legacy ESP32-S3 firmware using a cloud broker | Use ThingsBoard Platform MQTT Integration |
+| Local Mosquitto broker with no public access | Use Remote Integration or ThingsBoard IoT Gateway |
+| RS485, Modbus, BLE, LoRa, or serial sensor network | Use ThingsBoard IoT Gateway |
+| ThingsBoard Community Edition deployment | Use ThingsBoard IoT Gateway or a custom bridge |
+| Need to avoid reflashing existing devices | Use Platform MQTT Integration |
+
+The simplest approach for a new ESP32-S3 project is usually direct MQTT communication with ThingsBoard.
+
+External MQTT brokers and gateway architectures are most useful when integrating existing systems, legacy firmware, local sensor networks, or private LAN infrastructure.
+
+---
 
 # Direct MQTT Setup Guide
 
