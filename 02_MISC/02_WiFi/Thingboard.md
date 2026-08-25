@@ -1199,6 +1199,9 @@ mqttClient.connect(
    ESP32-S3-Sensor-01
    ```
 
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/12fbf007-8282-4525-9144-0da6fb70f1d9" />
+
+
 4. Optionally enable:
 
    ```text
@@ -1232,6 +1235,9 @@ mqttClient.connect(
     ```
 
 11. View or copy the generated access token.
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/36ead924-0297-4069-9b8c-06f028260870" />
+
 
 > **Security warning:** Treat a device access token like a password. Anyone with the token may be able to authenticate as that device and publish telemetry or receive device commands.
 
