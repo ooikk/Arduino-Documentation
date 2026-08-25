@@ -1115,6 +1115,240 @@ Use `setInsecure()` only for short-term testing. For production deployments, alw
 espClient.setCACert(TB_ROOT_CA);
 ```
 
+## ThingsBoard Access Tokens
+
+You can retrieve or set an access token in ThingsBoard depending on whether you are connecting an IoT device, such as an ESP32, or authenticating a user through the REST API.
+
+### 1. Device Access Token
+
+Use a **Device Access Token** for IoT hardware such as:
+
+- ESP32.
+- ESP32-S3.
+- ESP8266.
+- Raspberry Pi.
+- Arduino-compatible devices.
+- MQTT clients.
+- HTTP telemetry clients.
+
+#### Getting a Token for an Existing Device
+
+1. Log in to ThingsBoard Cloud or a self-hosted ThingsBoard instance.
+2. In the left navigation menu, open:
+
+   ```text
+   Entities → Devices
+   ```
+
+3. Click the device row to open the device-details panel.
+4. Click:
+
+   ```text
+   Manage Credentials
+   ```
+
+5. Look for the key icon.
+6. A credentials window opens.
+7. Confirm that the credential type is:
+
+   ```text
+   Access Token
+   ```
+
+8. Copy the value in the **Access Token** field.
+
+Example token:
+
+```text
+YOUR_THINGSBOARD_ACCESS_TOKEN
+```
+
+Use this token as the MQTT username:
+
+```cpp
+const char* TOKEN = "YOUR_THINGSBOARD_ACCESS_TOKEN";
+```
+
+Example MQTT connection:
+
+```cpp
+mqttClient.connect(
+  "ESP32S3_Client",
+  TOKEN,
+  nullptr
+);
+```
+
+#### Creating a New Device with an Access Token
+
+1. Go to:
+
+   ```text
+   Entities → Devices
+   ```
+
+2. Click:
+
+   ```text
+   + Add Device
+   ```
+
+3. Enter a device name, for example:
+
+   ```text
+   ESP32-S3-Sensor-01
+   ```
+
+4. Optionally enable:
+
+   ```text
+   Add Credentials
+   ```
+
+5. Select:
+
+   ```text
+   Access Token
+   ```
+
+6. You can manually enter a custom access token:
+
+   ```text
+   esp32s3_secret_token_123
+   ```
+
+7. If you leave the field empty, ThingsBoard generates an access token automatically.
+8. Click:
+
+   ```text
+   Add
+   ```
+
+9. Open the new device details.
+10. Click:
+
+    ```text
+    Manage Credentials
+    ```
+
+11. View or copy the generated access token.
+
+> **Security warning:** Treat a device access token like a password. Anyone with the token may be able to authenticate as that device and publish telemetry or receive device commands.
+
+#### 2. User JWT Token
+
+Use a **JWT token** when writing a script that manages ThingsBoard resources through the REST API.
+
+Examples include:
+
+- Creating devices.
+- Creating dashboards.
+- Managing users.
+- Reading or modifying telemetry.
+- Automating configuration.
+- Using Python or Node.js scripts.
+
+A user JWT token is different from a device access token.
+
+| Token Type | Purpose |
+|---|---|
+| Device Access Token | Connects an IoT device through MQTT, HTTP, or CoAP |
+| User JWT Token | Authenticates a ThingsBoard user through the REST API |
+
+#### Request a User JWT Token
+
+Send an HTTP `POST` request to:
+
+```text
+https://thingsboard.cloud/api/auth/login
+```
+
+##### Request Headers
+
+```text
+Content-Type: application/json
+```
+
+##### Request Payload
+
+```json
+{
+  "username": "YOUR_THINGSBOARD_EMAIL",
+  "password": "YOUR_THINGSBOARD_PASSWORD"
+}
+```
+
+##### Example `curl` Command
+
+```bash
+curl -X POST \
+  https://thingsboard.cloud/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "YOUR_THINGSBOARD_EMAIL",
+    "password": "YOUR_THINGSBOARD_PASSWORD"
+  }'
+```
+
+##### Example Response
+
+```json
+{
+  "token": "eyJhbGciOiJIUzUxMiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzUx..."
+}
+```
+
+The value in:
+
+```json
+"token"
+```
+
+is the short-lived JWT authentication token.
+
+The value in:
+
+```json
+"refreshToken"
+```
+
+can be used to obtain a new JWT token when the current token expires.
+
+#### Use the JWT Token in REST Requests
+
+Use the value of `token` in the `Authorization` header:
+
+```text
+Authorization: Bearer <token>
+```
+
+Example:
+
+```bash
+curl \
+  https://thingsboard.cloud/api/tenant/devices \
+  -H "Authorization: Bearer eyJhbGciOiJIUzUxMiJ9..."
+```
+
+#### Token Summary
+
+| Token | Used By | Typical Use |
+|---|---|---|
+| Device Access Token | ESP32, ESP32-S3, MQTT client, HTTP client | Device telemetry, attributes, RPC, and device authentication |
+| JWT Token | Python, Node.js, REST client, automation script | Dashboard, device, user, and API management |
+| Refresh Token | REST client or automation script | Requesting a new JWT token after expiration |
+
+#### Security Recommendations
+
+- Do not commit device access tokens to public GitHub repositories.
+- Do not share JWT tokens in screenshots, logs, or documentation.
+- Use separate tokens for development and production devices.
+- Regenerate a token if it is accidentally exposed.
+- Use MQTTS on port `8883` for production device connections.
+- Use HTTPS for REST API calls.
+- Store tokens in environment variables or private configuration files where possible.
+
 
 ## Step 4: Verify Telemetry and Build Dashboards
 
