@@ -2228,7 +2228,8 @@ follow these steps.
 
 <img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/2a81b1f2-aef2-4057-b832-f9c071ce7bae" />
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/600d32e4-b273-40e6-8a1d-3649f3456406" />
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/59755222-c5af-41b3-bd7f-336dbe6ccf81" />
 
 
 #### Recommended Shared Attribute Configuration
