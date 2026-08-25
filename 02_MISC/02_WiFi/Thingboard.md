@@ -155,16 +155,16 @@ The ESP32 Gateway then collects, translates, and forwards the telemetry to Thing
 |                           ESP32 GATEWAY ARCHITECTURE                              |
 +-----------------------------------------------------------------------------------+
 |                                                                                   |
-|  [ Peripheral Sub-Nodes ]          [ Local Protocol ]        [ ESP32 Gateway ]   |
+|  [ Peripheral Sub-Nodes ]          [ Local Protocol ]        [ ESP32 Gateway ]    |
 |                                                                                   |
-|  - ESP32 / ESP8266 Nodes  -------> ESP-NOW ------------\                         |
+|  - ESP32 / ESP8266 Nodes  -------> ESP-NOW ------------\                          |
 |  - BLE Temperature Beacons ------> Bluetooth LE ---------> ESP32 Gateway          |
 |  - Industrial Meters       -------> RS485 / Modbus ----/   Master Node            |
 |                                                                  |                |
 |                                                            Wi-Fi / MQTT           |
 |                                                                  |                |
 |                                                                  v                |
-|                                                         ThingsBoard Cloud          |
+|                                                         ThingsBoard Cloud         |
 |                                                        Auto-creates separate      |
 |                                                        entities for each node     |
 +-----------------------------------------------------------------------------------+
