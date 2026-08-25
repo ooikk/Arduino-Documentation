@@ -609,7 +609,7 @@ The gateway telemetry topic is:
 v1/gateway/telemetry
 ```
 
-3## 3. Availability on ThingsBoard Cloud and CE
+### Scenario 3: Availability on ThingsBoard Cloud and CE
 
 The availability of these approaches depends on the selected ThingsBoard edition.
 
