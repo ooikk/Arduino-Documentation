@@ -1894,6 +1894,496 @@ For ThingsBoard Cloud, the simplest method is usually downloading the Amazon Roo
    - Control switches.
    - Alarm indicators.
 
+### Adding `led-control` as a ThingsBoard Shared Attribute
+
+`led-control` does not appear automatically because it is a **Shared Attribute**.
+
+A Shared Attribute is a setting sent from ThingsBoard down to the ESP32-S3.
+
+This differs from values such as `led-state` or `temperature`, which are sent from the ESP32-S3 up to ThingsBoard.
+
+```text
+Shared Attribute:
+ThingsBoard → ESP32-S3
+
+Telemetry or Client Attribute:
+ESP32-S3 → ThingsBoard
+```
+
+To make `led-control` visible and functional on the dashboard, complete the following steps.
+
+#### Step 1: Create `led-control` as a Shared Attribute
+
+1. In ThingsBoard, go to:
+
+   ```text
+   Entities → Devices
+   ```
+
+2. Click the ESP32-S3 device.
+3. Open the:
+
+   ```text
+   Attributes
+   ```
+
+   tab in the device-details panel.
+
+4. Change the dropdown from:
+
+   ```text
+   Client attributes
+   ```
+
+   to:
+
+   ```text
+   Shared attributes
+   ```
+
+5. Click:
+
+   ```text
+   + Add attribute
+   ```
+
+6. Enter the following values:
+
+   ```text
+   Key:        led-control
+   Value type: Boolean
+   Value:      false
+   ```
+
+7. Click:
+
+   ```text
+   Add
+   ```
+
+The new Shared Attribute should appear as:
+
+```json
+{
+  "led-control": false
+}
+```
+
+#### Step 2: Add a Control Switch Widget
+
+1. In the left-hand ThingsBoard menu, open:
+
+   ```text
+   Dashboards
+   ```
+
+2. Open an existing dashboard or create a new dashboard.
+3. Click the pencil icon to enter:
+
+   ```text
+   Edit Mode
+   ```
+
+4. Click:
+
+   ```text
+   Add new widget
+   ```
+
+5. Select the widget bundle:
+
+   ```text
+   Control widgets
+   ```
+
+6. Select either:
+
+   ```text
+   Switch
+   ```
+
+   or:
+
+   ```text
+   Toggle Button
+   ```
+
+7. In the widget configuration:
+
+   ```text
+   Target Entity:         Select the ESP32-S3 device alias
+   Shared Attribute Key:  led-control
+   ```
+
+8. Click:
+
+   ```text
+   Add
+   ```
+
+9. Click the checkmark icon to save the dashboard.
+
+#### How It Works
+
+When the dashboard switch is toggled:
+
+1. ThingsBoard updates the Shared Attribute:
+
+   ```json
+   {
+     "led-control": true
+   }
+   ```
+
+   or:
+
+   ```json
+   {
+     "led-control": false
+   }
+   ```
+
+2. ThingsBoard sends the update to the ESP32-S3 through the subscribed MQTT topic:
+
+   ```text
+   v1/devices/me/attributes
+   ```
+
+3. The ESP32-S3 receives the JSON payload:
+
+   ```json
+   {
+     "led-control": true
+   }
+   ```
+
+4. The ESP32-S3 MQTT callback runs.
+5. The callback sets the physical GPIO pin:
+
+   ```cpp
+   digitalWrite(
+     LED_PIN,
+     HIGH
+   );
+   ```
+
+   or:
+
+   ```cpp
+   digitalWrite(
+     LED_PIN,
+     LOW
+   );
+   ```
+
+6. The ESP32-S3 reports the new LED state back to ThingsBoard:
+
+   ```json
+   {
+     "led-state": "ON"
+   }
+   ```
+
+   or:
+
+   ```json
+   {
+     "led-state": "OFF"
+   }
+   ```
+
+#### Data Flow
+
+```text
+ThingsBoard Dashboard Switch
+    │
+    ▼
+Shared Attribute Update
+    │
+    ▼
+{
+  "led-control": true
+}
+    │
+    ▼
+MQTT Topic:
+v1/devices/me/attributes
+    │
+    ▼
+ESP32-S3 MQTT Callback
+    │
+    ▼
+digitalWrite(LED_PIN, HIGH)
+    │
+    ▼
+ESP32-S3 Reports State
+    │
+    ▼
+{
+  "led-state": "ON"
+}
+    │
+    ▼
+ThingsBoard Dashboard
+```
+
+#### Recommended MQTT Subscription
+
+The ESP32-S3 should subscribe to:
+
+```cpp
+mqttClient.subscribe(
+  "v1/devices/me/attributes"
+);
+```
+
+This allows the ESP32-S3 to receive Shared Attribute updates such as:
+
+```json
+{
+  "led-control": true
+}
+```
+### Finding the Shared Attribute Key in ThingsBoard Widgets
+
+If you cannot find the **Shared Attribute Key** field in the widget configuration window, it is usually located in a different tab of the widget editor.
+
+Follow these steps based on the ThingsBoard Control Widget layout.
+
+#### 1. Check the Advanced or Settings Tab
+
+For most ThingsBoard Control Widgets, such as:
+
+```text
+Switch
+Toggle Button
+Power Button
+```
+
+follow these steps.
+
+1. Open the Widget Configurator.
+2. In the **Basic** or **Data** tab, select the target device or entity alias.
+3. Switch to the:
+
+   ```text
+   Advanced
+   ```
+
+   or:
+
+   ```text
+   Settings
+   ```
+
+   tab.
+
+4. Scroll down until you find the:
+
+   ```text
+   Attribute Settings
+   ```
+
+   or:
+
+   ```text
+   Value Settings
+   ```
+
+   section.
+
+5. Configure the fields as follows:
+
+   ```text
+   Value attribute key:
+   led-control
+   ```
+
+   or, if the widget should read the current LED state:
+
+   ```text
+   Initial value key:
+   led-state
+   ```
+
+6. Set the update field:
+
+   ```text
+   Update attribute key:
+   led-control
+   ```
+
+   or:
+
+   ```text
+   Target attribute key:
+   led-control
+   ```
+
+7. Set the attribute scope to:
+
+   ```text
+   Shared attribute
+   ```
+
+#### Recommended Shared Attribute Configuration
+
+Use the following settings for a dashboard LED-control switch:
+
+| Widget Setting | Value |
+|---|---|
+| Target entity | ESP32-S3 device alias |
+| Value attribute key | `led-control` |
+| Update attribute key | `led-control` |
+| Attribute scope | Shared attribute |
+| Value type | Boolean |
+
+#### 2. Check Whether the Widget Uses RPC
+
+Some ThingsBoard control widgets are configured to send Remote Procedure Call commands by default.
+
+These widgets may show:
+
+```text
+RPC Method
+```
+
+instead of:
+
+```text
+Attribute Key
+```
+
+If the widget uses RPC, enter:
+
+```text
+led-control
+```
+
+in the RPC Method field.
+
+Example RPC command sent by ThingsBoard:
+
+```json
+{
+  "method": "led-control",
+  "params": true
+}
+```
+
+The ESP32-S3 can be configured to accept both:
+
+```text
+Shared Attribute updates
+```
+
+and:
+
+```text
+RPC commands
+```
+
+using the same command name:
+
+```text
+led-control
+```
+
+#### 3. Alternative: Generate a Dashboard Widget from Attributes
+
+If the Control Widget configuration is confusing, use the simpler Attributes Card method.
+
+1. Go to:
+
+   ```text
+   Entities → Devices
+   ```
+
+2. Click the ESP32-S3 device.
+3. Open the:
+
+   ```text
+   Attributes
+   ```
+
+   tab.
+
+4. Change the scope to:
+
+   ```text
+   Shared attributes
+   ```
+
+5. Find:
+
+   ```text
+   led-control
+   ```
+
+6. Select the checkbox beside the attribute.
+7. Click:
+
+   ```text
+   Show on dashboard
+   ```
+
+8. Select the target dashboard.
+9. Click:
+
+   ```text
+   Add
+   ```
+
+ThingsBoard automatically creates a toggle widget connected to the `led-control` Shared Attribute.
+
+#### Expected Data Flow
+
+```text
+ThingsBoard Dashboard Widget
+    │
+    ▼
+Shared Attribute Update
+    │
+    ▼
+{
+  "led-control": true
+}
+    │
+    ▼
+MQTT Topic:
+v1/devices/me/attributes
+    │
+    ▼
+ESP32-S3 MQTT Callback
+    │
+    ▼
+LED GPIO changes state
+```
+
+#### RPC Data Flow
+
+If using an RPC-based widget:
+
+```text
+ThingsBoard RPC Widget
+    │
+    ▼
+{
+  "method": "led-control",
+  "params": true
+}
+    │
+    ▼
+MQTT Topic:
+v1/devices/me/rpc/request/+
+    │
+    ▼
+ESP32-S3 MQTT Callback
+    │
+    ▼
+LED GPIO changes state
+```
+
 # ThingsBoard Cloud Free Plan
 
 ThingsBoard Cloud provides a free Maker tier suitable for evaluation, prototyping, and small personal projects.
