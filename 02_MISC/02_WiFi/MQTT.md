@@ -10,7 +10,7 @@
 
 [![Contents](https://img.shields.io/badge/ESP_Rainmaker-red)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Rainmaker.md)
 
-[![Contents](https://img.shields.io/badge/Thingsboard IO-red)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Thingboard.md)
+[![Contents](https://img.shields.io/badge/Thingsboard_IO-red)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Thingboard.md)
 
 
 ---
