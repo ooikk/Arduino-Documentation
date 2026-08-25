@@ -802,8 +802,8 @@ Install the following libraries through Arduino Library Manager:
 
 | Library | Author | Purpose |
 |---|---|---|
-| `PubSubClient` | Nick O'Leary | MQTT communication |
-| `ArduinoJson` | Benoit Blanchon | JSON telemetry payload generation |
+| `PubSubClient` | [Nick O'Leary](http://pubsubclient.knolleary.net/) | MQTT communication |
+| `ArduinoJson` | [Benoit Blanchon](https://arduinojson.org/) | JSON telemetry payload generation |
 
 ## Step 3: Upload ESP32-S3 Firmware
 
