@@ -1013,7 +1013,8 @@ causes the ESP32-S3 to toggle the physical LED pin.
 | RPC control command | `v1/devices/me/rpc/request/+` | `method: "led-control"` |
 
 In ThingsBoard's Direct Device MQTT API, the ThingsBoard MQTT Topic is a hardcoded system keyword:
-- `v1/devices/me/telemetry` tells ThingsBoard: "Assign this telemetry to whichever device owns the Access Token used during MQTT login."
+- `v1/devices/me/telemetry` tells ThingsBoard: "Assign this telemetry to whichever device owns the Access Token used during MQTT login."     
+
 If you publish to `v1/devices/esp32s3/telemetry`, the broker will not recognize esp32s3 as a valid endpoint and will silently drop or reject your messages.
 
 
