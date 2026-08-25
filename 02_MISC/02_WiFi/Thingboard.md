@@ -87,24 +87,6 @@ CoAP is a lightweight UDP-based protocol intended for constrained devices and ne
 
 If a deployment contains multiple low-power sensor nodes or legacy protocols, the ESP32-S3 can be used inside a gateway architecture.
 
-### ESP32-S3 as an Edge Gateway
-
-The ESP32-S3 can operate as a gateway that:
-
-- Collects telemetry from sub-nodes.
-- Receives BLE sensor data.
-- Receives ESP-NOW data.
-- Reads RS485 or Modbus devices.
-- Receives LoRa packets.
-- Relays all collected telemetry to ThingsBoard.
-
-The ThingsBoard Gateway MQTT telemetry topic is:
-
-```text
-v1/gateway/telemetry
-```
-
-This allows one ESP32-S3 gateway to register and publish telemetry for multiple downstream devices.
 
 ### ESP32-S3 Behind an External Gateway
 
@@ -130,6 +112,29 @@ In this arrangement:
 - The Raspberry Pi runs ThingsBoard IoT Gateway software.
 - The gateway decodes the payload.
 - The gateway forwards the data to ThingsBoard Cloud.
+
+
+
+### ESP32-S3 as an Edge Gateway
+
+The ESP32-S3 can operate as a gateway that:
+
+- Collects telemetry from sub-nodes.
+- Receives BLE sensor data.
+- Receives ESP-NOW data.
+- Reads RS485 or Modbus devices.
+- Receives LoRa packets.
+- Relays all collected telemetry to ThingsBoard.
+
+The ThingsBoard Gateway MQTT telemetry topic is:
+
+```text
+v1/gateway/telemetry
+```
+
+This allows one ESP32-S3 gateway to register and publish telemetry for multiple downstream devices.
+
+
 
 ### Using an ESP32 as a ThingsBoard IoT Gateway
 
