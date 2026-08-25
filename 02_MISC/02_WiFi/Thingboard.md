@@ -1355,6 +1355,308 @@ curl \
 - Use HTTPS for REST API calls.
 - Store tokens in environment variables or private configuration files where possible.
 
+### Obtaining the ThingsBoard Root CA Certificate
+
+To obtain the Root CA certificate, such as `TB_ROOT_CA`, for a ThingsBoard instance, use one of the following methods.
+
+The method depends on whether you use:
+
+- ThingsBoard Cloud.
+- A self-hosted ThingsBoard server.
+- A server with a public certificate.
+- A server with a self-signed certificate.
+
+#### Method 1: Download the Root CA Certificate
+
+##### ThingsBoard Cloud
+
+ThingsBoard Cloud at:
+
+```text
+thingsboard.cloud
+```
+
+uses Amazon Trust Services as a Certificate Authority.
+
+Download the public Amazon Root CA certificate:
+
+[Download Amazon Root CA 1](https://www.amazontrust.com/repository/AmazonRootCA1.pem)
+
+After downloading:
+
+1. Open the `.pem` file in a text editor, such as Notepad or VS Code.
+2. Copy the complete certificate block beginning with:
+
+   ```text
+   -----BEGIN CERTIFICATE-----
+   ```
+
+3. Include everything through:
+
+   ```text
+   -----END CERTIFICATE-----
+   ```
+
+#### Method 2: Extract Certificates with OpenSSL
+
+You can retrieve the certificate chain directly from port `8883` of a ThingsBoard server.
+
+This method works for:
+
+- ThingsBoard Cloud.
+- Self-hosted ThingsBoard servers.
+- Custom domains.
+- Other MQTT-over-TLS brokers.
+
+##### Linux, macOS, or Git Bash
+
+Run:
+
+```bash
+openssl s_client \
+  -showcerts \
+  -connect thingsboard.cloud:8883 \
+  </dev/null
+```
+
+##### Find the Root CA in the Output
+
+OpenSSL normally prints two or more certificate blocks.
+
+To locate the root certificate:
+
+1. Review the certificate chain in the terminal output.
+2. Locate the last certificate block, which is commonly the root issuer certificate.
+3. Copy the entire block from:
+
+   ```text
+   -----BEGIN CERTIFICATE-----
+   ```
+
+   through:
+
+   ```text
+   -----END CERTIFICATE-----
+   ```
+
+Example certificate block:
+
+```text
+-----BEGIN CERTIFICATE-----
+MIIDQTCCAimgAwIBAgITBmyT3FSAYio5WrvoDTVieF5C5zANBgkqhkiG9w0BAQsF
+... full certificate content ...
+-----END CERTIFICATE-----
+```
+
+#### Method 3: Export the Certificate Through a Web Browser
+
+1. Open a browser.
+2. Navigate to:
+
+   [ThingsBoard Cloud](https://thingsboard.cloud)
+
+   or open the custom ThingsBoard domain.
+
+3. Click the security or padlock icon beside the browser address bar.
+4. Select an option similar to:
+
+   ```text
+   Connection is secure
+   ```
+
+5. Select:
+
+   ```text
+   Certificate is valid
+   ```
+
+6. In the certificate-viewer window, open:
+
+   ```text
+   Details
+   ```
+
+   or:
+
+   ```text
+   Hierarchy
+   ```
+
+   or:
+
+   ```text
+   Certification Path
+   ```
+
+7. Select the top-most root node in the certificate hierarchy.
+
+Examples include:
+
+```text
+Amazon Root CA 1
+ISRG Root X1
+```
+
+8. Click:
+
+   ```text
+   Export
+   ```
+
+   or:
+
+   ```text
+   Download
+   ```
+
+9. Select one of these formats:
+
+   ```text
+   PEM
+   Base-64 encoded ASCII
+   ```
+
+#### Method 4: Self-Hosted ThingsBoard with Self-Signed Certificates
+
+If you deploy a local ThingsBoard instance using self-signed certificates, the Root CA certificate is usually generated during the server setup.
+
+Possible file names include:
+
+```text
+ca.pem
+server.crt
+root-ca.pem
+```
+
+Possible locations include:
+
+```text
+/usr/share/thingsboard/conf/
+```
+
+or a Docker volume directory.
+
+For example:
+
+```text
+/path/to/docker/volume/certs/ca.pem
+```
+
+Copy the plain-text certificate content into the ESP32 sketch.
+
+> **Important:** When using a self-signed certificate, the ESP32 must trust the same certificate authority that signed the ThingsBoard server certificate.
+
+#### Formatting the Certificate in an ESP32 Sketch
+
+Use a C++ raw string literal to store the certificate in the firmware.
+
+```cpp
+const char* TB_ROOT_CA = R"(
+-----BEGIN CERTIFICATE-----
+MIIDQTCCAimgAwIBAgITBmyT3FSAYio5WrvoDTVieF5C5zANBgkqhkiG9w0BAQsF
+... paste the full Root CA certificate text here ...
+-----END CERTIFICATE-----
+)";
+```
+
+The raw string format:
+
+```cpp
+R"(
+...
+)"
+```
+
+allows the certificate to retain its line breaks without manually adding `\n` to each line.
+
+#### Example Secure MQTT Setup
+
+```cpp
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+
+const char* TB_ROOT_CA = R"(
+-----BEGIN CERTIFICATE-----
+... full certificate ...
+-----END CERTIFICATE-----
+)";
+
+WiFiClientSecure secureClient;
+PubSubClient mqttClient(secureClient);
+
+void setup() {
+  secureClient.setCACert(TB_ROOT_CA);
+
+  mqttClient.setServer(
+    "thingsboard.cloud",
+    8883
+  );
+}
+```
+
+#### Troubleshooting
+
+##### TLS Connection Fails
+
+Verify the following:
+
+- The hostname matches the certificate hostname.
+- The ESP32-S3 clock is synchronized using NTP.
+- The Root CA certificate is complete.
+- The certificate begins with:
+
+  ```text
+  -----BEGIN CERTIFICATE-----
+  ```
+
+- The certificate ends with:
+
+  ```text
+  -----END CERTIFICATE-----
+  ```
+
+- The certificate uses correct line breaks.
+- The secure MQTT port is correct:
+
+  ```text
+  8883
+  ```
+
+##### Testing Without Certificate Verification
+
+For short-term testing only, use:
+
+```cpp
+secureClient.setInsecure();
+```
+
+Example:
+
+```cpp
+WiFiClientSecure secureClient;
+
+void setup() {
+  secureClient.setInsecure();
+
+  mqttClient.setServer(
+    "thingsboard.cloud",
+    8883
+  );
+}
+```
+
+> **Warning:** `setInsecure()` encrypts traffic but does not validate the server identity. It is vulnerable to Man-in-the-Middle attacks and should not be used in production.
+
+#### Summary
+
+| Method | Best For |
+|---|---|
+| Download Root CA directly | ThingsBoard Cloud using Amazon Trust Services |
+| Use OpenSSL | Any MQTT server or custom domain |
+| Export from browser | Users who prefer a graphical method |
+| Copy self-signed CA file | Local or self-hosted ThingsBoard deployments |
+
+For ThingsBoard Cloud, the simplest method is usually downloading the Amazon Root CA certificate and placing it in the ESP32-S3 sketch using a C++ raw string literal.
 
 ## Step 4: Verify Telemetry and Build Dashboards
 
