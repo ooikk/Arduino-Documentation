@@ -2389,6 +2389,106 @@ ESP32-S3 MQTT Callback
     ▼
 LED GPIO changes state
 ```
+### Displaying the Physical ESP32 BOOT Button State
+
+To display the physical ESP32 BOOT button state on the ThingsBoard dashboard, use a widget that reads **telemetry**.
+
+#### Why the Current Widget Fails
+
+The ESP32 sends the physical button state as telemetry:
+
+```json
+{
+  "button": "PRESSED"
+}
+```
+
+However, the current widget is looking for an attribute.
+
+There is also a second issue:
+
+```text
+Power Button widget
+```
+
+is an interactive control widget designed to send commands to the ESP32. It is not intended as a passive status-display widget.
+
+#### Fix
+
+1. Delete the current Power Button widget.
+2. Add one of the following display widgets:
+
+   ```text
+   HTML Card
+   Value Card
+   Status Indicator
+   ```
+
+3. Configure the widget data source as:
+
+   ```text
+   Entity:     Your ESP32-S3 device
+   Data type:  Telemetry
+   Key:        button
+   ```
+
+4. Save the dashboard.
+
+#### Expected Data Flow
+
+```text
+Physical ESP32 BOOT Button
+    │
+    ▼
+ESP32-S3 detects press or release
+    │
+    ▼
+Telemetry payload
+    │
+    ▼
+{
+  "button": "PRESSED"
+}
+    │
+    ▼
+ThingsBoard telemetry topic
+v1/devices/me/telemetry
+    │
+    ▼
+ThingsBoard dashboard display widget
+```
+
+#### Example Telemetry Payloads
+
+##### Button Pressed
+
+```json
+{
+  "button": "PRESSED"
+}
+```
+
+##### Button Released
+
+```json
+{
+  "button": "RELEASED"
+}
+```
+
+#### Recommended Widget Settings
+
+| Widget Setting | Value |
+|---|---|
+| Entity | ESP32-S3 device |
+| Data source type | Telemetry |
+| Telemetry key | `button` |
+| Display type | Value Card, HTML Card, or Status Indicator |
+| Update mode | Latest value |
+
+> Use a display widget for the physical button state. Use a Power Button or Toggle widget only when you want the dashboard to send a control command to the ESP32.
+
+
 
 # ThingsBoard Cloud Free Plan
 
