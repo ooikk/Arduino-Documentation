@@ -18,6 +18,9 @@
 |                                             ThingsBoard                          |
 +---------------------------------------------------------------------------------+
 ```
+<img width="895" height="612" alt="image" src="https://github.com/user-attachments/assets/1c225606-9762-432b-be69-aee715f58803" />
+
+
 
 ## 1. Direct Connection
 
