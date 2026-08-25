@@ -129,6 +129,316 @@ In this arrangement:
 - The gateway decodes the payload.
 - The gateway forwards the data to ThingsBoard Cloud.
 
+## Using an ESP32 as a ThingsBoard IoT Gateway
+
+You can use an ESP32 as an IoT Gateway instead of a Raspberry Pi.
+
+However, you cannot run the official Python-based ThingsBoard IoT Gateway software directly on an ESP32 because it requires a full Linux operating system.
+
+Instead, you can program the ESP32 as a custom gateway using the ThingsBoard Gateway MQTT API.
+
+### How an ESP32 Gateway Works
+
+Instead of every sensor node connecting directly to Wi-Fi and ThingsBoard, lower-power sub-nodes communicate locally with the ESP32 Gateway.
+
+The ESP32 Gateway then collects, translates, and forwards the telemetry to ThingsBoard through one Wi-Fi connection.
+
+```text
++-----------------------------------------------------------------------------------+
+|                           ESP32 GATEWAY ARCHITECTURE                              |
++-----------------------------------------------------------------------------------+
+|                                                                                   |
+|  [ Peripheral Sub-Nodes ]          [ Local Protocol ]        [ ESP32 Gateway ]   |
+|                                                                                   |
+|  - ESP32 / ESP8266 Nodes  -------> ESP-NOW ------------\                         |
+|  - BLE Temperature Beacons ------> Bluetooth LE ---------> ESP32 Gateway          |
+|  - Industrial Meters       -------> RS485 / Modbus ----/   Master Node            |
+|                                                                  |                |
+|                                                            Wi-Fi / MQTT           |
+|                                                                  |                |
+|                                                                  v                |
+|                                                         ThingsBoard Cloud          |
+|                                                        Auto-creates separate      |
+|                                                        entities for each node     |
++-----------------------------------------------------------------------------------+
+```
+
+### The ThingsBoard Gateway MQTT API
+
+ThingsBoard provides a specialized Gateway MQTT API topic:
+
+```text
+v1/gateway/telemetry
+```
+
+When an ESP32 publishes data to this topic using a Gateway Access Token, it can specify the names of downstream devices.
+
+ThingsBoard can then automatically create and update separate device entities for those downstream nodes.
+
+### Example Gateway Telemetry Payload
+
+The ESP32 Gateway can publish a payload such as:
+
+```json
+{
+  "Sensor_Node_01": [
+    {
+      "values": {
+        "temperature": 25.4,
+        "humidity": 62.1
+      }
+    }
+  ],
+  "Sensor_Node_02": [
+    {
+      "values": {
+        "temperature": 21.8,
+        "battery": 88
+      }
+    }
+  ]
+}
+```
+
+When ThingsBoard receives this payload from the ESP32 Gateway:
+
+1. It creates `Sensor_Node_01` if it does not already exist.
+2. It creates `Sensor_Node_02` if it does not already exist.
+3. It assigns the relevant telemetry to each device.
+4. It displays each downstream node as an individual device entity in ThingsBoard.
+
+### Common ESP32 Gateway Topologies
+
+#### ESP-NOW to Wi-Fi Gateway
+
+This is a common option for Espressif-based projects.
+
+##### Sub-Nodes
+
+The sub-nodes may be:
+
+```text
+ESP32 boards
+ESP8266 boards
+```
+
+They use ESP-NOW, a fast connectionless 2.4 GHz protocol that does not require a Wi-Fi router.
+
+Sub-nodes can:
+
+1. Wake from deep sleep.
+2. Send a packet in less than approximately 10 ms.
+3. Return to deep sleep.
+
+##### Gateway
+
+The gateway ESP32 connects to:
+
+```text
+ESP-NOW local sensor network
+Wi-Fi router
+ThingsBoard Cloud
+```
+
+Architecture:
+
+```text
+ESP-NOW Sub-Nodes
+    │
+    ▼
+ESP32 Gateway
+    │
+    ▼
+Wi-Fi Router
+    │
+    ▼
+ThingsBoard Cloud
+```
+
+#### BLE to Wi-Fi Gateway
+
+##### Sub-Nodes
+
+The sub-nodes may include:
+
+```text
+Bluetooth LE beacons
+BLE sensor tags
+BLE thermometer and hygrometer devices
+```
+
+Example devices include BLE temperature and humidity sensors.
+
+##### Gateway
+
+The ESP32 Gateway:
+
+1. Uses its built-in Bluetooth hardware to scan BLE advertisements.
+2. Decodes sensor values from received packets.
+3. Formats the values as JSON.
+4. Publishes the telemetry to ThingsBoard through Wi-Fi.
+
+Architecture:
+
+```text
+BLE Sensors
+    │
+    ▼
+ESP32 Gateway
+    │
+    ▼
+ThingsBoard Cloud
+```
+
+#### RS485 or Modbus RTU to Wi-Fi Gateway
+
+##### Sub-Nodes
+
+The sub-nodes may be:
+
+```text
+Industrial meters
+Solar inverters
+Energy meters
+Soil sensors
+Modbus RTU devices
+```
+
+These devices communicate through RS485 wiring.
+
+##### Gateway
+
+The ESP32 Gateway connects to an RS485 transceiver, such as:
+
+```text
+MAX485
+MAX3485
+SP3485
+```
+
+The gateway:
+
+1. Queries the sensors using Modbus RTU.
+2. Receives the sensor registers.
+3. Decodes the values.
+4. Packages the data as JSON.
+5. Uploads the telemetry to ThingsBoard.
+
+Architecture:
+
+```text
+RS485 / Modbus Devices
+    │
+    ▼
+RS485 Transceiver
+    │
+    ▼
+ESP32 Gateway
+    │
+    ▼
+ThingsBoard Cloud
+```
+
+#### LoRa or Sub-GHz to Wi-Fi Gateway
+
+##### Sub-Nodes
+
+The sub-nodes may be long-range LoRa devices.
+
+##### Gateway
+
+The ESP32 Gateway can be paired with a LoRa radio module, such as:
+
+```text
+SX1276
+SX1278
+SX1262
+```
+
+The gateway:
+
+1. Receives LoRa packets.
+2. Decodes the payload.
+3. Maps each payload to a downstream device name.
+4. Publishes the telemetry to ThingsBoard through Wi-Fi or Ethernet.
+
+Architecture:
+
+```text
+LoRa Sensor Nodes
+    │
+    ▼
+ESP32 + LoRa Module Gateway
+    │
+    ▼
+Wi-Fi or Ethernet
+    │
+    ▼
+ThingsBoard Cloud
+```
+
+### ESP32 Gateway versus Raspberry Pi Gateway
+
+| Feature | ESP32 Gateway | Raspberry Pi Gateway |
+|---|---|---|
+| Cost | Approximately USD $3–$6 | Approximately USD $35–$100 or more |
+| Power consumption | Very low, approximately 0.5 W to 1 W; suitable for solar power | Moderate, approximately 2.5 W to 15 W |
+| Boot time | Near-instant boot | Commonly 20–40 seconds |
+| Reliability | No general-purpose OS and no SD-card corruption risk from sudden power loss | Requires Linux maintenance and SD-card wear mitigation |
+| Software setup | Custom C++ or Arduino sketch using MQTT libraries such as `PubSubClient` | Official ThingsBoard IoT Gateway, usually a Python application with YAML configuration |
+| Offline data buffering | Limited by onboard RAM and flash; can use a MicroSD module if needed | High capacity; can store millions of records locally during outages |
+| Best protocol fit | ESP-NOW, BLE, Modbus RTU, LoRa, serial data | OPC-UA, BACnet, CAN bus, complex databases, and enterprise integrations |
+| Maintenance | Low after firmware is stable | Requires operating-system updates, service monitoring, and storage maintenance |
+| Extensibility | Limited by MCU RAM, flash, and processing capability | Greater CPU, RAM, storage, and software ecosystem flexibility |
+
+### Summary and Recommendation
+
+#### Use an ESP32 Gateway When
+
+Use an ESP32 Gateway if you:
+
+- Are building a custom local wireless sensor network.
+- Use ESP-NOW, BLE, Modbus RTU, LoRa, or serial devices.
+- Need a low-cost solution.
+- Need low power consumption.
+- Want quick boot time.
+- Want to avoid managing a Linux operating system.
+- Need high resilience against sudden power loss.
+- Do not require large local data storage.
+
+#### Use a Raspberry Pi Gateway When
+
+Use a Raspberry Pi Gateway if you:
+
+- Need official plug-and-play ThingsBoard Gateway connectors.
+- Need industrial protocols such as OPC-UA or BACnet.
+- Need CAN-bus support.
+- Need complex data transformation.
+- Need database integration.
+- Need large offline telemetry buffering.
+- Need a full Linux application environment.
+- Need to run Docker, Node-RED, Python services, or local databases.
+
+### Final Decision Guide
+
+```text
+Simple sensor network using ESP-NOW, BLE, Modbus, or LoRa
+    → ESP32 Gateway
+
+Low-power or solar-powered gateway
+    → ESP32 Gateway
+
+Need large local storage and offline buffering
+    → Raspberry Pi Gateway
+
+Need OPC-UA, BACnet, databases, Docker, or advanced integrations
+    → Raspberry Pi Gateway
+
+Need to run the official ThingsBoard IoT Gateway software
+    → Raspberry Pi Gateway or another Linux computer
+```
+
+
 ## 3. Platform Integrations
 
 <img width="756" height="89" alt="image" src="https://github.com/user-attachments/assets/e32d6314-c56f-4b4b-9485-35bcbf75c866" />
