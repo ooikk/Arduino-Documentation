@@ -129,7 +129,7 @@ In this arrangement:
 - The gateway decodes the payload.
 - The gateway forwards the data to ThingsBoard Cloud.
 
-## Using an ESP32 as a ThingsBoard IoT Gateway
+### Using an ESP32 as a ThingsBoard IoT Gateway
 
 You can use an ESP32 as an IoT Gateway instead of a Raspberry Pi.
 
@@ -137,7 +137,7 @@ However, you cannot run the official Python-based ThingsBoard IoT Gateway softwa
 
 Instead, you can program the ESP32 as a custom gateway using the ThingsBoard Gateway MQTT API.
 
-### How an ESP32 Gateway Works
+#### How an ESP32 Gateway Works
 
 Instead of every sensor node connecting directly to Wi-Fi and ThingsBoard, lower-power sub-nodes communicate locally with the ESP32 Gateway.
 
@@ -163,7 +163,7 @@ The ESP32 Gateway then collects, translates, and forwards the telemetry to Thing
 +-----------------------------------------------------------------------------------+
 ```
 
-### The ThingsBoard Gateway MQTT API
+#### The ThingsBoard Gateway MQTT API
 
 ThingsBoard provides a specialized Gateway MQTT API topic:
 
@@ -175,7 +175,7 @@ When an ESP32 publishes data to this topic using a Gateway Access Token, it can 
 
 ThingsBoard can then automatically create and update separate device entities for those downstream nodes.
 
-### Example Gateway Telemetry Payload
+#### Example Gateway Telemetry Payload
 
 The ESP32 Gateway can publish a payload such as:
 
@@ -207,13 +207,13 @@ When ThingsBoard receives this payload from the ESP32 Gateway:
 3. It assigns the relevant telemetry to each device.
 4. It displays each downstream node as an individual device entity in ThingsBoard.
 
-### Common ESP32 Gateway Topologies
+#### Common ESP32 Gateway Topologies
 
-#### ESP-NOW to Wi-Fi Gateway
+##### ESP-NOW to Wi-Fi Gateway
 
 This is a common option for Espressif-based projects.
 
-##### Sub-Nodes
+###### Sub-Nodes
 
 The sub-nodes may be:
 
@@ -230,7 +230,7 @@ Sub-nodes can:
 2. Send a packet in less than approximately 10 ms.
 3. Return to deep sleep.
 
-##### Gateway
+###### Gateway
 
 The gateway ESP32 connects to:
 
@@ -255,9 +255,9 @@ Wi-Fi Router
 ThingsBoard Cloud
 ```
 
-#### BLE to Wi-Fi Gateway
+##### BLE to Wi-Fi Gateway
 
-##### Sub-Nodes
+###### Sub-Nodes
 
 The sub-nodes may include:
 
@@ -269,7 +269,7 @@ BLE thermometer and hygrometer devices
 
 Example devices include BLE temperature and humidity sensors.
 
-##### Gateway
+###### Gateway
 
 The ESP32 Gateway:
 
@@ -290,9 +290,9 @@ ESP32 Gateway
 ThingsBoard Cloud
 ```
 
-#### RS485 or Modbus RTU to Wi-Fi Gateway
+##### RS485 or Modbus RTU to Wi-Fi Gateway
 
-##### Sub-Nodes
+###### Sub-Nodes
 
 The sub-nodes may be:
 
@@ -306,7 +306,7 @@ Modbus RTU devices
 
 These devices communicate through RS485 wiring.
 
-##### Gateway
+###### Gateway
 
 The ESP32 Gateway connects to an RS485 transceiver, such as:
 
@@ -339,13 +339,13 @@ ESP32 Gateway
 ThingsBoard Cloud
 ```
 
-#### LoRa or Sub-GHz to Wi-Fi Gateway
+##### LoRa or Sub-GHz to Wi-Fi Gateway
 
-##### Sub-Nodes
+###### Sub-Nodes
 
 The sub-nodes may be long-range LoRa devices.
 
-##### Gateway
+###### Gateway
 
 The ESP32 Gateway can be paired with a LoRa radio module, such as:
 
@@ -377,7 +377,7 @@ Wi-Fi or Ethernet
 ThingsBoard Cloud
 ```
 
-### ESP32 Gateway versus Raspberry Pi Gateway
+#### ESP32 Gateway versus Raspberry Pi Gateway
 
 | Feature | ESP32 Gateway | Raspberry Pi Gateway |
 |---|---|---|
@@ -391,9 +391,9 @@ ThingsBoard Cloud
 | Maintenance | Low after firmware is stable | Requires operating-system updates, service monitoring, and storage maintenance |
 | Extensibility | Limited by MCU RAM, flash, and processing capability | Greater CPU, RAM, storage, and software ecosystem flexibility |
 
-### Summary and Recommendation
+#### Summary and Recommendation
 
-#### Use an ESP32 Gateway When
+##### Use an ESP32 Gateway When
 
 Use an ESP32 Gateway if you:
 
@@ -406,7 +406,7 @@ Use an ESP32 Gateway if you:
 - Need high resilience against sudden power loss.
 - Do not require large local data storage.
 
-#### Use a Raspberry Pi Gateway When
+##### Use a Raspberry Pi Gateway When
 
 Use a Raspberry Pi Gateway if you:
 
@@ -419,7 +419,7 @@ Use a Raspberry Pi Gateway if you:
 - Need a full Linux application environment.
 - Need to run Docker, Node-RED, Python services, or local databases.
 
-### Final Decision Guide
+#### Final Decision Guide
 
 ```text
 Simple sensor network using ESP-NOW, BLE, Modbus, or LoRa
