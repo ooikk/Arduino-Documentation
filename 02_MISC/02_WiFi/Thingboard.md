@@ -2226,6 +2226,9 @@ follow these steps.
    Shared attribute
    ```
 
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/2a81b1f2-aef2-4057-b832-f9c071ce7bae" />
+
+
 #### Recommended Shared Attribute Configuration
 
 Use the following settings for a dashboard LED-control switch:
