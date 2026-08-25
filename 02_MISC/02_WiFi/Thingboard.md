@@ -1013,6 +1013,108 @@ causes the ESP32-S3 to toggle the physical LED pin.
 | RPC control command | `v1/devices/me/rpc/request/+` | `method: "led-control"` |
 
 
+### Key Technical Changes for Secure MQTT
+
+#### Library and Transport Object
+
+Replace the standard Wi-Fi client library:
+
+```cpp
+#include <WiFiClient.h>
+```
+
+with the secure TLS-capable client library:
+
+```cpp
+#include <WiFiClientSecure.h>
+```
+
+Then initialize a secure client object:
+
+```cpp
+WiFiClientSecure espClient;
+```
+
+#### Port Switch
+
+Change the MQTT port from the unencrypted port:
+
+```cpp
+const int TB_PORT = 1883;
+```
+
+to the secure MQTTS port:
+
+```cpp
+const int TB_PORT = 8883;
+```
+
+#### Root CA Certificate Validation
+
+Add the ThingsBoard Root Certificate Authority certificate:
+
+```cpp
+espClient.setCACert(TB_ROOT_CA);
+```
+
+This enables TLS certificate validation.
+
+Benefits include:
+
+- Encrypts MQTT traffic using TLS.
+- Protects Wi-Fi credentials, access tokens, telemetry, and commands while in transit.
+- Verifies that the ESP32-S3 is connecting to the legitimate ThingsBoard server.
+- Helps prevent Man-in-the-Middle, or MITM, attacks.
+
+Example:
+
+```cpp
+#include <WiFiClientSecure.h>
+#include <PubSubClient.h>
+
+WiFiClientSecure espClient;
+PubSubClient mqttClient(espClient);
+
+void setup() {
+  // Configure the trusted server Root CA certificate
+  espClient.setCACert(TB_ROOT_CA);
+
+  // Use secure MQTT port
+  mqttClient.setServer(
+    "thingsboard.cloud",
+    8883
+  );
+}
+```
+
+#### Testing Alternative
+
+During quick prototyping, you can bypass server certificate verification:
+
+```cpp
+espClient.setInsecure();
+```
+
+Example:
+
+```cpp
+WiFiClientSecure espClient;
+
+void setup() {
+  // Encryption remains enabled, but the server certificate
+  // is not verified.
+  espClient.setInsecure();
+}
+```
+
+> **Warning:** `setInsecure()` still encrypts the connection, but it does not verify the identity of the server. This makes the connection vulnerable to Man-in-the-Middle attacks.
+
+Use `setInsecure()` only for short-term testing. For production deployments, always use:
+
+```cpp
+espClient.setCACert(TB_ROOT_CA);
+```
+
 
 ## Step 4: Verify Telemetry and Build Dashboards
 
