@@ -1,24 +1,26 @@
 # Connection Options for ESP32-S3 with ThingsBoard
 
-[ThingsBoard](https://thingsboard.io/) supports several architecture patterns for connecting an ESP32-S3 board to the platform.
+[ThingsBoard](https://thingsboard.io/) supports several architecture patterns for connecting an ESP32-S3 board to the platform.     
+
+<img width="895" height="612" alt="image" src="https://github.com/user-attachments/assets/1c225606-9762-432b-be69-aee715f58803" />
 
 ```text
-+---------------------------------------------------------------------------------+
-|                           CONNECTION ARCHITECTURES                               |
-+---------------------------------------------------------------------------------+
-|                                                                                 |
-|  [ Direct Connection ]                                                          |
-|  ESP32-S3 --- Wi-Fi: MQTT / HTTP / CoAP ---> ThingsBoard Cloud (PaaS)           |
-|                                                                                 |
-|  [ IoT Gateway Connection: Local Sensor Network ]                               |
-|  Sensor Nodes --- BLE / ESP-NOW ---> ESP32-S3 Gateway ---> ThingsBoard Cloud    |
-|                                                                                 |
-|  [ External Gateway Connection ]                                                |
-|  ESP32-S3 Node --- BLE / UART / RS485 ---> Raspberry Pi Gateway --->            |
-|                                             ThingsBoard                          |
-+---------------------------------------------------------------------------------+
++------------------------------------------------------------------------------------+
+|                           CONNECTION ARCHITECTURES                                 |
++------------------------------------------------------------------------------------+
+|                                                                                    |
+|  [ Direct Connection ]                                                             |
+|  ESP32-S3 --- Wi-Fi: MQTT / HTTP / CoAP ---> ThingsBoard Cloud (PaaS)              |
+|                                                                                    |
+|  [ IoT Gateway Connection: Local Sensor Network ]                                  |
+|  Sensor Nodes --- BLE / ESP-NOW ---> ESP32-S3 Gateway ---> ThingsBoard Cloud       |
+|                                                                                    |
+|  [ External Gateway Connection ]                                                   |
+|  ESP32-S3 Node --- BLE / UART / RS485 ---> Raspberry Pi Gateway ---> ThingsBoard   |
+|                                                                                    |
++------------------------------------------------------------------------------------+
 ```
-<img width="895" height="612" alt="image" src="https://github.com/user-attachments/assets/1c225606-9762-432b-be69-aee715f58803" />
+
 
 https://thingsboard.io/docs/paas/user-guide/connectivity-guide/?
 
