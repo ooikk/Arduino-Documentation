@@ -1894,7 +1894,7 @@ For ThingsBoard Cloud, the simplest method is usually downloading the Amazon Roo
    - Control switches.
    - Alarm indicators.
 
-### Adding `led-control` as a ThingsBoard Shared Attribute
+# Adding `led-control` as a ThingsBoard Shared Attribute
 
 `led-control` does not appear automatically because it is a **Shared Attribute**.
 
@@ -1912,7 +1912,7 @@ ESP32-S3 → ThingsBoard
 
 To make `led-control` visible and functional on the dashboard, complete the following steps.
 
-#### Step 1: Create `led-control` as a Shared Attribute
+## Step 1: Create `led-control` as a Shared Attribute
 
 1. In ThingsBoard, go to:
 
@@ -1969,7 +1969,7 @@ The new Shared Attribute should appear as:
 }
 ```
 
-#### Step 2: Add a Control Switch Widget
+## Step 2: Add a Control Switch Widget
 
 1. In the left-hand ThingsBoard menu, open:
 
@@ -2023,7 +2023,7 @@ The new Shared Attribute should appear as:
 
 9. Click the checkmark icon to save the dashboard.
 
-#### How It Works
+### How It Works
 
 When the dashboard switch is toggled:
 
@@ -2092,7 +2092,7 @@ When the dashboard switch is toggled:
    }
    ```
 
-#### Data Flow
+### Data Flow
 
 ```text
 ThingsBoard Dashboard Switch
@@ -2127,7 +2127,7 @@ ESP32-S3 Reports State
 ThingsBoard Dashboard
 ```
 
-#### Recommended MQTT Subscription
+### Recommended MQTT Subscription
 
 The ESP32-S3 should subscribe to:
 
@@ -2144,13 +2144,13 @@ This allows the ESP32-S3 to receive Shared Attribute updates such as:
   "led-control": true
 }
 ```
-### Finding the Shared Attribute Key in ThingsBoard Widgets
+## Finding the Shared Attribute Key in ThingsBoard Widgets
 
 If you cannot find the **Shared Attribute Key** field in the widget configuration window, it is usually located in a different tab of the widget editor.
 
 Follow these steps based on the ThingsBoard Control Widget layout.
 
-#### 1. Check the Advanced or Settings Tab
+### 1. Check the Advanced or Settings Tab
 
 For most ThingsBoard Control Widgets, such as:
 
@@ -2236,7 +2236,7 @@ return data === true || data === "true" || data === 1;
 ```
 
 
-#### Recommended Shared Attribute Configuration
+### Recommended Shared Attribute Configuration
 
 Use the following settings for a dashboard LED-control switch:
 
@@ -2248,7 +2248,7 @@ Use the following settings for a dashboard LED-control switch:
 | Attribute scope | Shared attribute |
 | Value type | Boolean |
 
-#### 2. Check Whether the Widget Uses RPC
+### 2. Check Whether the Widget Uses RPC
 
 Some ThingsBoard control widgets are configured to send Remote Procedure Call commands by default.
 
@@ -2299,7 +2299,7 @@ using the same command name:
 led-control
 ```
 
-#### 3. Alternative: Generate a Dashboard Widget from Attributes
+### 3. Alternative: Generate a Dashboard Widget from Attributes
 
 If the Control Widget configuration is confusing, use the simpler Attributes Card method.
 
@@ -2346,7 +2346,7 @@ If the Control Widget configuration is confusing, use the simpler Attributes Car
 
 ThingsBoard automatically creates a toggle widget connected to the `led-control` Shared Attribute.
 
-#### Expected Data Flow
+### Expected Data Flow
 
 ```text
 ThingsBoard Dashboard Widget
@@ -2370,7 +2370,7 @@ ESP32-S3 MQTT Callback
 LED GPIO changes state
 ```
 
-#### RPC Data Flow
+### RPC Data Flow
 
 If using an RPC-based widget:
 
@@ -2393,13 +2393,36 @@ ESP32-S3 MQTT Callback
     ▼
 LED GPIO changes state
 ```
-### Displaying the Physical ESP32 BOOT Button State
 
-To display the physical ESP32 BOOT button state on the ThingsBoard dashboard, use a widget that reads **telemetry**.
+# ThingsBoard Button-State Dashboard Widgets
 
-#### Why the Current Widget Fails
+The physical ESP32 button state can be published to ThingsBoard in one of two ways:
 
-The ESP32 sends the physical button state as telemetry:
+1. As an **Attribute** through `TB_ATTRIBUTES_TOPIC`.
+2. As **Telemetry** through `TB_TELEMETRY_TOPIC`.
+
+Choose **one** method for the `button` key to avoid duplicated or conflicting dashboard entries.
+
+> **Recommendation:** Use an Attribute for the latest button state, such as `PRESSED` or `RELEASED`. Use Telemetry only when you need a historical record of button events.
+
+## Option A: Publish as an Attribute
+
+Publish the button state to:
+
+```text
+v1/devices/me/attributes
+```
+
+Example ESP32 code:
+
+```cpp
+client.publish(
+  TB_ATTRIBUTES_TOPIC,
+  "{\"button\":\"PRESSED\"}"
+);
+```
+
+Example payload:
 
 ```json
 {
@@ -2407,72 +2430,7 @@ The ESP32 sends the physical button state as telemetry:
 }
 ```
 
-However, the current widget is looking for an attribute.
-
-There is also a second issue:
-
-```text
-Power Button widget
-```
-
-is an interactive control widget designed to send commands to the ESP32. It is not intended as a passive status-display widget.
-
-#### Fix
-
-1. Delete the current Power Button widget.
-2. Add one of the following display widgets:
-
-   ```text
-   HTML Card
-   Value Card
-   Status Indicator
-   ```
-
-3. Configure the widget data source as:
-
-   ```text
-   Entity:     Your ESP32-S3 device
-   Data type:  Telemetry
-   Key:        button
-   ```
-
-4. Save the dashboard.
-
-#### Expected Data Flow
-
-```text
-Physical ESP32 BOOT Button
-    │
-    ▼
-ESP32-S3 detects press or release
-    │
-    ▼
-Telemetry payload
-    │
-    ▼
-{
-  "button": "PRESSED"
-}
-    │
-    ▼
-ThingsBoard telemetry topic
-v1/devices/me/telemetry
-    │
-    ▼
-ThingsBoard dashboard display widget
-```
-
-#### Example Telemetry Payloads
-
-##### Button Pressed
-
-```json
-{
-  "button": "PRESSED"
-}
-```
-
-##### Button Released
+or:
 
 ```json
 {
@@ -2480,370 +2438,73 @@ ThingsBoard dashboard display widget
 }
 ```
 
-#### Recommended Widget Settings
+### Best Use Case
 
-| Widget Setting | Value |
-|---|---|
-| Entity | ESP32-S3 device |
-| Data source type | Telemetry |
-| Telemetry key | `button` |
-| Display type | Value Card, HTML Card, or Status Indicator |
-| Update mode | Latest value |
-
-> Use a display widget for the physical button state. Use a Power Button or Toggle widget only when you want the dashboard to send a control command to the ESP32.
-
-### Displaying the ESP32 Button State in ThingsBoard
-
-The location of the required setting depends on whether you are editing a control widget, such as a Power Button or Switch, or a standard display card, such as an LED Indicator or Value Card.
-
-#### Option A: Control Widget
-
-##### Switch or Power Button
-
-If you are editing a control widget in the **Appearance** tab:
-
-1. Open the:
-
-   ```text
-   Appearance
-   ```
-
-   tab.
-
-2. Scroll to:
-
-   ```text
-   Value settings → Retrieve on/off value settings
-   ```
-
-3. Find:
-
-   ```text
-   Retrieve value using method
-   ```
-
-4. Change the value from:
-
-   ```text
-   Subscribe for attribute
-   ```
-
-   to:
-
-   ```text
-   Subscribe for timeseries
-   ```
-
-   or:
-
-   ```text
-   Latest telemetry
-   ```
-
-5. Set the timeseries key to:
-
-   ```text
-   button
-   ```
-
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ed7b6f33-145e-4c7a-add7-d83c40ea394c" />
-
-
-#### Option B: Standard Card
-
-##### LED Indicator or Value Card
-
-If you are editing a standard status widget in the **Data** tab:
-
-1. Click the:
-
-   ```text
-   Data
-   ```
-
-   tab at the top of the widget editor.
-
-2. Under **Datasources**, locate the ESP32 device:
-
-   ```text
-   ESP32-S3-Sensor-01
-   ```
-
-3. In the **Data keys** section, find the row containing:
-
-   ```text
-   button
-   ```
-
-4. Click the small type dropdown beside the key name.
-
-   Alternatively, click the pencil icon beside:
-
-   ```text
-   button
-   ```
-
-5. Change the key type to:
-
-   ```text
-   Timeseries
-   ```
-
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/59c4d7c5-be23-43dd-b564-dad9d4ef8997" />
-
-
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1bb8fd9b-ca57-4472-b37d-b4b0708a9894" />
-
-
-#### Option C: Change the ESP32 Code
-
-##### Easiest Alternative
-
-If changing the ThingsBoard widget configuration is confusing, modify the ESP32 Arduino code so that the board publishes `button` as an attribute instead of telemetry.
-
-In the `loop()` function, find:
-
-```cpp
-// Change this:
-client.publish(TB_TELEMETRY_TOPIC, buffer);
-```
-
-Replace it with:
-
-```cpp
-// To this:
-client.publish(TB_ATTRIBUTES_TOPIC, buffer);
-```
-
-After uploading the modified firmware:
-
-1. Press the physical ESP32 button once.
-2. Open the device page in ThingsBoard.
-3. The `button` value should appear in the device's **Attributes** list.
-
-#### Step-by-Step UI Fix
-
-Use this process to configure the widget to read the `button` value as telemetry.
-
-1. Click:
-
-   ```text
-   Cancel
-   ```
-
-   in the bottom-right corner to close the Data Key configuration window.
-
-2. Remain on the main:
-
-   ```text
-   Data
-   ```
-
-   tab in the widget editor.
-
-3. In the **Data keys** field for the ESP32 device datasource, locate the existing:
-
-   ```text
-   button
-   ```
-
-   key.
-
-4. Click the `X` icon beside `button` to remove the current attribute key.
-
-5. Click:
-
-   ```text
-   + Add key
-   ```
-
-   or click inside the empty data-key field.
-
-6. In the key-type selector, ensure that:
-
-   ```text
-   Timeseries
-   ```
-
-   is selected instead of:
-
-   ```text
-   Attribute
-   ```
-
-7. Select:
-
-   ```text
-   button
-   ```
-
-   from the list.
-
-8. Click the pencil icon beside the newly added `button` key.
-
-9. Enable:
-
-   ```text
-   Use data post-processing function
-   ```
-
-10. Paste the following JavaScript function:
-
-    ```javascript
-    return value === "PRESSED";
-    ```
-
-11. Click:
-
-    ```text
-    Save
-    ```
-
-12. Click:
-
-    ```text
-    Apply
-    ```
-
-    in the top-right corner.
-
-#### Button-State Data Flow
+Use Attributes when the dashboard only needs to show the **current/latest state** of the physical button.
 
 ```text
-Physical ESP32 Button
-    │
-    ▼
-ESP32 detects button press
-    │
-    ▼
-Telemetry payload
-    │
-    ▼
-{
-  "button": "PRESSED"
-}
-    │
-    ▼
-ThingsBoard Timeseries Data
-    │
-    ▼
-Widget post-processing function
-    │
-    ▼
-return value === "PRESSED";
-    │
-    ▼
-Dashboard shows ON or active state
+Current state:
+PRESSED
 ```
 
-#### Important Difference
-
-| ESP32 Publish Topic | ThingsBoard Data Type | Widget Key Type |
-|---|---|---|
-| `TB_TELEMETRY_TOPIC` | Telemetry / Timeseries | `Timeseries` |
-| `TB_ATTRIBUTES_TOPIC` | Attribute | `Attribute` |
-
-If the ESP32 publishes:
-
-```cpp
-client.publish(TB_TELEMETRY_TOPIC, buffer);
-```
-
-the widget must use:
+or:
 
 ```text
-Timeseries
+Current state:
+RELEASED
 ```
 
-If the ESP32 publishes:
+### Recommended Widgets
 
-```cpp
-client.publish(TB_ATTRIBUTES_TOPIC, buffer);
-```
+| Display Goal | Recommended Widget | Data Source Type | Data Key |
+|---|---|---|---|
+| ON/OFF visual status | LED Indicator | Attribute | `button` |
+| Raw button text | Value Card / Label Card | Attribute | `button` |
+| Custom colored text | Dynamic HTML Value Card | Attribute | `button` |
 
-the widget must use:
+### LED Indicator Configuration
 
-```text
-Attribute
-```
-
-### Displaying Button State as a ThingsBoard Attribute
-
-Publishing the physical button state as an attribute through:
-
-```text
-v1/devices/me/attributes
-```
-
-allows you to use several ThingsBoard dashboard widgets.
-
-Choose a widget based on whether you want a visual indicator, plain text, or custom colored text.
-
-#### 1. LED Indicator
-
-##### Best for Visual Button Status
-
-An LED Indicator turns a simulated LED ON when the button is pressed and OFF when the button is released.
-
-##### Widget Selection
-
-Select:
-
-```text
-Cards or Control widgets → LED Indicator
-```
-
-##### Data Source Setup
+Configure the widget data source:
 
 ```text
 Type: Attribute
 Key:  button
 ```
 
-##### Configuration
-
-1. Open the data-key configuration by clicking the pencil icon beside:
-
-   ```text
-   button
-   ```
-
-2. Enable:
-
-   ```text
-   Use data post-processing function
-   ```
-
-3. Paste the following JavaScript function:
-
-   ```javascript
-   return value === "PRESSED";
-   ```
-
-This converts the string value:
+Open the data-key configuration using the pencil icon and enable:
 
 ```text
-PRESSED
+Use data post-processing function
 ```
 
-into:
+Paste:
+
+```javascript
+return value === "PRESSED";
+```
+
+This converts the string button state into a Boolean result:
 
 ```text
-true
+PRESSED  → true  → Indicator ON
+RELEASED → false → Indicator OFF
 ```
 
-The LED Indicator then displays:
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/3a4b7105-83bc-4e27-9840-05b748d63176" />
+
+
+### Value Card Configuration
+
+Configure the widget data source:
 
 ```text
-PRESSED  → LED ON
-RELEASED → LED OFF
+Type: Attribute
+Key:  button
 ```
 
-#### 2. Value Card or Label Card
+No post-processing is needed.
 
-##### Best for Plain Text
-
-A Value Card displays the exact text sent by the ESP32-S3:
+The card displays the raw text:
 
 ```text
 PRESSED
@@ -2854,64 +2515,61 @@ or:
 ```text
 RELEASED
 ```
+Change the font color: Go to `Appearance/Value/Function`        
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/fd96dab6-6e68-4ead-82c7-bca9eb2e7d4f" />
 
-##### Widget Selection
-
-Select:
-
-```text
-Cards → Value Card
+Enter this javascript:
+```java
+if (value === 'PRESSED') {
+    return 'red';
+} else if (value === 'RELEASED') {
+    return 'green';
+}
+return 'gray';
 ```
 
-##### Data Source Setup
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/7ce9f9a1-ba01-48ba-af64-704838fdd3aa" />
 
-```text
-Type: Attribute
-Key:  button
-```
 
-##### Configuration
+### Dynamic HTML Value Card Configuration
 
-No post-processing function is required.
+1. Click:
 
-The widget automatically displays the raw attribute value.
+   ```text
+   + Add Widget → Create New Widget
+   ```
 
-Example display:
+2. Select:
 
-```text
-Button Status
-PRESSED
-```
+   ```text
+   Cards → HTML Value Card
+   ```
 
-#### 3. HTML Card - Dynamic HTML Value Card
+3. Do not use a static HTML widget.
 
-##### Best for Custom Colored Text
+4. Open the:
 
-An HTML Card can display dynamic colored text.
+   ```text
+   Data
+   ```
 
-For example:
+   tab.
 
-```text
-PRESSED  → Red
-RELEASED → Gray
-```
+5. Select the ESP32 device entity:
 
-##### Widget Selection
+   ```text
+   ESP32-S3-Sensor-01
+   ```
 
-Select:
+6. Add a data key:
 
-```text
-Cards → HTML Value Card (or HTML card under dynamic Cards).
-```
+   ```text
+   Type: Attribute
+   Key:  button
+   Label: button
+   ```
 
-##### Data Source Setup
-
-```text
-Type: Attribute
-Key:  button
-```
-
-##### Card HTML or CSS Template
+Use this HTML and CSS templates:
 
 ```html
 <div class="card-container">
@@ -2937,40 +2595,187 @@ Key:  button
 }
 ```
 
-#### Widget Recommendation
-
-| Desired Display | Recommended Widget | Additional Configuration |
-|---|---|---|
-| Simulated ON/OFF LED | LED Indicator | Enable post-processing |
-| Raw text status | Value Card or Label Card | No post-processing required |
-| Colored custom status | HTML Card | Add HTML or CSS template |
-
-#### Recommended Choice
-
-For a visual button indicator, use:
+Expected display:
 
 ```text
-LED Indicator
+PRESSED  → Red text
+RELEASED → Gray text
+```
+**Sample Dashboard**     
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b8510c3d-8ef2-4ee9-aad9-400da1827f71" />
+
+
+## Option B: Publish as Telemetry
+
+Publish the button state to:
+
+```text
+v1/devices/me/telemetry
 ```
 
-with this post-processing function:
+Example ESP32 code:
+
+```cpp
+client.publish(
+  TB_TELEMETRY_TOPIC,
+  "{\"button\":\"PRESSED\"}"
+);
+```
+
+Example payload:
+
+```json
+{
+  "button": "PRESSED"
+}
+```
+
+### Best Use Case
+
+Use telemetry when you need a **historical time-series log** of button presses and releases.
+
+For example:
+
+```text
+10:30:15  PRESSED
+10:30:16  RELEASED
+10:45:04  PRESSED
+10:45:05  RELEASED
+```
+
+### Recommended Widgets
+
+| Display Goal | Recommended Widget | Data Source Type | Data Key |
+|---|---|---|---|
+| Current visual status | LED Indicator | Timeseries | `button` |
+| Latest raw text | Value Card / Label Card | Timeseries | `button` |
+| Historical event record | Table / Timeseries Table | Timeseries | `button` |
+| Custom colored text | Dynamic HTML Value Card | Timeseries | `button` |
+
+### Telemetry LED Indicator Configuration
+
+Configure the widget key as:
+
+```text
+Type: Timeseries
+Key:  button
+```
+
+Do not select:
+
+```text
+Attribute
+```
+
+Enable data post-processing and use:
 
 ```javascript
 return value === "PRESSED";
 ```
 
-For simple monitoring or logging, use:
+### Telemetry Value Card Configuration
+
+Configure the widget key as:
 
 ```text
-Value Card
+Type: Timeseries
+Key:  button
 ```
 
-This displays the raw button values directly:
+The card displays the latest telemetry value:
 
 ```text
 PRESSED
+```
+
+or:
+
+```text
 RELEASED
 ```
+
+### Screenshot Setup for Telemetry Attribute
+
+
+
+**Control - Switch Control**     
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ed7b6f33-145e-4c7a-add7-d83c40ea394c" />
+
+**Control - Power Button**    
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/59c4d7c5-be23-43dd-b564-dad9d4ef8997" />
+
+**Control - Toggle Button**      
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1bb8fd9b-ca57-4472-b37d-b4b0708a9894" />
+
+
+## Important: Do Not Mix the Same Key Unnecessarily
+
+Avoid publishing the same `button` key to both topics unless there is a clear reason.
+
+Do not do this for a simple status display:
+
+```cpp
+client.publish(
+  TB_ATTRIBUTES_TOPIC,
+  "{\"button\":\"PRESSED\"}"
+);
+
+client.publish(
+  TB_TELEMETRY_TOPIC,
+  "{\"button\":\"PRESSED\"}"
+);
+```
+
+This can create confusing duplicate data sources in ThingsBoard:
+
+```text
+Attribute → button
+Telemetry → button
+```
+
+The dashboard widget may then be configured with the wrong source type.
+
+**Telemetry Dashboard**     
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9c252530-61c9-4e8e-92d9-4fd2e5abd422" />
+
+
+## Topic and Widget Summary
+
+| Requirement | ESP32 Publish Topic | ThingsBoard Data Type | Recommended Widget |
+|---|---|---|---|
+| Display only the latest button state | `v1/devices/me/attributes` | Attribute | LED Indicator or Value Card |
+| Display `PRESSED` / `RELEASED` text | `v1/devices/me/attributes` | Attribute | Value Card |
+| Show a colored button-state label | `v1/devices/me/attributes` | Attribute | Dynamic HTML Value Card |
+| Keep historical button-event records | `v1/devices/me/telemetry` | Timeseries | Table or Timeseries Table |
+| Display the latest telemetry value | `v1/devices/me/telemetry` | Timeseries | LED Indicator or Value Card |
+
+## Recommended Approach
+
+For a physical ESP32 BOOT button, publish the latest state as an Attribute:
+
+```cpp
+client.publish(
+  TB_ATTRIBUTES_TOPIC,
+  "{\"button\":\"PRESSED\"}"
+);
+```
+
+Use an LED Indicator or Value Card configured with:
+
+```text
+Type: Attribute
+Key:  button
+```
+
+Use Telemetry only if you also need historical button-press records:
+
+```cpp
+client.publish(
+  TB_TELEMETRY_TOPIC,
+  "{\"button\":\"PRESSED\"}"
+);
+```
+
 
 # ThingsBoard Cloud Free Plan
 
