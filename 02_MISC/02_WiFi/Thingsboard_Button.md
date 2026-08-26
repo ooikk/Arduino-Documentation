@@ -277,6 +277,20 @@ or:
 RELEASED
 ```
 
+### Screenshot Setup for Telemetry Attribute
+
+
+
+**Control - Switch Control**
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ed7b6f33-145e-4c7a-add7-d83c40ea394c" />
+
+**Control - Power Button**
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/59c4d7c5-be23-43dd-b564-dad9d4ef8997" />
+
+**Control - Toggle Button**
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1bb8fd9b-ca57-4472-b37d-b4b0708a9894" />
+
+
 ## Important: Do Not Mix the Same Key Unnecessarily
 
 Avoid publishing the same `button` key to both topics unless there is a clear reason.
