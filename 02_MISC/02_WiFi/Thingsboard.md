@@ -1581,11 +1581,8 @@ ThingsBoard Cloud at:
 thingsboard.cloud
 ```
 
-uses Amazon Trust Services as a Certificate Authority.
+Uses Let's Encrypt (ISRG Root X1). You can download the PEM certificate directly from [Let's Encrypt](https://letsencrypt.org/certs/isrgrootx1.pem.txt).
 
-Download the public Amazon Root CA certificate:
-
-[Download Amazon Root CA 1](https://www.amazontrust.com/repository/AmazonRootCA1.pem)
 
 After downloading:
 
