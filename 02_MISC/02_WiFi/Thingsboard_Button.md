@@ -324,6 +324,10 @@ Telemetry → button
 
 The dashboard widget may then be configured with the wrong source type.
 
+**Telemetry Dashboard**     
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9c252530-61c9-4e8e-92d9-4fd2e5abd422" />
+
+
 ## Topic and Widget Summary
 
 | Requirement | ESP32 Publish Topic | ThingsBoard Data Type | Recommended Widget |
