@@ -1645,7 +1645,7 @@ Example certificate block:
 
 ```text
 -----BEGIN CERTIFICATE-----
-MIIDQTCCAimgAwIBAgITBmyT3FSAYio5WrvoDTVieF5C5zANBgkqhkiG9w0BAQsF
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
 ... full certificate content ...
 -----END CERTIFICATE-----
 ```
