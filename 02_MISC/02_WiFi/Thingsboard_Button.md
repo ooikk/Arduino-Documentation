@@ -119,6 +119,21 @@ or:
 ```text
 RELEASED
 ```
+Change the font color: Go to `Appearance/Value/Function`        
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/fd96dab6-6e68-4ead-82c7-bca9eb2e7d4f" />
+
+Enter this javascript:
+```java
+if (value === 'PRESSED') {
+    return 'red';
+} else if (value === 'RELEASED') {
+    return 'green';
+}
+return 'gray';
+```
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/7ce9f9a1-ba01-48ba-af64-704838fdd3aa" />
+
 
 ### Dynamic HTML Value Card Configuration
 
