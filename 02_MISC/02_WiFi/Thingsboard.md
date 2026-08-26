@@ -2779,6 +2779,350 @@ client.publish(
 );
 ```
 
+# Connecting ESP32 to ThingsBoard via HTTP
+
+Connecting an ESP32 to ThingsBoard through HTTP replaces continuous MQTT sockets with stateless REST API endpoints.
+
+The ESP32 uses:
+
+- `POST` requests to publish telemetry and attributes.
+- `GET` requests to poll server-side Shared Attributes and commands.
+
+## HTTP REST API Endpoints
+
+| Purpose | HTTP Method | Endpoint |
+|---|---|---|
+| Telemetry | `POST` | `http://<host>/api/v1/<ACCESS_TOKEN>/telemetry` |
+| Client Attributes | `POST` | `http://<host>/api/v1/<ACCESS_TOKEN>/attributes` |
+| Shared Attributes | `GET` | `http://<host>/api/v1/<ACCESS_TOKEN>/attributes?sharedKeys=led-control` |
+
+## Complete ESP32 HTTP Example
+
+```cpp
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
+// -----------------------------------------------------------------------------
+// Network Settings
+// -----------------------------------------------------------------------------
+const char* WIFI_SSID = "YOUR_WIFI_SSID";
+const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
+
+const char* TB_HOST = "thingsboard.cloud";
+const char* ACCESS_TOKEN = "YOUR_DEVICE_ACCESS_TOKEN";
+
+// -----------------------------------------------------------------------------
+// Key Definitions
+// -----------------------------------------------------------------------------
+const char* TOPIC_STATUS    = "status";
+const char* TOPIC_TEMP      = "temperature";
+const char* TOPIC_RSSI      = "rssi";
+const char* TOPIC_UPTIME    = "uptime";
+const char* TOPIC_LED_SET   = "led-control";
+const char* TOPIC_LED_STATE = "led-state";
+const char* TOPIC_BUTTON    = "button";
+
+// -----------------------------------------------------------------------------
+// Hardware Pins
+// -----------------------------------------------------------------------------
+const int LED_PIN = 2;
+const int BUTTON_PIN = 0;
+
+// -----------------------------------------------------------------------------
+// Runtime State
+// -----------------------------------------------------------------------------
+bool lastBtnState = HIGH;
+bool currentLedState = false;
+
+unsigned long lastTelemetryTime = 0;
+
+// -----------------------------------------------------------------------------
+// Publish Client Attributes
+// -----------------------------------------------------------------------------
+void postAttributes() {
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+
+  HTTPClient http;
+
+  String url =
+    "http://" +
+    String(TB_HOST) +
+    "/api/v1/" +
+    String(ACCESS_TOKEN) +
+    "/attributes";
+
+  http.begin(url);
+
+  http.addHeader(
+    "Content-Type",
+    "application/json"
+  );
+
+  StaticJsonDocument<128> doc;
+
+  doc[TOPIC_STATUS] = "online";
+
+  doc[TOPIC_LED_STATE] =
+    currentLedState ? "ON" : "OFF";
+
+  String payload;
+
+  serializeJson(
+    doc,
+    payload
+  );
+
+  int code = http.POST(payload);
+
+  Serial.printf(
+    "[HTTP] Attributes POST code: %d\n",
+    code
+  );
+
+  http.end();
+}
+
+// -----------------------------------------------------------------------------
+// Publish Telemetry
+// -----------------------------------------------------------------------------
+void postTelemetry(
+  float temp,
+  long rssi,
+  unsigned long uptime,
+  const char* buttonVal
+) {
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+
+  HTTPClient http;
+
+  String url =
+    "http://" +
+    String(TB_HOST) +
+    "/api/v1/" +
+    String(ACCESS_TOKEN) +
+    "/telemetry";
+
+  http.begin(url);
+
+  http.addHeader(
+    "Content-Type",
+    "application/json"
+  );
+
+  StaticJsonDocument<256> doc;
+
+  doc[TOPIC_TEMP] = temp;
+  doc[TOPIC_RSSI] = rssi;
+  doc[TOPIC_UPTIME] = uptime;
+  doc[TOPIC_BUTTON] = buttonVal;
+
+  String payload;
+
+  serializeJson(
+    doc,
+    payload
+  );
+
+  int code = http.POST(payload);
+
+  Serial.printf(
+    "[HTTP] Telemetry POST code: %d\n",
+    code
+  );
+
+  http.end();
+}
+
+// -----------------------------------------------------------------------------
+// Poll Shared Attributes
+//
+// Reads the "led-control" Shared Attribute from ThingsBoard.
+// -----------------------------------------------------------------------------
+void pollSharedAttributes() {
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+
+  HTTPClient http;
+
+  String url =
+    "http://" +
+    String(TB_HOST) +
+    "/api/v1/" +
+    String(ACCESS_TOKEN) +
+    "/attributes?sharedKeys=" +
+    String(TOPIC_LED_SET);
+
+  http.begin(url);
+
+  int code = http.GET();
+
+  if (code == 200) {
+    String payload = http.getString();
+
+    StaticJsonDocument<256> doc;
+
+    DeserializationError err =
+      deserializeJson(
+        doc,
+        payload
+      );
+
+    if (
+      !err &&
+      doc.containsKey("shared") &&
+      doc["shared"].containsKey(TOPIC_LED_SET)
+    ) {
+      bool targetState =
+        doc["shared"][TOPIC_LED_SET].as<bool>();
+
+      if (targetState != currentLedState) {
+        currentLedState = targetState;
+
+        digitalWrite(
+          LED_PIN,
+          currentLedState ? HIGH : LOW
+        );
+
+        Serial.printf(
+          "[HTTP] LED updated to: %s\n",
+          currentLedState ? "HIGH" : "LOW"
+        );
+
+        // Notify ThingsBoard of the new LED state
+        postAttributes();
+      }
+    }
+  }
+
+  http.end();
+}
+
+// -----------------------------------------------------------------------------
+// Setup
+// -----------------------------------------------------------------------------
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  digitalWrite(LED_PIN, LOW);
+
+  WiFi.begin(
+    WIFI_SSID,
+    WIFI_PASS
+  );
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWi-Fi Connected!");
+
+  // Publish the initial status and LED state
+  postAttributes();
+}
+
+// -----------------------------------------------------------------------------
+// Main Loop
+// -----------------------------------------------------------------------------
+void loop() {
+  // ---------------------------------------------------------------------------
+  // 1. Instant Button Telemetry
+  // ---------------------------------------------------------------------------
+  bool btnState = digitalRead(BUTTON_PIN);
+
+  if (btnState != lastBtnState) {
+    delay(50);
+
+    if (digitalRead(BUTTON_PIN) == btnState) {
+      lastBtnState = btnState;
+
+      postTelemetry(
+        24.5,
+        WiFi.RSSI(),
+        millis() / 1000,
+        btnState == LOW ? "PRESSED" : "RELEASED"
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 2. Periodic Telemetry and Shared-Attribute Polling
+  // ---------------------------------------------------------------------------
+  if (millis() - lastTelemetryTime > 5000) {
+    lastTelemetryTime = millis();
+
+    float simulatedTemp =
+      22.0 + random(-10, 10) / 10.0;
+
+    postTelemetry(
+      simulatedTemp,
+      WiFi.RSSI(),
+      millis() / 1000,
+      lastBtnState == LOW ? "PRESSED" : "RELEASED"
+    );
+
+    pollSharedAttributes();
+  }
+}
+```
+
+## HTTP Data Flow
+
+```text
+ESP32-S3
+    │
+    ├── POST telemetry
+    │   └── /api/v1/<ACCESS_TOKEN>/telemetry
+    │
+    ├── POST attributes
+    │   └── /api/v1/<ACCESS_TOKEN>/attributes
+    │
+    └── GET Shared Attributes
+        └── /api/v1/<ACCESS_TOKEN>/attributes?sharedKeys=led-control
+```
+
+## Telemetry Payload Example
+
+```json
+{
+  "temperature": 24.5,
+  "rssi": -62,
+  "uptime": 3600,
+  "button": "PRESSED"
+}
+```
+
+## Attribute Payload Example
+
+```json
+{
+  "status": "online",
+  "led-state": "ON"
+}
+```
+
+## Shared Attribute Response Example
+
+ThingsBoard may return a response similar to:
+
+```json
+{
+  "shared": {
+    "led-control": true
+  }
+}
+```
+
+The ESP32-S3 reads the `led-control` value, updates the physical LED GPIO, then reports the resulting `led-state` back to ThingsBoard.
 
 # ThingsBoard Cloud Free Plan
 
