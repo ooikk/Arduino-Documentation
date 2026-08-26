@@ -22,7 +22,7 @@ const int TB_PORT = 8883;  // ## 2. Changed from 1883 to 8883
 #else
 const int TB_PORT = 1883;
 #endif
-const char* TOKEN = "iwnnwkp7878zdvdblmbf";  //"YOUR_THINGSBOARD_ACCESS_TOKEN";
+const char* TOKEN = "YOUR_THINGSBOARD_ACCESS_TOKEN";  //"YOUR_THINGSBOARD_ACCESS_TOKEN";
 
 
 
