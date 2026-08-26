@@ -2231,6 +2231,10 @@ follow these steps.
 
 <img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/59755222-c5af-41b3-bd7f-336dbe6ccf81" />
 
+```java
+return data === true || data === "true" || data === 1;
+```
+
 
 #### Recommended Shared Attribute Configuration
 
