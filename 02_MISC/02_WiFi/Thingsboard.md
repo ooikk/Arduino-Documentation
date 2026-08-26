@@ -3124,6 +3124,244 @@ ThingsBoard may return a response similar to:
 
 The ESP32-S3 reads the `led-control` value, updates the physical LED GPIO, then reports the resulting `led-state` back to ThingsBoard.
 
+# Using the Same ThingsBoard Dashboard with HTTP
+
+You can use the exact same ThingsBoard dashboard for both MQTT and HTTP devices.
+
+ThingsBoard abstracts the transport layer. Once ThingsBoard receives the data, it treats HTTP and MQTT data identically. Dashboard widgets only need to reference the correct data type and key name.
+
+## Data Key Mapping Matrix
+
+Ensure dashboard widgets reference the keys according to how the ESP32 HTTP code publishes or retrieves them.
+
+| Data Type | HTTP Endpoint / Method | Key Name | Sample Widget |
+|---|---|---|---|
+| Timeseries | `POST /telemetry` | `button` | LED Indicator / Value Card |
+| Timeseries | `POST /telemetry` | `temperature` | Value Card / Gauge / Chart |
+| Timeseries | `POST /telemetry` | `rssi` | Value Card |
+| Timeseries | `POST /telemetry` | `uptime` | Value Card |
+| Attribute | `POST /attributes` | `status` | LED Indicator |
+| Attribute | `POST /attributes` | `led-state` | Value Card / LED Indicator |
+| Shared Attribute | `GET /attributes` | `led-control` | Switch / Power Button |
+
+## Dashboard Widget Configuration
+
+### Button Status
+
+Configure the widget data key as:
+
+```text
+Data type: Timeseries
+Key:       button
+```
+
+Expected values:
+
+```text
+PRESSED
+RELEASED
+```
+
+Recommended widgets:
+
+```text
+LED Indicator
+Value Card
+Markdown/HTML Card
+```
+
+### Temperature
+
+Configure the widget data key as:
+
+```text
+Data type: Timeseries
+Key:       temperature
+```
+
+Recommended widgets:
+
+```text
+Value Card
+Gauge
+Time-Series Chart
+```
+
+### Wi-Fi RSSI
+
+Configure the widget data key as:
+
+```text
+Data type: Timeseries
+Key:       rssi
+```
+
+Recommended widget:
+
+```text
+Value Card
+```
+
+Example display:
+
+```text
+-62 dBm
+```
+
+### Device Uptime
+
+Configure the widget data key as:
+
+```text
+Data type: Timeseries
+Key:       uptime
+```
+
+Recommended widget:
+
+```text
+Value Card
+```
+
+Example display:
+
+```text
+3600 seconds
+```
+
+### Device Online Status
+
+Configure the widget data key as:
+
+```text
+Data type: Attribute
+Key:       status
+```
+
+Expected value:
+
+```text
+online
+```
+
+Recommended widget:
+
+```text
+LED Indicator
+```
+
+### LED State
+
+Configure the widget data key as:
+
+```text
+Data type: Attribute
+Key:       led-state
+```
+
+Expected values:
+
+```text
+ON
+OFF
+```
+
+Recommended widgets:
+
+```text
+Value Card
+LED Indicator
+```
+
+### LED Control
+
+Configure the dashboard control widget to update a Shared Attribute:
+
+```text
+Attribute scope: Shared Attribute
+Key:             led-control
+```
+
+Expected Boolean values:
+
+```text
+true
+false
+```
+
+Recommended widgets:
+
+```text
+Switch
+Power Button
+Control Widget
+```
+
+## Key Operational Difference
+
+### MQTT
+
+MQTT uses a persistent connection.
+
+```text
+Dashboard switch changed
+        ↓
+ThingsBoard publishes command immediately
+        ↓
+ESP32 receives the update immediately
+        ↓
+Physical LED changes state
+```
+
+### HTTP
+
+HTTP uses stateless requests.
+
+```text
+Dashboard switch changed
+        ↓
+ThingsBoard updates Shared Attribute
+        ↓
+ESP32 polls ThingsBoard using HTTP GET
+        ↓
+ESP32 receives led-control value
+        ↓
+Physical LED changes state
+```
+
+## HTTP Polling Delay
+
+With HTTP, the ESP32 must poll ThingsBoard for Shared Attribute updates.
+
+If the following timer is set to 5 seconds:
+
+```cpp
+if (millis() - lastTelemetryTime > 5000) {
+  lastTelemetryTime = millis();
+
+  pollSharedAttributes();
+}
+```
+
+A dashboard update to `led-control` may take up to approximately 5 seconds before the physical LED changes.
+
+```text
+Maximum delay: 5 seconds
+Minimum delay: nearly immediate
+Average delay: approximately 2.5 seconds
+```
+
+To reduce the delay, decrease the polling interval:
+
+```cpp
+if (millis() - lastTelemetryTime > 1000) {
+```
+
+This checks the `led-control` Shared Attribute every second.
+
+> More frequent polling provides faster LED response but increases Wi-Fi traffic and HTTP requests.
+> 
+
 # ThingsBoard Cloud Free Plan
 
 ThingsBoard Cloud provides a free Maker tier suitable for evaluation, prototyping, and small personal projects.
