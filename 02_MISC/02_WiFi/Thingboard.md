@@ -2488,7 +2488,280 @@ ThingsBoard dashboard display widget
 
 > Use a display widget for the physical button state. Use a Power Button or Toggle widget only when you want the dashboard to send a control command to the ESP32.
 
+### Displaying the ESP32 Button State in ThingsBoard
 
+The location of the required setting depends on whether you are editing a control widget, such as a Power Button or Switch, or a standard display card, such as an LED Indicator or Value Card.
+
+#### Option A: Control Widget
+
+##### Switch or Power Button
+
+If you are editing a control widget in the **Appearance** tab:
+
+1. Open the:
+
+   ```text
+   Appearance
+   ```
+
+   tab.
+
+2. Scroll to:
+
+   ```text
+   Value settings → Retrieve on/off value settings
+   ```
+
+3. Find:
+
+   ```text
+   Retrieve value using method
+   ```
+
+4. Change the value from:
+
+   ```text
+   Subscribe for attribute
+   ```
+
+   to:
+
+   ```text
+   Subscribe for timeseries
+   ```
+
+   or:
+
+   ```text
+   Latest telemetry
+   ```
+
+5. Set the timeseries key to:
+
+   ```text
+   button
+   ```
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ed7b6f33-145e-4c7a-add7-d83c40ea394c" />
+
+
+#### Option B: Standard Card
+
+##### LED Indicator or Value Card
+
+If you are editing a standard status widget in the **Data** tab:
+
+1. Click the:
+
+   ```text
+   Data
+   ```
+
+   tab at the top of the widget editor.
+
+2. Under **Datasources**, locate the ESP32 device:
+
+   ```text
+   ESP32-S3-Sensor-01
+   ```
+
+3. In the **Data keys** section, find the row containing:
+
+   ```text
+   button
+   ```
+
+4. Click the small type dropdown beside the key name.
+
+   Alternatively, click the pencil icon beside:
+
+   ```text
+   button
+   ```
+
+5. Change the key type to:
+
+   ```text
+   Timeseries
+   ```
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/59c4d7c5-be23-43dd-b564-dad9d4ef8997" />
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/92808592-e393-421d-88bf-9bf87a388e8d" />
+
+
+
+#### Option C: Change the ESP32 Code
+
+##### Easiest Alternative
+
+If changing the ThingsBoard widget configuration is confusing, modify the ESP32 Arduino code so that the board publishes `button` as an attribute instead of telemetry.
+
+In the `loop()` function, find:
+
+```cpp
+// Change this:
+client.publish(TB_TELEMETRY_TOPIC, buffer);
+```
+
+Replace it with:
+
+```cpp
+// To this:
+client.publish(TB_ATTRIBUTES_TOPIC, buffer);
+```
+
+After uploading the modified firmware:
+
+1. Press the physical ESP32 button once.
+2. Open the device page in ThingsBoard.
+3. The `button` value should appear in the device's **Attributes** list.
+
+#### Step-by-Step UI Fix
+
+Use this process to configure the widget to read the `button` value as telemetry.
+
+1. Click:
+
+   ```text
+   Cancel
+   ```
+
+   in the bottom-right corner to close the Data Key configuration window.
+
+2. Remain on the main:
+
+   ```text
+   Data
+   ```
+
+   tab in the widget editor.
+
+3. In the **Data keys** field for the ESP32 device datasource, locate the existing:
+
+   ```text
+   button
+   ```
+
+   key.
+
+4. Click the `X` icon beside `button` to remove the current attribute key.
+
+5. Click:
+
+   ```text
+   + Add key
+   ```
+
+   or click inside the empty data-key field.
+
+6. In the key-type selector, ensure that:
+
+   ```text
+   Timeseries
+   ```
+
+   is selected instead of:
+
+   ```text
+   Attribute
+   ```
+
+7. Select:
+
+   ```text
+   button
+   ```
+
+   from the list.
+
+8. Click the pencil icon beside the newly added `button` key.
+
+9. Enable:
+
+   ```text
+   Use data post-processing function
+   ```
+
+10. Paste the following JavaScript function:
+
+    ```javascript
+    return value === "PRESSED";
+    ```
+
+11. Click:
+
+    ```text
+    Save
+    ```
+
+12. Click:
+
+    ```text
+    Apply
+    ```
+
+    in the top-right corner.
+
+#### Button-State Data Flow
+
+```text
+Physical ESP32 Button
+    │
+    ▼
+ESP32 detects button press
+    │
+    ▼
+Telemetry payload
+    │
+    ▼
+{
+  "button": "PRESSED"
+}
+    │
+    ▼
+ThingsBoard Timeseries Data
+    │
+    ▼
+Widget post-processing function
+    │
+    ▼
+return value === "PRESSED";
+    │
+    ▼
+Dashboard shows ON or active state
+```
+
+#### Important Difference
+
+| ESP32 Publish Topic | ThingsBoard Data Type | Widget Key Type |
+|---|---|---|
+| `TB_TELEMETRY_TOPIC` | Telemetry / Timeseries | `Timeseries` |
+| `TB_ATTRIBUTES_TOPIC` | Attribute | `Attribute` |
+
+If the ESP32 publishes:
+
+```cpp
+client.publish(TB_TELEMETRY_TOPIC, buffer);
+```
+
+the widget must use:
+
+```text
+Timeseries
+```
+
+If the ESP32 publishes:
+
+```cpp
+client.publish(TB_ATTRIBUTES_TOPIC, buffer);
+```
+
+the widget must use:
+
+```text
+Attribute
+```
 
 # ThingsBoard Cloud Free Plan
 
