@@ -190,7 +190,7 @@ Expected display:
 PRESSED  → Red text
 RELEASED → Gray text
 ```
-
+**Sample Dashboard**     
 <img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b8510c3d-8ef2-4ee9-aad9-400da1827f71" />
 
 
