@@ -94,6 +94,9 @@ PRESSED  → true  → Indicator ON
 RELEASED → false → Indicator OFF
 ```
 
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/3a4b7105-83bc-4e27-9840-05b748d63176" />
+
+
 ### Value Card Configuration
 
 Configure the widget data source:
@@ -187,6 +190,9 @@ Expected display:
 PRESSED  → Red text
 RELEASED → Gray text
 ```
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b8510c3d-8ef2-4ee9-aad9-400da1827f71" />
+
 
 ## Option B: Publish as Telemetry
 
