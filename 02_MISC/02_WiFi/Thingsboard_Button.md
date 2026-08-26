@@ -155,15 +155,30 @@ RELEASED
    Label: button
    ```
 
-Use this HTML template:
+Use this HTML and CSS templates:
 
 ```html
-<div style="text-align: center; font-size: 20px; font-weight: bold;">
-  Status:
-  <span style="color: {{button === 'PRESSED' ? 'red' : 'gray'}};">
-    {{button}}
-  </span>
+<div class="card-container">
+  <span>Status: </span>
+  <span class="status-text ${button}">${button}</span>
 </div>
+```
+
+```css
+.card-container {
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 10px;
+}
+
+.status-text.PRESSED {
+  color: #f44336; /* Red */
+}
+
+.status-text.RELEASED {
+  color: #9e9e9e; /* Gray */
+}
 ```
 
 Expected display:
