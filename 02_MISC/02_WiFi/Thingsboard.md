@@ -3362,6 +3362,387 @@ This checks the `led-control` Shared Attribute every second.
 > More frequent polling provides faster LED response but increases Wi-Fi traffic and HTTP requests.
 > 
 
+# Connecting ESP32 to ThingsBoard via HTTPS
+
+To switch from HTTP to secure HTTPS, use port `443`, replace `WiFiClient` with `WiFiClientSecure`, and use `https://` in the ThingsBoard API endpoints.
+
+## Key Security Setup Options
+
+| Mode | Configuration | Purpose |
+|---|---|---|
+| Testing Mode | `secureClient.setInsecure()` | Bypasses SSL certificate validation. Useful for initial testing or self-hosted ThingsBoard servers using self-signed certificates |
+| Production Mode | `secureClient.setCACert(ROOT_CA)` | Validates the ThingsBoard server certificate against a trusted root Certificate Authority |
+
+> For production deployments, use CA validation instead of `setInsecure()`.
+
+## Complete ESP32 HTTPS Code
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
+// -----------------------------------------------------------------------------
+// Network and ThingsBoard Configuration
+// -----------------------------------------------------------------------------
+const char* WIFI_SSID = "YOUR_WIFI_SSID";
+const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
+
+const char* TB_HOST = "thingsboard.cloud";
+const int TB_PORT = 443;
+
+const char* ACCESS_TOKEN = "YOUR_DEVICE_ACCESS_TOKEN";
+
+// Set true for testing mode.
+// Set false to validate the server certificate with ROOT_CA.
+const bool USE_INSECURE_SSL = true;
+
+// -----------------------------------------------------------------------------
+// Root CA Certificate
+//
+// Paste the complete root CA certificate when USE_INSECURE_SSL is false.
+// -----------------------------------------------------------------------------
+const char* ROOT_CA = R"pem(
+-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDExHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMHSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJ5B2LFWXbh3hCl/V
+... (Paste the complete CA certificate here)
+-----END CERTIFICATE-----
+)pem";
+
+// -----------------------------------------------------------------------------
+// ThingsBoard Data Keys
+// -----------------------------------------------------------------------------
+const char* TOPIC_STATUS = "status";
+const char* TOPIC_TEMP = "temperature";
+const char* TOPIC_RSSI = "rssi";
+const char* TOPIC_UPTIME = "uptime";
+
+const char* TOPIC_LED_SET = "led-control";
+const char* TOPIC_LED_STATE = "led-state";
+
+const char* TOPIC_BUTTON = "button";
+
+// -----------------------------------------------------------------------------
+// Hardware Pins
+// -----------------------------------------------------------------------------
+const int LED_PIN = 2;
+const int BUTTON_PIN = 0;
+
+// -----------------------------------------------------------------------------
+// Runtime State
+// -----------------------------------------------------------------------------
+WiFiClientSecure secureClient;
+
+bool lastBtnState = HIGH;
+bool currentLedState = false;
+
+unsigned long lastTelemetryTime = 0;
+
+// -----------------------------------------------------------------------------
+// SSL Configuration
+// -----------------------------------------------------------------------------
+void setupSSL() {
+  if (USE_INSECURE_SSL) {
+    // Testing mode: skip SSL certificate validation.
+    secureClient.setInsecure();
+  } else {
+    // Production mode: validate the ThingsBoard server certificate.
+    secureClient.setCACert(ROOT_CA);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Publish Client Attributes
+// -----------------------------------------------------------------------------
+void postAttributes() {
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+
+  HTTPClient http;
+
+  String url =
+    "https://" +
+    String(TB_HOST) +
+    ":" +
+    String(TB_PORT) +
+    "/api/v1/" +
+    String(ACCESS_TOKEN) +
+    "/attributes";
+
+  http.begin(secureClient, url);
+
+  http.addHeader(
+    "Content-Type",
+    "application/json"
+  );
+
+  StaticJsonDocument<128> doc;
+
+  doc[TOPIC_STATUS] = "online";
+
+  doc[TOPIC_LED_STATE] =
+    currentLedState ? "ON" : "OFF";
+
+  String payload;
+
+  serializeJson(
+    doc,
+    payload
+  );
+
+  int code = http.POST(payload);
+
+  Serial.printf(
+    "[HTTPS] Attributes POST code: %d\n",
+    code
+  );
+
+  http.end();
+}
+
+// -----------------------------------------------------------------------------
+// Publish Telemetry
+// -----------------------------------------------------------------------------
+void postTelemetry(
+  float temp,
+  long rssi,
+  unsigned long uptime,
+  const char* buttonVal
+) {
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+
+  HTTPClient http;
+
+  String url =
+    "https://" +
+    String(TB_HOST) +
+    ":" +
+    String(TB_PORT) +
+    "/api/v1/" +
+    String(ACCESS_TOKEN) +
+    "/telemetry";
+
+  http.begin(secureClient, url);
+
+  http.addHeader(
+    "Content-Type",
+    "application/json"
+  );
+
+  StaticJsonDocument<256> doc;
+
+  doc[TOPIC_TEMP] = temp;
+  doc[TOPIC_RSSI] = rssi;
+  doc[TOPIC_UPTIME] = uptime;
+  doc[TOPIC_BUTTON] = buttonVal;
+
+  String payload;
+
+  serializeJson(
+    doc,
+    payload
+  );
+
+  int code = http.POST(payload);
+
+  Serial.printf(
+    "[HTTPS] Telemetry POST code: %d\n",
+    code
+  );
+
+  http.end();
+}
+
+// -----------------------------------------------------------------------------
+// Poll Shared Attributes
+//
+// Reads the "led-control" Shared Attribute from ThingsBoard.
+// -----------------------------------------------------------------------------
+void pollSharedAttributes() {
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+
+  HTTPClient http;
+
+  String url =
+    "https://" +
+    String(TB_HOST) +
+    ":" +
+    String(TB_PORT) +
+    "/api/v1/" +
+    String(ACCESS_TOKEN) +
+    "/attributes?sharedKeys=" +
+    String(TOPIC_LED_SET);
+
+  http.begin(secureClient, url);
+
+  int code = http.GET();
+
+  if (code == 200) {
+    String payload = http.getString();
+
+    StaticJsonDocument<256> doc;
+
+    DeserializationError err =
+      deserializeJson(
+        doc,
+        payload
+      );
+
+    if (
+      !err &&
+      doc.containsKey("shared") &&
+      doc["shared"].containsKey(TOPIC_LED_SET)
+    ) {
+      bool targetState =
+        doc["shared"][TOPIC_LED_SET].as<bool>();
+
+      if (targetState != currentLedState) {
+        currentLedState = targetState;
+
+        digitalWrite(
+          LED_PIN,
+          currentLedState ? HIGH : LOW
+        );
+
+        Serial.printf(
+          "[HTTPS] LED updated to: %s\n",
+          currentLedState ? "HIGH" : "LOW"
+        );
+
+        // Notify ThingsBoard about the resulting LED state.
+        postAttributes();
+      }
+    }
+  }
+
+  http.end();
+}
+
+// -----------------------------------------------------------------------------
+// Setup
+// -----------------------------------------------------------------------------
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+
+  digitalWrite(LED_PIN, LOW);
+
+  WiFi.begin(
+    WIFI_SSID,
+    WIFI_PASS
+  );
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nWi-Fi Connected!");
+
+  setupSSL();
+
+  // Publish initial device status and LED state.
+  postAttributes();
+}
+
+// -----------------------------------------------------------------------------
+// Main Loop
+// -----------------------------------------------------------------------------
+void loop() {
+  // ---------------------------------------------------------------------------
+  // 1. Publish immediate telemetry when the button state changes.
+  // ---------------------------------------------------------------------------
+  bool btnState = digitalRead(BUTTON_PIN);
+
+  if (btnState != lastBtnState) {
+    delay(50);
+
+    if (digitalRead(BUTTON_PIN) == btnState) {
+      lastBtnState = btnState;
+
+      postTelemetry(
+        24.5,
+        WiFi.RSSI(),
+        millis() / 1000,
+        btnState == LOW ? "PRESSED" : "RELEASED"
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 2. Publish periodic telemetry and poll Shared Attributes every 5 seconds.
+  // ---------------------------------------------------------------------------
+  if (millis() - lastTelemetryTime > 5000) {
+    lastTelemetryTime = millis();
+
+    float simulatedTemp =
+      22.0 + random(-10, 10) / 10.0;
+
+    postTelemetry(
+      simulatedTemp,
+      WiFi.RSSI(),
+      millis() / 1000,
+      lastBtnState == LOW ? "PRESSED" : "RELEASED"
+    );
+
+    pollSharedAttributes();
+  }
+}
+```
+
+## HTTPS Endpoint Reference
+
+| Purpose | Method | HTTPS Endpoint |
+|---|---|---|
+| Publish telemetry | `POST` | `https://<host>:443/api/v1/<ACCESS_TOKEN>/telemetry` |
+| Publish client attributes | `POST` | `https://<host>:443/api/v1/<ACCESS_TOKEN>/attributes` |
+| Read Shared Attributes | `GET` | `https://<host>:443/api/v1/<ACCESS_TOKEN>/attributes?sharedKeys=led-control` |
+
+## SSL Mode Configuration
+
+### Testing Mode
+
+Use this during early development:
+
+```cpp
+const bool USE_INSECURE_SSL = true;
+```
+
+The ESP32 skips certificate validation:
+
+```cpp
+secureClient.setInsecure();
+```
+
+### Production Mode
+
+Use certificate validation for a production deployment:
+
+```cpp
+const bool USE_INSECURE_SSL = false;
+```
+
+The ESP32 uses the configured root CA certificate:
+
+```cpp
+secureClient.setCACert(ROOT_CA);
+```
+
+> Ensure the complete and valid root CA certificate is included in `ROOT_CA` before enabling production mode.
+
 # ThingsBoard Cloud Free Plan
 
 ThingsBoard Cloud provides a free Maker tier suitable for evaluation, prototyping, and small personal projects.
