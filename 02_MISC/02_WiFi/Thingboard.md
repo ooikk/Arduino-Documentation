@@ -2587,8 +2587,8 @@ If you are editing a standard status widget in the **Data** tab:
 
 <img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/59c4d7c5-be23-43dd-b564-dad9d4ef8997" />
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/92808592-e393-421d-88bf-9bf87a388e8d" />
 
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1bb8fd9b-ca57-4472-b37d-b4b0708a9894" />
 
 
 #### Option C: Change the ESP32 Code
