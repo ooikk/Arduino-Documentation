@@ -1969,6 +1969,12 @@ The new Shared Attribute should appear as:
 }
 ```
 
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/55983178-e4dd-4cfd-ba4c-678addad5916" />
+
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e9d1f27a-31ee-40cb-b4bf-2c5cb6170635" />
+
+
 ## Step 2: Add a Control Switch Widget
 
 1. In the left-hand ThingsBoard menu, open:
