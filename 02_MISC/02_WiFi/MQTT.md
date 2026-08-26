@@ -6,7 +6,7 @@
 [![Contents](https://img.shields.io/badge/Use_Google_Sheets_via_HTTP_Server-brightgreen?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#use-google-sheets-via-http-server-100-free--fast)
 [![Contents](https://img.shields.io/badge/Adafruit_IO_Dashboard-yellow?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#adafruit-io-dashboard)
 [![Contents](https://img.shields.io/badge/ESP_Rainmaker-red?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Rainmaker.md)
-[![Contents](https://img.shields.io/badge/Thingsboard_IO-blue?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Thingboard.md)
+[![Contents](https://img.shields.io/badge/Thingsboard_IO-blue?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Thingsboard.md)
 
 
 ---
