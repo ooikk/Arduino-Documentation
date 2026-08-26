@@ -2767,6 +2767,211 @@ the widget must use:
 Attribute
 ```
 
+### Displaying Button State as a ThingsBoard Attribute
+
+Publishing the physical button state as an attribute through:
+
+```text
+v1/devices/me/attributes
+```
+
+allows you to use several ThingsBoard dashboard widgets.
+
+Choose a widget based on whether you want a visual indicator, plain text, or custom colored text.
+
+#### 1. LED Indicator
+
+##### Best for Visual Button Status
+
+An LED Indicator turns a simulated LED ON when the button is pressed and OFF when the button is released.
+
+##### Widget Selection
+
+Select:
+
+```text
+Cards or Control widgets → LED Indicator
+```
+
+##### Data Source Setup
+
+```text
+Type: Attribute
+Key:  button
+```
+
+##### Configuration
+
+1. Open the data-key configuration by clicking the pencil icon beside:
+
+   ```text
+   button
+   ```
+
+2. Enable:
+
+   ```text
+   Use data post-processing function
+   ```
+
+3. Paste the following JavaScript function:
+
+   ```javascript
+   return value === "PRESSED";
+   ```
+
+This converts the string value:
+
+```text
+PRESSED
+```
+
+into:
+
+```text
+true
+```
+
+The LED Indicator then displays:
+
+```text
+PRESSED  → LED ON
+RELEASED → LED OFF
+```
+
+#### 2. Value Card or Label Card
+
+##### Best for Plain Text
+
+A Value Card displays the exact text sent by the ESP32-S3:
+
+```text
+PRESSED
+```
+
+or:
+
+```text
+RELEASED
+```
+
+##### Widget Selection
+
+Select:
+
+```text
+Cards → Value Card
+```
+
+##### Data Source Setup
+
+```text
+Type: Attribute
+Key:  button
+```
+
+##### Configuration
+
+No post-processing function is required.
+
+The widget automatically displays the raw attribute value.
+
+Example display:
+
+```text
+Button Status
+PRESSED
+```
+
+#### 3. HTML Card - Dynamic HTML Value Card
+
+##### Best for Custom Colored Text
+
+An HTML Card can display dynamic colored text.
+
+For example:
+
+```text
+PRESSED  → Red
+RELEASED → Gray
+```
+
+##### Widget Selection
+
+Select:
+
+```text
+Cards → HTML Value Card (or HTML card under dynamic Cards).
+```
+
+##### Data Source Setup
+
+```text
+Type: Attribute
+Key:  button
+```
+
+##### Card HTML or CSS Template
+
+```html
+<div class="card-container">
+  <span>Status: </span>
+  <span class="status-text ${button}">${button}</span>
+</div>
+```
+
+```css
+.card-container {
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 10px;
+}
+
+.status-text.PRESSED {
+  color: #f44336; /* Red */
+}
+
+.status-text.RELEASED {
+  color: #9e9e9e; /* Gray */
+}
+```
+
+#### Widget Recommendation
+
+| Desired Display | Recommended Widget | Additional Configuration |
+|---|---|---|
+| Simulated ON/OFF LED | LED Indicator | Enable post-processing |
+| Raw text status | Value Card or Label Card | No post-processing required |
+| Colored custom status | HTML Card | Add HTML or CSS template |
+
+#### Recommended Choice
+
+For a visual button indicator, use:
+
+```text
+LED Indicator
+```
+
+with this post-processing function:
+
+```javascript
+return value === "PRESSED";
+```
+
+For simple monitoring or logging, use:
+
+```text
+Value Card
+```
+
+This displays the raw button values directly:
+
+```text
+PRESSED
+RELEASED
+```
+
 # ThingsBoard Cloud Free Plan
 
 ThingsBoard Cloud provides a free Maker tier suitable for evaluation, prototyping, and small personal projects.
