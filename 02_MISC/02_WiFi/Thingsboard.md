@@ -2483,7 +2483,7 @@ Use data post-processing function
 Paste:
 
 ```javascript
-return value === "PRESSED";
+return data === "PRESSED";
 ```
 
 This converts the string button state into a Boolean result:
