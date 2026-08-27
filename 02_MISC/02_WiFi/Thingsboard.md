@@ -3124,6 +3124,247 @@ ThingsBoard may return a response similar to:
 
 The ESP32-S3 reads the `led-control` value, updates the physical LED GPIO, then reports the resulting `led-state` back to ThingsBoard.
 
+# Why MQTT callback Code Is More Complex Than HTTP polling Code
+
+The MQTT version is more complex because HTTP uses targeted pull requests, while MQTT is an asynchronous, multi-channel push system.
+
+With HTTP, the ESP32 sends a request to a known URL and receives one predictable JSON response format.
+
+With MQTT, ThingsBoard can send messages at any time through multiple subscriptions. A single `callback()` function must identify the incoming message type, parse its JSON structure, and process the corresponding action.
+
+## Key Reasons for the Extra Complexity
+
+### 1. Multiple ThingsBoard Delivery Channels
+
+ThingsBoard can push updates over MQTT using different JSON structures, depending on the dashboard widget or server action configuration.
+
+| Delivery Channel | Trigger | MQTT Topic | Expected JSON Payload | Detection Logic |
+|---|---|---|---|---|
+| Direct Attribute Push | A Shared Attribute changes while the device is connected | `v1/devices/me/attributes` | `{"led-control": true}` | `doc.containsKey("led-control")` |
+| Attribute Response | The device requests current attributes, usually during startup | `v1/devices/me/attributes/response/+` | `{"shared":{"led-control":true}}` | `doc["shared"]...` |
+| RPC Command | A dashboard widget sends a Remote Procedure Call | `v1/devices/me/rpc/request/+` | `{"method":"led-control","params":true}` | `doc["method"]...` |
+
+### Direct Attribute Push
+
+When a Shared Attribute changes while the MQTT device is connected, ThingsBoard can immediately publish the updated value.
+
+Example payload:
+
+```json
+{
+  "led-control": true
+}
+```
+
+Example detection logic:
+
+```cpp
+if (doc.containsKey("led-control")) {
+  bool targetState = doc["led-control"].as<bool>();
+
+  digitalWrite(
+    LED_PIN,
+    targetState ? HIGH : LOW
+  );
+}
+```
+
+### Attribute Response
+
+The ESP32 can explicitly request the latest Shared Attributes during startup.
+
+Example response payload:
+
+```json
+{
+  "shared": {
+    "led-control": true
+  }
+}
+```
+
+Example detection logic:
+
+```cpp
+if (
+  doc.containsKey("shared") &&
+  doc["shared"].containsKey("led-control")
+) {
+  bool targetState =
+    doc["shared"]["led-control"].as<bool>();
+
+  digitalWrite(
+    LED_PIN,
+    targetState ? HIGH : LOW
+  );
+}
+```
+
+### RPC Command
+
+A dashboard button or control widget can send a direct RPC command to the device.
+
+Example payload:
+
+```json
+{
+  "method": "led-control",
+  "params": true
+}
+```
+
+Example detection logic:
+
+```cpp
+if (
+  doc.containsKey("method") &&
+  String(doc["method"]) == "led-control"
+) {
+  bool targetState =
+    doc["params"].as<bool>();
+
+  digitalWrite(
+    LED_PIN,
+    targetState ? HIGH : LOW
+  );
+}
+```
+
+## Type Tolerance and Defensive Programming
+
+With HTTP, the ESP32 usually controls how the request is made and how the expected response is mapped.
+
+With MQTT, different ThingsBoard dashboard widgets may send different data types for the same LED-control action.
+
+| Widget or Source | Possible Value |
+|---|---|
+| Switch Widget | `true` or `false` |
+| Slider or Toggle Widget | `1` or `0` |
+| Custom HTML Button | `"ON"` or `"OFF"` |
+| Rule Chain or custom widget | `"true"` or `"false"` |
+
+Use type checks before applying the command:
+
+```cpp
+if (val.is<bool>()) {
+  targetState = val.as<bool>();
+}
+else if (val.is<int>()) {
+  targetState = val.as<int>() == 1;
+}
+else if (val.is<String>()) {
+  String value = val.as<String>();
+
+  targetState =
+    value == "ON" ||
+    value == "true" ||
+    value == "1";
+}
+```
+
+These checks help prevent failures if the dashboard widget type, widget configuration, or Rule Chain output changes.
+
+## HTTP vs. MQTT Comparison
+
+| Feature | HTTP Approach | MQTT Approach |
+|---|---|---|
+| Request mechanism | Device asks the server on demand using `GET` | Server pushes updates asynchronously to the device |
+| Connection model | Stateless request and response | Persistent connection with subscriptions |
+| Topic or endpoint handling | Uses a fixed REST URL | Handles attributes, RPC commands, and attribute responses through MQTT topics |
+| JSON payload format | Usually one predictable format, such as `{"shared":{"key":value}}` | Can vary between `{"key":value}`, `{"shared":{...}}`, and `{"method":"...","params":...}` |
+| Parsing effort | Low because the JSON layout is static | Higher because the callback must identify multiple payload layouts |
+| Device update timing | Device receives updates only when it polls | Device can receive updates immediately after ThingsBoard publishes them |
+| Code complexity | Simpler request-response logic | More conditional logic in a shared MQTT callback |
+
+## MQTT Callback Flow
+
+```text
+ThingsBoard publishes an MQTT message
+        ↓
+ESP32 MQTT callback() receives topic and payload
+        ↓
+ESP32 parses the JSON document
+        ↓
+Check whether it is:
+- A direct Shared Attribute update
+- An attribute-request response
+- An RPC command
+        ↓
+Convert Boolean, integer, or string values safely
+        ↓
+Update the physical LED state
+```
+
+## Example Multi-Channel MQTT Callback Structure
+
+```cpp
+void callback(
+  char* topic,
+  byte* payload,
+  unsigned int length
+) {
+  StaticJsonDocument<256> doc;
+
+  DeserializationError err =
+    deserializeJson(
+      doc,
+      payload,
+      length
+    );
+
+  if (err) {
+    Serial.println("[MQTT] JSON parse failed");
+    return;
+  }
+
+  // Direct Shared Attribute update:
+  // {"led-control": true}
+  if (doc.containsKey("led-control")) {
+    bool targetState =
+      doc["led-control"].as<bool>();
+
+    digitalWrite(
+      LED_PIN,
+      targetState ? HIGH : LOW
+    );
+
+    return;
+  }
+
+  // Shared Attribute request response:
+  // {"shared":{"led-control":true}}
+  if (
+    doc.containsKey("shared") &&
+    doc["shared"].containsKey("led-control")
+  ) {
+    bool targetState =
+      doc["shared"]["led-control"].as<bool>();
+
+    digitalWrite(
+      LED_PIN,
+      targetState ? HIGH : LOW
+    );
+
+    return;
+  }
+
+  // RPC command:
+  // {"method":"led-control","params":true}
+  if (
+    doc.containsKey("method") &&
+    String(doc["method"]) == "led-control"
+  ) {
+    bool targetState =
+      doc["params"].as<bool>();
+
+    digitalWrite(
+      LED_PIN,
+      targetState ? HIGH : LOW
+    );
+  }
+}
+```
+
 # Using the Same ThingsBoard Dashboard with HTTP
 
 You can use the exact same ThingsBoard dashboard for both MQTT and HTTP devices.
