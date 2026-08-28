@@ -89,6 +89,11 @@ const int BUTTON_PIN = 2;  // ESP32 BOOT button
 bool lastBtnState = HIGH;
 bool currentLedState = false;
 unsigned long lastTelemetryTime = 0;
+const long telemetryInterval = 10000;  // Publish telemetry every 10 seconds
+
+unsigned long lastPollSharedAttributesTime = 0;
+const long pollSharedAttributesInterval = 1000;  // Poll share attribute every 1 seconds
+
 
 void postAttributes() {
   if (WiFi.status() != WL_CONNECTED) return;
@@ -151,6 +156,7 @@ void pollSharedAttributes() {
   int code = http.GET();
   if (code == 200) {
     String payload = http.getString();
+    // Received payload: {"shared":{"led-control":false}}
     StaticJsonDocument<256> doc;
     DeserializationError err = deserializeJson(doc, payload);
 
@@ -159,6 +165,7 @@ void pollSharedAttributes() {
       if (targetState != currentLedState) {
         currentLedState = targetState;
         digitalWrite(LED_PIN, currentLedState ? HIGH : LOW);
+        Serial.printf("[%s] Received Raw Shared Attributes payload: %s\n", protocol, payload.c_str());
         Serial.printf("[%s] LED updated to: %s\n", protocol, currentLedState ? "HIGH" : "LOW");
         postAttributes();  // Notify TB of updated status
       }
@@ -201,12 +208,15 @@ void loop() {
     }
   }
 
-  // 2. Periodic Telemetry and Attribute Polling (Every 2 seconds)
-  if (millis() - lastTelemetryTime > 2000) {
+  // 2. Periodic Telemetry
+  if (millis() - lastTelemetryTime > telemetryInterval) {
     lastTelemetryTime = millis();
     float simulatedTemp = 22.0 + (random(-10, 10) / 10.0);
-
     postTelemetry(simulatedTemp, WiFi.RSSI(), millis() / 1000, (lastBtnState == LOW) ? "PRESSED" : "RELEASED");
+  }
+  // 3. Periodic Attribute Polling
+  if (millis() - lastPollSharedAttributesTime > pollSharedAttributesInterval) {
+    lastPollSharedAttributesTime = millis();
     pollSharedAttributes();
   }
 }
