@@ -128,6 +128,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     jsonString += (char)payload[i];
   }
 
+  Serial.printf("callback command received: %s\n", jsonString.c_str());
   StaticJsonDocument<512> doc;
   DeserializationError error = deserializeJson(doc, jsonString);
   if (error) return;
@@ -136,6 +137,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   bool state = false;
 
   // Extract values using JsonVariant type checks instead of raw string pointers
+  // Received payload: {"shared":{"led-control":false}}
   if (doc.containsKey("led-control")) {
     commandFound = true;
     JsonVariant val = doc["led-control"];
