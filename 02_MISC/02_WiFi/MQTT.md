@@ -3842,6 +3842,35 @@ The example follows this sequence:
 8. 
 ---
 
+# Official Libraries & Documentation
+
+Here are the primary documentation hubs and official repositories for the tools and libraries used in ESP32 MQTT development:
+
+## PubSubClient GitHub Repository & Documentation
+
+- **Repository:** [knolleary/pubsubclient (GitHub)](https://github.com/knolleary/pubsubclient)
+- **API Reference:** [PubSubClient Documentation](https://pubsubclient.knolleary.net/)
+- Covers API functions like `publish()`, `subscribe()`, `setServer()`, and handling retain flags.
+
+## Adafruit IO MQTT API Documentation
+
+- **Guide:** [Adafruit IO MQTT API (Adafruit Learning System)](https://learn.adafruit.com/adafruit-io/mqtt-api)
+- Details the strict topic naming structure (`USERNAME/feeds/FEED_KEY`), rate limits (30–60 calls/min), and supported JSON/Location formats.
+
+## ArduinoJson Documentation
+
+- **Official Site:** [ArduinoJson.org](https://arduinojson.org/)
+- Covers formatting, serializing (`serializeJson`), and parsing JSON objects on ESP32/Arduino microcontrollers.
+
+## Espressif ESP32 Arduino Core Reference
+
+- **Repository:** [espressif/arduino-esp32 (GitHub)](https://github.com/espressif/arduino-esp32)
+- **Documentation:** [ESP32 Arduino Core Docs](https://docs.espressif.com/projects/arduino-esp32/en/latest/)
+- Details networking libraries such as `WiFi.h`, `WiFiClient.h`, and `WiFiClientSecure.h`.
+
+
+---
+
 # MQTT Brokers
 
 https://io.adafruit.com/
