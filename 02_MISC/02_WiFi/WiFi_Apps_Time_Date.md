@@ -998,4 +998,4 @@ https://github.com/espressif/newlib-esp32/blob/master/newlib/libc/time/strftime.
 
 https://github.com/m5stack/azure_iothub_arduino_lib_esp32/blob/master/hardware/espressif/esp32/tools/sdk/include/newlib/time.h
 
-
+https://gist.github.com/tivaliy/a5ef9c7ccb4d57bdc248f0855c5eb1ff
