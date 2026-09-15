@@ -179,6 +179,8 @@ void sendTelemetryAndFetchCommands() {
    * Stage 1: Send POST without following Google's redirect.
    */
   WiFiClientSecure postClient;
+  // Requires a valid certificate bundle or root CA
+  // postClient.setCACert(GOOGLE_ROOT_CA);
   postClient.setInsecure();
 
   HTTPClient postHttp;
@@ -222,6 +224,8 @@ void sendTelemetryAndFetchCommands() {
      * from being reused.
      */
     WiFiClientSecure getClient;
+    // Requires a valid certificate bundle or root CA
+    getClient.setCACert(GOOGLE_ROOT_CA);
     getClient.setInsecure();
 
     HTTPClient getHttp;
