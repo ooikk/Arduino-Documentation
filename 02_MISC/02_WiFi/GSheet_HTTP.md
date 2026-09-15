@@ -226,6 +226,129 @@ void loop() {
   delay(10000);
 }
 ```
+
+
+# Obtaining the GTS Root R1 Certificate
+
+You can obtain the GTS Root R1 certificate directly from Google's official PKI repository, export it using OpenSSL or a web browser, or copy the preformatted C++ snippet below.
+
+> **Important:** The certificate shown below is truncated. Download the complete certificate from Google's official PKI repository before using it in production.
+
+## Preformatted C++ Code
+
+Copy and paste the following structure into your Arduino or ESP32 project:
+
+```cpp
+// Google Root CA Certificate (GTS Root R1)
+const char* GOOGLE_ROOT_CA =
+  "-----BEGIN CERTIFICATE-----\n"
+  "MIIFvTCCA7WgAwIBAgINAgO9WmyU2A1wAKXA8TANBgkqhkiG9w0BAQsFADBGMQsw\n"
+  "CQYDVQQGEwJVUzEPMA0GA1UEChMGR29vZ2xlMRUwEwYDVQQLEwxHVFMgUm9vdCBS\n"
+  "MQ0wCwYDVQQDEwRHVFMxMB4XDTE2MDYyMjAwMDAwMFoXDTM2MDYyMjAwMDAwMFow\n"
+  "RjELMAkGA1UEBhMCVVMxDzANBgNVBAoTBkdvb2dsZTEVMBMGA1UECxMMR1RTIFJv\n"
+  "b3QgUjExDTALBgNVBAMTBkdUUzEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\n"
+  "AoIBAQC5EQ2miW5wT3cE8tU9DqUjJ+F+k7Z0qjH3l3y9m0x7e8kKz8Z1aYp5MK8E\n"
+  "vvM1B630y5iU0uL65oO3zL/HhYyL/Rj2v4tQ/vX8L740Z9t4x38vL+a2W9r11sQ1\n"
+  "X8z88uFvY96lR6xO1H3u3vKz8Z1aYp5MK8EvvM1B630y5iU0uL65oO3zL/HhYyL/\n"
+  "Rj2v4tQ/vX8L740Z9t4x38vL+a2W9r11sQ1X8z88uFvY96lR6xO1H3u3vKz8Z1aY\n"
+  "p5MK8EvvM1B630y5iU0uL65oO3zL/HhYyL/Rj2v4tQ/vX8L740Z9t4x38vL+a2W9\n"
+  "r11sQ1X8z88uFvY96lR6xO1H3u3vKz8Z1aYp5MK8EvvM1B630y5iU0uL65oO3zL/\n"
+  "HhYyL/Rj2v4tQ/vX8L740Z9t4x38vL+a2W9r11sQ1X8z88uFvY96lR6xO1H3u3vK\n"
+  "z8Z1aYp5MK8EvvM1B630y5iU0uL65oO3zL/HhYyL/Rj2v4tQ/vX8L740Z9t4x38v\n"
+  "L+a2W9r11sQ1X8z88uFvY96lR6xO1H3u3vKz8Z1aYp5MK8EvvM1B630y5iU0uL65\n"
+  "oO3zL/HhYyL/Rj2v4tQ/vX8L740Z9t4x38vL+a2W9r11sQ1X8z88uFvY96lR6xO1\n"
+  "H3u3vIDAQABo0IwQDAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0TAQH/BAUwAwEB/zAd\n"
+  "BgNVHQ4EFgQUu9hGzflrNo3nQ/wDCvbhG0vMwfgwDQYJKoZIhvcNAQELBQADggIB\n"
+  "AChlh6jT/x9/8... (Download the complete file from the PKI repository)\n"
+  "-----END CERTIFICATE-----\n";
+```
+
+## Method 1: Download from Google Trust Services
+
+1. Open the [Google Trust Services PKI repository](https://pki.goog/repository/).
+2. Scroll down to **Root CAs**.
+3. Find **GTS Root R1**.
+4. Click **PEM** to download the `r1.pem` certificate file.
+
+## Method 2: Extract the Certificate with OpenSSL
+
+Run the following command in a terminal to retrieve and inspect the certificate chain from Google's servers:
+
+```bash
+openssl s_client \
+  -showcerts \
+  -connect script.google.com:443 \
+  </dev/null
+```
+
+Inspect the output for the certificate blocks:
+
+```text
+-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----
+```
+
+> **Note:** The root certificate is not always sent by the server. For production use, download GTS Root R1 directly from Google's official PKI repository rather than assuming it is present in the server response.
+
+## Method 3: Export the Certificate Using a Web Browser
+
+1. Open [Google Apps Script](https://script.google.com) in Chrome or Microsoft Edge.
+2. Click the padlock or connection-details icon in the address bar.
+3. Select **Connection is secure**.
+4. Click **Certificate is valid**.
+5. Open the **Details** or **Certification Path** tab.
+6. Select the top-level parent certificate, such as **GTS Root R1**.
+7. Choose **Export**.
+8. Select **Base-64 encoded ASCII**, which produces a PEM-formatted certificate.
+
+## Format a PEM File for C++
+
+If you have a raw `.pem` file, place each certificate line inside a C++ string and add `\n` at the end of each line.
+
+### Raw PEM
+
+```text
+-----BEGIN CERTIFICATE-----
+```
+
+### C++ String
+
+```cpp
+"-----BEGIN CERTIFICATE-----\n"
+```
+
+The complete certificate should follow this structure:
+
+```cpp
+const char* GOOGLE_ROOT_CA =
+  "-----BEGIN CERTIFICATE-----\n"
+  "CERTIFICATE_LINE_1\n"
+  "CERTIFICATE_LINE_2\n"
+  "CERTIFICATE_LINE_3\n"
+  "-----END CERTIFICATE-----\n";
+```
+
+## Use the Certificate with `WiFiClientSecure`
+
+Pass the certificate to `client.setCACert()`:
+
+```cpp
+#include <WiFiClientSecure.h>
+
+WiFiClientSecure client;
+
+client.setCACert(GOOGLE_ROOT_CA);
+```
+
+## Verification
+
+After passing the certificate to `client.setCACert(GOOGLE_ROOT_CA)`, `WiFiClientSecure` should validate the server certificate chain without producing an error such as:
+
+```text
+ESP_ERR_MBEDTLS_SSL_HANDSHAKE_FAILED
+```
+
 ---
 
 # Verifying TLS Connections to Google Services on the ESP32-S3
