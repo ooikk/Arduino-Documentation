@@ -149,34 +149,22 @@ void setup() {
 
 void sendTelemetryAndFetchCommands() {
   if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi disconnected");
     return;
   }
 
-  WiFiClientSecure client;
-
-  // Option A: Strict SSL
-  // Requires a valid certificate bundle or root CA
-  // client.setCACert(GOOGLE_ROOT_CA);
-
-  // Option B: TLS encryption enabled without
-  // fingerprint validation
-  client.setInsecure();
-
-  HTTPClient http;
-
-  // Critical for Google Apps Script 302 redirects
-  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-
-  http.begin(client, GOOGLE_SCRIPT_URL);
-  http.addHeader("Content-Type", "application/json");
-
-  // Build JSON payload
+  // Build telemetry JSON
   StaticJsonDocument<256> doc;
 
+  doc["type"] = "telemetry";
   doc[TOPIC_STATUS] = "ONLINE";
-  doc[TOPIC_TEMP] = 24.5;  // Replace with sensor reading
+
+  float temperature = random(100, 500) / 10.0f;
+
+  // Store temperature as a JSON number, not a temporary string
+  doc[TOPIC_TEMP] = temperature;
   doc[TOPIC_RSSI] = WiFi.RSSI();
-  doc[TOPIC_UPTIME] = millis() / 1000;
+  doc[TOPIC_UPTIME] = millis() / 1000UL;
   doc[TOPIC_LED_STATE] = digitalRead(LED_PIN);
   doc[TOPIC_BUTTON] =
     (digitalRead(BUTTON_PIN) == LOW) ? 1 : 0;
@@ -185,39 +173,108 @@ void sendTelemetryAndFetchCommands() {
   serializeJson(doc, requestBody);
 
   Serial.println("Sending HTTPS POST to Google Sheets...");
+  Serial.println("Send Payload: " + requestBody);
 
-  int httpCode = http.POST(requestBody);
+  /*
+   * Stage 1: Send POST without following Google's redirect.
+   */
+  WiFiClientSecure postClient;
+  postClient.setInsecure();
 
-  if (httpCode > 0) {
-    String responseBody = http.getString();
+  HTTPClient postHttp;
+  postHttp.setReuse(false);
+  postHttp.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
 
-    Serial.printf("HTTP Response Code: %d\n", httpCode);
-    Serial.println("Response Payload: " + responseBody);
-
-    // Parse response for incoming control commands
-    StaticJsonDocument<256> respDoc;
-
-    DeserializationError err =
-      deserializeJson(respDoc, responseBody);
-
-    if (!err && respDoc.containsKey(TOPIC_LED_SET)) {
-      int ledCmd = respDoc[TOPIC_LED_SET];
-
-      digitalWrite(LED_PIN, ledCmd ? HIGH : LOW);
-
-      Serial.printf(
-        "Updated local LED state to: %d\n",
-        ledCmd
-      );
-    }
-  } else {
-    Serial.printf(
-      "HTTP POST failed, error: %s\n",
-      http.errorToString(httpCode).c_str()
-    );
+  if (!postHttp.begin(postClient, GOOGLE_SCRIPT_URL)) {
+    Serial.println("Unable to begin POST connection");
+    return;
   }
 
-  http.end();
+  postHttp.setUserAgent("ESP32-S3");
+  postHttp.addHeader("Content-Type", "application/json");
+  postHttp.addHeader("Accept", "application/json");
+
+  int postCode = postHttp.POST(requestBody);
+
+  Serial.printf("Initial POST response: %d\n", postCode);
+
+  String responseBody;
+  int finalCode = postCode;
+
+  if (postCode == HTTP_CODE_FOUND || postCode == HTTP_CODE_SEE_OTHER) {
+
+    // Google normally returns HTTP 302 or 303
+    String redirectUrl = postHttp.getLocation();
+
+    Serial.println("Google redirect received");
+    // Avoid printing the complete one-time URL unless debugging
+
+    postHttp.end();
+
+    if (redirectUrl.length() == 0) {
+      Serial.println("Error: Redirect URL is empty");
+      return;
+    }
+
+    /*
+     * Stage 2: Fetch the response using a clean GET request.
+     * A new HTTPClient prevents the POST Content-Length header
+     * from being reused.
+     */
+    WiFiClientSecure getClient;
+    getClient.setInsecure();
+
+    HTTPClient getHttp;
+    getHttp.setReuse(false);
+
+    if (!getHttp.begin(getClient, redirectUrl)) {
+      Serial.println("Unable to begin redirected GET connection");
+      return;
+    }
+
+    getHttp.setUserAgent("ESP32-S3");
+    getHttp.addHeader("Accept", "application/json");
+
+    finalCode = getHttp.GET();
+    responseBody = getHttp.getString();
+
+    getHttp.end();
+
+  } else {
+    // Unexpected direct response: obtain it for diagnosis
+    responseBody = postHttp.getString();
+    postHttp.end();
+  }
+
+  Serial.printf("Final HTTP response: %d\n", finalCode);
+  Serial.println("Response Payload: " + responseBody);
+
+  if (finalCode != HTTP_CODE_OK) {
+    Serial.println("Google request did not complete successfully");
+    return;
+  }
+
+  // Parse command response
+  StaticJsonDocument<256> respDoc;
+
+  DeserializationError err =
+    deserializeJson(respDoc, responseBody);
+
+  if (err) {
+    Serial.print("JSON response error: ");
+    Serial.println(err.c_str());
+    return;
+  }
+
+  if (respDoc.containsKey(TOPIC_LED_SET)) {
+    int ledCmd = respDoc[TOPIC_LED_SET].as<int>();
+
+    digitalWrite(LED_PIN, ledCmd ? HIGH : LOW);
+
+    Serial.printf(
+      "Updated local LED state to: %d\n",
+      ledCmd);
+  }
 }
 
 void loop() {
