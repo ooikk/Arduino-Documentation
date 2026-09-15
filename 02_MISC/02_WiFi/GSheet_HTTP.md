@@ -225,7 +225,7 @@ void sendTelemetryAndFetchCommands() {
      */
     WiFiClientSecure getClient;
     // Requires a valid certificate bundle or root CA
-    getClient.setCACert(GOOGLE_ROOT_CA);
+    // getClient.setCACert(GOOGLE_ROOT_CA);
     getClient.setInsecure();
 
     HTTPClient getHttp;
