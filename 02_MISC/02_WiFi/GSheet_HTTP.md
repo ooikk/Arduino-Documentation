@@ -226,3 +226,279 @@ void loop() {
   delay(10000);
 }
 ```
+---
+
+# Verifying TLS Connections to Google Services on the ESP32-S3
+
+To verify TLS connections to Google services on the ESP32-S3, you must synchronize the board's internal system clock via NTP and supply root certificates to `WiFiClientSecure`.
+
+Without synchronized time, TLS verification will fail because the microcontroller cannot validate certificate expiration dates.
+
+## NTP Sync Requirement
+
+TLS clock validation requires valid system time. If your ESP32-S3 attempts HTTPS verification before NTP synchronization completes, the TLS handshake will fail with a certificate validation error.
+
+## 1. Synchronize the ESP32-S3 Clock via NTP
+
+**Prerequisite:** Complete this step before opening an HTTPS connection.
+
+Fetch network time using `configTime()`:
+
+```cpp
+#include <WiFi.h>
+
+void syncNTP() {
+  // Synchronize time with public NTP servers
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+
+  Serial.print("Waiting for NTP time sync");
+
+  time_t now = time(nullptr);
+
+  // Wait until system time is updated past the Unix epoch
+  // Year 2016 or later
+  while (now < 1466553600) {
+    delay(500);
+    Serial.print(".");
+    now = time(nullptr);
+  }
+
+  Serial.println("\nTime successfully synchronized!");
+}
+```
+
+### Verification
+
+The Serial Monitor should print:
+
+```text
+Time successfully synchronized!
+```
+
+The value returned by `time(nullptr)` should be an epoch value matching the current UTC time.
+
+## 2. Use the ESP32 Built-in Certificate Bundle
+
+**Method A — Recommended**
+
+The ESP32 Arduino Core includes a precompiled bundle of trusted root certificates, including Google Trust Services certificates.
+
+This method handles certificate rotation automatically without requiring hardcoded PEM certificate strings.
+
+```cpp
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <esp_crt_bundle.h>
+
+// Includes the root certificate bundle
+void makeSecureRequest() {
+  WiFiClientSecure client;
+
+  // Attach the ESP-IDF root CA bundle
+  client.setCACertBundle(rootca_crt_bundle_start);
+
+  HTTPClient http;
+
+  http.setFollowRedirects(
+    HTTPC_STRICT_FOLLOW_REDIRECTS
+  );
+
+  if (
+    http.begin(
+      client,
+      "[https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec](https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec)"
+    )
+  ) {
+    int httpCode = http.GET();
+
+    Serial.printf(
+      "HTTP Response code: %d\n",
+      httpCode
+    );
+
+    http.end();
+  }
+}
+```
+
+### Verification
+
+The request should return an HTTP status code such as:
+
+- `200 OK`
+- `302 Found`
+
+It should not return a negative connection error code such as:
+
+```text
+-1 (HTTPC_ERROR_CONNECTION_REFUSED)
+```
+
+## 3. Pin Google's Root CA Certificate
+
+**Method B — Alternative**
+
+If you prefer to explicitly restrict trust to Google services, pass Google's GTS Root R1 certificate in PEM format directly to `client.setCACert()`.
+
+```cpp
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+
+// Google GTS Root R1 Certificate
+const char* GOOGLE_GTS_ROOT_R1 =
+  "-----BEGIN CERTIFICATE-----\n"
+  "MIIFvTCCA7WgAwIBAgINAgO9WmyU2A1wAKXA8TANBgkqhkiG9w0BAQsFADBGMQsw\n"
+  "CQYDVQQGEwJVUzEPMA0GA1UEChMGR29vZ2xlMRUwEwYDVQQLEwxHVFMgUm9vdCBS\n"
+  "MQ0wCwYDVQQDEwRHVFMxMB4XDTE2MDYyMjAwMDAwMFoXDTM2MDYyMjAwMDAwMFow\n"
+  "RjELMAkGA1UEBhMCVVMxDzANBgNVBAoTBkdvb2dsZTEVMBMGA1UECxMMR1RTIFJv\n"
+  "b3QgUjExDTALBgNVBAMTBkdUUzEwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\n"
+  "AoIBAQC5EQ2miW5wT3cE8tU9DqUjJ+F+k7Z0qjH3l3y9m0x7e8kKz8Z1aYp... (truncated)\n"
+  "-----END CERTIFICATE-----\n";
+
+void makePinnedSecureRequest() {
+  WiFiClientSecure client;
+
+  // Explicitly set the trusted root certificate
+  client.setCACert(GOOGLE_GTS_ROOT_R1);
+
+  HTTPClient http;
+
+  http.setFollowRedirects(
+    HTTPC_STRICT_FOLLOW_REDIRECTS
+  );
+
+  if (
+    http.begin(
+      client,
+      "[https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec](https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec)"
+    )
+  ) {
+    int httpCode = http.GET();
+
+    Serial.printf(
+      "HTTP Response code: %d\n",
+      httpCode
+    );
+
+    http.end();
+  }
+}
+```
+
+### Verification
+
+After a failed connection attempt, print the result of `client.lastError(buf, len)`.
+
+An output of `0` indicates that no TLS handshake errors occurred.
+
+```cpp
+char errorBuffer;
+
+client.lastError(
+  errorBuffer,
+  sizeof(errorBuffer)
+);
+
+Serial.println(errorBuffer);
+```
+
+> **Important:** The certificate shown above is truncated and cannot be used for actual TLS verification. Replace it with the complete, valid Google GTS Root R1 PEM certificate.
+
+---
+
+# ESP32-S3 WiFiClientSecure Memory Usage
+
+`WiFiClientSecure` on the ESP32-S3 consumes approximately 45–50 KB of internal RAM per connection by default because mbedTLS allocates standard 16 KB read and 16 KB write buffers.
+
+## Memory Optimization Strategies
+
+### 1. Reduce TLS Buffer Sizes
+
+If your JSON request and response payloads are small, reduce the mbedTLS incoming and outgoing buffer sizes from 16 KB to 2–4 KB before initiating the connection.
+
+```cpp
+WiFiClientSecure client;
+
+// Set RX buffer to 2,048 bytes and TX buffer to 512 bytes
+client.setBufferSizes(2048, 512);
+
+client.setInsecure();  // Or use client.setCACert(...)
+```
+
+#### Verification
+
+Print `ESP.getFreeHeap()` immediately before and after `client.connect()`.
+
+The RAM reduction during the connection should decrease from approximately 45 KB to approximately 8–12 KB.
+
+### 2. Move mbedTLS Memory Allocations to PSRAM
+
+If your ESP32-S3 module includes external PSRAM, such as an `N8R8` or `N16R8` module, configure mbedTLS to allocate its SSL contexts and buffers from PSRAM instead of scarce internal SRAM.
+
+If using PlatformIO or ESP-IDF, add the following settings to your `sdkconfig` or `platformio.ini` file:
+
+```ini
+; platformio.ini build flags for ESP32-S3 with PSRAM
+build_flags =
+    -DCONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=1
+    -DBOARD_HAS_PSRAM
+```
+
+#### Verification
+
+Check `ESP.getFreeHeap()` during an active HTTPS transmission.
+
+Internal SRAM usage should remain virtually unchanged.
+
+### 3. Enable Dynamic Buffer Allocation
+
+Dynamic buffer allocation frees mbedTLS buffers when they are no longer actively transferring data instead of holding them for the entire lifecycle of the client.
+
+Add the following settings to the ESP-IDF `sdkconfig`:
+
+```ini
+CONFIG_MBEDTLS_DYNAMIC_BUFFER=y
+CONFIG_MBEDTLS_DYNAMIC_FREE_CONFIG_DATA=y
+CONFIG_MBEDTLS_DYNAMIC_FREE_CA_CERT=y
+```
+
+#### Verification
+
+Monitor heap usage during a long-lived connection.
+
+RAM usage should decrease between active HTTP transfers even while the socket remains open.
+
+### 4. Reuse Connections with HTTP Keep-Alive
+
+Reestablishing a complete TLS handshake during every loop iteration continuously allocates and frees memory, which can cause heap fragmentation.
+
+Enable connection reuse to keep the SSL context active:
+
+```cpp
+HTTPClient http;
+
+// Enable HTTP Keep-Alive connection reuse
+http.setReuse(true);
+```
+
+#### Verification
+
+Subsequent HTTP requests should execute significantly faster, potentially under 100 ms compared with 1–2 seconds for a new TLS connection.
+
+`ESP.getMinFreeHeap()` should also stabilize without steadily decreasing because of fragmentation.
+
+### 5. Explicitly Flush and Stop Clients
+
+If you do not reuse connections, ensure that `WiFiClientSecure` and `HTTPClient` explicitly release their allocated memory buffers before going out of scope.
+
+```cpp
+http.end();     // Closes the HTTP connection and frees internal stream buffers
+client.stop();  // Closes the socket and frees mbedTLS SSL context memory
+```
+
+#### Verification
+
+Call `ESP.getFreeHeap()` after `client.stop()`.
+
+The available free heap should return to its pre-connection baseline.
+```
