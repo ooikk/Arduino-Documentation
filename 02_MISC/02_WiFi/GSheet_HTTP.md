@@ -1638,3 +1638,393 @@ if (postCode == 200) {
   postHttp.end();
 }
 ```
+
+---
+
+```markdown
+# Separate Telemetry and Command Requests
+
+Your separate send/fetch design is valid, but the redirect setting should be different in the two functions:
+
+- `sendTelemetryCommands()`: Keep `HTTPC_DISABLE_FOLLOW_REDIRECTS`.
+- `fetchCommands()`: Use `HTTPC_STRICT_FOLLOW_REDIRECTS`.
+- Add a separate `doGet(e)` function in Apps Script.
+- Declare `int httpCode` locally inside `fetchCommands()`.
+- Do not treat every positive status code as success.
+
+## Resulting Flow
+
+```text
+sendTelemetryCommands()
+POST /exec → doPost(e) → 302 returned and intentionally not followed
+
+fetchCommands()
+GET /exec → doGet(e) → 302 automatically followed → 200 JSON
+```
+
+## Why the Redirect Settings Differ
+
+### Telemetry POST
+
+```cpp
+http.setFollowRedirects(
+    HTTPC_DISABLE_FOLLOW_REDIRECTS
+);
+```
+
+Keep this setting for the `POST` request because the function only uploads telemetry. It does not need to retrieve the response produced by `doPost(e)`.
+
+Expected result:
+
+```text
+POST response = 302
+```
+
+The `302` means Google produced a `ContentService` response URL. The function deliberately ignores that response URL.
+
+This setting is also the `HTTPClient` default, but explicitly declaring it makes the intended behavior clear.
+
+### Command GET
+
+Change this:
+
+```cpp
+http.setFollowRedirects(
+    HTTPC_DISABLE_FOLLOW_REDIRECTS
+);
+```
+
+to this:
+
+```cpp
+http.setFollowRedirects(
+    HTTPC_STRICT_FOLLOW_REDIRECTS
+);
+```
+
+A `GET` request to the Apps Script `/exec` URL runs `doGet(e)`. Google then serves the returned JSON through another `302` redirect.
+
+Strict redirect handling follows the redirect safely as another `GET`.
+
+Do not use `HTTPC_FORCE_FOLLOW_REDIRECTS` for this `GET` request. It provides no benefit here.
+
+## Corrected ESP32 Code
+
+```cpp
+void configureGoogleClient(WiFiClientSecure &client) {
+#ifdef SECURE_CA_CERT
+  // Verify Google's TLS certificate.
+  client.setCACert(GOOGLE_ROOT_CA);
+#else
+  // Encrypted, but server identity is not verified.
+  client.setInsecure();
+#endif
+}
+
+//============================================================
+// Upload telemetry only
+//============================================================
+void sendTelemetryCommands() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[TELEMETRY] WiFi disconnected");
+    return;
+  }
+
+  // Build telemetry JSON
+  StaticJsonDocument<256> doc;
+
+  doc["type"] = "telemetry";
+  doc[TOPIC_STATUS] = "ONLINE";
+  doc[TOPIC_TEMP] =
+      random(100, 500) / 10.0f;
+  doc[TOPIC_RSSI] = WiFi.RSSI();
+  doc[TOPIC_UPTIME] = millis() / 1000UL;
+  doc[TOPIC_LED_STATE] =
+      digitalRead(LED_PIN);
+  doc[TOPIC_BUTTON] =
+      (digitalRead(BUTTON_PIN) == LOW) ? 1 : 0;
+
+  String requestBody;
+  serializeJson(doc, requestBody);
+
+  Serial.println(
+      "[TELEMETRY] Send payload: " + requestBody
+  );
+
+  WiFiClientSecure client;
+  configureGoogleClient(client);
+
+  HTTPClient http;
+
+  // We do not need the JSON response from doPost().
+  // Capture Google's initial 302 and then stop.
+  http.setFollowRedirects(
+      HTTPC_DISABLE_FOLLOW_REDIRECTS
+  );
+
+  http.setReuse(false);
+  http.setConnectTimeout(15000);
+  http.setTimeout(20000);
+
+  if (!http.begin(client, GOOGLE_SCRIPT_URL)) {
+    Serial.println(
+        "[TELEMETRY] http.begin() failed"
+    );
+    return;
+  }
+
+  http.addHeader(
+      "Content-Type",
+      "application/json"
+  );
+
+  int httpCode = http.POST(requestBody);
+
+  if (httpCode == HTTP_CODE_FOUND) {
+    // HTTP 302 is expected because redirect following
+    // is disabled.
+    Serial.println(
+        "[TELEMETRY] POST accepted; "
+        "Google returned HTTP 302"
+    );
+
+  } else if (httpCode == HTTP_CODE_OK) {
+    // Unusual for Apps Script ContentService,
+    // but still a successful HTTP response.
+    Serial.println(
+        "[TELEMETRY] POST completed with HTTP 200"
+    );
+
+  } else if (httpCode > 0) {
+    // The server returned an HTTP error/status.
+    Serial.printf(
+        "[TELEMETRY] Unexpected HTTP response: %d\n",
+        httpCode
+    );
+
+    String errorBody = http.getString();
+
+    if (errorBody.length() > 0) {
+      Serial.println(
+          "[TELEMETRY] Server response: "
+          + errorBody
+      );
+    }
+
+  } else {
+    // Negative value: local HTTP/network error.
+    Serial.printf(
+        "[TELEMETRY] POST failed: %s (%d)\n",
+        HTTPClient::errorToString(httpCode).c_str(),
+        httpCode
+    );
+  }
+
+  http.end();
+}
+
+//============================================================
+// Fetch LED command separately
+//============================================================
+void fetchCommands() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[COMMAND] WiFi disconnected");
+    return;
+  }
+
+  WiFiClientSecure client;
+  configureGoogleClient(client);
+
+  HTTPClient http;
+
+  // GET /exec receives a Google 302 redirect.
+  // Follow it automatically to obtain the JSON.
+  http.setFollowRedirects(
+      HTTPC_STRICT_FOLLOW_REDIRECTS
+  );
+
+  http.setRedirectLimit(3);
+  http.setReuse(false);
+  http.setConnectTimeout(15000);
+  http.setTimeout(20000);
+
+  if (!http.begin(client, GOOGLE_SCRIPT_URL)) {
+    Serial.println(
+        "[COMMAND] http.begin() failed"
+    );
+    return;
+  }
+
+  // Declare httpCode locally inside this function.
+  int httpCode = http.GET();
+
+if (httpCode == HTTP_CODE_OK) {
+  String responseBody = http.getString();
+
+  Serial.println(
+      "[COMMAND] Server response: " + responseBody
+  );
+
+  // Parse JSON here...
+
+} else if (httpCode > 0) {
+  Serial.printf(
+      "[COMMAND] HTTP error: %d, response size: %d bytes\n",
+      httpCode,
+      http.getSize()
+  );
+
+} else {
+  Serial.printf(
+      "[COMMAND] Network error: %s (%d)\n",
+      HTTPClient::errorToString(httpCode).c_str(),
+      httpCode
+  );
+}
+
+  // Read the body before http.end().
+  String responseBody = http.getString();
+
+  http.end();
+
+  Serial.println(
+      "[COMMAND] Server response: " + responseBody
+  );
+
+  StaticJsonDocument<192> responseDoc;
+
+  DeserializationError err =
+      deserializeJson(responseDoc, responseBody);
+
+  if (err) {
+    Serial.printf(
+        "[COMMAND] JSON error: %s\n",
+        err.c_str()
+    );
+    return;
+  }
+
+  const char* status =
+      responseDoc["status"] | "";
+
+  if (strcmp(status, "success") != 0) {
+    const char* message =
+        responseDoc["message"] | "Unknown server error";
+
+    Serial.printf(
+        "[COMMAND] Apps Script error: %s\n",
+        message
+    );
+    return;
+  }
+
+  if (responseDoc["led-control"].isNull()) {
+    Serial.println(
+        "[COMMAND] led-control is missing"
+    );
+    return;
+  }
+
+  int targetLedState =
+      responseDoc["led-control"].as<int>();
+
+  if (targetLedState != 0 &&
+      targetLedState != 1) {
+    Serial.printf(
+        "[COMMAND] Invalid led-control value: %d\n",
+        targetLedState
+    );
+    return;
+  }
+
+  digitalWrite(
+      LED_PIN,
+      targetLedState ? HIGH : LOW
+  );
+
+  Serial.printf(
+      "[COMMAND] LED state updated to: %d\n",
+      targetLedState
+  );
+}
+```
+
+## Required `doGet(e)` Function
+
+Because `fetchCommands()` now sends a new `GET` request to the original Apps Script URL, your Apps Script project requires a `doGet(e)` function:
+
+```javascript
+function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName("Dashboard");
+
+    if (!sheet) {
+      throw new Error(
+        'Sheet "Dashboard" was not found'
+      );
+    }
+
+    var rawValue =
+      sheet.getRange("H2").getValue();
+
+    // Supports numeric 0/1 and checkbox false/true.
+    var ledControlValue =
+      rawValue === true || Number(rawValue) === 1
+        ? 1
+        : 0;
+
+    var response = {
+      "status": "success",
+      "led-control": ledControlValue
+    };
+
+    return ContentService
+      .createTextOutput(
+        JSON.stringify(response)
+      )
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
+
+  } catch (err) {
+    return ContentService
+      .createTextOutput(
+        JSON.stringify({
+          "status": "error",
+          "message": err.toString()
+        })
+      )
+      .setMimeType(
+        ContentService.MimeType.JSON
+      );
+  }
+}
+```
+
+After adding `doGet(e)`, deploy a new web-app version if the deployment uses version-based deployment.
+
+## Important Limitation
+
+With redirect following disabled in `sendTelemetryCommands()`, a `302` confirms that Apps Script returned a `ContentService` response, but it does not reveal whether `doPost(e)` returned:
+
+```json
+{
+  "status": "success"
+}
+```
+
+or:
+
+```json
+{
+  "status": "error"
+}
+```
+
+Both responses are stored behind a `302` redirect.
+
+Therefore, this separate design is suitable for simple periodic telemetry, but it does not fully verify each spreadsheet write.
+
+The separate `fetchCommands()` function only checks the response from `doGet(e)`. It does not read the discarded `doPost(e)` result.
