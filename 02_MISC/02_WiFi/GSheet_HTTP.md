@@ -697,4 +697,14 @@ client.stop();  // Closes the socket and frees mbedTLS SSL context memory
 Call `ESP.getFreeHeap()` after `client.stop()`.
 
 The available free heap should return to its pre-connection baseline.
-```
+
+---
+
+# Common HTTP responses code
+
+| Code | Meaning |
+|---:|---|
+| `200` | Successful request; a JSON response should be available. |
+| `302` | Google's response is available at a temporary redirect URL. |
+| `400` | Google rejected the redirected request. |
+| `-11` | The ESP32 timed out while waiting for a response. This is a library error, not an HTTP status code. |
