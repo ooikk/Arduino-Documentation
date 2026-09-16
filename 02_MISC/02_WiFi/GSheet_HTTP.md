@@ -2027,3 +2027,7 @@ Both responses are stored behind a `302` redirect.
 Therefore, this separate design is suitable for simple periodic telemetry, but it does not fully verify each spreadsheet write.
 
 The separate `fetchCommands()` function only checks the response from `doGet(e)`. It does not read the discarded `doPost(e)` result.
+
+# Reference
+
+https://docs.google.com/spreadsheets/d/1KqmrGOs5891O9Zn7v5kLdqfmxuhTQq7aQj4k6dneWUI/edit?gid=0#gid=0
