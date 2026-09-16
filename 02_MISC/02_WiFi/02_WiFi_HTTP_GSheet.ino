@@ -4,7 +4,7 @@
 #include <ArduinoJson.h>
 
 #define SECURE_CA_CERT
-//#define USE_doGet  // Make sure Google Sheet define doGet(e) function
+#define USE_doGet  // Make sure Google Sheet define doGet(e) function
 
 
 const char* WIFI_SSID = "Nightingale_IoT";
@@ -67,6 +67,8 @@ bP6MvPJwNQzcmRk13NfIRmPVNnGuV/u3gm3c
 
 #endif
 
+#ifndef USE_doGet
+
 void sendTelemetryAndFetchCommands() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi disconnected");
@@ -84,7 +86,7 @@ void sendTelemetryAndFetchCommands() {
 
   String requestBody;
   serializeJson(doc, requestBody);
-  Serial.println("Send Payload: " + requestBody);
+  Serial.println("[TELEMETRY] Send Payload: " + requestBody);
 
   WiFiClientSecure postClient;
 #ifdef SECURE_CA_CERT
@@ -187,8 +189,8 @@ void sendTelemetryAndFetchCommands() {
   Serial.printf("[COMMAND] LED state updated to: %d\n", targetLedState);
 }
 
-
-void sendTelemetryAndFetchCommands_1() {
+#else
+void sendTelemetryCommands() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi disconnected");
     return;
@@ -211,9 +213,25 @@ void sendTelemetryAndFetchCommands_1() {
 
 
   HTTPClient http;
-  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+
+  //http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+
+  // Google Apps Script usually redirects; strict may fail to follow cross-host redirects.
+  //http.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
+
+  http.setReuse(false);
+  http.setConnectTimeout(15000);
+  http.setTimeout(20000);
+
+  if (!http.begin(client, GOOGLE_SCRIPT_URL)) {
+    Serial.println("[TELEMETRY] http.begin() failed");
+    return;
+  }
+
+
   //http.begin(postClient, GOOGLE_SCRIPT_URL);
-  http.begin(client, GOOGLE_SCRIPT_URL);
+  //http.begin(client, GOOGLE_SCRIPT_URL);
   http.addHeader("Content-Type", "application/json");
 
   // Build telemetry JSON
@@ -235,66 +253,112 @@ void sendTelemetryAndFetchCommands_1() {
   serializeJson(doc, requestBody);
 
   int httpCode = http.POST(requestBody);
-  if (httpCode > 0) {
+  if (httpCode == 302 || httpCode == 200) {  //HTTP_CODE_OK == 200, HTTP_CODE_FOUND == 302
     Serial.printf("[TELEMETRY] Uploaded successfully (HTTP %d)\n", httpCode);
-    Serial.println("Send Payload: " + requestBody);
-    /*
-// OR
-  Serial.print("Send Payload: ");
-  Serial.println(requestBody);
-// OR
-  Serial.print("Send Payload: ");
-  serializeJson(doc, Serial);
-  Serial.println();
+    Serial.println("[TELEMETRY] Send Payload: " + requestBody);
+  } else {
+    Serial.printf("[TELEMETRY] Upload failed, http code: %d\n", httpCode);
+  }
+  http.end();
+}
+
+void fetchCommands() {
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi disconnected");
+    return;
+  }
+
+  WiFiClientSecure client;
+
+#ifdef SECURE_CA_CERT
+  // Option A: Strict SSL
+  // Requires a valid certificate bundle or root CA
+  // postClient.setCACert(GOOGLE_ROOT_CA);
+  client.setCACert(GOOGLE_ROOT_CA);
+#else
+  // Option B: TLS encryption enabled without
+  // fingerprint validation
+  // postClient.setInsecure();
+  client.setInsecure();
+#endif
+
+  // Read the response from doGet(e)
+
+  HTTPClient http;
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  //http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+
+  http.setRedirectLimit(3);
+  http.setReuse(false);
+  http.setConnectTimeout(15000);
+  http.setTimeout(20000);
+
+  if (!http.begin(client, GOOGLE_SCRIPT_URL)) {
+    Serial.println("[COMMAND] http.begin() failed");
+    return;
+  }
+
+  int httpCode = http.GET();
+  //Serial.printf("HTTP GET: %d\n", httpCode);
+  if (httpCode != HTTP_CODE_OK) {
+    if (httpCode > 0) {
+
+      /*
+      Serial.printf("[COMMAND] Unexpected HTTP response: %d\n", httpCode);
+      String errorBody = http.getString();
+    
+      if (errorBody.length() > 0) {
+        Serial.println("[COMMAND] Server response: " + errorBody);
+      }*/
+      Serial.printf("[COMMAND] HTTP error: %d, response size: %d bytes\n", httpCode, http.getSize());
+    } else {
+      Serial.printf("[COMMAND] GET failed: %s (%d)\n", HTTPClient::errorToString(httpCode).c_str(), httpCode);
+    }
+
+    http.end();
+    return;
+  }
+
+  // Must read the body before http.end().
+  String responseBody = http.getString();
+  http.end();
+
+  //Serial.println("[COMMAND] Server response: " + responseBody);
+  Serial.printf("[COMMAND] Server response (HTTP %d): ", httpCode);
+  Serial.println(responseBody);
+  StaticJsonDocument<128> responseDoc;
+  DeserializationError err = deserializeJson(responseDoc, responseBody);
+
+  if (!err && responseDoc.containsKey("led-control")) {
+    // check for none integer
+    if (!responseDoc["led-control"].is<int>()) {
+      Serial.println("[COMMAND] led-control must be a number, 0 or 1");
+
+/*
+      Serial.print("[COMMAND] led-control is not an integer. Received: ");
+      serializeJson(ledValue, Serial);
+      Serial.println();
 */
 
-    // READ THE RESPONSE FROM doPost(e) HERE
-    String responseBody = http.getString();
-    Serial.println("Server Response: " + responseBody);
 
-    StaticJsonDocument<128> responseDoc;
-    DeserializationError err = deserializeJson(responseDoc, responseBody);
+      return;
+    }
 
-    if (!err && responseDoc.containsKey("led-control")) {
-      int targetLedState = responseDoc["led-control"];
+    int targetLedState = responseDoc["led-control"];
+    if (targetLedState != 0 && targetLedState != 1) {
+      Serial.printf("[COMMAND] Invalid led-control value: %d\n", targetLedState);
+      return;
+    } else {
       digitalWrite(LED_PIN, targetLedState ? HIGH : LOW);
       Serial.printf("[COMMAND] LED state updated to: %d\n", targetLedState);
-    } else {
-      Serial.println("[COMMAND] Failed to parse led-control from response.");
-    }
-
-
-  } else {
-    Serial.printf("[TELEMETRY] Upload failed, error: %s\n", http.errorToString(httpCode).c_str());
-  }
-  http.end();
-
-
-// Read the response from doGet(e)
-#ifdef USE_doGet
-
-  //HTTPClient http;
-  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-  //http.begin(getClient, GOOGLE_SCRIPT_URL);
-  http.begin(client, GOOGLE_SCRIPT_URL);
-
-  httpCode = http.GET();
-  if (httpCode > 0) {
-    String payload = http.getString();
-    StaticJsonDocument<128> doc;
-    DeserializationError err = deserializeJson(doc, payload);
-
-    if (!err && doc.containsKey("led-control")) {
-      int targetLedState = doc["led-control"];
-      digitalWrite(LED_PIN, targetLedState ? HIGH : LOW);
-      Serial.printf("[Received] Command retrieved. LED set to: %d\n", targetLedState);
     }
   } else {
-    Serial.printf("[Received] Failed, error: %s\n", http.errorToString(httpCode).c_str());
+    Serial.println("[COMMAND] Failed to parse led-control from response. Error Message: ");
+    Serial.println(err.c_str());
   }
-  http.end();
-#endif
 }
+#endif
 
 void setup() {
   Serial.begin(115200);
@@ -319,8 +383,12 @@ void setup() {
 
 void loop() {
 
-
+#ifdef USE_doGet
+  sendTelemetryCommands();
+  fetchCommands();
+#else
   sendTelemetryAndFetchCommands();
   // Poll and upload every 10 seconds
+#endif
   delay(10000);
 }
