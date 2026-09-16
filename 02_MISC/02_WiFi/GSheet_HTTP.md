@@ -700,11 +700,590 @@ The available free heap should return to its pre-connection baseline.
 
 ---
 
-# Common HTTP responses code
 
-| Code | Meaning |
+# ESP32-S3 Google Apps Script Redirect Flow
+
+Your function performs one logical operation—upload telemetry and receive LED control—but Google Apps Script implements it as two HTTP requests:
+
+```mermaid
+sequenceDiagram
+    participant E as ESP32
+    participant G as script.google.com
+    participant A as Apps Script
+    participant S as Google Sheet
+    participant C as googleusercontent.com
+
+    E->>G: POST telemetry JSON
+    G->>A: Run doPost(e)
+    A->>S: Write telemetry
+    A->>S: Read LED control from H2
+    A-->>G: Return JSON result
+    G-->>E: 302 + response URL
+    E->>C: GET response URL
+    C-->>E: 200 + LED-control JSON
+```
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/58261c03-703a-4500-b40b-c7d13bbd7246" />
+
+
+Google uses a temporary `script.googleusercontent.com` URL for content returned by `ContentService`, so the ESP32 must follow that redirect to obtain the JSON response.
+
+See the [Google Apps Script Content Service documentation](https://developers.google.com/apps-script/guides/content).
+
+## 1. The Two Client Classes
+
+```cpp
+WiFiClientSecure postClient;
+HTTPClient postHttp;
+```
+
+They operate at different layers:
+
+| Object | Responsibility |
+|---|---|
+| `WiFiClientSecure` | TCP connection, TLS encryption, and certificate verification. |
+| `HTTPClient` | HTTP methods, headers, URLs, redirects, and response codes. |
+
+`HTTPClient` uses the secure connection supplied by `WiFiClientSecure`.
+
+### Certificate Validation Enabled
+
+```cpp
+postClient.setCACert(GOOGLE_ROOT_CA);
+```
+
+The ESP32 checks that the server certificate is trusted.
+
+### Certificate Validation Disabled
+
+```cpp
+postClient.setInsecure();
+```
+
+The traffic remains encrypted, but the ESP32 does not verify that it is communicating with Google. This is less secure.
+
+## 2. Redirect Settings
+
+```cpp
+postHttp.setFollowRedirects(
+    HTTPC_DISABLE_FOLLOW_REDIRECTS
+);
+```
+
+There are three redirect options:
+
+| Option | Meaning |
+|---|---|
+| `HTTPC_DISABLE_FOLLOW_REDIRECTS` | Returns the first redirect code, such as `302`, without following it. |
+| `HTTPC_STRICT_FOLLOW_REDIRECTS` | Follows redirects according to the library's normal HTTP rules. |
+| `HTTPC_FORCE_FOLLOW_REDIRECTS` | Permits redirects for methods such as `POST`, even where confirmation would normally be required. |
+
+The Arduino-ESP32 documentation describes these modes in the [HTTPClient header](https://github.com/espressif/arduino-esp32/blob/master/libraries/HTTPClient/src/HTTPClient.h).
+
+### `HTTPC_DISABLE_FOLLOW_REDIRECTS`
+
+```cpp
+postHttp.setFollowRedirects(
+    HTTPC_DISABLE_FOLLOW_REDIRECTS
+);
+```
+
+For this project, this is the most controllable option.
+
+When Google returns:
+
+```text
+HTTP 302 Found
+Location: [https://script.googleusercontent.com/](https://script.googleusercontent.com/)...
+```
+
+`postHttp.POST()` returns `302`. The program then extracts the redirect URL and performs the `GET` request explicitly.
+
+### `HTTPC_STRICT_FOLLOW_REDIRECTS`
+
+```cpp
+postHttp.setFollowRedirects(
+    HTTPC_STRICT_FOLLOW_REDIRECTS
+);
+```
+
+This allows `HTTPClient` to handle supported redirects automatically.
+
+In the current Arduino-ESP32 implementation:
+
+- `302` and `303` are followed as a new `GET`.
+- The original `POST` body is discarded.
+- `301` and `307` are automatically followed under strict mode only for `GET` or `HEAD`.
+
+The detailed behavior is available in Espressif's [HTTPClient.cpp](https://github.com/espressif/arduino-esp32/blob/master/libraries/HTTPClient/src/HTTPClient.cpp).
+
+### `HTTPC_FORCE_FOLLOW_REDIRECTS`
+
+```cpp
+postHttp.setFollowRedirects(
+    HTTPC_FORCE_FOLLOW_REDIRECTS
+);
+```
+
+This permits redirects for `POST`, `PUT`, and other methods.
+
+For some redirect codes, the original method, body, and headers may be sent again. This can be dangerous for telemetry because the `POST` request could execute twice and create duplicate spreadsheet entries.
+
+For this Google Apps Script implementation, manually handling the expected `302` response is easier to debug:
+
+```cpp
+HTTPC_DISABLE_FOLLOW_REDIRECTS
+```
+
+## 3. Connection Options
+
+```cpp
+postHttp.setReuse(false);
+postHttp.setConnectTimeout(15000);
+postHttp.setTimeout(20000);
+```
+
+### `setReuse(false)`
+
+```cpp
+postHttp.setReuse(false);
+```
+
+Disables HTTP keep-alive connection reuse.
+
+After the `POST` finishes, the connection will not be retained for another request. This is useful because the second request goes to a different hostname:
+
+```text
+POST: script.google.com
+GET:  script.googleusercontent.com
+```
+
+### `setConnectTimeout(15000)`
+
+```cpp
+postHttp.setConnectTimeout(15000);
+```
+
+Allows up to 15,000 ms for:
+
+- DNS lookup.
+- TCP connection.
+- TLS connection establishment.
+
+If the connection cannot be established, the request normally returns a negative client error.
+
+### `setTimeout(20000)`
+
+```cpp
+postHttp.setTimeout(20000);
+```
+
+Allows up to 20,000 ms while waiting for or reading the HTTP response.
+
+The previous result:
+
+```text
+-11
+```
+
+means:
+
+```text
+HTTPC_ERROR_READ_TIMEOUT
+```
+
+The complete negative error definitions are available in Espressif's [HTTPClient.h](https://github.com/espressif/arduino-esp32/blob/master/libraries/HTTPClient/src/HTTPClient.h).
+
+## 4. Start the POST Transaction
+
+```cpp
+if (!postHttp.begin(postClient, GOOGLE_SCRIPT_URL)) {
+  Serial.println("[TELEMETRY] Cannot start POST");
+  return;
+}
+```
+
+`begin()` associates the following items:
+
+- `postHttp`.
+- `postClient`.
+- `GOOGLE_SCRIPT_URL`.
+
+It validates and prepares the URL configuration. It does not upload the JSON yet.
+
+A valid deployed Apps Script URL normally looks like this:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+```
+
+Use `/exec`, not the Apps Script editor URL.
+
+## 5. Set the Content Type
+
+```cpp
+postHttp.addHeader(
+    "Content-Type",
+    "application/json"
+);
+```
+
+This tells Apps Script that the `POST` body contains JSON.
+
+It corresponds to the following Apps Script statement:
+
+```javascript
+var data = JSON.parse(e.postData.contents);
+```
+
+The body sent by the ESP32 may look like this:
+
+```json
+{
+  "type": "telemetry",
+  "status": "ONLINE",
+  "temperature": 17.4,
+  "rssi": -70,
+  "uptime": 757,
+  "led-state": 0,
+  "button": 1
+}
+```
+
+## 6. Send the POST Request
+
+```cpp
+int postCode = postHttp.POST(requestBody);
+```
+
+This command:
+
+1. Connects to `script.google.com`.
+2. Establishes TLS.
+3. Sends the HTTP headers.
+4. Sends the JSON body.
+5. Waits for Google's response headers.
+6. Returns either an HTTP status code or a negative ESP32 error.
+
+### Positive `postCode` Values
+
+A positive value is an HTTP response from the server.
+
+| Code | HTTP Meaning | Meaning in This Project |
+|---:|---|---|
+| `200` | OK | Direct JSON response received; uncommon for Apps Script `ContentService`. |
+| `201` | Created | Server created a resource; not expected here. |
+| `202` | Accepted | Request accepted, but processing may not be complete. |
+| `204` | No Content | Successful request, but there is no JSON response body. |
+| `301` | Moved Permanently | URL was permanently redirected. |
+| `302` | Found / Temporary Redirect | Normal Apps Script response; retrieve the URL from `Location`. |
+| `303` | See Other | Retrieve the result using `GET`. |
+| `307` | Temporary Redirect | Redirect that normally preserves the method and body. |
+| `308` | Permanent Redirect | Permanent redirect that preserves the method and body. |
+| `400` | Bad Request | Malformed request or malformed redirected request. |
+| `401` | Unauthorized | Authentication is required. |
+| `403` | Forbidden | Web App permissions or deployment access problem. |
+| `404` | Not Found | Incorrect or obsolete deployment URL. |
+| `405` | Method Not Allowed | Endpoint does not accept `POST`. |
+| `408` | Request Timeout | Google timed out while processing the request. |
+| `413` | Payload Too Large | Request body exceeds server limits. |
+| `429` | Too Many Requests | Apps Script or Google quota limit, or rate limiting. |
+| `500` | Internal Server Error | Apps Script or Google server failure. |
+| `502` | Bad Gateway | Google gateway received an invalid upstream response. |
+| `503` | Service Unavailable | Temporary Google service problem. |
+| `504` | Gateway Timeout | Google's upstream processing took too long. |
+
+For this function, the expected initial `POST` result is:
+
+```text
+302
+```
+
+### Negative `postCode` Values
+
+A negative number is generated by the ESP32 library. It is not an HTTP response from Google.
+
+| Code | Arduino Error | Meaning |
+|---:|---|---|
+| `-1` | Connection refused | Could not establish the connection. |
+| `-2` | Send header failed | HTTP headers could not be transmitted. |
+| `-3` | Send payload failed | JSON body could not be transmitted. |
+| `-4` | Not connected | Client was not connected. |
+| `-5` | Connection lost | Connection dropped during the request. |
+| `-6` | No stream | Required stream was unavailable. |
+| `-7` | No HTTP server | No valid HTTP response was detected. |
+| `-8` | Too little RAM | Insufficient memory. |
+| `-9` | Encoding error | Unsupported or invalid response encoding. |
+| `-10` | Stream write error | Failed while writing received data. |
+| `-11` | Read timeout | Server response did not arrive within `setTimeout()`. |
+
+Print the error text as follows:
+
+```cpp
+if (postCode < 0) {
+  Serial.printf(
+      "[TELEMETRY] POST failed: %s\n",
+      HTTPClient::errorToString(postCode).c_str()
+  );
+}
+```
+
+Do not interpret every positive code as success. Generally:
+
+```cpp
+if (postCode >= 200 && postCode < 300) {
+  // HTTP success
+}
+```
+
+A `302` response is not final success yet. It means that another request is required.
+
+## 7. Obtain the Redirect URL
+
+```cpp
+String redirectUrl = postHttp.getLocation();
+```
+
+Google's response contains a header similar to this:
+
+```http
+Location: [https://script.googleusercontent.com/macros/echo](https://script.googleusercontent.com/macros/echo)?...
+```
+
+`getLocation()` retrieves that value.
+
+The URL is temporary and represents the output created by this Apps Script code:
+
+```javascript
+return ContentService
+  .createTextOutput(JSON.stringify(response))
+  .setMimeType(ContentService.MimeType.JSON);
+```
+
+Copy the URL before calling:
+
+```cpp
+postHttp.end();
+```
+
+`end()` disconnects and clears the internal HTTP state, including response information.
+
+## 8. Validate the Redirect Destination
+
+```cpp
+if (!redirectUrl.startsWith(
+      "[https://script.googleusercontent.com/](https://script.googleusercontent.com/)"
+  )) {
+  Serial.println(
+    "[TELEMETRY] Missing or unexpected redirect URL"
+  );
+  return;
+}
+```
+
+This check ensures that:
+
+- The `Location` header was received.
+- Google returned the expected hostname.
+- The ESP32 does not follow an unexpected or potentially malicious URL.
+
+## 9. Use a Separate GET Client
+
+```cpp
+WiFiClientSecure getClient;
+HTTPClient getHttp;
+```
+
+A separate client is not an HTTP requirement, but it is a clean and reliable design because the second request connects to a different server hostname.
+
+| POST Connection | GET Connection |
+|---|---|
+| `script.google.com` | `script.googleusercontent.com` |
+| Sends JSON | Sends no JSON |
+| Uses `POST` | Uses `GET` |
+| Receives `302` | Receives `200` and JSON |
+| Uses a `Content-Type` header | Does not need the `POST` content header |
+
+Using a separate client provides:
+
+- A fresh TLS connection for the new hostname.
+- Correct hostname verification and TLS SNI.
+- No leftover `POST` headers or `POST` body.
+- No reuse of a stale connection.
+- Clear separation between uploading telemetry and downloading the response.
+
+The second hostname must also validate successfully against `GOOGLE_ROOT_CA`.
+
+## 10. Configure the Second TLS Connection
+
+```cpp
+WiFiClientSecure getClient;
+
+#ifdef SECURE_CA_CERT
+  getClient.setCACert(GOOGLE_ROOT_CA);
+#else
+  getClient.setInsecure();
+#endif
+```
+
+This configures TLS for `script.googleusercontent.com`.
+
+It is a new secure transport object because the previous transport was connected to `script.google.com`.
+
+## 11. Configure the GET Request
+
+```cpp
+HTTPClient getHttp;
+
+getHttp.setReuse(false);
+getHttp.setConnectTimeout(15000);
+getHttp.setTimeout(20000);
+```
+
+These settings have the same meanings as for the `POST` client:
+
+- Do not reuse the connection.
+- Allow 15 seconds to connect.
+- Allow 20 seconds to receive the response.
+
+## 12. Prepare the Redirected URL
+
+```cpp
+if (!getHttp.begin(getClient, redirectUrl)) {
+  Serial.println(
+    "[TELEMETRY] Cannot start response GET"
+  );
+  return;
+}
+```
+
+This attaches the temporary response URL to the second secure client.
+
+Again, `begin()` only configures the request. The actual network request happens when `GET()` is called.
+
+## 13. Fetch the Apps Script Response
+
+```cpp
+finalCode = getHttp.GET();
+```
+
+This sends a request similar to:
+
+```http
+GET /temporary-response-path HTTP/1.1
+Host: script.googleusercontent.com
+```
+
+It does not run the telemetry `POST` again. It retrieves the output already generated by `doPost(e)`.
+
+Expected result:
+
+```cpp
+finalCode = 200;
+```
+
+## 14. Read the Response Body
+
+```cpp
+if (finalCode == 200) {
+  responseBody = getHttp.getString();
+}
+```
+
+The response should look like this:
+
+```json
+{
+  "status": "success",
+  "led-control": 1
+}
+```
+
+The value came from:
+
+```javascript
+var ledControlValue =
+  sheet.getRange("H2").getValue();
+```
+
+Therefore:
+
+| Dashboard cell `H2` | ESP32 receives |
 |---:|---|
-| `200` | Successful request; a JSON response should be available. |
-| `302` | Google's response is available at a temporary redirect URL. |
-| `400` | Google rejected the redirected request. |
-| `-11` | The ESP32 timed out while waiting for a response. This is a library error, not an HTTP status code. |
+| `0` | `"led-control": 0` |
+| `1` | `"led-control": 1` |
+
+Call `getString()` before:
+
+```cpp
+getHttp.end();
+```
+
+`end()` closes the connection and clears the HTTP state.
+
+## 15. Direct `200` Response Branch
+
+```cpp
+} else {
+  if (postCode == 200) {
+    responseBody = postHttp.getString();
+  }
+
+  postHttp.end();
+}
+```
+
+This handles the possibility that the original `POST` returns the JSON directly without a redirect.
+
+The two possible successful paths are:
+
+```text
+Path A: POST 302 → GET 200 → Read JSON
+Path B: POST 200 → Read JSON directly
+```
+
+For Google Apps Script `ContentService`, Path A is normally expected.
+
+### Improved Response Handling
+
+Report all other `POST` responses explicitly:
+
+```cpp
+} else if (postCode == 200) {
+  responseBody = postHttp.getString();
+  postHttp.end();
+
+} else {
+  Serial.printf(
+    "[TELEMETRY] Unexpected POST response: %d\n",
+    postCode
+  );
+
+  if (postCode < 0) {
+    Serial.println(
+      HTTPClient::errorToString(postCode).c_str()
+    );
+  } else {
+    Serial.println(postHttp.getString());
+  }
+
+  postHttp.end();
+  return;
+}
+```
+
+## Important Status-Code Distinction
+
+```text
+postCode > 0  = HTTP response received from a server
+postCode < 0  = ESP32, network, or HTTP client error
+```
+
+For this specific application, the normal successful sequence is:
+
+```text
+POST response: 302
+Final GET response: 200
+Response: {"status":"success","led-control":1}
+```
+```
