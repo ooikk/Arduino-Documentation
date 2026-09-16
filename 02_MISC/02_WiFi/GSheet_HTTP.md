@@ -723,7 +723,6 @@ sequenceDiagram
     C-->>E: 200 + LED-control JSON
 ```
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/58261c03-703a-4500-b40b-c7d13bbd7246" />
 
 
 Google uses a temporary `script.googleusercontent.com` URL for content returned by `ContentService`, so the ESP32 must follow that redirect to obtain the JSON response.
