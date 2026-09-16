@@ -1649,7 +1649,6 @@ Your separate send/fetch design is valid, but the redirect setting should be dif
 - `sendTelemetryCommands()`: Keep `HTTPC_DISABLE_FOLLOW_REDIRECTS`.
 - `fetchCommands()`: Use `HTTPC_STRICT_FOLLOW_REDIRECTS`.
 - Add a separate `doGet(e)` function in Apps Script.
-- Declare `int httpCode` locally inside `fetchCommands()`.
 - Do not treat every positive status code as success.
 
 ## Resulting Flow
