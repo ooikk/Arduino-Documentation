@@ -1641,7 +1641,7 @@ if (postCode == 200) {
 
 ---
 
-```markdown
+
 # Separate Telemetry and Command Requests
 
 Your separate send/fetch design is valid, but the redirect setting should be different in the two functions:
