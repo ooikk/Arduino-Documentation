@@ -190,6 +190,7 @@ void sendTelemetryAndFetchCommands() {
 }
 
 #else
+
 void sendTelemetryCommands() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi disconnected");
@@ -286,9 +287,10 @@ void fetchCommands() {
   // Read the response from doGet(e)
 
   HTTPClient http;
-  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
-  //http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
 
+
+  //http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+  http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
   http.setRedirectLimit(3);
   http.setReuse(false);
   http.setConnectTimeout(15000);
@@ -299,30 +301,107 @@ void fetchCommands() {
     return;
   }
 
-  int httpCode = http.GET();
-  //Serial.printf("HTTP GET: %d\n", httpCode);
-  if (httpCode != HTTP_CODE_OK) {
-    if (httpCode > 0) {
+  //const char* headerKeys[] = { "Location" };
+  //http.collectHeaders(headerKeys, 1);
 
-      /*
-      Serial.printf("[COMMAND] Unexpected HTTP response: %d\n", httpCode);
-      String errorBody = http.getString();
-    
-      if (errorBody.length() > 0) {
-        Serial.println("[COMMAND] Server response: " + errorBody);
-      }*/
-      Serial.printf("[COMMAND] HTTP error: %d, response size: %d bytes\n", httpCode, http.getSize());
-    } else {
-      Serial.printf("[COMMAND] GET failed: %s (HTTP %d)\n", HTTPClient::errorToString(httpCode).c_str(), httpCode);
+  int httpCode = http.GET();
+
+  Serial.printf("[COMMAND] Initial HTTP code: %d\n", httpCode);
+
+  String responseBody;
+  if (httpCode == HTTP_CODE_OK) {
+    // Included in case Google returns 200 directly
+    responseBody = http.getString();
+    http.end();
+    client.stop();
+  } else if (httpCode == HTTP_CODE_FOUND || httpCode == HTTP_CODE_SEE_OTHER || httpCode == HTTP_CODE_TEMPORARY_REDIRECT || httpCode == HTTP_CODE_PERMANENT_REDIRECT) {
+    // Google Apps Script ContentService redirect
+
+    // const char* headerKeys[] = { "Location" };
+    // http.collectHeaders(headerKeys, 1);
+
+    //String redirectUrl = http.header("Location");   // to use this method, need to execute collectHeaders() first
+
+    String redirectUrl = http.getLocation();
+
+    Serial.println("[COMMAND] Redirect location: " + redirectUrl);
+    // Close the first request before using the one-time URL
+    http.end();
+    client.stop();
+
+    if (redirectUrl.length() == 0) {
+      Serial.println("[COMMAND] Redirect URL is empty");
+      return;
     }
 
+    // Use completely new objects for redirected request
+    WiFiClientSecure redirectClient;
+
+#ifdef SECURE_CA_CERT
+    redirectClient.setCACert(GOOGLE_ROOT_CA);
+#else
+    redirectClient.setInsecure();
+#endif
+
+    HTTPClient redirectHttp;
+
+    if (!redirectHttp.begin(redirectClient, redirectUrl)) {
+      Serial.println("[COMMAND] Redirect http.begin() failed");
+      return;
+    }
+
+    redirectHttp.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+
+    redirectHttp.setReuse(false);
+    redirectHttp.setConnectTimeout(15000);
+    redirectHttp.setTimeout(20000);
+    redirectHttp.addHeader("Connection", "close");
+
+    int finalHttpCode = redirectHttp.GET();
+
+    Serial.printf("[COMMAND] Redirected HTTP code: %d\n", finalHttpCode);
+
+    if (finalHttpCode == HTTP_CODE_OK) {
+      responseBody = redirectHttp.getString();
+    } else if (finalHttpCode > 0) {
+      String errorBody = redirectHttp.getString();
+
+      Serial.printf("[COMMAND] Redirected HTTP error: %d\n", finalHttpCode);
+
+      if (errorBody.length() > 0) {
+        Serial.println("[COMMAND] Google error response:");
+        Serial.println(errorBody);
+      }
+
+      redirectHttp.end();
+      redirectClient.stop();
+      return;
+    } else {
+      Serial.printf("[COMMAND] Redirect GET failed: %s (HTTP %d)\n", HTTPClient::errorToString(finalHttpCode).c_str(), finalHttpCode);
+      redirectHttp.end();
+      redirectClient.stop();
+      return;
+    }
+
+    redirectHttp.end();
+    redirectClient.stop();
+  } else if (httpCode > 0) {
+    String errorBody = http.getString();
+    Serial.printf("[COMMAND] Initial HTTP error: %d\n", httpCode);
+
+    if (errorBody.length() > 0) {
+      Serial.println(errorBody);
+    }
     http.end();
+    client.stop();
+    return;
+  } else {
+    Serial.printf("[COMMAND] Initial GET failed: %s (HTTP %d)\n", HTTPClient::errorToString(httpCode).c_str(), httpCode);
+    http.end();
+    client.stop();
     return;
   }
 
-  // Must read the body before http.end().
-  String responseBody = http.getString();
-  http.end();
 
   //Serial.println("[COMMAND] Server response: " + responseBody);
   Serial.printf("[COMMAND] Server response (HTTP %d): ", httpCode);
@@ -340,8 +419,6 @@ void fetchCommands() {
       serializeJson(ledValue, Serial);
       Serial.println();
 */
-
-
       return;
     }
 
