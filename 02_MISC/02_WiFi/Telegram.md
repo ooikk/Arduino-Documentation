@@ -451,3 +451,738 @@ Secure two-way Telegram control
 + Inline buttons
 + Command authorisation
 ```
+---
+# Google Apps Script: Option F vs. Option D
+
+The two options use the same Google Apps Script platform, but Apps Script plays a different role:
+
+- **Option F:** The ESP32 initiates communication by sending telemetry to Google Apps Script. Apps Script logs it and optionally sends a Telegram alert.
+- **Option D:** Telegram initiates communication by sending a webhook to Google Apps Script. Apps Script stores the command, and the ESP32 later retrieves it.
+
+The important point is that Google Apps Script normally cannot directly push a command into an ESP32 behind a router. The ESP32 must still poll Google Apps Script, MQTT, Firebase, or another command service.
+
+## 1. Communication-Flow Difference
+
+### Option F — ESP32 Telemetry Bridge
+
+```mermaid
+sequenceDiagram
+    participant E as ESP32
+    participant G as Google Apps Script
+    participant S as Google Sheets
+    participant T as Telegram
+
+    E->>G: POST telemetry
+    G->>S: Append sensor data
+    G->>G: Evaluate alarm condition
+    G->>T: sendMessage if alarm
+    G-->>E: JSON response
+```
+
+The ESP32 is the initiator.
+
+Typical ESP32 payload:
+
+```json
+{
+  "source": "esp32",
+  "type": "telemetry",
+  "deviceId": "ESP32_01",
+  "temperature": 45.5,
+  "rssi": -73,
+  "uptime": 100,
+  "led-state": 0
+}
+```
+
+### Option D — Telegram Webhook Command Bridge
+
+```mermaid
+sequenceDiagram
+    participant U as Telegram user
+    participant T as Telegram
+    participant G as Google Apps Script
+    participant E as ESP32
+
+    U->>T: /led_on
+    T->>G: POST webhook update
+    G->>G: Store pending command
+    G-->>T: HTTP success
+    E->>G: GET pending command
+    G-->>E: led-control = 1
+    E->>E: Switch LED ON
+    E->>G: POST acknowledgement
+    G->>T: Command completed
+    T-->>U: LED is ON
+```
+
+Telegram is the first initiator, but the ESP32 still initiates its own connection to collect the command.
+
+## 2. Main Code Differences
+
+| Function | Option F: Telemetry Bridge | Option D: Webhook Bridge |
+|---|---:|---:|
+| ESP32 sends telemetry | Yes | Optional |
+| ESP32 contacts Telegram directly | No | No |
+| ESP32 polls Google Apps Script for commands | Optional | Usually required |
+| Google Apps Script receives ESP32 JSON | Yes | Optional |
+| Google Apps Script receives Telegram JSON | No | Yes |
+| Google Apps Script parses `update_id` and message | No | Yes |
+| Google Apps Script checks Telegram `chat_id` | Only for alert destination | Required for command authorisation |
+| Google Apps Script stores pending commands | Usually not | Yes |
+| Google Apps Script sends Telegram messages | Alarm notification | Command response and acknowledgement |
+| Telegram webhook configured | No | Yes |
+| Bot token stored in ESP32 | No | No |
+| Bot token stored in Google Apps Script | Yes | Yes |
+
+## 3. Option F Code Structure
+
+### ESP32 Code
+
+The existing ESP32 design is already close to Option F:
+
+```cpp
+void sendTelemetry() {
+  JsonDocument doc;
+
+  doc["source"] = "esp32";
+  doc["type"] = "telemetry";
+  doc["deviceId"] = "ESP32_01";
+  doc["status"] = "ONLINE";
+  doc["temperature"] = temperature;
+  doc["rssi"] = WiFi.RSSI();
+  doc["uptime"] = millis() / 1000;
+  doc["led-state"] = digitalRead(LED_PIN);
+
+  String payload;
+  serializeJson(doc, payload);
+
+  WiFiClientSecure client;
+  client.setCACert(GOOGLE_ROOT_CA);
+
+  HTTPClient http;
+
+  http.setFollowRedirects(
+      HTTPC_FORCE_FOLLOW_REDIRECTS
+  );
+
+  http.begin(client, GAS_URL);
+  http.addHeader(
+      "Content-Type",
+      "application/json"
+  );
+
+  int httpCode = http.POST(payload);
+  String response = http.getString();
+
+  Serial.printf(
+      "HTTP response: %d\n",
+      httpCode
+  );
+
+  Serial.println(response);
+
+  http.end();
+}
+```
+
+The ESP32:
+
+1. Reads sensors.
+2. Constructs telemetry JSON.
+3. Sends it to Google Apps Script using `POST`.
+4. Parses the Google Apps Script response.
+5. Optionally applies a command returned with that response.
+
+Example response:
+
+```json
+{
+  "status": "success",
+  "led-control": 1
+}
+```
+
+### Google Apps Script Code
+
+```javascript
+const SHEET_ID = "YOUR_SHEET_ID";
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+
+    if (data.source !== "esp32") {
+      return jsonResponse({
+        status: "error",
+        message: "Unknown source"
+      });
+    }
+
+    const sheet =
+      SpreadsheetApp
+        .openById(SHEET_ID)
+        .getSheetByName("Telemetry");
+
+    sheet.appendRow([
+      new Date(),
+      data.deviceId,
+      data.status,
+      data.temperature,
+      data.rssi,
+      data.uptime,
+      data["led-state"]
+    ]);
+
+    if (Number(data.temperature) >= 45) {
+      sendTelegram(
+        "High-temperature warning\n" +
+        "Device: " + data.deviceId + "\n" +
+        "Temperature: " + data.temperature + " °C"
+      );
+    }
+
+    return jsonResponse({
+      status: "success",
+      "led-control": readLedControlFromSheet()
+    });
+
+  } catch (error) {
+    return jsonResponse({
+      status: "error",
+      message: error.message
+    });
+  }
+}
+```
+
+Telegram is only used as an output notification channel:
+
+```javascript
+function sendTelegram(message) {
+  const properties =
+    PropertiesService.getScriptProperties();
+
+  const token =
+    properties.getProperty("BOT_TOKEN");
+
+  const chatId =
+    properties.getProperty("CHAT_ID");
+
+  const url =
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    token +
+    "/sendMessage";
+
+  const payload = {
+    chat_id: chatId,
+    text: message
+  };
+
+  UrlFetchApp.fetch(url, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  });
+}
+```
+
+## 4. Option D Code Structure
+
+Option D requires Google Apps Script to understand the Telegram webhook JSON and convert Telegram commands into commands that the ESP32 can retrieve.
+
+### Telegram Webhook JSON
+
+When the user sends `/led_on`, Google Apps Script receives something similar to:
+
+```json
+{
+  "update_id": 123456789,
+  "message": {
+    "message_id": 20,
+    "from": {
+      "id": 11223344
+    },
+    "chat": {
+      "id": 11223344,
+      "type": "private"
+    },
+    "text": "/led_on"
+  }
+}
+```
+
+### Google Apps Script Webhook Handler
+
+```javascript
+const AUTHORISED_CHAT_ID = "11223344";
+
+function doPost(e) {
+  try {
+    const data =
+      JSON.parse(e.postData.contents || "{}");
+
+    // Telegram webhook message
+    if (data.update_id !== undefined) {
+      return handleTelegramUpdate(data, e);
+    }
+
+    // ESP32 telemetry or acknowledgement
+    if (data.source === "esp32") {
+      return handleEsp32Request(data);
+    }
+
+    return jsonResponse({
+      status: "error",
+      message: "Unknown request"
+    });
+
+  } catch (error) {
+    return jsonResponse({
+      status: "error",
+      message: error.message
+    });
+  }
+}
+```
+
+Google Apps Script runs `doPost(e)` when it receives an HTTP `POST`. The request body is available through `e.postData.contents`.
+
+See the [Google Apps Script web-app documentation](https://developers.google.com/apps-script/guides/web).
+
+### Parse Telegram Commands
+
+```javascript
+function handleTelegramUpdate(update, e) {
+  const message = update.message;
+
+  if (!message || !message.text) {
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  const chatId = String(message.chat.id);
+  const command =
+    message.text.trim().toLowerCase();
+
+  if (chatId !== AUTHORISED_CHAT_ID) {
+    sendTelegramTo(
+      chatId,
+      "Unauthorised user."
+    );
+
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  switch (command) {
+    case "/led_on":
+      queueCommand(
+        "ESP32_01",
+        "SET_LED",
+        1
+      );
+
+      sendTelegramTo(
+        chatId,
+        "LED ON command queued. " +
+        "Waiting for ESP32."
+      );
+      break;
+
+    case "/led_off":
+      queueCommand(
+        "ESP32_01",
+        "SET_LED",
+        0
+      );
+
+      sendTelegramTo(
+        chatId,
+        "LED OFF command queued. " +
+        "Waiting for ESP32."
+      );
+      break;
+
+    case "/status":
+      sendStoredStatus(
+        chatId,
+        "ESP32_01"
+      );
+      break;
+
+    default:
+      sendTelegramTo(
+        chatId,
+        "Available commands:\n" +
+        "/led_on\n" +
+        "/led_off\n" +
+        "/status"
+      );
+  }
+
+  return jsonResponse({
+    ok: true
+  });
+}
+```
+
+### Store the Command
+
+For a simple single-device demonstration, Script Properties can be used:
+
+```javascript
+function queueCommand(
+  deviceId,
+  command,
+  value
+) {
+  const commandObject = {
+    commandId: Utilities.getUuid(),
+    deviceId: deviceId,
+    command: command,
+    value: value,
+    state: "PENDING",
+    timestamp: new Date().toISOString()
+  };
+
+  PropertiesService
+    .getScriptProperties()
+    .setProperty(
+      "COMMAND_" + deviceId,
+      JSON.stringify(commandObject)
+    );
+}
+```
+
+For multiple ESP32 devices, a Google Sheet command queue is better:
+
+| Command ID | Device ID | Command | Value | State | Created | Completed |
+|---|---|---|---:|---|---|---|
+| `abc-123` | `ESP32_01` | `SET_LED` | `1` | `PENDING` | `14:20:10` | |
+| `abc-124` | `ESP32_02` | `SET_FAN` | `0` | `DONE` | `14:21:15` | `14:21:18` |
+
+## 5. ESP32 Command Polling for Option D
+
+The ESP32 does not call Telegram's `getUpdates`. Instead, it asks Google Apps Script for a pending command:
+
+```text
+GET GAS_URL?action=getCommand&deviceId=ESP32_01
+```
+
+### ESP32 Polling Code
+
+```cpp
+void checkPendingCommand() {
+  String url =
+      String(GAS_URL) +
+      "?action=getCommand" +
+      "&deviceId=ESP32_01";
+
+  WiFiClientSecure client;
+  client.setCACert(GOOGLE_ROOT_CA);
+
+  HTTPClient http;
+
+  http.setFollowRedirects(
+      HTTPC_STRICT_FOLLOW_REDIRECTS
+  );
+
+  http.begin(client, url);
+
+  int httpCode = http.GET();
+
+  if (httpCode == HTTP_CODE_OK) {
+    String response = http.getString();
+
+    JsonDocument doc;
+
+    DeserializationError error =
+        deserializeJson(doc, response);
+
+    if (!error && doc["status"] == "command") {
+      String command =
+          doc["command"];
+
+      int value =
+          doc["value"];
+
+      String commandId =
+          doc["commandId"];
+
+      if (command == "SET_LED" &&
+          (value == 0 || value == 1)) {
+
+        digitalWrite(
+            LED_PIN,
+            value ? HIGH : LOW
+        );
+
+        sendCommandAcknowledgement(
+            commandId,
+            true,
+            value
+        );
+      }
+    }
+  }
+
+  http.end();
+}
+```
+
+### Google Apps Script `doGet()`
+
+```javascript
+function doGet(e) {
+  const action =
+    e.parameter.action || "";
+
+  if (action === "getCommand") {
+    return getPendingCommand(
+      e.parameter.deviceId
+    );
+  }
+
+  return jsonResponse({
+    status: "error",
+    message: "Unknown action"
+  });
+}
+```
+
+```javascript
+function getPendingCommand(deviceId) {
+  const value =
+    PropertiesService
+      .getScriptProperties()
+      .getProperty(
+        "COMMAND_" + deviceId
+      );
+
+  if (!value) {
+    return jsonResponse({
+      status: "no-command"
+    });
+  }
+
+  const command =
+    JSON.parse(value);
+
+  if (command.state !== "PENDING") {
+    return jsonResponse({
+      status: "no-command"
+    });
+  }
+
+  return jsonResponse({
+    status: "command",
+    commandId: command.commandId,
+    command: command.command,
+    value: command.value
+  });
+}
+```
+
+## 6. ESP32 Acknowledgement
+
+It is better not to tell the Telegram user `"LED is ON"` immediately after Google Apps Script receives `/led_on`.
+
+At that point, Google Apps Script has only queued the command.
+
+The sequence should be:
+
+1. Telegram user sends `/led_on`.
+2. Google Apps Script replies: `"Command queued."`
+3. ESP32 retrieves and executes the command.
+4. ESP32 sends an acknowledgement.
+5. Google Apps Script sends: `"ESP32 confirmed: LED is ON."`
+
+### ESP32 Acknowledgement Payload
+
+```json
+{
+  "source": "esp32",
+  "type": "command-ack",
+  "deviceId": "ESP32_01",
+  "commandId": "abc-123",
+  "success": true,
+  "led-state": 1
+}
+```
+
+### Google Apps Script Request Handler
+
+```javascript
+function handleEsp32Request(data) {
+  if (data.type === "telemetry") {
+    return processTelemetry(data);
+  }
+
+  if (data.type === "command-ack") {
+    return processCommandAcknowledgement(data);
+  }
+
+  return jsonResponse({
+    status: "error",
+    message: "Unknown ESP32 message type"
+  });
+}
+```
+
+```javascript
+function processCommandAcknowledgement(data) {
+  PropertiesService
+    .getScriptProperties()
+    .deleteProperty(
+      "COMMAND_" + data.deviceId
+    );
+
+  const result = data.success
+    ? "Command completed successfully."
+    : "ESP32 failed to execute the command.";
+
+  sendTelegram(
+    result +
+    "\nDevice: " + data.deviceId +
+    "\nLED state: " + data["led-state"]
+  );
+
+  return jsonResponse({
+    status: "acknowledgement-recorded"
+  });
+}
+```
+
+## 7. Combined Google Apps Script Design
+
+You do not necessarily need two separate Google Apps Script deployments.
+
+One deployment can support both options by examining the incoming JSON:
+
+```javascript
+function doPost(e) {
+  const data =
+    JSON.parse(e.postData.contents || "{}");
+
+  if (data.update_id !== undefined) {
+    return handleTelegramUpdate(
+      data,
+      e
+    );
+  }
+
+  if (data.source === "esp32") {
+    return handleEsp32Request(data);
+  }
+
+  return jsonResponse({
+    status: "error",
+    message: "Unrecognised request"
+  });
+}
+```
+
+The complete combined flow becomes:
+
+```mermaid
+flowchart TD
+    ESP["ESP32"]
+    GAS["Google Apps Script"]
+    Sheet["Google Sheets"]
+    TG["Telegram"]
+
+    ESP -->|"POST telemetry/ack"| GAS
+    GAS -->|"Log telemetry"| Sheet
+    GAS -->|"Send alert/result"| TG
+    TG -->|"Webhook command"| GAS
+    GAS -->|"Store command"| Sheet
+    ESP -->|"GET pending command"| GAS
+```
+
+This is the most logical extension of an existing Google Sheets project.
+
+## 8. Webhook Setup Requirement
+
+For Option D, register the Google Apps Script deployment URL with Telegram:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/setWebhook?url=<GAS_WEB_APP_URL>
+```
+
+After registration:
+
+- Telegram sends updates to Google Apps Script.
+- The ESP32 must stop using Telegram's `getUpdates`.
+- Google Apps Script becomes the only Telegram update receiver.
+
+Telegram does not permit `getUpdates` and webhook delivery to operate simultaneously.
+
+See the [Telegram webhook documentation](https://core.telegram.org/bots/api#setwebhook).
+
+Check the webhook state with:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/getWebhookInfo
+```
+
+## 9. Relevance of the Current 302 Redirect Issue
+
+For both designs, an ESP32 calling a Google Apps Script web app can encounter a redirect from:
+
+```text
+script.google.com
+```
+
+to:
+
+```text
+script.googleusercontent.com
+```
+
+Google documents that `ContentService` output is served from a different URL for security reasons.
+
+See the [Google Content Service documentation](https://developers.google.com/apps-script/reference/content/content-service).
+
+The difference is:
+
+| Design | Redirect Handling Applies To |
+|---|---|
+| Option F | ESP32 telemetry `POST` response. |
+| Option D | ESP32 command `GET` and acknowledgement `POST`. |
+
+The Telegram-to-Google Apps Script webhook does not use the ESP32 redirect-handling code.
+
+For the ESP32 implementation, automatic redirect handling is preferable for `GET` requests:
+
+```cpp
+http.setFollowRedirects(
+    HTTPC_STRICT_FOLLOW_REDIRECTS
+);
+```
+
+For the Google Apps Script `POST` request:
+
+```cpp
+http.setFollowRedirects(
+    HTTPC_FORCE_FOLLOW_REDIRECTS
+);
+```
+
+This avoids depending on `http.getLocation()`, which showed inconsistent behavior in the observed implementation.
+
+## Recommendation
+
+Keep the existing Option F structure and add the Option D functions:
+
+1. Continue posting telemetry from the ESP32 to Google Apps Script.
+2. Add Telegram webhook processing to `doPost()`.
+3. Add a command queue in Google Sheets or Script Properties.
+4. Let the ESP32 call `doGet()` every 3–5 seconds.
+5. Add an ESP32 command acknowledgement.
+6. Let Google Apps Script send the final execution result to Telegram.
+
+Therefore, Option D does not replace the existing Google Sheets communication. It adds a Telegram-to-Google Apps Script command path on top of it.
