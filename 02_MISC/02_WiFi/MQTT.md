@@ -8,7 +8,7 @@
 [![Contents](https://img.shields.io/badge/Adafruit_IO_Dashboard-yellow?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#adafruit-io-dashboard)
 [![Contents](https://img.shields.io/badge/ESP_Rainmaker-red?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Rainmaker.md)
 [![Contents](https://img.shields.io/badge/Thingsboard_IO-blue?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Thingsboard.md)
-[![Contents](https://img.shields.io/badge/Telegram-007ec6?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Telegram.md)
+[![Contents](https://img.shields.io/badge/Telegram-violet?logo=checkmarx)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Telegram.md)
 
 
 ---
