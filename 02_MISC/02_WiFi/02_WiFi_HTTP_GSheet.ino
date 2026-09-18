@@ -313,7 +313,7 @@ void fetchCommands() {
       }*/
       Serial.printf("[COMMAND] HTTP error: %d, response size: %d bytes\n", httpCode, http.getSize());
     } else {
-      Serial.printf("[COMMAND] GET failed: %s (%d)\n", HTTPClient::errorToString(httpCode).c_str(), httpCode);
+      Serial.printf("[COMMAND] GET failed: %s (HTTP %d)\n", HTTPClient::errorToString(httpCode).c_str(), httpCode);
     }
 
     http.end();
@@ -335,7 +335,7 @@ void fetchCommands() {
     if (!responseDoc["led-control"].is<int>()) {
       Serial.println("[COMMAND] led-control must be a number, 0 or 1");
 
-/*
+      /*
       Serial.print("[COMMAND] led-control is not an integer. Received: ");
       serializeJson(ledValue, Serial);
       Serial.println();
