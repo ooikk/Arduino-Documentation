@@ -1415,11 +1415,11 @@ A typical result is:
         "from": {
           "id": 987654321,
           "is_bot": false,
-          "first_name": "Kian Keong"
+          "first_name": "Ding Dong"
         },
         "chat": {
           "id": 987654321,
-          "first_name": "Kian Keong",
+          "first_name": "Ding Dong",
           "type": "private"
         },
         "date": 1789880000,
