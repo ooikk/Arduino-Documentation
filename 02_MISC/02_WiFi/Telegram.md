@@ -1312,7 +1312,7 @@ to replace it.
 Your bot's Telegram URL is:
 
 ```text
-[https://t.me/](https://t.me/)<BOT_USERNAME>
+https://t.me/<BOT_USERNAME>
 ```
 
 Example:
@@ -1340,13 +1340,13 @@ See the [Telegram bot tutorial](https://core.telegram.org/bots/tutorial#sending-
 Construct this URL:
 
 ```text
-[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/getMe
+https://api.telegram.org/bot<BOT_TOKEN>/getMe
 ```
 
 Example format:
 
 ```text
-[https://api.telegram.org/bot1234567890:AAExampleSecretToken/getMe](https://api.telegram.org/bot1234567890:AAExampleSecretToken/getMe)
+https://api.telegram.org/bot1234567890:AAExampleSecretToken/getMe
 ```
 
 For initial testing, paste it into a browser. Telegram should return:
