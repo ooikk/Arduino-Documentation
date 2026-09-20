@@ -452,6 +452,7 @@ Secure two-way Telegram control
 + Command authorisation
 ```
 ---
+
 # Google Apps Script: Option F vs. Option D
 
 The two options use the same Google Apps Script platform, but Apps Script plays a different role:
@@ -1186,3 +1187,945 @@ Keep the existing Option F structure and add the Option D functions:
 6. Let Google Apps Script send the final execution result to Telegram.
 
 Therefore, Option D does not replace the existing Google Sheets communication. It adds a Telegram-to-Google Apps Script command path on top of it.
+
+---
+
+
+# Combined ESP32-S3 and Telegram Setup
+
+Below is the recommended setup sequence for the combined architecture:
+
+```mermaid
+flowchart TD
+    User["Telegram user"] --> Bot["Telegram bot"]
+    Bot -->|"Webhook POST"| GAS["Google Apps Script"]
+    GAS -->|"Store command"| Sheet["Google Sheet"]
+    ESP["ESP32-S3"] -->|"GET command"| GAS
+    ESP -->|"POST telemetry / result"| GAS
+    GAS -->|"sendMessage"| Bot
+```
+
+## 1. Create the Telegram Bot
+
+### Step 1 — Open BotFather
+
+In Telegram, open the official verified BotFather:
+
+[Open @BotFather](https://t.me/BotFather)
+
+Check that:
+
+- The username is exactly `@BotFather`.
+- The account is verified.
+- You are not using a similarly named unofficial account.
+
+### Step 2 — Create a Bot
+
+Send:
+
+```text
+/newbot
+```
+
+BotFather asks for two names.
+
+First, enter a display name, for example:
+
+```text
+ESP32 Learning Lab
+```
+
+Then enter a unique username ending in `bot`, for example:
+
+```text
+OoiKK_ESP32_bot
+```
+
+If accepted, BotFather returns something similar to:
+
+```text
+Done! Congratulations on your new bot.
+
+Use this token to access the HTTP API:
+
+1234567890:AAExampleSecretToken123456789
+```
+
+The official Telegram procedure is `/newbot`, followed by the bot name and username.
+
+See the [Telegram Bot tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token).
+
+## 2. Identify the Telegram Values
+
+These values are easily confused:
+
+| Item | Example | Purpose | Secret? |
+|---|---|---|---|
+| Bot display name | `ESP32 Learning Lab` | Human-readable name. | No |
+| Bot username | `OoiKK_ESP32_bot` | Telegram address. | No |
+| Bot ID | `1234567890` | Numeric bot identity. | No |
+| Bot token | `1234567890:AAExample...` | Authenticates API requests. | Yes |
+| User or chat ID | `987654321` | Identifies who receives messages. | Usually no, but protect it. |
+| GAS URL | `https://script.google.com/.../exec` | Your cloud endpoint. | No |
+| Webhook URL | GAS URL plus secret path | Receives Telegram updates. | Treat as sensitive. |
+
+The numeric value before the colon in the bot token is normally the bot ID:
+
+```text
+Bot token:
+1234567890:AAExampleSecretToken
+└────────┘
+   Bot ID
+```
+
+However, the recommended way to confirm the bot ID is with `getMe`.
+
+## 3. Save the Bot Token Securely
+
+Do not put the real bot token in:
+
+- Public GitHub code.
+- Teaching slides.
+- Screenshots.
+- Google Sheet cells.
+- Serial Monitor output.
+- URLs shared with other people.
+
+For this Google Apps Script-based design, store the bot token in Apps Script Properties, not in the ESP32 firmware.
+
+If the token is exposed, open BotFather and use:
+
+```text
+/revoke
+```
+
+or:
+
+```text
+/token
+```
+
+to replace it.
+
+## 4. Open and Activate the Bot
+
+Your bot's Telegram URL is:
+
+```text
+[https://t.me/](https://t.me/)<BOT_USERNAME>
+```
+
+Example:
+
+[Open the ESP32 bot](https://t.me/OoiKK_ESP32_bot)
+
+Open the link and press:
+
+```text
+START
+```
+
+Alternatively, send:
+
+```text
+/start
+```
+
+This step is important because a bot generally cannot initiate a private conversation until the user has contacted it first.
+
+See the [Telegram bot tutorial](https://core.telegram.org/bots/tutorial#sending-messages).
+
+## 5. Verify the Token and Obtain the Bot ID
+
+Construct this URL:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/getMe
+```
+
+Example format:
+
+```text
+[https://api.telegram.org/bot1234567890:AAExampleSecretToken/getMe](https://api.telegram.org/bot1234567890:AAExampleSecretToken/getMe)
+```
+
+For initial testing, paste it into a browser. Telegram should return:
+
+```json
+{
+  "ok": true,
+  "result": {
+    "id": 1234567890,
+    "is_bot": true,
+    "first_name": "ESP32 Learning Lab",
+    "username": "OoiKK_ESP32_bot"
+  }
+}
+```
+
+The important values are:
+
+```text
+Bot ID       = result.id
+Bot username = result.username
+```
+
+The `getMe` method tests the bot token and returns the bot's basic information.
+
+See the [Telegram getMe API documentation](https://core.telegram.org/bots/api#getme).
+
+> **Security note:** Because the token appears in browser history, use this browser test only during initial setup. For the finished system, let Google Apps Script make the API requests.
+
+## 6. Obtain the Private Chat ID
+
+Your `chat_id` is required when Google Apps Script sends a Telegram message to you.
+
+### Step 1 — Send a New Message to the Bot
+
+Open your bot and send:
+
+```text
+Hello ESP32
+```
+
+or:
+
+```text
+/start
+```
+
+### Step 2 — Call `getUpdates`
+
+Before setting a webhook, open:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/getUpdates
+```
+
+A typical result is:
+
+```json
+{
+  "ok": true,
+  "result": [
+    {
+      "update_id": 825614000,
+      "message": {
+        "message_id": 1,
+        "from": {
+          "id": 987654321,
+          "is_bot": false,
+          "first_name": "Kian Keong"
+        },
+        "chat": {
+          "id": 987654321,
+          "first_name": "Kian Keong",
+          "type": "private"
+        },
+        "date": 1789880000,
+        "text": "Hello ESP32"
+      }
+    }
+  ]
+}
+```
+
+Your private chat ID is:
+
+```text
+result.message.chat.id
+```
+
+Therefore:
+
+```text
+CHAT_ID = 987654321
+```
+
+For a private conversation, these values are often the same:
+
+```text
+message.from.id
+message.chat.id
+```
+
+Use `message.chat.id` because Telegram's `sendMessage` method expects a chat ID.
+
+### If the Result Is Empty
+
+If you receive:
+
+```json
+{
+  "ok": true,
+  "result": []
+}
+```
+
+Then:
+
+1. Return to Telegram.
+2. Send another new message to the bot.
+3. Reload the `getUpdates` URL.
+4. Confirm that you have not already enabled a webhook.
+
+Telegram's `getUpdates` method cannot operate while a webhook is active.
+
+See the [Telegram getUpdates documentation](https://core.telegram.org/bots/api#getupdates).
+
+## 7. Test Sending a Telegram Message
+
+Use this URL:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/sendMessage?chat_id=<CHAT_ID>&text=ESP32%20test%20successful
+```
+
+Example format:
+
+```text
+[https://api.telegram.org/bot1234567890:AAExampleSecretToken/sendMessage?chat_id=987654321&text=ESP32%20test%20successful](https://api.telegram.org/bot1234567890:AAExampleSecretToken/sendMessage?chat_id=987654321&text=ESP32%20test%20successful)
+```
+
+You should receive:
+
+```json
+{
+  "ok": true,
+  "result": {
+    "message_id": 2,
+    "chat": {
+      "id": 987654321,
+      "type": "private"
+    },
+    "text": "ESP32 test successful"
+  }
+}
+```
+
+A message should also appear in your Telegram conversation with the bot.
+
+## 8. Configure Bot Commands
+
+Open BotFather and send:
+
+```text
+/mybots
+```
+
+Then select:
+
+```text
+Your bot
+→ Edit Bot
+→ Edit Commands
+```
+
+Alternatively, send:
+
+```text
+/setcommands
+```
+
+Select your bot and submit:
+
+```text
+start - Show available commands
+status - Show ESP32 status
+led_on - Turn the LED on
+led_off - Turn the LED off
+temperature - Read the temperature
+restart - Restart the ESP32
+help - Show help information
+```
+
+Do not include `/` in the command definitions submitted to BotFather.
+
+Users will later see:
+
+```text
+/start
+/status
+/led_on
+/led_off
+/temperature
+/restart
+/help
+```
+
+For safety, do not implement `/restart` until the basic communication is stable.
+
+## 9. Create the Google Apps Script Project
+
+### Step 1 — Create the Script
+
+Open [Google Apps Script](https://script.google.com/).
+
+Select:
+
+```text
+New project
+```
+
+Name the project:
+
+```text
+ESP32 Telegram Bridge
+```
+
+### Step 2 — Store Configuration Securely
+
+Open:
+
+```text
+Project Settings
+→ Script Properties
+→ Add script property
+```
+
+Add these properties:
+
+| Property | Value |
+|---|---|
+| `BOT_TOKEN` | Your complete Telegram bot token. |
+| `AUTHORIZED_CHAT_ID` | Your private chat ID. |
+| `DEVICE_ID` | `ESP32_01`. |
+| `DEVICE_KEY` | A long random device password. |
+| `WEBHOOK_PATH_SECRET` | A different long random string. |
+
+Example structure:
+
+```text
+BOT_TOKEN = 1234567890:AAExampleSecretToken
+AUTHORIZED_CHAT_ID = 987654321
+DEVICE_ID = ESP32_01
+DEVICE_KEY = a-long-random-esp32-device-key
+WEBHOOK_PATH_SECRET = another-long-random-webhook-secret
+```
+
+Do not use the same value for `DEVICE_KEY` and `WEBHOOK_PATH_SECRET`.
+
+## 10. Add a Basic Apps Script Program
+
+```javascript
+function jsonResponse(data) {
+  return ContentService
+    .createTextOutput(
+      JSON.stringify(data)
+    )
+    .setMimeType(
+      ContentService.MimeType.JSON
+    );
+}
+
+function doGet(e) {
+  const action =
+    e.parameter.action || "";
+
+  if (action === "getCommand") {
+    return getPendingCommand(e);
+  }
+
+  return jsonResponse({
+    status: "success",
+    service: "ESP32 Telegram Bridge"
+  });
+}
+
+function doPost(e) {
+  try {
+    const data =
+      JSON.parse(
+        e.postData.contents || "{}"
+      );
+
+    // Telegram webhook update
+    if (data.update_id !== undefined) {
+      return handleTelegramUpdate(
+        data,
+        e
+      );
+    }
+
+    // ESP32 telemetry or acknowledgement
+    if (data.source === "esp32") {
+      return handleEsp32Request(data);
+    }
+
+    return jsonResponse({
+      status: "error",
+      message: "Unknown request source"
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    return jsonResponse({
+      status: "error",
+      message: error.message
+    });
+  }
+}
+```
+
+Google Apps Script web applications must contain `doGet(e)` or `doPost(e)`. `POST` data is available through `e.postData.contents`.
+
+See the [Google Apps Script web-app documentation](https://developers.google.com/apps-script/guides/web).
+
+## 11. Deploy Apps Script as a Web Application
+
+In Apps Script:
+
+1. Select **Deploy**.
+2. Select **New deployment**.
+3. Click **Select type**.
+4. Choose **Web app**.
+5. Enter a description, such as:
+
+   ```text
+   ESP32 Telegram Bridge v1
+   ```
+
+6. For **Execute as**, select:
+
+   ```text
+   Me
+   ```
+
+7. For **Who has access**, select the option that permits public access, normally:
+
+   ```text
+   Anyone
+   ```
+
+8. Click **Deploy**.
+9. Authorise the requested Google permissions.
+10. Copy the web application URL.
+
+The URL looks like:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+```
+
+Use the URL ending in:
+
+```text
+/exec
+```
+
+Do not use the testing URL ending in:
+
+```text
+/dev
+```
+
+The `/dev` URL is only available to script editors and is unsuitable for Telegram webhooks.
+
+See the [Google Apps Script deployment guide](https://developers.google.com/apps-script/guides/web#deploy_a_script_as_a_web_app).
+
+## 12. Test the Apps Script Web Application
+
+Open your `/exec` URL:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+```
+
+The expected result is:
+
+```json
+{
+  "status": "success",
+  "service": "ESP32 Telegram Bridge"
+}
+```
+
+Google may redirect the browser to a `script.googleusercontent.com` address when serving `ContentService` output. That is normal behaviour.
+
+Your original permanent application URL remains the `/exec` URL.
+
+## 13. Construct the Telegram Webhook URL
+
+You can use the basic Apps Script URL directly:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+```
+
+However, adding a private path is recommended:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/](https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/)<WEBHOOK_PATH_SECRET>
+```
+
+Example structure:
+
+```text
+[https://script.google.com/macros/s/ABC123XYZ/exec/telegram/my-long-random-secret](https://script.google.com/macros/s/ABC123XYZ/exec/telegram/my-long-random-secret)
+```
+
+Apps Script provides everything after `/exec/` through:
+
+```javascript
+e.pathInfo
+```
+
+Therefore, Apps Script can validate that Telegram is calling the expected private path.
+
+Add this near the beginning of the Telegram handler:
+
+```javascript
+function handleTelegramUpdate(update, e) {
+  const properties =
+    PropertiesService.getScriptProperties();
+
+  const expectedPath =
+    "telegram/" +
+    properties.getProperty(
+      "WEBHOOK_PATH_SECRET"
+    );
+
+  if (e.pathInfo !== expectedPath) {
+    return jsonResponse({
+      ok: false,
+      error: "Invalid webhook path"
+    });
+  }
+
+  const message =
+    update.message;
+
+  if (!message || !message.text) {
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  const authorisedChatId =
+    properties.getProperty(
+      "AUTHORIZED_CHAT_ID"
+    );
+
+  const chatId =
+    String(message.chat.id);
+
+  if (chatId !== authorisedChatId) {
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  // Process commands here.
+
+  return jsonResponse({
+    ok: true
+  });
+}
+```
+
+## 14. Register the Apps Script URL as the Telegram Webhook
+
+The Telegram API endpoint is:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/setWebhook
+```
+
+The webhook URL is passed as the `url` parameter.
+
+### Recommended Apps Script Registration Function
+
+Add this temporary function to Apps Script:
+
+```javascript
+function registerTelegramWebhook() {
+  const properties =
+    PropertiesService.getScriptProperties();
+
+  const token =
+    properties.getProperty(
+      "BOT_TOKEN"
+    );
+
+  const pathSecret =
+    properties.getProperty(
+      "WEBHOOK_PATH_SECRET"
+    );
+
+  const gasExecUrl =
+    "[https://script.google.com/macros/s/](https://script.google.com/macros/s/)" +
+    "DEPLOYMENT_ID/exec";
+
+  const webhookUrl =
+    gasExecUrl +
+    "/telegram/" +
+    pathSecret;
+
+  const telegramUrl =
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    token +
+    "/setWebhook";
+
+  const response =
+    UrlFetchApp.fetch(
+      telegramUrl,
+      {
+        method: "post",
+        payload: {
+          url: webhookUrl,
+          allowed_updates: JSON.stringify([
+            "message",
+            "callback_query"
+          ]),
+          drop_pending_updates: "true"
+        },
+        muteHttpExceptions: true
+      }
+    );
+
+  console.log(
+    response.getContentText()
+  );
+}
+```
+
+Replace only:
+
+```text
+DEPLOYMENT_ID
+```
+
+Then:
+
+1. Select `registerTelegramWebhook` from the function list.
+2. Click **Run**.
+3. Authorise it if requested.
+4. Open the execution log.
+
+Expected response:
+
+```json
+{
+  "ok": true,
+  "result": true,
+  "description": "Webhook was set"
+}
+```
+
+`drop_pending_updates: true` removes older messages waiting in Telegram. Remove that parameter if you want to retain pending messages.
+
+## 15. Verify the Webhook
+
+Use:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/getWebhookInfo
+```
+
+Expected result:
+
+```json
+{
+  "ok": true,
+  "result": {
+    "url": "[https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/SECRET](https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/SECRET)",
+    "has_custom_certificate": false,
+    "pending_update_count": 0,
+    "max_connections": 40
+  }
+}
+```
+
+Check these fields:
+
+| Field | Expected Value |
+|---|---|
+| `url` | Your Google Apps Script webhook URL. |
+| `pending_update_count` | Normally `0`. |
+| `last_error_message` | Should be absent. |
+| `last_error_date` | Should be absent. |
+
+If `last_error_message` appears, Telegram cannot obtain a successful response from Google Apps Script.
+
+## 16. Send a Webhook Test
+
+After the webhook is configured:
+
+1. Open your Telegram bot.
+2. Send:
+
+   ```text
+   /status
+   ```
+
+3. In Apps Script, open **Executions**.
+
+You should see a `doPost` execution.
+
+During initial testing, temporarily add:
+
+```javascript
+console.log(
+  JSON.stringify(update)
+);
+```
+
+inside `handleTelegramUpdate()`.
+
+The logged JSON should contain:
+
+```json
+{
+  "update_id": 825614001,
+  "message": {
+    "chat": {
+      "id": 987654321
+    },
+    "text": "/status"
+  }
+}
+```
+
+Remove or reduce detailed logging after testing because it can expose user information.
+
+## 17. Send Telegram Messages from Apps Script
+
+```javascript
+function sendTelegramTo(chatId, text) {
+  const token =
+    PropertiesService
+      .getScriptProperties()
+      .getProperty("BOT_TOKEN");
+
+  const url =
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    token +
+    "/sendMessage";
+
+  const response =
+    UrlFetchApp.fetch(
+      url,
+      {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({
+          chat_id: String(chatId),
+          text: text
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+  const result =
+    JSON.parse(
+      response.getContentText()
+    );
+
+  if (!result.ok) {
+    throw new Error(
+      "Telegram sendMessage failed: " +
+      response.getContentText()
+    );
+  }
+
+  return result;
+}
+```
+
+### Convenience Function for the Authorised User
+
+```javascript
+function sendTelegram(text) {
+  const chatId =
+    PropertiesService
+      .getScriptProperties()
+      .getProperty(
+        "AUTHORIZED_CHAT_ID"
+      );
+
+  return sendTelegramTo(
+    chatId,
+    text
+  );
+}
+```
+
+### Test Function
+
+```javascript
+function testTelegramMessage() {
+  sendTelegram(
+    "Telegram and Google Apps Script " +
+    "connection successful."
+  );
+}
+```
+
+Run `testTelegramMessage()` manually. The message should arrive in Telegram.
+
+## 18. URLs Needed for the Complete Project
+
+| Purpose | URL Format |
+|---|---|
+| Open your bot | `https://t.me/<BOT_USERNAME>` |
+| Telegram API base | `https://api.telegram.org/bot<BOT_TOKEN>/` |
+| Verify token or get bot ID | `https://api.telegram.org/bot<BOT_TOKEN>/getMe` |
+| Get messages before webhook | `https://api.telegram.org/bot<BOT_TOKEN>/getUpdates` |
+| Send a message | `https://api.telegram.org/bot<BOT_TOKEN>/sendMessage` |
+| Register webhook | `https://api.telegram.org/bot<BOT_TOKEN>/setWebhook` |
+| Check webhook | `https://api.telegram.org/bot<BOT_TOKEN>/getWebhookInfo` |
+| Remove webhook | `https://api.telegram.org/bot<BOT_TOKEN>/deleteWebhook` |
+| GAS base URL | `https://script.google.com/macros/s/<DEPLOYMENT_ID>/exec` |
+| Telegram-to-GAS webhook | `<GAS_URL>/telegram/<SECRET>` |
+| ESP32 command request | `<GAS_URL>?action=getCommand&deviceId=ESP32_01&key=<DEVICE_KEY>` |
+
+## 19. Switch Between Webhook and `getUpdates`
+
+After the webhook is registered, this will no longer work:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/getUpdates
+```
+
+To temporarily return to `getUpdates`, remove the webhook:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/deleteWebhook
+```
+
+To also discard queued messages:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/deleteWebhook?drop_pending_updates=true
+```
+
+Then:
+
+1. Send a new Telegram message.
+2. Call `getUpdates`.
+3. Complete testing.
+4. Register the Google Apps Script webhook again.
+
+## Final Values You Need
+
+Record these values privately:
+
+```text
+BOT_USERNAME =
+BOT_ID =
+BOT_TOKEN =
+AUTHORIZED_CHAT_ID =
+GAS_EXEC_URL =
+WEBHOOK_PATH_SECRET =
+TELEGRAM_WEBHOOK_URL =
+DEVICE_ID = ESP32_01
+DEVICE_KEY =
+```
+
+For the current ESP32 Google Sheets project:
+
+- Google Apps Script needs `BOT_TOKEN` and `AUTHORIZED_CHAT_ID`.
+- The ESP32 needs only the Google Apps Script `/exec` URL, its `DEVICE_ID`, and its separate `DEVICE_KEY`.
+
+This keeps the Telegram bot token out of the ESP32 firmware.
