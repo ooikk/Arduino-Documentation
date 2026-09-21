@@ -3000,76 +3000,39 @@ Based on the current sheet layout:
 
 ```javascript
 function sendEsp32Status(chatId) {
-  const sheet =
-    getDashboardSheet();
+  const sheet = getDashboardSheet();
 
   const values =
-    sheet
-      .getRange("A2:J2")
-      .getValues();
+    sheet.getRange("A2:J2").getValues()[0];
 
-  const timestamp =
-    values;
-
-  const deviceStatus =
-    values;[1]
-
-  const temperature =
-    values;[2]
-
-  const rssi =
-    values;[3]
-
-  const uptime =
-    values;[4]
+  const timestamp = values[0];
+  const deviceStatus = values[1];
+  const temperature = values[2];
+  const rssi = values[3];
+  const uptime = values[4];
 
   const requestedLedState =
-    normalizeLedControl(
-      values[5]
-    );
+    normalizeLedControl(values[7]);
 
   const actualLedState =
-    normalizeLedControl(
-      values[6]
-    );
+    normalizeLedControl(values[8]);
 
-  const buttonState =
-    values;[7]
+  const buttonState = values[9];
 
   const message =
     "ESP32 Status\n\n" +
-    "Device: " +
-    deviceStatus +
-    "\n" +
-    "Temperature: " +
-    temperature +
-    " °C\n" +
-    "RSSI: " +
-    rssi +
-    " dBm\n" +
-    "Uptime: " +
-    uptime +
-    " seconds\n" +
+    "Device: " + deviceStatus + "\n" +
+    "Temperature: " + temperature + " °C\n" +
+    "RSSI: " + rssi + " dBm\n" +
+    "Uptime: " + uptime + " seconds\n" +
     "Requested LED: " +
-    formatOnOff(
-      requestedLedState
-    ) +
-    "\n" +
+      formatOnOff(requestedLedState) + "\n" +
     "Actual LED: " +
-    formatOnOff(
-      actualLedState
-    ) +
-    "\n" +
-    "Button: " +
-    buttonState +
-    "\n" +
-    "Last update: " +
-    timestamp;
+      formatOnOff(actualLedState) + "\n" +
+    "Button: " + buttonState + "\n" +
+    "Last update: " + timestamp;
 
-  sendTelegramTo(
-    chatId,
-    message
-  );
+  sendTelegramTo(chatId, message);
 }
 
 function formatOnOff(value) {
