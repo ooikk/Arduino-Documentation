@@ -3960,7 +3960,9 @@ Actual log:
  "pending_update_count":0,
  "max_connections":40,
  "ip_address":"172.217.17.46",
- "allowed_updates":["message"]}}
+ "allowed_updates":["message"]
+ }
+}
 ```
 
 Confirm that:
