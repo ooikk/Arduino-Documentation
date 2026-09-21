@@ -2135,6 +2135,420 @@ This keeps the Telegram bot token out of the ESP32 firmware.
 
 --- 
 
+# Accessing Script Properties
+
+Use `PropertiesService.getScriptProperties()` to access values defined under:
+
+```text
+Project Settings → Script Properties
+```
+
+## Read One Property
+
+```javascript
+const properties =
+  PropertiesService.getScriptProperties();
+
+const botToken =
+  properties.getProperty("BOT_TOKEN");
+
+const chatId =
+  properties.getProperty(
+    "AUTHORIZED_CHAT_ID"
+  );
+```
+
+### Example
+
+```javascript
+function sendTelegram(message) {
+  const properties =
+    PropertiesService.getScriptProperties();
+
+  const botToken =
+    properties.getProperty("BOT_TOKEN");
+
+  const chatId =
+    properties.getProperty(
+      "AUTHORIZED_CHAT_ID"
+    );
+
+  if (!botToken) {
+    throw new Error(
+      "BOT_TOKEN is missing from Script Properties"
+    );
+  }
+
+  if (!chatId) {
+    throw new Error(
+      "AUTHORIZED_CHAT_ID is missing from Script Properties"
+    );
+  }
+
+  const url =
+    "https://api.telegram.org/bot" +
+    botToken +
+    "/sendMessage";
+
+  const response =
+    UrlFetchApp.fetch(
+      url,
+      {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({
+          chat_id: chatId,
+          text: message
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+  console.log(
+    response.getContentText()
+  );
+}
+```
+
+## Script Property Names for This Project
+
+Under:
+
+```text
+Project Settings → Script Properties
+```
+
+define the following properties:
+
+| Property | Example Value |
+|---|---|
+| `BOT_TOKEN` | Your replacement bot token. |
+| `AUTHORIZED_CHAT_ID` | `58138745`. |
+| `DEVICE_ID` | `ESP32_01`. |
+| `DEVICE_KEY` | A long random device key. |
+| `WEBHOOK_PATH_SECRET` | A different random secret. |
+
+Property names are case-sensitive.
+
+Therefore:
+
+```javascript
+getProperty("BOT_TOKEN")
+```
+
+is not the same as:
+
+```javascript
+getProperty("bot_token")
+```
+
+## Read All Script Properties
+
+```javascript
+function readAllProperties() {
+  const allProperties =
+    PropertiesService
+      .getScriptProperties()
+      .getProperties();
+
+  console.log(allProperties);
+}
+```
+
+The result will be an object similar to:
+
+```javascript
+{
+  BOT_TOKEN: "123456789:ExampleToken",
+  AUTHORIZED_CHAT_ID: "58138745",
+  DEVICE_ID: "ESP32_01",
+  DEVICE_KEY: "ExampleDeviceKey",
+  WEBHOOK_PATH_SECRET: "ExampleWebhookSecret"
+}
+```
+
+> **Security warning:** Do not run or retain this logging function in the finished project because it prints the bot token and other secrets into the execution log.
+
+## Recommended Configuration Function
+
+Instead of repeatedly reading each property, create one configuration function:
+
+```javascript
+function getConfig() {
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const config = {
+    botToken:
+      properties.getProperty(
+        "BOT_TOKEN"
+      ),
+
+    authorisedChatId:
+      properties.getProperty(
+        "AUTHORIZED_CHAT_ID"
+      ),
+
+    deviceId:
+      properties.getProperty(
+        "DEVICE_ID"
+      ),
+
+    deviceKey:
+      properties.getProperty(
+        "DEVICE_KEY"
+      ),
+
+    webhookPathSecret:
+      properties.getProperty(
+        "WEBHOOK_PATH_SECRET"
+      )
+  };
+
+  const missingProperties = [];
+
+  if (!config.botToken) {
+    missingProperties.push(
+      "BOT_TOKEN"
+    );
+  }
+
+  if (!config.authorisedChatId) {
+    missingProperties.push(
+      "AUTHORIZED_CHAT_ID"
+    );
+  }
+
+  if (!config.deviceId) {
+    missingProperties.push(
+      "DEVICE_ID"
+    );
+  }
+
+  if (!config.deviceKey) {
+    missingProperties.push(
+      "DEVICE_KEY"
+    );
+  }
+
+  if (!config.webhookPathSecret) {
+    missingProperties.push(
+      "WEBHOOK_PATH_SECRET"
+    );
+  }
+
+  if (missingProperties.length > 0) {
+    throw new Error(
+      "Missing Script Properties: " +
+      missingProperties.join(", ")
+    );
+  }
+
+  return config;
+}
+```
+
+## Use the Configuration Function
+
+```javascript
+function testConfig() {
+  const config =
+    getConfig();
+
+  // Safe values to print
+  console.log(
+    "Device ID: " +
+    config.deviceId
+  );
+
+  console.log(
+    "Authorised chat ID: " +
+    config.authorisedChatId
+  );
+
+  // Do not print config.botToken
+  // or secret keys.
+}
+```
+
+## Use Properties in the Telegram Handler
+
+```javascript
+function handleTelegramUpdate(update, e) {
+  const config =
+    getConfig();
+
+  const message =
+    update.message;
+
+  if (!message || !message.text) {
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  const incomingChatId =
+    String(message.chat.id);
+
+  if (
+    incomingChatId !==
+    String(config.authorisedChatId)
+  ) {
+    console.warn(
+      "Rejected unauthorised chat ID: " +
+      incomingChatId
+    );
+
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  const command =
+    message.text
+      .trim()
+      .toLowerCase()
+      .split("@")[0];
+
+  // Process the command here.
+
+  return jsonResponse({
+    ok: true
+  });
+}
+```
+
+## Programmatically Set Properties
+
+Properties can also be defined through code:
+
+```javascript
+function setInitialProperties() {
+  PropertiesService
+    .getScriptProperties()
+    .setProperties({
+      AUTHORIZED_CHAT_ID: "58138745",
+      DEVICE_ID: "ESP32_01"
+    });
+}
+```
+
+For secret tokens, manually entering them through:
+
+```text
+Project Settings → Script Properties
+```
+
+is preferable because it avoids placing the token in the source code.
+
+## Update One Property
+
+```javascript
+function updateDeviceId() {
+  PropertiesService
+    .getScriptProperties()
+    .setProperty(
+      "DEVICE_ID",
+      "ESP32_01"
+    );
+}
+```
+
+## Delete a Property
+
+```javascript
+function deleteDeviceKey() {
+  PropertiesService
+    .getScriptProperties()
+    .deleteProperty(
+      "DEVICE_KEY"
+    );
+}
+```
+
+## Important: Property Values Are Strings
+
+All Script Property values are strings.
+
+Even when you enter a number:
+
+```text
+58138745
+```
+
+Apps Script returns:
+
+```javascript
+"58138745"
+```
+
+Therefore, compare Telegram IDs as strings:
+
+```javascript
+if (
+  String(message.chat.id) ===
+  String(config.authorisedChatId)
+) {
+  // Authorised
+}
+```
+
+### Numeric Settings
+
+Convert numeric settings explicitly:
+
+```javascript
+const pollingInterval =
+  Number(
+    properties.getProperty(
+      "POLLING_INTERVAL_MS"
+    )
+  );
+```
+
+### Boolean Settings
+
+Convert Boolean settings explicitly:
+
+```javascript
+const alertsEnabled =
+  properties.getProperty(
+    "ALERTS_ENABLED"
+  ) === "true";
+```
+
+## Recommended Usage Pattern
+
+Call `getConfig()` once at the beginning of each `doGet()` or `doPost()` execution, then pass the configuration object to the relevant handler functions:
+
+```javascript
+function doPost(e) {
+  const config =
+    getConfig();
+
+  const data =
+    JSON.parse(
+      e.postData.contents || "{}"
+    );
+
+  return handleRequest(
+    data,
+    config
+  );
+}
+
+function handleRequest(data, config) {
+  // Use config.botToken,
+  // config.deviceId, and other values here.
+
+  return jsonResponse({
+    status: "success"
+  });
+}
+```
+---
+
 # Merged `doGet(e)` Design: (HTTP Dashboard)
 
 To ensure the script in Googlesheet **"[HTTP Dashboard](https://docs.google.com/spreadsheets/d/1KqmrGOs5891O9Zn7v5kLdqfmxuhTQq7aQj4k6dneWUI/edit?gid=0#gid=0)"** backward compatibility with existing ESP32 code `fetchCommands()` or `sendTelemetryAndFetchCommands()`.     
@@ -3291,42 +3705,75 @@ After replacing the Apps Script code:
 If you update the existing deployment, its `/exec` URL remains unchanged.
 
 ---
-# Accessing Script Properties
 
-Use `PropertiesService.getScriptProperties()` to access values defined under:
+# Final Telegram Webhook Setup
 
-```text
-Project Settings → Script Properties
-```
 
-## Read One Property
+Two items must be addressed before Telegram will work:
 
-```javascript
-const properties =
-  PropertiesService.getScriptProperties();
+1. Add and run `registerTelegramWebhook()` once.
+2. Deploy the updated script as a Web App.
 
-const botToken =
-  properties.getProperty("BOT_TOKEN");
+## 1. Add a Telegram Test Function
 
-const chatId =
-  properties.getProperty(
-    "AUTHORIZED_CHAT_ID"
-  );
-```
-
-### Example
+Add this function:
 
 ```javascript
-function sendTelegram(message) {
+function testTelegramSend() {
   const properties =
-    PropertiesService.getScriptProperties();
-
-  const botToken =
-    properties.getProperty("BOT_TOKEN");
+    PropertiesService
+      .getScriptProperties();
 
   const chatId =
     properties.getProperty(
       "AUTHORIZED_CHAT_ID"
+    );
+
+  if (!chatId) {
+    throw new Error(
+      "AUTHORIZED_CHAT_ID is missing"
+    );
+  }
+
+  sendTelegramTo(
+    chatId,
+    "Google Apps Script Telegram test successful."
+  );
+}
+```
+
+After fixing `sendTelegramTo()`:
+
+1. Select `testTelegramSend()` in Apps Script.
+2. Click **Run**.
+3. Approve permissions if requested.
+4. Check whether the test message arrives in Telegram.
+
+This verifies that:
+
+- `BOT_TOKEN` is correct.
+- `AUTHORIZED_CHAT_ID` is correct.
+- `sendTelegramTo()` works.
+- Apps Script has permission to call Telegram.
+
+## 2. Add the Webhook Registration Function
+
+`registerTelegramWebhook()` is missing. Add the following function:
+
+```javascript
+function registerTelegramWebhook() {
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const botToken =
+    properties.getProperty(
+      "BOT_TOKEN"
+    );
+
+  const webhookSecret =
+    properties.getProperty(
+      "WEBHOOK_PATH_SECRET"
     );
 
   if (!botToken) {
@@ -3335,16 +3782,199 @@ function sendTelegram(message) {
     );
   }
 
-  if (!chatId) {
+  if (!webhookSecret) {
     throw new Error(
-      "AUTHORIZED_CHAT_ID is missing from Script Properties"
+      "WEBHOOK_PATH_SECRET is missing from Script Properties"
+    );
+  }
+
+  /*
+   * Returns the deployed Web App URL.
+   */
+  const webAppUrl =
+    ScriptApp
+      .getService()
+      .getUrl();
+
+  if (!webAppUrl) {
+    throw new Error(
+      "The script has not been deployed as a Web App"
+    );
+  }
+
+  /*
+   * WEBHOOK_PATH_SECRET should contain only:
+   * letters, numbers, underscore, and hyphen.
+   */
+  if (
+    !/^[A-Za-z0-9_-]+$/.test(
+      webhookSecret
+    )
+  ) {
+    throw new Error(
+      "WEBHOOK_PATH_SECRET contains invalid characters"
+    );
+  }
+
+  const webhookUrl =
+    webAppUrl +
+    "/telegram/" +
+    webhookSecret;
+
+  const telegramApiUrl =
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    botToken +
+    "/setWebhook";
+
+  const response =
+    UrlFetchApp.fetch(
+      telegramApiUrl,
+      {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({
+          url: webhookUrl,
+          allowed_updates: [
+            "message"
+          ],
+          drop_pending_updates: true
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+  const responseText =
+    response.getContentText();
+
+  console.log(
+    "Web App URL: " +
+    webAppUrl
+  );
+
+  console.log(
+    "Webhook URL: " +
+    webhookUrl
+  );
+
+  console.log(
+    "Telegram response: " +
+    responseText
+  );
+
+  const result =
+    JSON.parse(responseText);
+
+  if (!result.ok) {
+    throw new Error(
+      "Webhook registration failed: " +
+      responseText
+    );
+  }
+
+  return result;
+}
+```
+
+`ScriptApp.getService().getUrl()` returns the deployed Web App URL or `null` when the project has not been deployed.
+
+See the [Google Apps Script Service documentation](https://developers.google.com/apps-script/reference/script/service#geturl).
+
+The resulting webhook URL will be:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/YOUR_SECRET](https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/YOUR_SECRET)
+```
+
+Telegram will subsequently send every bot message to this URL as an HTTPS `POST`.
+
+See the [Telegram setWebhook documentation](https://core.telegram.org/bots/api#setwebhook).
+
+## 3. Add a Webhook-Information Function
+
+This function lets you verify the webhook registration:
+
+```javascript
+function getTelegramWebhookInfo() {
+  const botToken =
+    PropertiesService
+      .getScriptProperties()
+      .getProperty(
+        "BOT_TOKEN"
+      );
+
+  if (!botToken) {
+    throw new Error(
+      "BOT_TOKEN is missing"
     );
   }
 
   const url =
-    "https://api.telegram.org/bot" +
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
     botToken +
-    "/sendMessage";
+    "/getWebhookInfo";
+
+  const response =
+    UrlFetchApp.fetch(
+      url,
+      {
+        method: "get",
+        muteHttpExceptions: true
+      }
+    );
+
+  const responseText =
+    response.getContentText();
+
+  console.log(responseText);
+
+  return JSON.parse(
+    responseText
+  );
+}
+```
+
+Expected log:
+
+```json
+{
+  "ok": true,
+  "result": {
+    "url": "[https://script.google.com/macros/s/.../exec/telegram/](https://script.google.com/macros/s/.../exec/telegram/)...",
+    "has_custom_certificate": false,
+    "pending_update_count": 0
+  }
+}
+```
+
+Confirm that:
+
+- `url` contains your GAS `/exec/telegram/...` URL.
+- `pending_update_count` is normally `0`.
+- `last_error_message` is absent.
+
+## 4. Optional Webhook Removal Function
+
+Use this if you need to return to `getUpdates` testing:
+
+```javascript
+function deleteTelegramWebhook() {
+  const botToken =
+    PropertiesService
+      .getScriptProperties()
+      .getProperty(
+        "BOT_TOKEN"
+      );
+
+  if (!botToken) {
+    throw new Error(
+      "BOT_TOKEN is missing"
+    );
+  }
+
+  const url =
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    botToken +
+    "/deleteWebhook";
 
   const response =
     UrlFetchApp.fetch(
@@ -3353,8 +3983,7 @@ function sendTelegram(message) {
         method: "post",
         contentType: "application/json",
         payload: JSON.stringify({
-          chat_id: chatId,
-          text: message
+          drop_pending_updates: true
         }),
         muteHttpExceptions: true
       }
@@ -3366,7 +3995,9 @@ function sendTelegram(message) {
 }
 ```
 
-## Script Property Names for This Project
+> Do not run this function during normal webhook operation.
+
+## 5. Check Script Properties
 
 Under:
 
@@ -3374,332 +4005,188 @@ Under:
 Project Settings → Script Properties
 ```
 
-define the following properties:
+confirm the following:
 
-| Property | Example Value |
+| Property | Required Value |
 |---|---|
-| `BOT_TOKEN` | Your replacement bot token. |
+| `BOT_TOKEN` | Your new replacement token. |
 | `AUTHORIZED_CHAT_ID` | `58138745`. |
-| `DEVICE_ID` | `ESP32_01`. |
-| `DEVICE_KEY` | A long random device key. |
-| `WEBHOOK_PATH_SECRET` | A different random secret. |
+| `WEBHOOK_PATH_SECRET` | A long random value. |
 
-Property names are case-sensitive.
+Example webhook secret:
 
-Therefore:
-
-```javascript
-getProperty("BOT_TOKEN")
+```text
+ESP32_TG_a8F3kP91mZ7
 ```
 
-is not the same as:
+Do not include the following in `WEBHOOK_PATH_SECRET`:
+
+- Spaces.
+- Slashes.
+- Colons.
+- The bot token.
+
+Make sure `BOT_TOKEN` contains the replacement token created after the original token was exposed.
+
+## 6. Initialise Dashboard Cells
+
+Before testing `/status`, enter valid values:
+
+| Cell | Initial Value |
+|---|---:|
+| `H2` | `0` |
+| `I2` | `0` |
+| `J2` | `0` |
+
+Otherwise, this code may reject a blank value:
 
 ```javascript
-getProperty("bot_token")
+normalizeLedControl(
+  values[1]
+);
 ```
 
-## Read All Script Properties
+The `/led_on` and `/led_off` commands update `H2`.
 
-```javascript
-function readAllProperties() {
-  const allProperties =
-    PropertiesService
-      .getScriptProperties()
-      .getProperties();
+## 7. Deploy the New Version
 
-  console.log(allProperties);
-}
+After correcting the code:
+
+1. Save the Apps Script project.
+2. Select **Deploy → Manage deployments**.
+3. Edit the existing Web App deployment.
+4. Select **New version**.
+5. Confirm:
+
+   ```text
+   Execute as: Me
+   Who has access: Anyone
+   ```
+
+6. Click **Deploy**.
+
+Update the existing deployment instead of creating an unrelated deployment. This keeps the same `/exec` URL used by the ESP32.
+
+## 8. Run the Functions in This Order
+
+### Step 1 — Test Telegram Sending
+
+Run:
+
+```text
+testTelegramSend()
 ```
 
-The result will be an object similar to:
+Expected result:
 
-```javascript
+```text
+Telegram receives the test message.
+```
+
+### Step 2 — Register the Webhook
+
+Run:
+
+```text
+registerTelegramWebhook()
+```
+
+Expected log:
+
+```json
 {
-  BOT_TOKEN: "123456789:ExampleToken",
-  AUTHORIZED_CHAT_ID: "58138745",
-  DEVICE_ID: "ESP32_01",
-  DEVICE_KEY: "ExampleDeviceKey",
-  WEBHOOK_PATH_SECRET: "ExampleWebhookSecret"
+  "ok": true,
+  "result": true,
+  "description": "Webhook was set"
 }
 ```
 
-> **Security warning:** Do not run or retain this logging function in the finished project because it prints the bot token and other secrets into the execution log.
+### Step 3 — Verify the Webhook
 
-## Recommended Configuration Function
-
-Instead of repeatedly reading each property, create one configuration function:
-
-```javascript
-function getConfig() {
-  const properties =
-    PropertiesService
-      .getScriptProperties();
-
-  const config = {
-    botToken:
-      properties.getProperty(
-        "BOT_TOKEN"
-      ),
-
-    authorisedChatId:
-      properties.getProperty(
-        "AUTHORIZED_CHAT_ID"
-      ),
-
-    deviceId:
-      properties.getProperty(
-        "DEVICE_ID"
-      ),
-
-    deviceKey:
-      properties.getProperty(
-        "DEVICE_KEY"
-      ),
-
-    webhookPathSecret:
-      properties.getProperty(
-        "WEBHOOK_PATH_SECRET"
-      )
-  };
-
-  const missingProperties = [];
-
-  if (!config.botToken) {
-    missingProperties.push(
-      "BOT_TOKEN"
-    );
-  }
-
-  if (!config.authorisedChatId) {
-    missingProperties.push(
-      "AUTHORIZED_CHAT_ID"
-    );
-  }
-
-  if (!config.deviceId) {
-    missingProperties.push(
-      "DEVICE_ID"
-    );
-  }
-
-  if (!config.deviceKey) {
-    missingProperties.push(
-      "DEVICE_KEY"
-    );
-  }
-
-  if (!config.webhookPathSecret) {
-    missingProperties.push(
-      "WEBHOOK_PATH_SECRET"
-    );
-  }
-
-  if (missingProperties.length > 0) {
-    throw new Error(
-      "Missing Script Properties: " +
-      missingProperties.join(", ")
-    );
-  }
-
-  return config;
-}
-```
-
-## Use the Configuration Function
-
-```javascript
-function testConfig() {
-  const config =
-    getConfig();
-
-  // Safe values to print
-  console.log(
-    "Device ID: " +
-    config.deviceId
-  );
-
-  console.log(
-    "Authorised chat ID: " +
-    config.authorisedChatId
-  );
-
-  // Do not print config.botToken
-  // or secret keys.
-}
-```
-
-## Use Properties in the Telegram Handler
-
-```javascript
-function handleTelegramUpdate(update, e) {
-  const config =
-    getConfig();
-
-  const message =
-    update.message;
-
-  if (!message || !message.text) {
-    return jsonResponse({
-      ok: true
-    });
-  }
-
-  const incomingChatId =
-    String(message.chat.id);
-
-  if (
-    incomingChatId !==
-    String(config.authorisedChatId)
-  ) {
-    console.warn(
-      "Rejected unauthorised chat ID: " +
-      incomingChatId
-    );
-
-    return jsonResponse({
-      ok: true
-    });
-  }
-
-  const command =
-    message.text
-      .trim()
-      .toLowerCase()
-      .split("@")[0];
-
-  // Process the command here.
-
-  return jsonResponse({
-    ok: true
-  });
-}
-```
-
-## Programmatically Set Properties
-
-Properties can also be defined through code:
-
-```javascript
-function setInitialProperties() {
-  PropertiesService
-    .getScriptProperties()
-    .setProperties({
-      AUTHORIZED_CHAT_ID: "58138745",
-      DEVICE_ID: "ESP32_01"
-    });
-}
-```
-
-For secret tokens, manually entering them through:
+Run:
 
 ```text
-Project Settings → Script Properties
+getTelegramWebhookInfo()
 ```
 
-is preferable because it avoids placing the token in the source code.
+Confirm the webhook URL and the absence of errors.
 
-## Update One Property
+### Step 4 — Test `/start`
 
-```javascript
-function updateDeviceId() {
-  PropertiesService
-    .getScriptProperties()
-    .setProperty(
-      "DEVICE_ID",
-      "ESP32_01"
-    );
-}
-```
-
-## Delete a Property
-
-```javascript
-function deleteDeviceKey() {
-  PropertiesService
-    .getScriptProperties()
-    .deleteProperty(
-      "DEVICE_KEY"
-    );
-}
-```
-
-## Important: Property Values Are Strings
-
-All Script Property values are strings.
-
-Even when you enter a number:
+Send to the bot:
 
 ```text
-58138745
+/start
 ```
 
-Apps Script returns:
+Expected Telegram response:
 
-```javascript
-"58138745"
+```text
+ESP32 Telegram Control
+
+/led_on - Request LED ON
+/led_off - Request LED OFF
+/status - Show ESP32 status
+/help - Show commands
 ```
 
-Therefore, compare Telegram IDs as strings:
+### Step 5 — Test `/led_on`
 
-```javascript
-if (
-  String(message.chat.id) ===
-  String(config.authorisedChatId)
-) {
-  // Authorised
+Send:
+
+```text
+/led_on
+```
+
+Expected results:
+
+```text
+Dashboard!H2 becomes numeric 1.
+```
+
+Telegram replies that the command is stored.
+
+On the next ESP32 `GET` request or telemetry `POST`, the ESP32 receives:
+
+```json
+{
+  "status": "success",
+  "led-control": 1
 }
 ```
 
-### Numeric Settings
+### Step 6 — Test `/led_off`
 
-Convert numeric settings explicitly:
+Send:
 
-```javascript
-const pollingInterval =
-  Number(
-    properties.getProperty(
-      "POLLING_INTERVAL_MS"
-    )
-  );
+```text
+/led_off
 ```
 
-### Boolean Settings
+Expected results:
 
-Convert Boolean settings explicitly:
-
-```javascript
-const alertsEnabled =
-  properties.getProperty(
-    "ALERTS_ENABLED"
-  ) === "true";
+```text
+Dashboard!H2 becomes numeric 0.
 ```
 
-## Recommended Usage Pattern
+The ESP32 receives:
 
-Call `getConfig()` once at the beginning of each `doGet()` or `doPost()` execution, then pass the configuration object to the relevant handler functions:
-
-```javascript
-function doPost(e) {
-  const config =
-    getConfig();
-
-  const data =
-    JSON.parse(
-      e.postData.contents || "{}"
-    );
-
-  return handleRequest(
-    data,
-    config
-  );
-}
-
-function handleRequest(data, config) {
-  // Use config.botToken,
-  // config.deviceId, and other values here.
-
-  return jsonResponse({
-    status: "success"
-  });
+```json
+{
+  "status": "success",
+  "led-control": 0
 }
 ```
+
+## What You Do Not Need
+
+You do not need:
+
+- A timed Apps Script trigger.
+- Telegram `getUpdates`.
+- A Telegram library on the ESP32.
+- The bot token inside ESP32 firmware.
+- Another `doPost()`.
+- Another `handleTelegramUpdate()`.
+
+Once the webhook is registered, Telegram automatically calls your existing `doPost()`. The dispatcher identifies `update_id` and routes the request to `handleTelegramUpdate()`.
