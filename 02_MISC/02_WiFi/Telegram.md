@@ -2564,3 +2564,419 @@ After changing the Apps Script code:
 6. Click **Deploy**.
 
 Otherwise, the `/exec` URL may continue running the old code.
+
+---
+
+
+# Accessing Script Properties
+
+Use `PropertiesService.getScriptProperties()` to access values defined under:
+
+```text
+Project Settings → Script Properties
+```
+
+## Read One Property
+
+```javascript
+const properties =
+  PropertiesService.getScriptProperties();
+
+const botToken =
+  properties.getProperty("BOT_TOKEN");
+
+const chatId =
+  properties.getProperty(
+    "AUTHORIZED_CHAT_ID"
+  );
+```
+
+### Example
+
+```javascript
+function sendTelegram(message) {
+  const properties =
+    PropertiesService.getScriptProperties();
+
+  const botToken =
+    properties.getProperty("BOT_TOKEN");
+
+  const chatId =
+    properties.getProperty(
+      "AUTHORIZED_CHAT_ID"
+    );
+
+  if (!botToken) {
+    throw new Error(
+      "BOT_TOKEN is missing from Script Properties"
+    );
+  }
+
+  if (!chatId) {
+    throw new Error(
+      "AUTHORIZED_CHAT_ID is missing from Script Properties"
+    );
+  }
+
+  const url =
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    botToken +
+    "/sendMessage";
+
+  const response =
+    UrlFetchApp.fetch(
+      url,
+      {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({
+          chat_id: chatId,
+          text: message
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+  console.log(
+    response.getContentText()
+  );
+}
+```
+
+## Script Property Names for This Project
+
+Under:
+
+```text
+Project Settings → Script Properties
+```
+
+define the following properties:
+
+| Property | Example Value |
+|---|---|
+| `BOT_TOKEN` | Your replacement bot token. |
+| `AUTHORIZED_CHAT_ID` | `58138745`. |
+| `DEVICE_ID` | `ESP32_01`. |
+| `DEVICE_KEY` | A long random device key. |
+| `WEBHOOK_PATH_SECRET` | A different random secret. |
+
+Property names are case-sensitive.
+
+Therefore:
+
+```javascript
+getProperty("BOT_TOKEN")
+```
+
+is not the same as:
+
+```javascript
+getProperty("bot_token")
+```
+
+## Read All Script Properties
+
+```javascript
+function readAllProperties() {
+  const allProperties =
+    PropertiesService
+      .getScriptProperties()
+      .getProperties();
+
+  console.log(allProperties);
+}
+```
+
+The result will be an object similar to:
+
+```javascript
+{
+  BOT_TOKEN: "123456789:ExampleToken",
+  AUTHORIZED_CHAT_ID: "58138745",
+  DEVICE_ID: "ESP32_01",
+  DEVICE_KEY: "ExampleDeviceKey",
+  WEBHOOK_PATH_SECRET: "ExampleWebhookSecret"
+}
+```
+
+> **Security warning:** Do not run or retain this logging function in the finished project because it prints the bot token and other secrets into the execution log.
+
+## Recommended Configuration Function
+
+Instead of repeatedly reading each property, create one configuration function:
+
+```javascript
+function getConfig() {
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const config = {
+    botToken:
+      properties.getProperty(
+        "BOT_TOKEN"
+      ),
+
+    authorisedChatId:
+      properties.getProperty(
+        "AUTHORIZED_CHAT_ID"
+      ),
+
+    deviceId:
+      properties.getProperty(
+        "DEVICE_ID"
+      ),
+
+    deviceKey:
+      properties.getProperty(
+        "DEVICE_KEY"
+      ),
+
+    webhookPathSecret:
+      properties.getProperty(
+        "WEBHOOK_PATH_SECRET"
+      )
+  };
+
+  const missingProperties = [];
+
+  if (!config.botToken) {
+    missingProperties.push(
+      "BOT_TOKEN"
+    );
+  }
+
+  if (!config.authorisedChatId) {
+    missingProperties.push(
+      "AUTHORIZED_CHAT_ID"
+    );
+  }
+
+  if (!config.deviceId) {
+    missingProperties.push(
+      "DEVICE_ID"
+    );
+  }
+
+  if (!config.deviceKey) {
+    missingProperties.push(
+      "DEVICE_KEY"
+    );
+  }
+
+  if (!config.webhookPathSecret) {
+    missingProperties.push(
+      "WEBHOOK_PATH_SECRET"
+    );
+  }
+
+  if (missingProperties.length > 0) {
+    throw new Error(
+      "Missing Script Properties: " +
+      missingProperties.join(", ")
+    );
+  }
+
+  return config;
+}
+```
+
+## Use the Configuration Function
+
+```javascript
+function testConfig() {
+  const config =
+    getConfig();
+
+  // Safe values to print
+  console.log(
+    "Device ID: " +
+    config.deviceId
+  );
+
+  console.log(
+    "Authorised chat ID: " +
+    config.authorisedChatId
+  );
+
+  // Do not print config.botToken
+  // or secret keys.
+}
+```
+
+## Use Properties in the Telegram Handler
+
+```javascript
+function handleTelegramUpdate(update, e) {
+  const config =
+    getConfig();
+
+  const message =
+    update.message;
+
+  if (!message || !message.text) {
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  const incomingChatId =
+    String(message.chat.id);
+
+  if (
+    incomingChatId !==
+    String(config.authorisedChatId)
+  ) {
+    console.warn(
+      "Rejected unauthorised chat ID: " +
+      incomingChatId
+    );
+
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  const command =
+    message.text
+      .trim()
+      .toLowerCase()
+      .split("@");
+
+  // Process the command here.
+
+  return jsonResponse({
+    ok: true
+  });
+}
+```
+
+## Programmatically Set Properties
+
+Properties can also be defined through code:
+
+```javascript
+function setInitialProperties() {
+  PropertiesService
+    .getScriptProperties()
+    .setProperties({
+      AUTHORIZED_CHAT_ID: "58138745",
+      DEVICE_ID: "ESP32_01"
+    });
+}
+```
+
+For secret tokens, manually entering them through:
+
+```text
+Project Settings → Script Properties
+```
+
+is preferable because it avoids placing the token in the source code.
+
+## Update One Property
+
+```javascript
+function updateDeviceId() {
+  PropertiesService
+    .getScriptProperties()
+    .setProperty(
+      "DEVICE_ID",
+      "ESP32_01"
+    );
+}
+```
+
+## Delete a Property
+
+```javascript
+function deleteDeviceKey() {
+  PropertiesService
+    .getScriptProperties()
+    .deleteProperty(
+      "DEVICE_KEY"
+    );
+}
+```
+
+## Important: Property Values Are Strings
+
+All Script Property values are strings.
+
+Even when you enter a number:
+
+```text
+58138745
+```
+
+Apps Script returns:
+
+```javascript
+"58138745"
+```
+
+Therefore, compare Telegram IDs as strings:
+
+```javascript
+if (
+  String(message.chat.id) ===
+  String(config.authorisedChatId)
+) {
+  // Authorised
+}
+```
+
+### Numeric Settings
+
+Convert numeric settings explicitly:
+
+```javascript
+const pollingInterval =
+  Number(
+    properties.getProperty(
+      "POLLING_INTERVAL_MS"
+    )
+  );
+```
+
+### Boolean Settings
+
+Convert Boolean settings explicitly:
+
+```javascript
+const alertsEnabled =
+  properties.getProperty(
+    "ALERTS_ENABLED"
+  ) === "true";
+```
+
+## Recommended Usage Pattern
+
+Call `getConfig()` once at the beginning of each `doGet()` or `doPost()` execution, then pass the configuration object to the relevant handler functions:
+
+```javascript
+function doPost(e) {
+  const config =
+    getConfig();
+
+  const data =
+    JSON.parse(
+      e.postData.contents || "{}"
+    );
+
+  return handleRequest(
+    data,
+    config
+  );
+}
+
+function handleRequest(data, config) {
+  // Use config.botToken,
+  // config.deviceId, and other values here.
+
+  return jsonResponse({
+    status: "success"
+  });
+}
+```
