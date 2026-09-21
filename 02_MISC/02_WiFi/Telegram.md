@@ -3885,6 +3885,13 @@ The resulting webhook URL will be:
 [https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/YOUR_SECRET](https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/YOUR_SECRET)
 ```
 
+Below is the console log response of `registerTelegramWebhook()`     
+
+```
+Registered webhook: https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/your-webhook-secret
+Telegram response: {"ok":true,"result":true,"description":"Webhook was set"}
+```
+
 Telegram will subsequently send every bot message to this URL as an HTTPS `POST`.
 
 See the [Telegram setWebhook documentation](https://core.telegram.org/bots/api#setwebhook).
