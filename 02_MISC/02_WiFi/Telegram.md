@@ -2830,7 +2830,7 @@ function handleTelegramUpdate(update, e) {
     message.text
       .trim()
       .toLowerCase()
-      .split("@");
+      .split("@")[0];
 
   switch (command) {
     case "/start":
@@ -3062,7 +3062,7 @@ function sendTelegramTo(chatId, text) {
   }
 
   const url =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     botToken +
     "/sendMessage";
 
@@ -3342,7 +3342,7 @@ function sendTelegram(message) {
   }
 
   const url =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     botToken +
     "/sendMessage";
 
@@ -3565,7 +3565,7 @@ function handleTelegramUpdate(update, e) {
     message.text
       .trim()
       .toLowerCase()
-      .split("@");
+      .split("@")[0];
 
   // Process the command here.
 
