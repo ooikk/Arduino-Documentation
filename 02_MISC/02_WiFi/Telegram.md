@@ -2570,7 +2570,764 @@ Otherwise, the `/exec` URL may continue running the old code.
 
 ---
 
+# Merged `doPost(e)` Design: (HTTP Dashboard)
 
+Replace the existing `doPost(e)` with one dispatcher that identifies whether the incoming `POST` request came from:
+
+- **Telegram:** Contains `update_id`.
+- **ESP32 telemetry:** Contains `"type": "telemetry"`.
+- **ESP32 acknowledgement:** Contains `"type": "command-ack"`.
+
+Your existing `doGet(e)` remains separate and continues returning the LED command from `H2`.
+
+## Complete Integrated `doPost(e)`
+
+```javascript
+const DASHBOARD_SHEET_NAME = "Dashboard";
+const LED_CONTROL_CELL = "H2";
+const MAX_ROWS = 100;
+
+/**
+ * Receives POST requests from:
+ *
+ * 1. Telegram webhook
+ * 2. ESP32 telemetry
+ * 3. ESP32 command acknowledgement
+ */
+function doPost(e) {
+  try {
+    if (
+      !e ||
+      !e.postData ||
+      !e.postData.contents
+    ) {
+      return jsonResponse({
+        status: "error",
+        message: "Empty POST request"
+      });
+    }
+
+    const data =
+      JSON.parse(e.postData.contents);
+
+    // Telegram webhook messages contain update_id.
+    if (data.update_id !== undefined) {
+      return handleTelegramUpdate(
+        data,
+        e
+      );
+    }
+
+    // Current ESP32 payload contains:
+    // "type": "telemetry"
+    if (data.type === "telemetry") {
+      return handleEsp32Telemetry(data);
+    }
+
+    // Optional future ESP32 command confirmation.
+    if (data.type === "command-ack") {
+      return handleCommandAcknowledgement(
+        data
+      );
+    }
+
+    return jsonResponse({
+      status: "error",
+      message: "Unknown POST request type"
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return jsonResponse({
+      status: "error",
+      message: err.toString()
+    });
+  }
+}
+```
+
+## ESP32 Telemetry Handler
+
+This contains the existing telemetry-processing code:
+
+```javascript
+function handleEsp32Telemetry(data) {
+  const lock =
+    LockService.getScriptLock();
+
+  if (!lock.tryLock(10000)) {
+    throw new Error(
+      "Unable to obtain spreadsheet lock"
+    );
+  }
+
+  try {
+    const sheet =
+      getDashboardSheet();
+
+    // Validate important ESP32 fields.
+    if (data.status === undefined) {
+      throw new Error(
+        "Telemetry field 'status' is missing"
+      );
+    }
+
+    if (data.temperature === undefined) {
+      throw new Error(
+        "Telemetry field 'temperature' is missing"
+      );
+    }
+
+    // Insert cells at A3:G3 and shift previous
+    // telemetry records downward.
+    const targetRange =
+      sheet.getRange("A3:G3");
+
+    targetRange.insertCells(
+      SpreadsheetApp.Dimension.ROWS
+    );
+
+    // Copy formatting and formulas from A2:G2
+    // into the newly inserted A3:G3.
+    const topRowRange =
+      sheet.getRange("A2:G2");
+
+    topRowRange.copyTo(
+      targetRange
+    );
+
+    // Write the newest telemetry to row 2.
+    sheet.getRange("A2:G2").setValues([[
+      new Date(),
+      data.status,
+      data.temperature,
+      data.rssi,
+      data.uptime,
+      data["led-state"],
+      data.button
+    ]]);
+
+    // Save actual hardware states.
+    sheet.getRange("I2").setValue(
+      data["led-state"]
+    );
+
+    sheet.getRange("J2").setValue(
+      data.button
+    );
+
+    // Remove telemetry records beyond
+    // the maximum row count.
+    const lastRow =
+      sheet.getLastRow();
+
+    if (lastRow > MAX_ROWS) {
+      sheet
+        .getRange(
+          MAX_ROWS + 1,
+          1,
+          lastRow - MAX_ROWS,
+          7
+        )
+        .clearContent();
+    }
+
+    // Read the desired LED state from H2.
+    const rawLedControl =
+      sheet
+        .getRange(LED_CONTROL_CELL)
+        .getValue();
+
+    const ledControlValue =
+      normalizeLedControl(
+        rawLedControl
+      );
+
+    SpreadsheetApp.flush();
+
+    // Return the command to the ESP32.
+    return jsonResponse({
+      status: "success",
+      "led-control": ledControlValue
+    });
+
+  } finally {
+    lock.releaseLock();
+  }
+}
+```
+
+## Telegram Webhook Handler
+
+This processes:
+
+- `/led_on`
+- `/led_off`
+- `/status`
+- `/start`
+- `/help`
+
+```javascript
+function handleTelegramUpdate(update, e) {
+  // Optional webhook-path verification.
+  validateTelegramWebhookPath(e);
+
+  const message =
+    update.message;
+
+  // Some Telegram updates may not contain
+  // a normal text message.
+  if (!message || !message.text) {
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const authorisedChatId =
+    properties.getProperty(
+      "AUTHORIZED_CHAT_ID"
+    );
+
+  if (!authorisedChatId) {
+    throw new Error(
+      "AUTHORIZED_CHAT_ID is missing"
+    );
+  }
+
+  const incomingChatId =
+    String(message.chat.id);
+
+  // Ignore commands from unauthorised users.
+  if (
+    incomingChatId !==
+    String(authorisedChatId)
+  ) {
+    console.warn(
+      "Rejected unauthorised chat ID: " +
+      incomingChatId
+    );
+
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  /*
+   * Remove the bot username from group commands.
+   *
+   * Example:
+   * /led_on@OoiKK_ESP32_bot
+   *
+   * becomes:
+   * /led_on
+   */
+  const command =
+    message.text
+      .trim()
+      .toLowerCase()
+      .split("@");
+
+  switch (command) {
+    case "/start":
+    case "/help":
+      sendTelegramTo(
+        incomingChatId,
+        "ESP32 Telegram Control\n\n" +
+        "/led_on - Request LED ON\n" +
+        "/led_off - Request LED OFF\n" +
+        "/status - Show ESP32 status\n" +
+        "/help - Show commands"
+      );
+      break;
+
+    case "/led_on":
+      setLedControl(1);
+
+      sendTelegramTo(
+        incomingChatId,
+        "LED ON command stored in " +
+        "Dashboard!H2.\n" +
+        "Waiting for the next ESP32 communication."
+      );
+      break;
+
+    case "/led_off":
+      setLedControl(0);
+
+      sendTelegramTo(
+        incomingChatId,
+        "LED OFF command stored in " +
+        "Dashboard!H2.\n" +
+        "Waiting for the next ESP32 communication."
+      );
+      break;
+
+    case "/status":
+      sendEsp32Status(
+        incomingChatId
+      );
+      break;
+
+    default:
+      sendTelegramTo(
+        incomingChatId,
+        "Unknown command: " +
+        command +
+        "\n\n" +
+        "Available commands:\n" +
+        "/led_on\n" +
+        "/led_off\n" +
+        "/status\n" +
+        "/help"
+      );
+  }
+
+  // Telegram only needs a successful response.
+  return jsonResponse({
+    ok: true
+  });
+}
+```
+
+## Webhook-Path Validation
+
+Use this if the registered webhook URL follows this format:
+
+```text
+GAS_EXEC_URL/telegram/WEBHOOK_PATH_SECRET
+```
+
+```javascript
+function validateTelegramWebhookPath(e) {
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const secret =
+    properties.getProperty(
+      "WEBHOOK_PATH_SECRET"
+    );
+
+  // Skip path verification when the property
+  // has not been configured.
+  if (!secret) {
+    return;
+  }
+
+  const expectedPath =
+    "telegram/" + secret;
+
+  const receivedPath =
+    e && e.pathInfo
+      ? String(e.pathInfo)
+      : "";
+
+  if (receivedPath !== expectedPath) {
+    throw new Error(
+      "Invalid Telegram webhook path"
+    );
+  }
+}
+```
+
+If the webhook currently points directly to:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+```
+
+either:
+
+- Do not define `WEBHOOK_PATH_SECRET`; or
+- Update the webhook URL to include the secret path.
+
+## Write the Telegram Command to `H2`
+
+```javascript
+function setLedControl(value) {
+  if (value !== 0 && value !== 1) {
+    throw new Error(
+      "LED control value must be 0 or 1"
+    );
+  }
+
+  const lock =
+    LockService.getScriptLock();
+
+  if (!lock.tryLock(10000)) {
+    throw new Error(
+      "Unable to obtain spreadsheet lock"
+    );
+  }
+
+  try {
+    const sheet =
+      getDashboardSheet();
+
+    sheet
+      .getRange(LED_CONTROL_CELL)
+      .setValue(value);
+
+    SpreadsheetApp.flush();
+
+  } finally {
+    lock.releaseLock();
+  }
+}
+```
+
+## Send ESP32 Status to Telegram
+
+Based on the current sheet layout:
+
+| Cell | Information |
+|---|---|
+| `A2` | Timestamp |
+| `B2` | Status |
+| `C2` | Temperature |
+| `D2` | RSSI |
+| `E2` | Uptime |
+| `F2` | Reported LED state |
+| `G2` | Reported button state |
+| `H2` | Desired LED control |
+| `I2` | Actual LED state |
+| `J2` | Actual button state |
+
+```javascript
+function sendEsp32Status(chatId) {
+  const sheet =
+    getDashboardSheet();
+
+  const values =
+    sheet
+      .getRange("A2:J2")
+      .getValues();
+
+  const timestamp =
+    values;
+
+  const deviceStatus =
+    values;[1]
+
+  const temperature =
+    values;[2]
+
+  const rssi =
+    values;[3]
+
+  const uptime =
+    values;[4]
+
+  const requestedLedState =
+    normalizeLedControl(
+      values[5]
+    );
+
+  const actualLedState =
+    normalizeLedControl(
+      values[6]
+    );
+
+  const buttonState =
+    values;[7]
+
+  const message =
+    "ESP32 Status\n\n" +
+    "Device: " +
+    deviceStatus +
+    "\n" +
+    "Temperature: " +
+    temperature +
+    " °C\n" +
+    "RSSI: " +
+    rssi +
+    " dBm\n" +
+    "Uptime: " +
+    uptime +
+    " seconds\n" +
+    "Requested LED: " +
+    formatOnOff(
+      requestedLedState
+    ) +
+    "\n" +
+    "Actual LED: " +
+    formatOnOff(
+      actualLedState
+    ) +
+    "\n" +
+    "Button: " +
+    buttonState +
+    "\n" +
+    "Last update: " +
+    timestamp;
+
+  sendTelegramTo(
+    chatId,
+    message
+  );
+}
+
+function formatOnOff(value) {
+  return value === 1
+    ? "ON"
+    : "OFF";
+}
+```
+
+## Send a Message Through Telegram
+
+```javascript
+function sendTelegramTo(chatId, text) {
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const botToken =
+    properties.getProperty(
+      "BOT_TOKEN"
+    );
+
+  if (!botToken) {
+    throw new Error(
+      "BOT_TOKEN is missing from Script Properties"
+    );
+  }
+
+  const url =
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    botToken +
+    "/sendMessage";
+
+  const response =
+    UrlFetchApp.fetch(
+      url,
+      {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify({
+          chat_id: String(chatId),
+          text: text
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+  const responseText =
+    response.getContentText();
+
+  const result =
+    JSON.parse(responseText);
+
+  if (!result.ok) {
+    throw new Error(
+      "Telegram sendMessage failed: " +
+      responseText
+    );
+  }
+
+  return result;
+}
+```
+
+## Optional ESP32 Acknowledgement Handler
+
+This supports a future ESP32 payload such as:
+
+```json
+{
+  "type": "command-ack",
+  "deviceId": "ESP32_01",
+  "success": true,
+  "led-state": 1
+}
+```
+
+```javascript
+function handleCommandAcknowledgement(data) {
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const chatId =
+    properties.getProperty(
+      "AUTHORIZED_CHAT_ID"
+    );
+
+  const success =
+    data.success === true;
+
+  const actualLedState =
+    normalizeLedControl(
+      data["led-state"]
+    );
+
+  const message =
+    success
+      ? "ESP32 confirmed LED is " +
+        formatOnOff(actualLedState) +
+        "."
+      : "ESP32 failed to execute the command.";
+
+  sendTelegramTo(
+    chatId,
+    message
+  );
+
+  return jsonResponse({
+    status: "success",
+    message: "Acknowledgement recorded"
+  });
+}
+```
+
+## Shared Helper Functions
+
+```javascript
+function getDashboardSheet() {
+  const sheet =
+    SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(
+        DASHBOARD_SHEET_NAME
+      );
+
+  if (!sheet) {
+    throw new Error(
+      'Sheet "' +
+      DASHBOARD_SHEET_NAME +
+      '" not found'
+    );
+  }
+
+  return sheet;
+}
+```
+
+```javascript
+function normalizeLedControl(value) {
+  if (value === true || value === 1) {
+    return 1;
+  }
+
+  if (value === false || value === 0) {
+    return 0;
+  }
+
+  const text =
+    String(value)
+      .trim()
+      .toLowerCase();
+
+  if (
+    text === "1" ||
+    text === "true" ||
+    text === "on" ||
+    text === "high"
+  ) {
+    return 1;
+  }
+
+  if (
+    text === "0" ||
+    text === "false" ||
+    text === "off" ||
+    text === "low"
+  ) {
+    return 0;
+  }
+
+  throw new Error(
+    "Invalid LED value: " +
+    value
+  );
+}
+```
+
+```javascript
+function jsonResponse(data) {
+  return ContentService
+    .createTextOutput(
+      JSON.stringify(data)
+    )
+    .setMimeType(
+      ContentService.MimeType.JSON
+    );
+}
+```
+
+## Required Script Properties
+
+Verify these properties under:
+
+```text
+Project Settings → Script Properties
+```
+
+| Property | Value |
+|---|---|
+| `BOT_TOKEN` | Your replacement Telegram bot token. |
+| `AUTHORIZED_CHAT_ID` | `58138745`. |
+| `WEBHOOK_PATH_SECRET` | Optional random string. |
+
+## Resulting Behaviour
+
+When the ESP32 sends telemetry:
+
+```json
+{
+  "type": "telemetry",
+  "status": "ONLINE",
+  "temperature": 45.5,
+  "rssi": -73,
+  "uptime": 100,
+  "led-state": 0,
+  "button": 0
+}
+```
+
+Google Apps Script updates the sheet and returns:
+
+```json
+{
+  "status": "success",
+  "led-control": 1
+}
+```
+
+When Telegram sends a `/led_on` webhook update, Google Apps Script writes:
+
+```text
+Dashboard!H2 = 1
+```
+
+At the next ESP32 `POST` or `GET` request, the ESP32 receives:
+
+```json
+{
+  "status": "success",
+  "led-control": 1
+}
+```
+
+## Redeploy After Replacing the Code
+
+After replacing the Apps Script code:
+
+1. Save the project.
+2. Open **Deploy**.
+3. Select **Manage deployments**.
+4. Click **Edit**.
+5. Select **New version**.
+6. Click **Deploy**.
+
+If you update the existing deployment, its `/exec` URL remains unchanged.
+
+---
 # Accessing Script Properties
 
 Use `PropertiesService.getScriptProperties()` to access values defined under:
