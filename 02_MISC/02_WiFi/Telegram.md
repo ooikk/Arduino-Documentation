@@ -671,7 +671,7 @@ function sendTelegram(message) {
     properties.getProperty("CHAT_ID");
 
   const url =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     token +
     "/sendMessage";
 
@@ -1592,6 +1592,7 @@ Add these properties:
 | `DEVICE_ID` | `ESP32_01`. |
 | `DEVICE_KEY` | A long random device password. |
 | `WEBHOOK_PATH_SECRET` | A different long random string. |
+| `WEB_APP_URL` | Web App Deployment ID. |
 
 Example structure:
 
@@ -1601,6 +1602,7 @@ AUTHORIZED_CHAT_ID = 987654321
 DEVICE_ID = ESP32_01
 DEVICE_KEY = a-long-random-esp32-device-key
 WEBHOOK_PATH_SECRET = another-long-random-webhook-secret
+WEB_APP_URL = https://script.google.com/macros/s/DEPLOYMENT_ID/exec
 ```
 
 Do not use the same value for `DEVICE_KEY` and `WEBHOOK_PATH_SECRET`.
