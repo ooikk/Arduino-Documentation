@@ -1605,6 +1605,9 @@ WEBHOOK_PATH_SECRET = another-long-random-webhook-secret
 
 Do not use the same value for `DEVICE_KEY` and `WEBHOOK_PATH_SECRET`.
 
+[Accessing Script Properties](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Telegram.md#accessing-script-properties)
+
+
 ## 10. Add a Basic Apps Script Program
 
 ```javascript
