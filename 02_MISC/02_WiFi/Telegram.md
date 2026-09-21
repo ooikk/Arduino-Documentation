@@ -3766,6 +3766,9 @@ function registerTelegramWebhook() {
   const botToken =
     properties.getProperty("BOT_TOKEN");
 
+  const webAppUrl =
+    properties.getProperty("WEB_APP_URL");
+
   const webhookSecret =
     properties.getProperty(
       "WEBHOOK_PATH_SECRET"
@@ -3773,35 +3776,35 @@ function registerTelegramWebhook() {
 
   if (!botToken) {
     throw new Error(
-      "BOT_TOKEN is missing from Script Properties"
+      "BOT_TOKEN is missing"
+    );
+  }
+
+  if (!webAppUrl) {
+    throw new Error(
+      "WEB_APP_URL is missing"
+    );
+  }
+
+  if (!webAppUrl.endsWith("/exec")) {
+    throw new Error(
+      "WEB_APP_URL must end with /exec. " +
+      "Current value: " + webAppUrl
     );
   }
 
   if (!webhookSecret) {
     throw new Error(
-      "WEBHOOK_PATH_SECRET is missing from Script Properties"
+      "WEBHOOK_PATH_SECRET is missing"
     );
   }
 
-  /*
-   * Returns the deployed Web App URL.
-   */
-  const webAppUrl =
-    ScriptApp.getService().getUrl();
-
-  if (!webAppUrl) {
+  if (
+    !/^[A-Za-z0-9_-]+$/.test(webhookSecret)
+  ) {
     throw new Error(
-      "The script has not been deployed as a Web App"
-    );
-  }
-
-  /*
-   * WEBHOOK_PATH_SECRET should contain only:
-   * letters, numbers, underscore and hyphen.
-   */
-  if (!/^[A-Za-z0-9_-]+$/.test(webhookSecret)) {
-    throw new Error(
-      "WEBHOOK_PATH_SECRET contains invalid characters"
+      "WEBHOOK_PATH_SECRET contains " +
+      "invalid characters"
     );
   }
 
@@ -3826,6 +3829,11 @@ function registerTelegramWebhook() {
           allowed_updates: [
             "message"
           ],
+
+          /*
+           * Discard the four messages that failed
+           * while the /dev URL was registered.
+           */
           drop_pending_updates: true
         }),
         muteHttpExceptions: true
@@ -3836,15 +3844,13 @@ function registerTelegramWebhook() {
     response.getContentText();
 
   console.log(
-    "Web App URL: " + webAppUrl
+    "Registered webhook: " +
+    webhookUrl
   );
 
   console.log(
-    "Webhook URL: " + webhookUrl
-  );
-
-  console.log(
-    "Telegram response: " + responseText
+    "Telegram response: " +
+    responseText
   );
 
   const result =
