@@ -2134,7 +2134,7 @@ This keeps the Telegram bot token out of the ESP32 firmware.
 
 # Merged `doGet(e)` Design: (HTTP Dashboard)
 
-To ensure the script in Googlesheet **"[HTTP Dashboard](https://docs.google.com/spreadsheets/d/1KqmrGOs5891O9Zn7v5kLdqfmxuhTQq7aQj4k6dneWUI/edit?gid=479240493#gid=479240493)"** backward compatibility with existing ESP32 code `fetchCommands()` or `sendTelemetryAndFetchCommands()`.     
+To ensure the script in Googlesheet **"[HTTP Dashboard](https://docs.google.com/spreadsheets/d/1KqmrGOs5891O9Zn7v5kLdqfmxuhTQq7aQj4k6dneWUI/edit?gid=0#gid=0)"** backward compatibility with existing ESP32 code `fetchCommands()` or `sendTelemetryAndFetchCommands()`.     
 
 Use only one `doGet(e)` function. Route requests by the optional `action` parameter while keeping the default behaviour compatible with the existing ESP32 code.
 
