@@ -2129,3 +2129,438 @@ For the current ESP32 Google Sheets project:
 - The ESP32 needs only the Google Apps Script `/exec` URL, its `DEVICE_ID`, and its separate `DEVICE_KEY`.
 
 This keeps the Telegram bot token out of the ESP32 firmware.
+
+--- 
+
+# Merged `doGet(e)` Design: (HTTP Dashboard)
+
+To ensure the Googlesheet backward compatibility with existing `Support ESP32 fetchCommands()` or `sendTelemetryAndFetchCommands()`.     
+
+Use only one `doGet(e)` function. Route requests by the optional `action` parameter while keeping the default behaviour compatible with the existing ESP32 code.
+
+## Request Design
+
+```text
+/exec                       → Return the LED value from Dashboard!H2
+/exec?action=getCommand    → Also return the LED value from Dashboard!H2
+/exec?action=health        → Return service status
+Unknown action             → Return an error
+```
+
+## Merged Google Apps Script Code
+
+```javascript
+const DASHBOARD_SHEET_NAME = "Dashboard";
+const LED_CONTROL_CELL = "H2";
+
+function doGet(e) {
+  try {
+    // Prevent an error if doGet() is manually executed
+    // from the Apps Script editor.
+    const action =
+      e && e.parameter
+        ? String(
+            e.parameter.action || ""
+          ).trim()
+        : "";
+
+    switch (action) {
+      // Existing ESP32 URL without query parameters.
+      case "":
+        return getPendingCommand(e);
+
+      // New Telegram bridge command request.
+      case "getCommand":
+        return getPendingCommand(e);
+
+      // Optional test or health endpoint.
+      case "health":
+        return jsonResponse({
+          status: "success",
+          service: "ESP32 Telegram Bridge"
+        });
+
+      default:
+        return jsonResponse({
+          status: "error",
+          message: "Unknown action: " + action
+        });
+    }
+
+  } catch (err) {
+    console.error(err);
+
+    return jsonResponse({
+      status: "error",
+      message: err.toString()
+    });
+  }
+}
+
+/**
+ * Reads the requested LED state from Dashboard!H2.
+ *
+ * The function name getPendingCommand() is retained
+ * for compatibility with the Telegram bridge design.
+ */
+function getPendingCommand(e) {
+  const sheet =
+    SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(
+        DASHBOARD_SHEET_NAME
+      );
+
+  if (!sheet) {
+    throw new Error(
+      'Sheet "' +
+      DASHBOARD_SHEET_NAME +
+      '" not found'
+    );
+  }
+
+  const rawValue =
+    sheet
+      .getRange(LED_CONTROL_CELL)
+      .getValue();
+
+  const ledControlValue =
+    normalizeLedControl(rawValue);
+
+  return jsonResponse({
+    status: "success",
+    "led-control": ledControlValue
+  });
+}
+
+/**
+ * Converts cell values such as:
+ * 1, 0, TRUE, FALSE, "ON", and "OFF"
+ * into the integer values 1 or 0.
+ */
+function normalizeLedControl(value) {
+  if (value === true || value === 1) {
+    return 1;
+  }
+
+  if (value === false || value === 0) {
+    return 0;
+  }
+
+  const text =
+    String(value)
+      .trim()
+      .toLowerCase();
+
+  if (
+    text === "1" ||
+    text === "true" ||
+    text === "on" ||
+    text === "high"
+  ) {
+    return 1;
+  }
+
+  if (
+    text === "0" ||
+    text === "false" ||
+    text === "off" ||
+    text === "low"
+  ) {
+    return 0;
+  }
+
+  throw new Error(
+    "Invalid LED control value in " +
+    DASHBOARD_SHEET_NAME +
+    "!" +
+    LED_CONTROL_CELL +
+    ": " +
+    value
+  );
+}
+
+/**
+ * Common JSON-response function used by doGet()
+ * and doPost().
+ */
+function jsonResponse(data) {
+  return ContentService
+    .createTextOutput(
+      JSON.stringify(data)
+    )
+    .setMimeType(
+      ContentService.MimeType.JSON
+    );
+}
+```
+
+## Why This Merge Works
+
+The original `doGet()` always reads `H2`. The new `doGet()` acts as a request router.
+
+The merged version directs both of these requests to the same function:
+
+```text
+No action parameter
+action=getCommand
+```
+
+Both requests produce one of the following responses:
+
+```json
+{
+  "status": "success",
+  "led-control": 1
+}
+```
+
+or:
+
+```json
+{
+  "status": "success",
+  "led-control": 0
+}
+```
+
+The response is always numeric, avoiding the previous problem:
+
+```json
+{
+  "led-control": "t"
+}
+```
+
+## URLs for Testing
+
+### Existing ESP32 URL
+
+The current ESP32 code can continue using:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+```
+
+This reads the value from `Dashboard!H2`.
+
+### Explicit Command URL
+
+The new format is:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=getCommand](https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=getCommand)
+```
+
+It returns the same `H2` value.
+
+### Health Check
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=health](https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=health)
+```
+
+Expected response:
+
+```json
+{
+  "status": "success",
+  "service": "ESP32 Telegram Bridge"
+}
+```
+
+### Invalid Action Test
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=unknown](https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=unknown)
+```
+
+Expected response:
+
+```json
+{
+  "status": "error",
+  "message": "Unknown action: unknown"
+}
+```
+
+## Connect Telegram Commands to `H2`
+
+The Telegram webhook can write `1` or `0` directly into `Dashboard!H2`.
+
+### Set the LED Control Value
+
+```javascript
+function setLedControl(value) {
+  if (value !== 0 && value !== 1) {
+    throw new Error(
+      "LED control must be numeric 0 or 1"
+    );
+  }
+
+  const sheet =
+    SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(
+        DASHBOARD_SHEET_NAME
+      );
+
+  if (!sheet) {
+    throw new Error(
+      'Sheet "' +
+      DASHBOARD_SHEET_NAME +
+      '" not found'
+    );
+  }
+
+  sheet
+    .getRange(LED_CONTROL_CELL)
+    .setValue(value);
+
+  SpreadsheetApp.flush();
+}
+```
+
+### Use It in the Telegram Handler
+
+```javascript
+function handleTelegramUpdate(update, e) {
+  const message =
+    update.message;
+
+  if (!message || !message.text) {
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const authorisedChatId =
+    properties.getProperty(
+      "AUTHORIZED_CHAT_ID"
+    );
+
+  const chatId =
+    String(message.chat.id);
+
+  const command =
+    message.text
+      .trim()
+      .toLowerCase()
+      .split("@");
+
+  if (chatId !== authorisedChatId) {
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  switch (command) {
+    case "/led_on":
+      setLedControl(1);
+
+      sendTelegramTo(
+        chatId,
+        "LED ON command stored. " +
+        "Waiting for ESP32."
+      );
+      break;
+
+    case "/led_off":
+      setLedControl(0);
+
+      sendTelegramTo(
+        chatId,
+        "LED OFF command stored. " +
+        "Waiting for ESP32."
+      );
+      break;
+
+    case "/status": {
+      const value =
+        getLedControlValue();
+
+      sendTelegramTo(
+        chatId,
+        "Current LED control value: " +
+        value
+      );
+      break;
+    }
+
+    default:
+      sendTelegramTo(
+        chatId,
+        "Available commands:\n" +
+        "/led_on\n" +
+        "/led_off\n" +
+        "/status"
+      );
+  }
+
+  return jsonResponse({
+    ok: true
+  });
+}
+```
+
+### Add the `/status` Helper
+
+```javascript
+function getLedControlValue() {
+  const sheet =
+    SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(
+        DASHBOARD_SHEET_NAME
+      );
+
+  if (!sheet) {
+    throw new Error(
+      'Sheet "' +
+      DASHBOARD_SHEET_NAME +
+      '" not found'
+    );
+  }
+
+  const rawValue =
+    sheet
+      .getRange(LED_CONTROL_CELL)
+      .getValue();
+
+  return normalizeLedControl(rawValue);
+}
+```
+
+## Resulting Command Path
+
+```mermaid
+sequenceDiagram
+    participant U as Telegram user
+    participant G as Google Apps Script
+    participant S as Dashboard H2
+    participant E as ESP32
+
+    U->>G: /led_on
+    G->>S: Write numeric 1
+    E->>G: GET action=getCommand
+    G->>S: Read H2
+    G-->>E: led-control = 1
+    E->>E: Turn LED on
+```
+
+## Redeploy After Changes
+
+After changing the Apps Script code:
+
+1. Save the project.
+2. Open **Deploy**.
+3. Select **Manage deployments**.
+4. Click **Edit**.
+5. Select **New version**.
+6. Click **Deploy**.
+
+Otherwise, the `/exec` URL may continue running the old code.
