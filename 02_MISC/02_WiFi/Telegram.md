@@ -3761,13 +3761,10 @@ Add the following `registerTelegramWebhook()` function:
 ```javascript
 function registerTelegramWebhook() {
   const properties =
-    PropertiesService
-      .getScriptProperties();
+    PropertiesService.getScriptProperties();
 
   const botToken =
-    properties.getProperty(
-      "BOT_TOKEN"
-    );
+    properties.getProperty("BOT_TOKEN");
 
   const webhookSecret =
     properties.getProperty(
@@ -3790,9 +3787,7 @@ function registerTelegramWebhook() {
    * Returns the deployed Web App URL.
    */
   const webAppUrl =
-    ScriptApp
-      .getService()
-      .getUrl();
+    ScriptApp.getService().getUrl();
 
   if (!webAppUrl) {
     throw new Error(
@@ -3802,13 +3797,9 @@ function registerTelegramWebhook() {
 
   /*
    * WEBHOOK_PATH_SECRET should contain only:
-   * letters, numbers, underscore, and hyphen.
+   * letters, numbers, underscore and hyphen.
    */
-  if (
-    !/^[A-Za-z0-9_-]+$/.test(
-      webhookSecret
-    )
-  ) {
+  if (!/^[A-Za-z0-9_-]+$/.test(webhookSecret)) {
     throw new Error(
       "WEBHOOK_PATH_SECRET contains invalid characters"
     );
@@ -3820,7 +3811,7 @@ function registerTelegramWebhook() {
     webhookSecret;
 
   const telegramApiUrl =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     botToken +
     "/setWebhook";
 
@@ -3845,18 +3836,15 @@ function registerTelegramWebhook() {
     response.getContentText();
 
   console.log(
-    "Web App URL: " +
-    webAppUrl
+    "Web App URL: " + webAppUrl
   );
 
   console.log(
-    "Webhook URL: " +
-    webhookUrl
+    "Webhook URL: " + webhookUrl
   );
 
   console.log(
-    "Telegram response: " +
-    responseText
+    "Telegram response: " + responseText
   );
 
   const result =
@@ -3896,9 +3884,7 @@ function getTelegramWebhookInfo() {
   const botToken =
     PropertiesService
       .getScriptProperties()
-      .getProperty(
-        "BOT_TOKEN"
-      );
+      .getProperty("BOT_TOKEN");
 
   if (!botToken) {
     throw new Error(
@@ -3907,7 +3893,7 @@ function getTelegramWebhookInfo() {
   }
 
   const url =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     botToken +
     "/getWebhookInfo";
 
@@ -3925,9 +3911,7 @@ function getTelegramWebhookInfo() {
 
   console.log(responseText);
 
-  return JSON.parse(
-    responseText
-  );
+  return JSON.parse(responseText);
 }
 ```
 
@@ -3955,13 +3939,11 @@ Confirm that:
 Use this if you need to return to `getUpdates` testing:
 
 ```javascript
-function deleteTelegramWebhook() {
+function getTelegramWebhookInfo() {
   const botToken =
     PropertiesService
       .getScriptProperties()
-      .getProperty(
-        "BOT_TOKEN"
-      );
+      .getProperty("BOT_TOKEN");
 
   if (!botToken) {
     throw new Error(
@@ -3970,26 +3952,25 @@ function deleteTelegramWebhook() {
   }
 
   const url =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     botToken +
-    "/deleteWebhook";
+    "/getWebhookInfo";
 
   const response =
     UrlFetchApp.fetch(
       url,
       {
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify({
-          drop_pending_updates: true
-        }),
+        method: "get",
         muteHttpExceptions: true
       }
     );
 
-  console.log(
-    response.getContentText()
-  );
+  const responseText =
+    response.getContentText();
+
+  console.log(responseText);
+
+  return JSON.parse(responseText);
 }
 ```
 
