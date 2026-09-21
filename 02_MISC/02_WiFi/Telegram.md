@@ -3882,7 +3882,7 @@ See the [Google Apps Script Service documentation](https://developers.google.com
 The resulting webhook URL will be:
 
 ```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/YOUR_SECRET](https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/YOUR_SECRET)
+https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/YOUR_SECRET
 ```
 
 Below is the console log response of `registerTelegramWebhook()`     
@@ -3942,11 +3942,25 @@ Expected log:
 {
   "ok": true,
   "result": {
-    "url": "[https://script.google.com/macros/s/.../exec/telegram/](https://script.google.com/macros/s/.../exec/telegram/)...",
+    "url": "https://script.google.com/macros/s/.../exec/telegram/...",
     "has_custom_certificate": false,
     "pending_update_count": 0
   }
 }
+```
+
+Actual log:   
+
+```json
+{
+ "ok":true,
+ "result":{
+ "url":"https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/your-webhook-secret",
+ "has_custom_certificate":false,
+ "pending_update_count":0,
+ "max_connections":40,
+ "ip_address":"172.217.17.46",
+ "allowed_updates":["message"]}}
 ```
 
 Confirm that:
