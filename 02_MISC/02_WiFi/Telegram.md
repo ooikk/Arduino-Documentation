@@ -3742,8 +3742,6 @@ function testTelegramSend() {
 }
 ```
 
-After fixing `sendTelegramTo()`:
-
 1. Select `testTelegramSend()` in Apps Script.
 2. Click **Run**.
 3. Approve permissions if requested.
@@ -3758,7 +3756,7 @@ This verifies that:
 
 ## 2. Add the Webhook Registration Function
 
-`registerTelegramWebhook()` is missing. Add the following function:
+Add the following `registerTelegramWebhook()` function:
 
 ```javascript
 function registerTelegramWebhook() {
