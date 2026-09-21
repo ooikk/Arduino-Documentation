@@ -3869,7 +3869,13 @@ function registerTelegramWebhook() {
 }
 ```
 
-`ScriptApp.getService().getUrl()` returns the deployed Web App URL or `null` when the project has not been deployed.
+`ScriptApp.getService().getUrl()` When run in development context, it can return the /dev URL. Google documents that getUrl() returns the development-mode URL when running in development mode. 
+
+Use the explicitly stored /exec URL `WEB_APP_URL` instead:   
+```javascript
+  const webAppUrl =
+    properties.getProperty("WEB_APP_URL");
+```   
 
 See the [Google Apps Script Service documentation](https://developers.google.com/apps-script/reference/script/service#geturl).
 
