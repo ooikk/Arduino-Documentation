@@ -4199,3 +4199,106 @@ You do not need:
 - Another `handleTelegramUpdate()`.
 
 Once the webhook is registered, Telegram automatically calls your existing `doPost()`. The dispatcher identifies `update_id` and routes the request to `handleTelegramUpdate()`.
+
+---
+# Drop Pending Telegram Updates
+
+## Method 1: Direct Browser URL
+
+This is the fastest method. Set `drop_pending_updates=true` by pasting one of the following URLs into a web browser.
+
+Replace `<YOUR_BOT_TOKEN>` with your actual bot token.
+
+### Delete the Webhook and Drop Queued Updates
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<YOUR_BOT_TOKEN>/deleteWebhook?drop_pending_updates=true
+```
+
+### Register a New Webhook and Drop Queued Updates
+
+Replace `<YOUR_WEBAPP_URL>` with the deployed Google Apps Script Web App URL.
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBAPP_URL>&drop_pending_updates=true
+```
+
+## Method 2: Google Apps Script with `UrlFetchApp`
+
+Pass `"drop_pending_updates": true` inside the JSON payload when sending a `POST` request to Telegram.
+
+### Delete a Webhook
+
+```javascript
+function deleteTelegramWebhook() {
+  const botToken =
+    PropertiesService
+      .getScriptProperties()
+      .getProperty("BOT_TOKEN");
+
+  const url =
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    botToken +
+    "/deleteWebhook";
+
+  UrlFetchApp.fetch(
+    url,
+    {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({
+        // Drops all queued and retrying messages
+        drop_pending_updates: true
+      }),
+      muteHttpExceptions: true
+    }
+  );
+}
+```
+
+### Register a Webhook
+
+```javascript
+function registerTelegramWebhook() {
+  const botToken =
+    PropertiesService
+      .getScriptProperties()
+      .getProperty("BOT_TOKEN");
+
+  const webAppUrl =
+    PropertiesService
+      .getScriptProperties()
+      .getProperty("WEB_APP_URL");
+
+  const url =
+    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    botToken +
+    "/setWebhook";
+
+  UrlFetchApp.fetch(
+    url,
+    {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({
+        url: webAppUrl,
+
+        // Clears the backlog before sending new updates
+        drop_pending_updates: true
+      }),
+      muteHttpExceptions: true
+    }
+  );
+}
+```
+
+## Method 3: cURL Command
+
+Run the following command in a terminal or Command Prompt:
+
+```bash
+curl -X POST \
+  "[https://api.telegram.org/bot](https://api.telegram.org/bot)<YOUR_BOT_TOKEN>/deleteWebhook" \
+  -H "Content-Type: application/json" \
+  -d '{"drop_pending_updates": true}'
+```
