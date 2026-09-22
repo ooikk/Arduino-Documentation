@@ -3869,6 +3869,12 @@ function registerTelegramWebhook() {
 }
 ```
 
+Or using Direct Browser URL:     
+
+```text
+https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBAPP_URL>&drop_pending_updates=true
+```
+
 `ScriptApp.getService().getUrl()` When run in development context, it can return the /dev URL. Google documents that getUrl() returns the development-mode URL when running in development mode. 
 
 Use the explicitly stored /exec URL `WEB_APP_URL` instead:   
@@ -4003,6 +4009,12 @@ function deleteTelegramWebhook() {
   return JSON.parse(responseText);
 }
 ```
+
+Or using Direct Browser URL:      
+```text
+https://api.telegram.org/bot<YOUR_BOT_TOKEN>/deleteWebhook?drop_pending_updates=true
+```
+
 
 > Do not run this function during normal webhook operation.
 
