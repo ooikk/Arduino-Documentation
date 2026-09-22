@@ -4314,3 +4314,50 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"drop_pending_updates": true}'
 ```
+## Method 4: Flush the Stuck Telegram Queue and Re-Register
+
+Run this combined script in your Apps Script editor. It will completely delete the broken webhook, flush the retrying message queue, and re-register the clean endpoint:
+
+```javascript
+function resetAndRegisterTelegramWebhook() {
+  const properties = PropertiesService.getScriptProperties();
+  const botToken = properties.getProperty("BOT_TOKEN");
+  const webAppUrl = properties.getProperty("WEB_APP_URL");
+  const webhookSecret = properties.getProperty("WEBHOOK_PATH_SECRET");
+
+  if (!botToken || !webAppUrl || !webhookSecret) {
+    throw new Error("Missing BOT_TOKEN, WEB_APP_URL, or WEBHOOK_PATH_SECRET in Script Properties.");
+  }
+
+  // Step 1: Delete existing webhook and drop stuck retry updates
+  const deleteUrl = "https://api.telegram.org/bot" + botToken + "/deleteWebhook";
+  UrlFetchApp.fetch(deleteUrl, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({ drop_pending_updates: true }),
+    muteHttpExceptions: true
+  });
+
+  Utilities.sleep(1000); // Pause 1 second
+
+  // Step 2: Register new webhook with secret query parameter
+  const webhookUrl = webAppUrl + "?secret=" + webhookSecret;
+  const setUrl = "https://api.telegram.org/bot" + botToken + "/setWebhook";
+
+  const response = UrlFetchApp.fetch(setUrl, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({
+      url: webhookUrl,
+      allowed_updates: ["message"],
+      drop_pending_updates: true
+    }),
+    muteHttpExceptions: true
+  });
+
+  console.log("Registration Response: " + response.getContentText());
+}
+
+```
+
+
