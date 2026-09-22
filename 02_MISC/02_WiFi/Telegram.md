@@ -4301,5 +4301,149 @@ function resetAndRegisterTelegramWebhook() {
 }
 
 ```
+---
+# Telegram Commands and `doGet(e)`
 
+None of the Telegram bot commands currently call `doGet(e)`.
+
+Because a Telegram webhook is registered, Telegram sends commands such as `/status`, `/led_on`, and `/led_off` as HTTPS `POST` requests:
+
+```text
+Telegram command
+      ↓
+doPost(e)
+      ↓
+handleTelegramUpdate(data, e)
+```
+
+## When `doGet(e)` Is Called
+
+`doGet(e)` is called only when something performs an HTTP `GET` request to the Apps Script URL.
+
+For example:
+
+```text
+[https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=getCommand](https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=getCommand)
+```
+
+## Request Routing in This Project
+
+| Request Source | HTTP Method | Apps Script Function |
+|---|---|---|
+| Telegram webhook | `POST` | `doPost(e)` |
+| ESP32 telemetry upload | `POST` | `doPost(e)` |
+| ESP32 command polling | `GET` | `doGet(e)` |
+| Browser opening the Web App URL | `GET` | `doGet(e)` |
+
+## The `/status` Command
+
+The `/status` Telegram command does not call `doGet(e)`.
+
+It directly calls:
+
+```javascript
+case "/status":
+  sendEsp32Status(
+    incomingChatId
+  );
+  break;
+```
+
+The request path is:
+
+```text
+Telegram /status command
+      ↓
+doPost(e)
+      ↓
+handleTelegramUpdate(data, e)
+      ↓
+sendEsp32Status(chatId)
+```
+
+## Reusing `doGet(e)` Logic
+
+If you deliberately want a Telegram command to reuse logic currently inside `doGet(e)`, extract that logic into a normal helper function and call the helper from both places.
+
+Do not call `doGet(e)` directly from `handleTelegramUpdate()` because the Telegram event object differs from a browser or ESP32 `GET` event.
+
+### Recommended Structure
+
+```javascript
+function doGet(e) {
+  const action =
+    e && e.parameter
+      ? e.parameter.action || ""
+      : "";
+
+  if (action === "getCommand") {
+    return jsonResponse(
+      getLedCommand()
+    );
+  }
+
+  return jsonResponse({
+    status: "success",
+    service: "ESP32 Telegram Bridge"
+  });
+}
+
+function getLedCommand() {
+  const sheet =
+    SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName("Dashboard");
+
+  const value =
+    sheet
+      .getRange("H2")
+      .getValue();
+
+  return {
+    status: "success",
+    "led-control":
+      normalizeLedControl(value)
+  };
+}
+
+function handleTelegramUpdate(update, e) {
+  const message =
+    update.message;
+
+  if (!message || !message.text) {
+    return jsonResponse({
+      ok: true
+    });
+  }
+
+  const command =
+    message.text
+      .trim()
+      .toLowerCase()
+      .split("@");
+
+  switch (command) {
+    case "/status": {
+      const commandState =
+        getLedCommand();
+
+      sendTelegramTo(
+        message.chat.id,
+        "Current LED control: " +
+        commandState["led-control"]
+      );
+      break;
+    }
+
+    default:
+      break;
+  }
+
+  return jsonResponse({
+    ok: true
+  });
+}
+```
+
+The helper function contains the reusable business logic, while `doGet(e)` and `handleTelegramUpdate()` remain separate request handlers.
 
