@@ -3884,6 +3884,12 @@ function getTelegramWebhookInfo() {
 }
 ```
 
+Or using Direct Browser URL:     
+
+```text
+https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo
+```
+
 Expected log:
 
 ```json
