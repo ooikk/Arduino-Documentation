@@ -2578,8 +2578,8 @@ function doGet(e) {
     const action =
       e && e.parameter
         ? String(
-            e.parameter.action || ""
-          ).trim()
+          e.parameter.action || ""
+        ).trim()
         : "";
 
     switch (action) {
@@ -2711,6 +2711,14 @@ function jsonResponse(data) {
       ContentService.MimeType.JSON
     );
 }
+
+/**
+ * Add a direct Telegram response
+ */
+function telegramOkResponse() {
+  // HtmlService returns a direct HTTP 200 response.
+  return HtmlService.createHtmlOutput("OK");
+}
 ```
 
 ## Why This Merge Works
@@ -2839,92 +2847,6 @@ function setLedControl(value) {
 }
 ```
 
-### Use It in the Telegram Handler
-
-```javascript
-function handleTelegramUpdate(update, e) {
-  const message =
-    update.message;
-
-  if (!message || !message.text) {
-    return jsonResponse({
-      ok: true
-    });
-  }
-
-  const properties =
-    PropertiesService
-      .getScriptProperties();
-
-  const authorisedChatId =
-    properties.getProperty(
-      "AUTHORIZED_CHAT_ID"
-    );
-
-  const chatId =
-    String(message.chat.id);
-
-  const command =
-    message.text
-      .trim()
-      .toLowerCase()
-      .split("@");
-
-  if (chatId !== authorisedChatId) {
-    return jsonResponse({
-      ok: true
-    });
-  }
-
-  switch (command) {
-    case "/led_on":
-      setLedControl(1);
-
-      sendTelegramTo(
-        chatId,
-        "LED ON command stored. " +
-        "Waiting for ESP32."
-      );
-      break;
-
-    case "/led_off":
-      setLedControl(0);
-
-      sendTelegramTo(
-        chatId,
-        "LED OFF command stored. " +
-        "Waiting for ESP32."
-      );
-      break;
-
-    case "/status": {
-      const value =
-        getLedControlValue();
-
-      sendTelegramTo(
-        chatId,
-        "Current LED control value: " +
-        value
-      );
-      break;
-    }
-
-    default:
-      sendTelegramTo(
-        chatId,
-        "Available commands:\n" +
-        "/led_on\n" +
-        "/led_off\n" +
-        "/status"
-      );
-  }
-
-  return jsonResponse({
-    ok: true
-  });
-}
-```
-
 ### Add the `/status` Helper
 
 ```javascript
@@ -3010,6 +2932,8 @@ const MAX_ROWS = 100;
  * 3. ESP32 command acknowledgement
  */
 function doPost(e) {
+  let isTelegramRequest = false;
+
   try {
     if (
       !e ||
@@ -3025,25 +2949,20 @@ function doPost(e) {
     const data =
       JSON.parse(e.postData.contents);
 
-    // Telegram webhook messages contain update_id.
-    if (data.update_id !== undefined) {
-      return handleTelegramUpdate(
-        data,
-        e
-      );
+    // Telegram webhook updates contain update_id.
+    isTelegramRequest =
+      data.update_id !== undefined;
+
+    if (isTelegramRequest) {
+      return handleTelegramUpdate(data, e);
     }
 
-    // Current ESP32 payload contains:
-    // "type": "telemetry"
     if (data.type === "telemetry") {
       return handleEsp32Telemetry(data);
     }
 
-    // Optional future ESP32 command confirmation.
     if (data.type === "command-ack") {
-      return handleCommandAcknowledgement(
-        data
-      );
+      return handleCommandAcknowledgement(data);
     }
 
     return jsonResponse({
@@ -3052,8 +2971,17 @@ function doPost(e) {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error(
+      err.stack || err.toString()
+    );
 
+    // Stop Telegram from retrying a command that
+    // produced an internal processing error.
+    if (isTelegramRequest) {
+      return telegramOkResponse();
+    }
+
+    // ESP32 still receives an informative JSON error.
     return jsonResponse({
       status: "error",
       message: err.toString()
@@ -3180,6 +3108,8 @@ This processes:
 - `/led_on`
 - `/led_off`
 - `/status`
+- `/temperature`
+- `/telemetry`
 - `/start`
 - `/help`
 
@@ -3187,6 +3117,15 @@ This processes:
 function handleTelegramUpdate(update, e) {
   // Optional webhook-path verification.
   validateTelegramWebhookPath(e);
+
+  if (!claimTelegramUpdate(update.update_id)) {
+    console.log(
+      "Duplicate Telegram update ignored: " +
+      update.update_id
+    );
+
+    return telegramOkResponse();
+  }
 
   const message =
     update.message;
@@ -3241,11 +3180,15 @@ function handleTelegramUpdate(update, e) {
    * becomes:
    * /led_on
    */
+
+
   const command =
     message.text
       .trim()
       .toLowerCase()
       .split("@")[0];
+
+  const sheet = getDashboardSheet();
 
   switch (command) {
     case "/start":
@@ -3256,6 +3199,8 @@ function handleTelegramUpdate(update, e) {
         "/led_on - Request LED ON\n" +
         "/led_off - Request LED OFF\n" +
         "/status - Show ESP32 status\n" +
+        "/temperature - Read temperature\n" +
+        "/telemetry - Send all telemetries data\n" +
         "/help - Show commands"
       );
       break;
@@ -3283,6 +3228,22 @@ function handleTelegramUpdate(update, e) {
       break;
 
     case "/status":
+      //const sheet = getDashboardSheet();
+      const deviceStatus = sheet.getRange("B2").getValues();
+      sendTelegramTo(
+        incomingChatId,
+        "Device: " + deviceStatus
+      );
+      break;
+    case "/temperature":
+      //const sheet = getDashboardSheet();
+      const temperature = sheet.getRange("C2").getValues();
+      sendTelegramTo(
+        incomingChatId,
+        "Temperature: " + temperature + " °C\n"
+      );
+      break;
+    case "/telemetry":
       sendEsp32Status(
         incomingChatId
       );
@@ -3298,14 +3259,16 @@ function handleTelegramUpdate(update, e) {
         "/led_on\n" +
         "/led_off\n" +
         "/status\n" +
+        "/temperature\n" +
+        "//telemetry\n"+
         "/help"
       );
   }
 
   // Telegram only needs a successful response.
-  return jsonResponse({
-    ok: true
-  });
+  return telegramOkResponse();
+  //return jsonResponse({ok: true});
+
 }
 ```
 
