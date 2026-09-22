@@ -3282,33 +3282,15 @@ GAS_EXEC_URL/telegram/WEBHOOK_PATH_SECRET
 
 ```javascript
 function validateTelegramWebhookPath(e) {
-  const properties =
-    PropertiesService
-      .getScriptProperties();
+  const properties = PropertiesService.getScriptProperties();
+  const secret = properties.getProperty("WEBHOOK_PATH_SECRET");
 
-  const secret =
-    properties.getProperty(
-      "WEBHOOK_PATH_SECRET"
-    );
+  if (!secret) return;
 
-  // Skip path verification when the property
-  // has not been configured.
-  if (!secret) {
-    return;
-  }
+  const receivedSecret = e && e.parameter ? String(e.parameter.secret || "") : "";
 
-  const expectedPath =
-    "telegram/" + secret;
-
-  const receivedPath =
-    e && e.pathInfo
-      ? String(e.pathInfo)
-      : "";
-
-  if (receivedPath !== expectedPath) {
-    throw new Error(
-      "Invalid Telegram webhook path"
-    );
+  if (receivedSecret !== secret) {
+    throw new Error("Invalid Telegram webhook secret parameter");
   }
 }
 ```
@@ -3772,10 +3754,8 @@ function registerTelegramWebhook() {
     );
   }
 
-  const webhookUrl =
-    webAppUrl +
-    "/telegram/" +
-    webhookSecret;
+  // Use query parameters instead:
+  const webhookUrl = webAppUrl + "?secret=" + webhookSecret;
 
   const telegramApiUrl =
     "https://api.telegram.org/bot" +
