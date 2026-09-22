@@ -1710,7 +1710,7 @@ In Apps Script:
 The URL looks like:
 
 ```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+https://script.google.com/macros/s/DEPLOYMENT_ID/exec
 ```
 
 Use the URL ending in:
@@ -1734,7 +1734,7 @@ See the [Google Apps Script deployment guide](https://developers.google.com/apps
 Open your `/exec` URL:
 
 ```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+https://script.google.com/macros/s/DEPLOYMENT_ID/exec
 ```
 
 The expected result is:
@@ -1755,19 +1755,18 @@ Your original permanent application URL remains the `/exec` URL.
 You can use the basic Apps Script URL directly:
 
 ```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+https://script.google.com/macros/s/DEPLOYMENT_ID/exec
 ```
 
 However, adding a private path is recommended:
 
-```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/](https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/)<WEBHOOK_PATH_SECRET>
+```text[https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/<WEBHOOK_PATH_SECRET>
 ```
 
 Example structure:
 
 ```text
-[https://script.google.com/macros/s/ABC123XYZ/exec/telegram/my-long-random-secret](https://script.google.com/macros/s/ABC123XYZ/exec/telegram/my-long-random-secret)
+https://script.google.com/macros/s/ABC123XYZ/exec/telegram/my-long-random-secret
 ```
 
 Apps Script provides everything after `/exec/` through:
@@ -1834,7 +1833,7 @@ function handleTelegramUpdate(update, e) {
 The Telegram API endpoint is:
 
 ```text
-[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/setWebhook
+https://api.telegram.org/bot<BOT_TOKEN>/setWebhook
 ```
 
 The webhook URL is passed as the `url` parameter.
@@ -1859,7 +1858,7 @@ function registerTelegramWebhook() {
     );
 
   const gasExecUrl =
-    "[https://script.google.com/macros/s/](https://script.google.com/macros/s/)" +
+    "https://script.google.com/macros/s/" +
     "DEPLOYMENT_ID/exec";
 
   const webhookUrl =
@@ -1868,7 +1867,7 @@ function registerTelegramWebhook() {
     pathSecret;
 
   const telegramUrl =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     token +
     "/setWebhook";
 
@@ -1925,7 +1924,7 @@ Expected response:
 Use:
 
 ```text
-[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/getWebhookInfo
+https://api.telegram.org/bot<BOT_TOKEN>/getWebhookInfo
 ```
 
 Expected result:
@@ -1934,7 +1933,7 @@ Expected result:
 {
   "ok": true,
   "result": {
-    "url": "[https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/SECRET](https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/SECRET)",
+    "url": "https://script.google.com/macros/s/DEPLOYMENT_ID/exec/telegram/SECRET",
     "has_custom_certificate": false,
     "pending_update_count": 0,
     "max_connections": 40
@@ -2004,7 +2003,7 @@ function sendTelegramTo(chatId, text) {
       .getProperty("BOT_TOKEN");
 
   const url =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     token +
     "/sendMessage";
 
@@ -2090,19 +2089,19 @@ Run `testTelegramMessage()` manually. The message should arrive in Telegram.
 After the webhook is registered, this will no longer work:
 
 ```text
-[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/getUpdates
+https://api.telegram.org/bot<BOT_TOKEN>/getUpdates
 ```
 
 To temporarily return to `getUpdates`, remove the webhook:
 
 ```text
-[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/deleteWebhook
+https://api.telegram.org/bot<BOT_TOKEN>/deleteWebhook
 ```
 
 To also discard queued messages:
 
 ```text
-[https://api.telegram.org/bot](https://api.telegram.org/bot)<BOT_TOKEN>/deleteWebhook?drop_pending_updates=true
+https://api.telegram.org/bot<BOT_TOKEN>/deleteWebhook?drop_pending_updates=true
 ```
 
 Then:
@@ -2758,7 +2757,7 @@ The response is always numeric, avoiding the previous problem:
 The current ESP32 code can continue using:
 
 ```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+https://script.google.com/macros/s/DEPLOYMENT_ID/exec
 ```
 
 This reads the value from `Dashboard!H2`.
@@ -2768,7 +2767,7 @@ This reads the value from `Dashboard!H2`.
 The new format is:
 
 ```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=getCommand](https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=getCommand)
+https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=getCommand
 ```
 
 It returns the same `H2` value.
@@ -2776,7 +2775,7 @@ It returns the same `H2` value.
 ### Health Check
 
 ```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=health](https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=health)
+https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=health
 ```
 
 Expected response:
@@ -2791,7 +2790,7 @@ Expected response:
 ### Invalid Action Test
 
 ```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=unknown](https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=unknown)
+https://script.google.com/macros/s/DEPLOYMENT_ID/exec?action=unknown
 ```
 
 Expected response:
@@ -3354,7 +3353,7 @@ function validateTelegramWebhookPath(e) {
 If the webhook currently points directly to:
 
 ```text
-[https://script.google.com/macros/s/DEPLOYMENT_ID/exec](https://script.google.com/macros/s/DEPLOYMENT_ID/exec)
+https://script.google.com/macros/s/DEPLOYMENT_ID/exec
 ```
 
 either:
