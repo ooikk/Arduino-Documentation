@@ -4212,7 +4212,7 @@ Replace `<YOUR_BOT_TOKEN>` with your actual bot token.
 ### Delete the Webhook and Drop Queued Updates
 
 ```text
-[https://api.telegram.org/bot](https://api.telegram.org/bot)<YOUR_BOT_TOKEN>/deleteWebhook?drop_pending_updates=true
+https://api.telegram.org/bot<YOUR_BOT_TOKEN>/deleteWebhook?drop_pending_updates=true
 ```
 
 ### Register a New Webhook and Drop Queued Updates
@@ -4220,7 +4220,7 @@ Replace `<YOUR_BOT_TOKEN>` with your actual bot token.
 Replace `<YOUR_WEBAPP_URL>` with the deployed Google Apps Script Web App URL.
 
 ```text
-[https://api.telegram.org/bot](https://api.telegram.org/bot)<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBAPP_URL>&drop_pending_updates=true
+https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBAPP_URL>&drop_pending_updates=true
 ```
 
 ## Method 2: Google Apps Script with `UrlFetchApp`
@@ -4237,7 +4237,7 @@ function deleteTelegramWebhook() {
       .getProperty("BOT_TOKEN");
 
   const url =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     botToken +
     "/deleteWebhook";
 
@@ -4271,7 +4271,7 @@ function registerTelegramWebhook() {
       .getProperty("WEB_APP_URL");
 
   const url =
-    "[https://api.telegram.org/bot](https://api.telegram.org/bot)" +
+    "https://api.telegram.org/bot" +
     botToken +
     "/setWebhook";
 
@@ -4298,7 +4298,7 @@ Run the following command in a terminal or Command Prompt:
 
 ```bash
 curl -X POST \
-  "[https://api.telegram.org/bot](https://api.telegram.org/bot)<YOUR_BOT_TOKEN>/deleteWebhook" \
+  "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/deleteWebhook" \
   -H "Content-Type: application/json" \
   -d '{"drop_pending_updates": true}'
 ```
