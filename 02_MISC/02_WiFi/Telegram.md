@@ -3976,36 +3976,29 @@ Confirm that:
 Use this if you need to return to `getUpdates` testing:
 
 ```javascript
-function getTelegramWebhookInfo() {
-  const botToken =
-    PropertiesService
-      .getScriptProperties()
-      .getProperty("BOT_TOKEN");
+/**
+ * Deletes the active Telegram Webhook and purges all queued retry messages.
+ */
+function deleteTelegramWebhook() {
+  const botToken = PropertiesService.getScriptProperties().getProperty("BOT_TOKEN");
 
   if (!botToken) {
-    throw new Error(
-      "BOT_TOKEN is missing"
-    );
+    throw new Error("BOT_TOKEN is missing from Script Properties.");
   }
 
-  const url =
-    "https://api.telegram.org/bot" +
-    botToken +
-    "/getWebhookInfo";
+  const url = "https://api.telegram.org/bot" + botToken + "/deleteWebhook";
 
-  const response =
-    UrlFetchApp.fetch(
-      url,
-      {
-        method: "get",
-        muteHttpExceptions: true
-      }
-    );
+  const response = UrlFetchApp.fetch(url, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({
+      drop_pending_updates: true // Purges all retrying messages immediately
+    }),
+    muteHttpExceptions: true
+  });
 
-  const responseText =
-    response.getContentText();
-
-  console.log(responseText);
+  const responseText = response.getContentText();
+  console.log("Delete Webhook Response: " + responseText);
 
   return JSON.parse(responseText);
 }
