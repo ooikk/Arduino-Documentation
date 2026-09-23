@@ -5305,7 +5305,7 @@ The `UniversalTelegramBot` library supports:
 - Callback data.
 - `answerCallbackQuery()`.
 
-See the [UniversalTelegramBot GitHub repository](https://github.com/witnessmenow/Universal-Arduino-Bot?utm_source=chatgpt.com "GitHub - witnessmenow/Universal-Arduino-Bot: Use Telegram on your Arduino (ESP8266 or Wifi-101 boards)").
+See the [Universal Telegram Bot GitHub repository.](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot)
 
 The sketch targets Arduino-ESP32 3.x and uses the current PWM APIs:
 
