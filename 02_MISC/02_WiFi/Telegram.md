@@ -4453,3 +4453,704 @@ function handleTelegramUpdate(update, e) {
 
 The helper function contains the reusable business logic, while `doGet(e)` and `handleTelegramUpdate()` remain separate request handlers.
 
+---
+
+
+# Multiple Telegram Bots with One Apps Script
+
+Yes. Multiple Telegram bots can use the same Apps Script deployment and Google Sheet.
+
+Each bot requires:
+
+- Its own bot token.
+- Its own webhook secret.
+- Its own authorised chat ID.
+- A webhook URL containing a bot identifier.
+
+Telegram sends each update as an HTTPS `POST` request, while Apps Script exposes URL query parameters through `e.parameter`.
+
+See the [Telegram Bot API](https://core.telegram.org/bots/api?utm_source=chatgpt.com "Telegram Bot API").
+
+The sample below assumes that both bots control the same `Dashboard!H2`. Therefore, the most recent command wins.
+
+## 1. Add Script Properties
+
+In:
+
+```text
+Project Settings → Script Properties
+```
+
+add the following properties:
+
+| Property | Example |
+|---|---|
+| `WEB_APP_URL` | https://script.google.com/macros/s/.../exec |
+| `BOT1_TOKEN` | First bot token. |
+| `BOT1_SECRET` | Strong random secret. |
+| `BOT1_CHAT_IDS` | `58138745`. |
+| `BOT2_TOKEN` | Second bot token. |
+| `BOT2_SECRET` | Different random secret. |
+| `BOT2_CHAT_IDS` | Second authorised chat ID. |
+
+Multiple chat IDs can be comma-separated:
+
+```text
+58138745,123456789
+```
+
+Script Properties are suitable because they persist between separate webhook and ESP32 executions.
+
+See the [Apps Script PropertiesService documentation](https://developers.google.com/apps-script/reference/properties/properties-service?utm_source=chatgpt.com "Class PropertiesService").
+
+## 2. Bot Configuration
+
+```javascript
+const TELEGRAM_BOT_KEYS = [
+  "bot1",
+  "bot2"
+];
+
+function getTelegramBotConfig(botKey) {
+  if (
+    !TELEGRAM_BOT_KEYS.includes(
+      botKey
+    )
+  ) {
+    throw new Error(
+      "Unknown Telegram bot: " +
+      botKey
+    );
+  }
+
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const prefix =
+    botKey.toUpperCase();
+
+  const token =
+    properties.getProperty(
+      prefix + "_TOKEN"
+    );
+
+  const secret =
+    properties.getProperty(
+      prefix + "_SECRET"
+    );
+
+  const chatIdsText =
+    properties.getProperty(
+      prefix + "_CHAT_IDS"
+    ) || "";
+
+  const authorizedChatIds =
+    chatIdsText
+      .split(",")
+      .map(function(value) {
+        return value.trim();
+      })
+      .filter(function(value) {
+        return value !== "";
+      });
+
+  if (!token || !secret) {
+    throw new Error(
+      "Missing token or secret for " +
+      botKey
+    );
+  }
+
+  return {
+    botKey: botKey,
+    token: token,
+    secret: secret,
+    authorizedChatIds: authorizedChatIds
+  };
+}
+```
+
+## 3. Register Both Webhooks
+
+Each bot receives a different URL:
+
+```text
+/exec?source=telegram&bot=bot1&secret=BOT1_SECRET
+/exec?source=telegram&bot=bot2&secret=BOT2_SECRET
+```
+
+### Registration Function
+
+```javascript
+function registerAllTelegramWebhooks() {
+  const properties =
+    PropertiesService
+      .getScriptProperties();
+
+  const webAppUrl =
+    properties.getProperty(
+      "WEB_APP_URL"
+    );
+
+  if (
+    !webAppUrl ||
+    !webAppUrl.endsWith("/exec")
+  ) {
+    throw new Error(
+      "WEB_APP_URL must contain the deployed /exec URL"
+    );
+  }
+
+  TELEGRAM_BOT_KEYS.forEach(
+    function(botKey) {
+      const config =
+        getTelegramBotConfig(
+          botKey
+        );
+
+      const webhookUrl =
+        webAppUrl +
+        "?source=telegram" +
+        "&bot=" +
+        encodeURIComponent(botKey) +
+        "&secret=" +
+        encodeURIComponent(
+          config.secret
+        );
+
+      const telegramUrl =
+        "https://api.telegram.org/bot" +
+        config.token +
+        "/setWebhook";
+
+      const response =
+        UrlFetchApp.fetch(
+          telegramUrl,
+          {
+            method: "post",
+            contentType:
+              "application/json",
+            payload: JSON.stringify({
+              url: webhookUrl,
+              allowed_updates: [
+                "message"
+              ],
+              drop_pending_updates: true
+            }),
+            muteHttpExceptions: true
+          }
+        );
+
+      console.log(
+        botKey +
+        " registration: " +
+        response.getContentText()
+      );
+    }
+  );
+}
+```
+
+Run `registerAllTelegramWebhooks()` once after deploying a new Apps Script version.
+
+## 4. Route Telegram Requests in `doPost()`
+
+```javascript
+function telegramOkResponse() {
+  return HtmlService
+    .createHtmlOutput("OK");
+}
+
+function doPost(e) {
+  const isTelegramRequest =
+    e &&
+    e.parameter &&
+    e.parameter.source ===
+      "telegram";
+
+  try {
+    if (
+      !e ||
+      !e.postData ||
+      !e.postData.contents
+    ) {
+      throw new Error(
+        "Empty POST request"
+      );
+    }
+
+    const data =
+      JSON.parse(
+        e.postData.contents
+      );
+
+    if (isTelegramRequest) {
+      const botKey =
+        String(
+          e.parameter.bot || ""
+        );
+
+      return handleTelegramUpdate(
+        botKey,
+        data,
+        e
+      );
+    }
+
+    if (data.type === "telemetry") {
+      return handleEsp32Telemetry(
+        data
+      );
+    }
+
+    if (data.type === "command-ack") {
+      return handleCommandAcknowledgement(
+        data
+      );
+    }
+
+    return jsonResponse({
+      status: "error",
+      message: "Unknown POST request"
+    });
+
+  } catch (err) {
+    console.error(
+      err.stack ||
+      err.toString()
+    );
+
+    if (isTelegramRequest) {
+      // Prevent Telegram retry loops.
+      return telegramOkResponse();
+    }
+
+    return jsonResponse({
+      status: "error",
+      message: err.toString()
+    });
+  }
+}
+```
+
+## 5. Send Using the Correct Bot
+
+Replace the single-token `sendTelegramTo()` function with:
+
+```javascript
+function sendTelegramFromBot(
+  botKey,
+  chatId,
+  message
+) {
+  const config =
+    getTelegramBotConfig(
+      botKey
+    );
+
+  const url =
+    "https://api.telegram.org/bot" +
+    config.token +
+    "/sendMessage";
+
+  const response =
+    UrlFetchApp.fetch(
+      url,
+      {
+        method: "post",
+        contentType:
+          "application/json",
+        payload: JSON.stringify({
+          chat_id: String(chatId),
+          text: message
+        }),
+        muteHttpExceptions: true
+      }
+    );
+
+  const result =
+    JSON.parse(
+      response.getContentText()
+    );
+
+  if (!result.ok) {
+    throw new Error(
+      "Telegram sendMessage failed for " +
+      botKey +
+      ": " +
+      response.getContentText()
+    );
+  }
+
+  return result;
+}
+```
+
+## 6. Store Which Bot Issued the LED Command
+
+Because both bots share `H2`, save the originating bot and chat ID together with the target state:
+
+```javascript
+function storeTelegramLedCommand(
+  botKey,
+  chatId,
+  targetLedState,
+  updateId
+) {
+  const target =
+    normalizeLedControl(
+      targetLedState
+    );
+
+  const lock =
+    LockService.getScriptLock();
+
+  if (!lock.tryLock(10000)) {
+    throw new Error(
+      "Unable to obtain LED command lock"
+    );
+  }
+
+  try {
+    const sheet =
+      getDashboardSheet();
+
+    sheet
+      .getRange(LED_CONTROL_CELL)
+      .setValue(target);
+
+    const pendingCommand = {
+      botKey: botKey,
+      chatId: String(chatId),
+      targetLedState: target,
+      updateId: updateId,
+      createdAt:
+        new Date().toISOString()
+    };
+
+    PropertiesService
+      .getScriptProperties()
+      .setProperty(
+        "PENDING_LED_COMMAND",
+        JSON.stringify(
+          pendingCommand
+        )
+      );
+
+    SpreadsheetApp.flush();
+
+  } finally {
+    lock.releaseLock();
+  }
+}
+```
+
+## 7. Multi-Bot Telegram Handler
+
+```javascript
+function handleTelegramUpdate(
+  botKey,
+  update,
+  e
+) {
+  const config =
+    getTelegramBotConfig(
+      botKey
+    );
+
+  const receivedSecret =
+    String(
+      e.parameter.secret || ""
+    );
+
+  if (
+    receivedSecret !==
+    config.secret
+  ) {
+    throw new Error(
+      "Invalid webhook secret for " +
+      botKey
+    );
+  }
+
+  const message =
+    update.message;
+
+  if (
+    !message ||
+    !message.text
+  ) {
+    return telegramOkResponse();
+  }
+
+  const chatId =
+    String(message.chat.id);
+
+  if (
+    !config.authorizedChatIds
+      .includes(chatId)
+  ) {
+    console.warn(
+      "Unauthorized chat for " +
+      botKey +
+      ": " +
+      chatId
+    );
+
+    return telegramOkResponse();
+  }
+
+  const command =
+    message.text
+      .trim()
+      .toLowerCase()
+      .split("@");
+
+  switch (command) {
+    case "/start":
+    case "/help":
+      sendTelegramFromBot(
+        botKey,
+        chatId,
+        "ESP32 Telegram Control\n\n" +
+        "/led_on - Request LED ON\n" +
+        "/led_off - Request LED OFF\n" +
+        "/status - Show LED status"
+      );
+      break;
+
+    case "/led_on":
+      storeTelegramLedCommand(
+        botKey,
+        chatId,
+        1,
+        update.update_id
+      );
+
+      sendTelegramFromBot(
+        botKey,
+        chatId,
+        "LED ON stored in Dashboard!H2.\n" +
+        "Waiting for ESP32 confirmation."
+      );
+      break;
+
+    case "/led_off":
+      storeTelegramLedCommand(
+        botKey,
+        chatId,
+        0,
+        update.update_id
+      );
+
+      sendTelegramFromBot(
+        botKey,
+        chatId,
+        "LED OFF stored in Dashboard!H2.\n" +
+        "Waiting for ESP32 confirmation."
+      );
+      break;
+
+    case "/status":
+      sendLedStatus(
+        botKey,
+        chatId
+      );
+      break;
+
+    default:
+      sendTelegramFromBot(
+        botKey,
+        chatId,
+        "Unknown command: " +
+        command
+      );
+  }
+
+  return telegramOkResponse();
+}
+```
+
+### Status Function
+
+```javascript
+function sendLedStatus(
+  botKey,
+  chatId
+) {
+  const sheet =
+    getDashboardSheet();
+
+  const requestedState =
+    normalizeLedControl(
+      sheet
+        .getRange(LED_CONTROL_CELL)
+        .getValue()
+    );
+
+  const actualState =
+    normalizeLedControl(
+      sheet
+        .getRange("I2")
+        .getValue()
+    );
+
+  sendTelegramFromBot(
+    botKey,
+    chatId,
+    "Requested LED: " +
+    formatOnOff(
+      requestedState
+    ) +
+    "\nActual ESP32 LED: " +
+    formatOnOff(
+      actualState
+    )
+  );
+}
+```
+
+## 8. Acknowledge Through the Originating Bot
+
+Inside `handleEsp32Telemetry()`, declare these variables before the `try` block:
+
+```javascript
+let ledControlValue;
+let acknowledgementData = null;
+```
+
+While still inside the locked `try` block, add:
+
+```javascript
+const actualLedState =
+  normalizeLedControl(
+    data["led-state"]
+  );
+
+const properties =
+  PropertiesService
+    .getScriptProperties();
+
+const pendingText =
+  properties.getProperty(
+    "PENDING_LED_COMMAND"
+  );
+
+if (pendingText) {
+  const pendingCommand =
+    JSON.parse(
+      pendingText
+    );
+
+  const expectedState =
+    normalizeLedControl(
+      pendingCommand.targetLedState
+    );
+
+  if (
+    actualLedState ===
+    expectedState
+  ) {
+    acknowledgementData = {
+      type: "command-ack",
+      success: true,
+      botKey:
+        pendingCommand.botKey,
+      chatId:
+        pendingCommand.chatId,
+      "led-state":
+        actualLedState,
+      "target-led-state":
+        expectedState
+    };
+
+    properties.deleteProperty(
+      "PENDING_LED_COMMAND"
+    );
+  }
+}
+```
+
+After the `finally` block releases the lock, add:
+
+```javascript
+if (
+  acknowledgementData !== null
+) {
+  handleCommandAcknowledgement(
+    acknowledgementData
+  );
+}
+
+return jsonResponse({
+  status: "success",
+  "led-control":
+    ledControlValue
+});
+```
+
+### Updated Acknowledgement Handler
+
+```javascript
+function handleCommandAcknowledgement(
+  data
+) {
+  const actualLedState =
+    normalizeLedControl(
+      data["led-state"]
+    );
+
+  const message =
+    data.success === true
+      ? "ESP32 confirmed LED is " +
+        formatOnOff(
+          actualLedState
+        ) +
+        "."
+      : "ESP32 failed to execute " +
+        "the LED command.";
+
+  sendTelegramFromBot(
+    data.botKey,
+    data.chatId,
+    message
+  );
+
+  return jsonResponse({
+    status: "success",
+    message:
+      "Acknowledgement sent"
+  });
+}
+```
+
+## Important Behaviour
+
+Because both bots control the same `H2`:
+
+```text
+Bot 1 requests ON
+Bot 2 requests OFF before the ESP32 checks
+Result: Bot 2 OFF replaces Bot 1 ON
+```
+
+Only the latest command is stored in:
+
+```text
+PENDING_LED_COMMAND
+```
+
+### Separate LED Controls per Bot
+
+If each bot should control a different ESP32, assign separate cells:
+
+| Bot | Command Cell | Actual-State Cell |
+|---|---|---|
+| Bot 1 | `H2` | `I2` |
+| Bot 2 | `H3` | `I3` |
+
+Each user must also open each bot and send `/start` before that bot can send messages to the user's private chat.
+
+Keep all tokens in Script Properties, and regenerate any token previously exposed in URLs or messages.
+
