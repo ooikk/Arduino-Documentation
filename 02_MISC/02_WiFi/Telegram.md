@@ -5154,3 +5154,333 @@ Each user must also open each bot and send `/start` before that bot can send mes
 
 Keep all tokens in Script Properties, and regenerate any token previously exposed in URLs or messages.
 
+---
+
+# Option C: Telegram Inline Controller (Inline-Button Control)
+
+The completed Arduino sketch uses direct Telegram polling:
+
+```text
+Telegram inline button
+        ↓
+Telegram callback_query
+        ↓
+ESP32 getUpdates()
+        ↓
+GPIO/PWM updated
+        ↓
+Telegram dashboard refreshed
+```
+
+This implementation does not use Google Sheets or Google Apps Script.
+
+## Important: Existing GAS Webhook
+
+Telegram does not allow `getUpdates()` polling while a webhook is active.
+
+Therefore, either:
+
+1. Create a new bot specifically for direct ESP32 control. This is recommended.
+2. Remove the existing Google Apps Script webhook from the current bot.
+
+Do not use a previously exposed bot token. Regenerate it through BotFather or create a new bot.
+
+## 1. Create the Telegram Bot
+
+Open [@BotFather](https://t.me/BotFather) in Telegram.
+
+Send:
+
+```text
+/newbot
+```
+
+Follow the prompts.
+
+Enter a display name, such as:
+
+```text
+ESP32 Device Controller
+```
+
+Enter a username ending in `bot`, such as:
+
+```text
+OOIKK_ESP32_Controller_bot
+```
+
+Copy the new bot token and keep it private.
+
+See Telegram's official [bot tutorial](https://core.telegram.org/bots/tutorial?utm_source=chatgpt.com "From BotFather to 'Hello World'") for the BotFather registration process.
+
+## 2. Configure Bot Commands
+
+In BotFather, send:
+
+```text
+/setcommands
+```
+
+Select your bot, then enter:
+
+```text
+start - Open the device control panel
+panel - Show inline control buttons
+status - Show current device status
+help - Show available commands
+```
+
+You do not need BotFather's `/setinline` option.
+
+This project uses an inline keyboard attached to a normal bot message, not Telegram inline-query mode.
+
+## 3. Remove the Old Webhook
+
+If reusing the same bot, remove its existing webhook.
+
+In PowerShell:
+
+```powershell
+$token = Read-Host "Enter bot token"
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "[https://api.telegram.org/bot$token/deleteWebhook](https://api.telegram.org/bot$token/deleteWebhook)" `
+  -Body @{
+    drop_pending_updates = "true"
+  }
+```
+
+Expected response:
+
+```text
+ok     result
+--     ------
+True   True
+```
+
+If you use a newly created bot, it normally has no webhook, so this step is optional.
+
+## 4. Obtain the Authorised Chat ID
+
+First, open your bot in Telegram and send:
+
+```text
+/start
+```
+
+Before starting the ESP32, run:
+
+```powershell
+Invoke-RestMethod `
+  -Uri "https://api.telegram.org/bot$token/getUpdates"
+```
+
+Look for:
+
+```json
+"chat": {
+  "id": 58138745
+}
+```
+
+Use the actual value shown for your account.
+
+## 5. Install Arduino Libraries
+
+In the Arduino IDE, open:
+
+```text
+Tools → Manage Libraries
+```
+
+Install:
+
+- `UniversalTelegramBot` by Brian Lough.
+- `ArduinoJson` by Benoit Blanchon.
+
+The `UniversalTelegramBot` library supports:
+
+- `sendMessageWithInlineKeyboard()`.
+- Callback data.
+- `answerCallbackQuery()`.
+
+See the [UniversalTelegramBot GitHub repository](https://github.com/witnessmenow/Universal-Arduino-Bot?utm_source=chatgpt.com "GitHub - witnessmenow/Universal-Arduino-Bot: Use Telegram on your Arduino (ESP8266 or Wifi-101 boards)").
+
+The sketch targets Arduino-ESP32 3.x and uses the current PWM APIs:
+
+```cpp
+ledcAttach(pin, frequency, resolution);
+ledcWrite(pin, duty);
+```
+
+See the [Arduino-ESP32 LEDC documentation](https://docs.espressif.com/projects/arduino-esp32/en/latest/api/ledc.html?utm_source=chatgpt.com "LED Control (LEDC)").
+
+## 6. Hardware Connections
+
+The sample uses these default GPIO assignments:
+
+| Device Signal | ESP32 GPIO | Required Interface |
+|---|---:|---|
+| External LED | `GPIO 4` | LED with series resistor. |
+| Fan PWM | `GPIO 6` | Logic-level MOSFET or driver. |
+| Motor PWM/Enable | `GPIO 7` | H-bridge PWM or enable input. |
+| Motor `IN1` | `GPIO 8` | H-bridge direction input. |
+| Motor `IN2` | `GPIO 9` | H-bridge direction input. |
+
+Change these pins if they conflict with your ESP32-S3 board:
+
+```cpp
+constexpr uint8_t LED_PIN =
+  4;
+
+constexpr uint8_t FAN_PWM_PIN =
+  6;
+
+constexpr uint8_t MOTOR_PWM_PIN =
+  7;
+
+constexpr uint8_t MOTOR_IN1_PIN =
+  8;
+
+constexpr uint8_t MOTOR_IN2_PIN =
+  9;
+```
+
+### Safety Requirements
+
+- Do not connect a fan or motor directly to an ESP32 GPIO.
+- Use an external power supply suitable for the load.
+- Connect the external supply ground and ESP32 ground together.
+- Use a logic-level MOSFET and flyback protection for a two-wire DC fan.
+- Use a motor driver such as the TB6612FNG or DRV8833 for the motor.
+- This sample is not intended for an AC mains fan or AC light.
+- A four-wire PC fan requires a different open-collector PWM interface.
+
+## 7. Enter Your Credentials
+
+Edit these four lines:
+
+```cpp
+const char WIFI_SSID[] =
+  "YOUR_WIFI_SSID";
+
+const char WIFI_PASSWORD[] =
+  "YOUR_WIFI_PASSWORD";
+
+const char BOT_TOKEN[] =
+  "YOUR_NEW_TELEGRAM_BOT_TOKEN";
+
+const char AUTHORIZED_CHAT_ID[] =
+  "YOUR_TELEGRAM_CHAT_ID";
+```
+
+For example:
+
+```cpp
+const char AUTHORIZED_CHAT_ID[] =
+  "58138745";
+```
+
+Do not include `<` or `>` around the values.
+
+## 8. Upload and Test
+
+1. Select your ESP32-S3 board in the Arduino IDE.
+2. Select the correct COM port.
+3. Compile and upload the sketch.
+4. Open the Serial Monitor.
+5. Set the baud rate to:
+
+   ```text
+   115200
+   ```
+
+Expected startup messages:
+
+```text
+Connecting to Wi-Fi....
+Wi-Fi connected. IP: 192.168.x.x
+Synchronizing time....
+```
+
+The bot should then send:
+
+```text
+ESP32 inline controller is online. Send /panel.
+```
+
+Send:
+
+```text
+/panel
+```
+
+## Available Inline Controls
+
+The dashboard provides:
+
+| Device | Controls |
+|---|---|
+| LED | `ON`, `OFF` |
+| Fan | `ON`, `OFF`, `25%`, `50%`, `75%`, `100%` |
+| Motor | `ON`, `OFF`, `0%`, `25%`, `50%`, `75%`, `100%` |
+| Status | `Refresh Status` |
+
+The dashboard displays:
+
+```text
+ESP32 DEVICE CONTROL
+
+LED: ON
+Fan: ON | Speed setting: 50%
+Motor: OFF | Speed setting: 50%
+Wi-Fi RSSI: -55 dBm
+```
+
+After every button press, the sketch:
+
+1. Executes the selected action.
+2. Answers the callback query to stop Telegram's loading animation.
+3. Edits the original dashboard message.
+4. Shows the updated device state.
+
+The library supports supplying a message ID when sending an inline keyboard, allowing the dashboard message to be edited instead of creating a new message after every button click.
+
+See the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Bot/blob/master/src/UniversalTelegramBot.cpp?utm_source=chatgpt.com "Universal-Arduino-Bot/src/UniversalTelegramBot.cpp at master · witnessmenow/Universal-Arduino-Bot").
+
+## Speed-Control Behaviour
+
+### Fan
+
+- `FAN OFF` stops PWM but retains the selected speed.
+- `FAN ON` resumes the previous speed.
+- Pressing a percentage button sets the speed and turns the fan on.
+
+### Motor
+
+- `MOTOR OFF` stops the motor but retains its speed setting.
+- `MOTOR ON` resumes the previous speed.
+- `MOTOR 0%` stops the motor.
+- Pressing `25%`–`100%` sets the speed and starts the motor.
+
+## PWM Duty-Cycle Conversion
+
+The PWM percentage is converted to an 8-bit duty cycle:
+
+| Speed | Approximate Duty Cycle |
+|---:|---:|
+| `0%` | `0` |
+| `25%` | `64` |
+| `50%` | `128` |
+| `75%` | `191` |
+| `100%` | `255` |
+
+Some fans and motors may not start reliably at `25%`.
+
+If this occurs:
+
+- Increase the minimum button setting.
+- Implement a brief `100%` startup pulse.
+- Apply the requested lower speed after the startup pulse.
+- 
