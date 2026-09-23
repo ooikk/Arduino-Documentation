@@ -4488,7 +4488,7 @@ add the following properties:
 | `WEB_APP_URL` | https://script.google.com/macros/s/.../exec |
 | `BOT1_TOKEN` | First bot token. |
 | `BOT1_SECRET` | Strong random secret. |
-| `BOT1_CHAT_IDS` | `58138745`. |
+| `BOT1_CHAT_IDS` | First authorised chat ID. |
 | `BOT2_TOKEN` | Second bot token. |
 | `BOT2_SECRET` | Different random secret. |
 | `BOT2_CHAT_IDS` | Second authorised chat ID. |
