@@ -5245,7 +5245,7 @@ $token = Read-Host "Enter bot token"
 
 Invoke-RestMethod `
   -Method Post `
-  -Uri "[https://api.telegram.org/bot$token/deleteWebhook](https://api.telegram.org/bot$token/deleteWebhook)" `
+  -Uri "https://api.telegram.org/bot$token/deleteWebhook" `
   -Body @{
     drop_pending_updates = "true"
   }
@@ -5273,7 +5273,7 @@ Before starting the ESP32, run:
 
 ```powershell
 Invoke-RestMethod `
-  -Uri "https://api.telegram.org/bot$token/getUpdates"
+  -Uri "https://api.telegram.org/bot$token/getMe"
 ```
 
 Look for:
