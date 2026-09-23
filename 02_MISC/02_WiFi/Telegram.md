@@ -5447,7 +5447,7 @@ After every button press, the sketch:
 
 The library supports supplying a message ID when sending an inline keyboard, allowing the dashboard message to be edited instead of creating a new message after every button click.
 
-See the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Bot/blob/master/src/UniversalTelegramBot.cpp?utm_source=chatgpt.com "Universal-Arduino-Bot/src/UniversalTelegramBot.cpp at master · witnessmenow/Universal-Arduino-Bot").
+See the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot/blob/master/src/UniversalTelegramBot.cpp)
 
 ## Speed-Control Behaviour
 
