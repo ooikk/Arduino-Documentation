@@ -5263,28 +5263,166 @@ If you use a newly created bot, it normally has no webhook, so this step is opti
 
 ## 4. Obtain the Authorised Chat ID
 
-First, open your bot in Telegram and send:
+Use `getUpdates`, not `getMe`.
+
+`getMe` returns information about the bot itself:
 
 ```text
-/start
+https://api.telegram.org/bot<TOKEN>/getMe
 ```
 
-Before starting the ESP32, run:
+The returned `result.id` is the bot ID, not your personal chat ID.
 
-```powershell
-Invoke-RestMethod `
-  -Uri "https://api.telegram.org/bot$token/getMe"
+See the [Telegram Bot API](https://core.telegram.org/bots/api?utm_source=chatgpt.com "Telegram Bot API").
+
+### Get Your Chat ID with `getUpdates`
+
+1. Temporarily stop or reset the ESP32 so it does not consume the Telegram update.
+2. Open your bot in Telegram.
+3. Send:
+
+   ```text
+   /start
+   ```
+
+4. Open:
+
+   ```text
+   https://api.telegram.org/bot<TOKEN>/getUpdates
+   ```
+
+5. Look for:
+
+   ```json
+   {
+     "message": {
+       "chat": {
+         "id": 58138745,
+         "type": "private"
+       }
+     }
+   }
+   ```
+
+The required value is:
+
+```text
+result[].message.chat.id
 ```
 
-Look for:
+Set it in your code:
+
+```cpp
+const char AUTHORIZED_CHAT_ID[] =
+  "58138745";
+```
+
+### Chat ID in an Inline-Button Update
+
+For an inline-button press, the update structure is:
 
 ```json
-"chat": {
-  "id": 58138745
+{
+  "callback_query": {
+    "from": {
+      "id": 58138745
+    },
+    "message": {
+      "chat": {
+        "id": 58138745
+      }
+    }
+  }
 }
 ```
 
-Use the actual value shown for your account.
+The relevant fields are:
+
+```text
+result[].callback_query.from.id
+result[].callback_query.message.chat.id
+```
+
+In a private conversation, these values are normally the same.
+
+### PowerShell Method
+
+This method avoids typing the token directly into browser history:
+
+```powershell
+$token = Read-Host "Enter bot token"
+
+Invoke-RestMethod `
+  -Uri "https://api.telegram.org/bot$token/getUpdates"
+```
+
+#### Display Only the Updates
+
+```powershell
+$result = Invoke-RestMethod `
+  -Uri "https://api.telegram.org/bot$token/getUpdates"
+
+$result.result |
+  ConvertTo-Json -Depth 10
+```
+
+### If the Result Is Empty
+
+If the response is:
+
+```json
+{
+  "ok": true,
+  "result": []
+}
+```
+
+Then:
+
+1. Stop ESP32 polling first.
+2. Send a new message, such as `/start`.
+3. Immediately run `getUpdates` again.
+
+The ESP32's `bot.getUpdates()` call may otherwise collect the message before the browser or PowerShell does.
+
+
+## If a Webhook Is Still Registered
+
+`getUpdates` cannot operate while a webhook is active. Telegram treats polling and webhooks as mutually exclusive.
+
+See the [Telegram Bot API documentation](https://core.telegram.org/bots/api?utm_source=chatgpt.com "Telegram Bot API").
+
+Check the webhook status:
+
+```text
+[https://api.telegram.org/bot](https://api.telegram.org/bot)<TOKEN>/getWebhookInfo
+```
+
+### Remove the Webhook with PowerShell
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "[https://api.telegram.org/bot$token/deleteWebhook](https://api.telegram.org/bot$token/deleteWebhook)" `
+  -Body @{
+    drop_pending_updates = "true"
+  }
+```
+
+Then:
+
+1. Send `/start` again.
+2. Call `getUpdates`.
+3. Read the value from:
+
+   ```text
+   result[].message.chat.id
+   ```
+
+## Security Reminder
+
+Revoke any bot token previously posted publicly and use the replacement token for these tests.
+
 
 ## 5. Install Arduino Libraries
 
