@@ -204,6 +204,10 @@ String buildStatusText() {
   status += String(motorSpeedPercent);
   status += "%";
 
+  status += "\nTemperature: ";
+  status += String(random(100, 500) / 10.0f);
+  status += " °C";
+
   status += "\nWi-Fi RSSI: ";
   status += String(WiFi.RSSI());
   status += " dBm";
@@ -217,12 +221,17 @@ void sendControlPanel(
   int messageId = 0) {
   // messageId == 0 sends a new message.
   // A non-zero messageId edits the existing dashboard message.
+  const String Status = buildStatusText();
   bot.sendMessageWithInlineKeyboard(
     chatId,
-    buildStatusText(),
+    //buildStatusText(),
+    Status,
     "",
     CONTROL_KEYBOARD,
     messageId);
+
+  Serial.println("Send Status & Control Keyboard:");
+  Serial.println(Status);
 }
 
 bool isAuthorized(const String &chatId) {
@@ -268,6 +277,7 @@ bool executeCallback(const String &action) {
   } else {
     return false;
   }
+  Serial.printf("Execute Callback Action: %s\n", action);
 
   return true;
 }
@@ -321,6 +331,8 @@ void handleTextMessage(int index) {
   if (atPosition > 0) {
     command = command.substring(0, atPosition);
   }
+
+  Serial.println("Received Text Message command: " + command);
 
   if (command == "/start" || command == "/panel") {
     sendControlPanel(chatId);
