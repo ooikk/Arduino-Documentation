@@ -6432,11 +6432,11 @@ It is separate from:
 bot.longPoll
 ```
 
-## `bot.maxMessageLength`
+### `bot.maxMessageLength`
 
 `bot.maxMessageLength` sets the maximum Telegram HTTP response size, in characters, that `UniversalTelegramBot` stores and processes.
 
-### Default Value
+#### Default Value
 
 ```cpp
 bot.maxMessageLength = 1500;
@@ -6451,7 +6451,7 @@ The JSON can then fail to parse, causing symptoms such as:
 - The same update being received repeatedly.
 - The bot appearing to hang.
 
-### Increase the Limit
+#### Increase the Limit
 
 For a larger control keyboard, increase the value during `setup()`:
 
@@ -6465,7 +6465,7 @@ If necessary:
 bot.maxMessageLength = 6144;
 ```
 
-### Memory Consideration
+#### Memory Consideration
 
 A larger value consumes more ESP32 RAM because the library uses it when creating temporary JSON buffers.
 
