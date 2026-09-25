@@ -6432,6 +6432,47 @@ It is separate from:
 bot.longPoll
 ```
 
+## `bot.maxMessageLength`
+
+`bot.maxMessageLength` sets the maximum Telegram HTTP response size, in characters, that `UniversalTelegramBot` stores and processes.
+
+### Default Value
+
+```cpp
+bot.maxMessageLength = 1500;
+```
+
+If a Telegram response is larger than this—especially when it contains a large inline keyboard—the response may be truncated.
+
+The JSON can then fail to parse, causing symptoms such as:
+
+- Button presses not responding.
+- `getUpdates()` returning `0`.
+- The same update being received repeatedly.
+- The bot appearing to hang.
+
+### Increase the Limit
+
+For a larger control keyboard, increase the value during `setup()`:
+
+```cpp
+bot.maxMessageLength = 4096;
+```
+
+If necessary:
+
+```cpp
+bot.maxMessageLength = 6144;
+```
+
+### Memory Consideration
+
+A larger value consumes more ESP32 RAM because the library uses it when creating temporary JSON buffers.
+
+Choose a value large enough for your Telegram messages and inline keyboards, but avoid making it unnecessarily large.
+
+
+
 ---
 # Print Parsed Telegram Fields
 
