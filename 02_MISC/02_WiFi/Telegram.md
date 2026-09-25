@@ -5622,4 +5622,275 @@ If this occurs:
 - Implement a brief `100%` startup pulse.
 - Apply the requested lower speed after the startup pulse.
 
-**See the final code:** [02_WiFi_Telegram.ino](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/02_WiFi_Telegram.ino)
+## Final code
+
+[02_WiFi_Telegram.ino](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/02_WiFi_Telegram.ino)
+
+---
+
+# Print Parsed Telegram Fields
+
+You can print every parsed field stored in `bot.messages[index]` by adding a dedicated debug function.
+
+The library stores Telegram updates in its `telegramMessage` structure.
+
+See the [UniversalTelegramBot telegramMessage structure](https://github.com/witnessmenow/Universal-Arduino-Bot/blob/master/src/UniversalTelegramBot.h?utm_source=chatgpt.com "Universal-Arduino-Bot/src/UniversalTelegramBot.h at master · witnessmenow/Universal-Arduino-Bot").
+
+## Print a Telegram Message
+
+```cpp
+void printTelegramMessage(int index) {
+  const telegramMessage& msg =
+    bot.messages[index];
+
+  Serial.println();
+  Serial.println(
+    "========== TELEGRAM UPDATE =========="
+  );
+
+  Serial.print("Array index: ");
+  Serial.println(index);
+
+  Serial.print("update_id: ");
+  Serial.println(msg.update_id);
+
+  Serial.print("type: ");
+  Serial.println(msg.type);
+
+  Serial.print("text/callback_data: ");
+  Serial.println(msg.text);
+
+  Serial.print("chat_id: ");
+  Serial.println(msg.chat_id);
+
+  Serial.print("chat_title: ");
+  Serial.println(msg.chat_title);
+
+  Serial.print("from_id: ");
+  Serial.println(msg.from_id);
+
+  Serial.print("from_name: ");
+  Serial.println(msg.from_name);
+
+  Serial.print("date: ");
+  Serial.println(msg.date);
+
+  Serial.print("message_id: ");
+  Serial.println(msg.message_id);
+
+  Serial.print("query_id: ");
+  Serial.println(msg.query_id);
+
+  Serial.print("reply_to_message_id: ");
+  Serial.println(
+    msg.reply_to_message_id
+  );
+
+  Serial.print("reply_to_text: ");
+  Serial.println(msg.reply_to_text);
+
+  Serial.print("hasDocument: ");
+  Serial.println(
+    msg.hasDocument
+      ? "true"
+      : "false"
+  );
+
+  Serial.print("file_name: ");
+  Serial.println(msg.file_name);
+
+  Serial.print("file_caption: ");
+  Serial.println(msg.file_caption);
+
+  Serial.print("file_path: ");
+  Serial.println(msg.file_path);
+
+  Serial.print("file_size: ");
+  Serial.println(msg.file_size);
+
+  Serial.print("latitude: ");
+  Serial.println(
+    msg.latitude,
+    6
+  );
+
+  Serial.print("longitude: ");
+  Serial.println(
+    msg.longitude,
+    6
+  );
+
+  Serial.println(
+    "====================================="
+  );
+}
+```
+
+## Call It from the Update Handler
+
+```cpp
+void handleTelegramUpdates(
+  int updateCount
+) {
+  Serial.print(
+    "Number of updates received: "
+  );
+
+  Serial.println(updateCount);
+
+  for (
+    int index = 0;
+    index < updateCount;
+    index++
+  ) {
+    printTelegramMessage(index);
+
+    if (
+      bot.messages[index].type ==
+      "callback_query"
+    ) {
+      handleCallbackQuery(index);
+    } else {
+      handleTextMessage(index);
+    }
+  }
+}
+```
+
+## Print Bot Runtime Information
+
+You can also print public runtime information maintained by the bot object:
+
+```cpp
+void printBotRuntimeInformation() {
+  Serial.println();
+  Serial.println(
+    "========== BOT RUNTIME =========="
+  );
+
+  Serial.print("Bot name: ");
+  Serial.println(bot.name);
+
+  Serial.print("Bot username: ");
+  Serial.println(bot.userName);
+
+  Serial.print("Last update received: ");
+  Serial.println(
+    bot.last_message_received
+  );
+
+  Serial.print("Last sent message ID: ");
+  Serial.println(
+    bot.last_sent_message_id
+  );
+
+  Serial.print("Long-poll timeout: ");
+  Serial.println(bot.longPoll);
+
+  Serial.print("Response wait time: ");
+  Serial.println(
+    bot.waitForResponse
+  );
+
+  Serial.print("Maximum message length: ");
+  Serial.println(
+    bot.maxMessageLength
+  );
+
+  Serial.print("Last library error: ");
+  Serial.println(
+    bot._lastError
+  );
+
+  Serial.println(
+    "================================="
+  );
+}
+```
+
+Call it before processing the messages:
+
+```cpp
+void handleTelegramUpdates(
+  int updateCount
+) {
+  printBotRuntimeInformation();
+
+  for (
+    int index = 0;
+    index < updateCount;
+    index++
+  ) {
+    printTelegramMessage(index);
+
+    if (
+      bot.messages[index].type ==
+      "callback_query"
+    ) {
+      handleCallbackQuery(index);
+    } else {
+      handleTextMessage(index);
+    }
+  }
+}
+```
+
+## Protect the Bot Token
+
+Do not print the bot token:
+
+```cpp
+Serial.println(
+  bot.getToken()
+);
+```
+
+Printing it would expose the bot token in the Serial Monitor logs.
+
+## Expected `/start` Message
+
+For a normal `/start` message, expect output similar to:
+
+```text
+type: message
+text/callback_data: /start
+chat_id: 58138745
+from_id: 58138745
+message_id: 123
+query_id:
+```
+
+## Expected Inline-Button Press
+
+For an inline-button press, expect output similar to:
+
+```text
+type: callback_query
+text/callback_data: LED_ON
+chat_id: 58138745
+from_id: 58138745
+message_id: 124
+query_id: 1234567890123456789
+```
+
+## Callback Query Field Mapping
+
+For a `callback_query`, the library maps the fields as follows:
+
+| Library Field | Meaning |
+|---|---|
+| `msg.text` | Button `callback_data`. |
+| `msg.query_id` | Callback-query ID. |
+| `msg.message_id` | ID of the dashboard message. |
+| `msg.chat_id` | Chat containing the dashboard. |
+| `msg.from_id` | User who pressed the button. |
+
+Some fields will be empty because their values depend on the update type.
+
+For example, document fields are normally empty for text messages and button presses.
+
+## Debugging Limitation
+
+This function prints every field retained by `UniversalTelegramBot`, but it does not print the complete raw JSON returned by Telegram.
+
+The library discards Telegram fields that are not included in its `telegramMessage` structure.
