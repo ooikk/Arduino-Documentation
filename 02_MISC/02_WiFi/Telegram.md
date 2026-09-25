@@ -5634,7 +5634,7 @@ You can print every parsed field stored in `bot.messages[index]` by adding a ded
 
 The library stores Telegram updates in its `telegramMessage` structure.
 
-See the [UniversalTelegramBot telegramMessage structure](https://github.com/witnessmenow/Universal-Arduino-Bot/blob/master/src/UniversalTelegramBot.h?utm_source=chatgpt.com "Universal-Arduino-Bot/src/UniversalTelegramBot.h at master · witnessmenow/Universal-Arduino-Bot").
+See the [Universal-Arduino-Telegram-Bot telegramMessage structure](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot/blob/master/src/UniversalTelegramBot.h)
 
 ## Print a Telegram Message
 
