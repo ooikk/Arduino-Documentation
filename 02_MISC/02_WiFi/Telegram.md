@@ -5628,6 +5628,811 @@ If this occurs:
 
 ---
 
+# ESP32 Telegram Communication Guide and Explained
+
+## A. Why Must the ESP32 Synchronize Its Clock?
+
+The ESP32 communicates with Telegram over secure HTTPS:
+
+```cpp
+WiFiClientSecure telegramClient;
+
+telegramClient.setCACert(
+  TELEGRAM_CERTIFICATE_ROOT
+);
+```
+Defined in this file: [TelegramCertificate.h](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot/blob/master/src/TelegramCertificate.h)
+
+
+The TLS certificate presented by `api.telegram.org` contains validity dates:
+
+```text
+Not valid before
+Not valid after
+```
+
+After startup, an ESP32 may not know the real date and time. Its clock may initially show a date close to:
+
+```text
+1 January 1970
+```
+
+Certificate verification can then fail because the certificate appears to be from the future or has expired.
+
+This is why the sketch runs code similar to:
+
+```cpp
+configTime(
+  0,
+  0,
+  "pool.ntp.org",
+  "time.nist.gov"
+);
+```
+
+SNTP obtains the current UTC time and updates the ESP32 system clock. ESP-IDF recommends obtaining the time before performing certificate validation; otherwise, validation can report future or expired certificate errors.
+
+See the [ESP-IDF System Time documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/system_time.html)
+
+Clock synchronization is needed for TLS security.
+
+It is not needed for:
+
+- GPIO or PWM control.
+- Telegram `update_id` ordering.
+- `message_id`.
+- Reading Telegram message timestamps.
+- Calculating fan or motor speed.
+
+The date in:
+
+```cpp
+bot.messages[i].date
+```
+
+comes from Telegram, not from the ESP32 clock.
+
+### Avoid This Workaround
+
+```cpp
+telegramClient.setInsecure();
+```
+
+This disables certificate verification and exposes the connection to impersonation or man-in-the-middle attacks.
+
+## B.1. What Happens When `sendMessage()` Runs in `setup()`?
+
+```cpp
+bot.sendMessage(
+  AUTHORIZED_CHAT_ID,
+  "ESP32 inline controller is online. Send /panel.",
+  ""
+);
+```
+
+This performs one outgoing Telegram operation every time the ESP32 boots.
+
+Internally:
+
+1. The bot creates a Telegram Bot API request.
+2. It uses the bot token configured here:
+
+   ```cpp
+   UniversalTelegramBot bot(
+     BOT_TOKEN,
+     telegramClient
+   );
+   ```
+
+3. It sends an HTTPS request approximately equivalent to:
+
+   ```http
+   POST https://api.telegram.org/bot<TOKEN>/sendMessage
+   ```
+
+4. The JSON request contains approximately:
+
+   ```json
+   {
+     "chat_id": "1070514044",
+     "text": "ESP32 inline controller is online. Send /panel."
+   }
+   ```
+
+5. Telegram delivers the message to that chat.
+6. `sendMessage()` returns `true` on success or `false` on failure.
+
+The third argument is the formatting mode:
+
+```cpp
+""
+```
+
+An empty value means ordinary text.
+
+Other common values are:
+
+```cpp
+"Markdown"
+"HTML"
+```
+
+### Check the Result
+
+```cpp
+bool sent =
+  bot.sendMessage(
+    AUTHORIZED_CHAT_ID,
+    "ESP32 inline controller is online. Send /panel.",
+    ""
+  );
+
+Serial.printf(
+  "Startup Telegram message: %s\n",
+  sent ? "sent" : "failed"
+);
+
+if (!sent) {
+  Serial.printf(
+    "Telegram library error: %d\n",
+    bot._lastError
+  );
+}
+```
+
+### Important Behaviour
+
+- The message is sent every time the ESP32 restarts.
+- It does not invoke `handleTelegramUpdates()`.
+- It does not generate an incoming update for the bot.
+- It does not automatically display the inline panel.
+- The user usually must first open the bot and press **Start**.
+- The bot cannot initiate a new private conversation with a user who has never started it.
+
+After a successful send, the returned Telegram message ID is normally stored in:
+
+```cpp
+bot.last_sent_message_id
+```
+
+The library implements `sendMessage()` as a synchronous HTTPS operation and checks Telegram's `ok` result.
+
+See the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot/blob/master/src/UniversalTelegramBot.cpp)
+
+## B.2. ESP32-to-Telegram Communication Flow
+
+There is no direct inbound connection from Telegram to the ESP32 in this design.
+
+The ESP32 repeatedly initiates outbound HTTPS connections to Telegram. This works behind a home router, firewall, or NAT without opening an ESP32 port.
+
+```mermaid
+sequenceDiagram
+    participant U as Telegram user
+    participant T as Telegram server
+    participant E as ESP32
+    participant H as LED/Fan/Motor
+
+    U->>T: Send /panel
+    E->>T: getUpdates(offset)
+    T-->>E: Update containing /panel
+    E->>T: Send panel and inline keyboard
+    T-->>U: Display device panel
+
+    U->>T: Press LED ON
+    E->>T: getUpdates(offset)
+    T-->>E: callback_query, data=led_on
+    E->>H: Set LED output
+    E->>T: answerCallbackQuery()
+    E->>T: Edit panel with new status
+    T-->>U: Updated device panel
+```
+
+### When the User Sends `/panel`
+
+1. The Telegram application sends `/panel` to Telegram's servers.
+2. Telegram creates an update containing the message.
+3. The update waits on Telegram's server.
+4. The ESP32 calls:
+
+   ```cpp
+   bot.getUpdates(
+     bot.last_message_received + 1
+   );
+   ```
+
+5. Telegram returns the update as JSON.
+6. The library parses it into:
+
+   ```cpp
+   bot.messages[0]
+   ```
+
+7. The handler reads:
+
+   ```cpp
+   bot.messages.text[0]
+   ```
+
+8. When the text is `/panel`, the ESP32 sends the status panel and inline keyboard.
+
+### When the User Presses an Inline Button
+
+Suppose a button contains:
+
+```json
+{
+  "text": "LED ON",
+  "callback_data": "led_on"
+}
+```
+
+Telegram creates a `callback_query` update.
+
+The library exposes it approximately as:
+
+```cpp
+bot.messages[index].type
+// "callback_query"
+
+bot.messages[index].text
+// "led_on"
+
+bot.messages[index].query_id
+// Unique callback-query ID
+
+bot.messages[index].message_id
+// Panel message ID
+
+bot.messages[index].chat_id
+
+bot.messages[index].from_id
+```
+
+Your code:
+
+1. Checks the user or chat authorisation.
+2. Reads `"led_on"` from `.text`.
+3. Changes the LED GPIO.
+4. Calls `answerCallbackQuery()` to stop Telegram's loading animation.
+5. Edits the existing panel message so it shows the new state.
+
+### If the ESP32 Is Offline
+
+Telegram normally retains pending updates for up to 24 hours. When the ESP32 reconnects, polling may retrieve those updates if they have not already been confirmed.
+
+See the [Telegram Bot API documentation](https://core.telegram.org/bots/api)
+
+A bot cannot use `getUpdates` polling and a webhook simultaneously.
+
+If a Google Apps Script webhook is still registered, remove it before using direct ESP32 polling:
+
+```text
+https://api.telegram.org/bot<TOKEN>/deleteWebhook?drop_pending_updates=true
+```
+
+## B.3. What Is the `bot.xxx` Structure?
+
+This declaration creates an object named `bot`:
+
+```cpp
+UniversalTelegramBot bot(
+  BOT_TOKEN,
+  telegramClient
+);
+```
+
+`UniversalTelegramBot` is the class.
+
+`bot` is an instance of that class.
+
+The constructor receives:
+
+| Argument | Purpose |
+|---|---|
+| `BOT_TOKEN` | Identifies and authenticates the Telegram bot. |
+| `telegramClient` | Provides the secure TCP/TLS connection. |
+
+The library stores a pointer to `telegramClient`, so both objects should remain global and exist for the entire program:
+
+```cpp
+WiFiClientSecure telegramClient;
+
+UniversalTelegramBot bot(
+  BOT_TOKEN,
+  telegramClient
+);
+```
+
+A `bot.xxx` expression can refer to:
+
+- A method, such as `bot.sendMessage(...)`.
+- A runtime setting, such as `bot.longPoll`.
+- A state value, such as `bot.last_message_received`.
+- A parsed message, such as `bot.messages[i].text`.
+
+The public interface and message fields below come from the UniversalTelegramBot source.
+
+See the [UniversalTelegramBot header](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot/blob/master/src/UniversalTelegramBot.h)
+
+### Important Bot Methods and Properties
+
+| Member | Purpose |
+|---|---|
+| `getUpdates(offset)` | Downloads pending Telegram updates. |
+| `sendMessage(...)` | Sends a text message. |
+| `sendMessageWithInlineKeyboard(...)` | Sends or edits a message containing inline buttons. |
+| `answerCallbackQuery(...)` | Acknowledges an inline-button press. |
+| `getMe()` | Retrieves basic bot-account information. |
+| `setMyCommands(...)` | Defines commands displayed in Telegram's command menu. |
+| `messages[]` | Parsed updates returned by `getUpdates()`. |
+| `last_message_received` | Most recent processed Telegram `update_id`. |
+| `longPoll` | Telegram long-poll timeout in seconds. |
+| `last_sent_message_id` | ID of the last successfully sent message. |
+| `waitForResponse` | Local socket-response waiting time. |
+| `maxMessageLength` | JSON document capacity used while parsing. |
+| `_lastError` | Last internal library or network error. |
+| `name` | Bot display name, populated by `getMe()`. |
+| `userName` | Bot username, populated by `getMe()`. |
+
+`name` and `userName` may remain empty until this succeeds:
+
+```cpp
+if (bot.getMe()) {
+  Serial.println(bot.name);
+  Serial.println(bot.userName);
+}
+```
+
+### `bot.messages[index]`
+
+Each entry is a `telegramMessage` structure.
+
+Common fields include:
+
+| Field | Meaning |
+|---|---|
+| `.type` | `"message"`, `"callback_query"`, or another supported type. |
+| `.update_id` | ID of the complete Telegram update. |
+| `.message_id` | ID of the message inside its chat. |
+| `.text` | Message text or inline-button `callback_data`. |
+| `.chat_id` | Chat in which the interaction occurred. |
+| `.chat_title` | Group or channel title, when available. |
+| `.from_id` | Telegram user ID of the sender. |
+| `.from_name` | Sender's name. |
+| `.date` | Telegram-provided Unix timestamp. |
+| `.query_id` | Callback-query ID used by `answerCallbackQuery()`. |
+| `.reply_to_message_id` | ID of a replied-to message. |
+| `.reply_to_text` | Text of a replied-to message. |
+| `.latitude` | Shared location latitude. |
+| `.longitude` | Shared location longitude. |
+| `.hasDocument` | Whether the update contains a document. |
+| `.file_name` | Telegram document name. |
+| `.file_path` | Telegram document path. |
+| `.file_caption` | Document caption. |
+| `.file_size` | Document size. |
+
+Not every field is populated for every update.
+
+For example, a normal message usually has:
+
+```cpp
+message.type
+message.text
+message.chat_id
+message.from_id
+message.message_id
+```
+
+A callback query additionally needs:
+
+```cpp
+message.query_id
+message.text
+// callback_data
+
+message.message_id
+// Original panel message
+```
+
+The library's parser maps Telegram JSON to `bot.messages[index]`.
+
+See the [UniversalTelegramBot parser implementation](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot/blob/master/src/UniversalTelegramBot.cpp)
+
+Use:
+
+```cpp
+bot.messages[index].text
+```
+
+There is no literal:
+
+```cpp
+messages.xx
+```
+
+`xx` represents whichever field you want.
+
+## B.4. Behaviour of Important Operations
+
+### `getUpdates()`
+
+Typical code:
+
+```cpp
+int updateCount =
+  bot.getUpdates(
+    bot.last_message_received + 1
+  );
+```
+
+The library generates a request similar to:
+
+```text
+getUpdates?offset=12346&limit=1&timeout=10
+```
+
+It then:
+
+1. Sends the HTTPS request.
+2. Waits for Telegram's response.
+3. Parses the returned JSON.
+4. Places each parsed result in `bot.messages[]`.
+5. Updates `bot.last_message_received`.
+6. Returns the number of parsed updates.
+
+### Recommended Polling Pattern
+
+```cpp
+int updateCount =
+  bot.getUpdates(
+    bot.last_message_received + 1
+  );
+
+while (updateCount > 0) {
+  handleTelegramUpdates(
+    updateCount
+  );
+
+  updateCount =
+    bot.getUpdates(
+      bot.last_message_received + 1
+    );
+}
+```
+
+This drains all pending updates.
+
+The library documentation recommends using:
+
+```cpp
+bot.last_message_received + 1
+```
+
+as the offset.
+
+See the [UniversalTelegramBot GitHub repository](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot)
+
+### `last_message_received`
+
+This contains the most recently processed Telegram `update_id`.
+
+It is not:
+
+- A chat ID.
+- A user ID.
+- A message ID.
+- A callback-query ID.
+
+For example:
+
+```cpp
+bot.last_message_received == 57290
+```
+
+The next request uses:
+
+```cpp
+57290 + 1
+```
+
+This tells Telegram:
+
+```text
+Return only updates numbered 57291 and later.
+```
+
+Telegram treats an update as confirmed when a later offset is supplied.
+
+See the [Telegram Bot API documentation](https://core.telegram.org/bots/api)
+
+### `longPoll`
+
+Configured with:
+
+```cpp
+bot.longPoll = 10;
+```
+
+This does not mean:
+
+```text
+Poll every 10 seconds.
+```
+
+It tells Telegram that it may hold an empty `getUpdates` request open for up to 10 seconds while waiting for a new update.
+
+Behaviour:
+
+- If an update arrives immediately, Telegram returns immediately.
+- If no update arrives, the request may return after approximately 10 seconds.
+- This reduces repeated empty requests.
+
+Because the library call is synchronous, the ESP32 `loop()` can be blocked inside `getUpdates()` for close to the long-poll duration.
+
+This is an inference from Telegram's timeout behaviour and the library's synchronous request implementation.
+
+See the [Telegram Bot API documentation](https://core.telegram.org/bots/api)
+
+This matters if the loop also performs:
+
+- Fast sensor sampling.
+- Watchdog-sensitive operations.
+- OTA handling.
+- Precise motor timing.
+- Other network services.
+
+Hardware PWM continues running in the ESP32 peripheral, but loop-based control logic waits.
+
+### `sendMessage()`
+
+Example:
+
+```cpp
+bool success =
+  bot.sendMessage(
+    chatId,
+    "LED is now ON",
+    ""
+  );
+```
+
+Parameters are generally:
+
+```cpp
+sendMessage(
+  chat_id,
+  text,
+  parse_mode
+);
+```
+
+It sends a new message and returns a Boolean success result.
+
+In this library version, a nonzero fourth `message_id` causes the library to edit an existing message instead of sending a new one:
+
+```cpp
+bot.sendMessage(
+  chatId,
+  newText,
+  "",
+  existingMessageId
+);
+```
+
+Internally, this selects Telegram's `editMessageText` operation.
+
+See the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot/blob/master/src/UniversalTelegramBot.cpp)
+
+### `sendMessageWithInlineKeyboard()`
+
+Example:
+
+```cpp
+bot.sendMessageWithInlineKeyboard(
+  chatId,
+  panelText,
+  "",
+  CONTROL_KEYBOARD
+);
+```
+
+It sends:
+
+- Message text.
+- An inline keyboard.
+- Button captions.
+- Button `callback_data`.
+
+To edit an existing panel:
+
+```cpp
+bot.sendMessageWithInlineKeyboard(
+  chatId,
+  panelText,
+  "",
+  CONTROL_KEYBOARD,
+  panelMessageId
+);
+```
+
+The last argument identifies the message to update.
+
+This prevents the bot from generating a new dashboard message after every button press.
+
+### `messages[index]`
+
+After:
+
+```cpp
+int count =
+  bot.getUpdates(...);
+```
+
+valid entries are:
+
+```cpp
+bot.messages
+```
+
+through:
+
+```cpp
+bot.messages[count - 1]
+```
+
+Example:
+
+```cpp
+for (
+  int index = 0;
+  index < count;
+  index++
+) {
+  String type =
+    bot.messages[index].type;
+
+  String chatId =
+    bot.messages[index].chat_id;
+
+  String userId =
+    bot.messages[index].from_id;
+
+  String value =
+    bot.messages[index].text;
+}
+```
+
+Many UniversalTelegramBot installations define:
+
+```cpp
+#define HANDLE_MESSAGES 1
+```
+
+Therefore, only one update is held in `messages[]` per request. The surrounding `while` loop retrieves remaining updates sequentially.
+
+### `answerCallbackQuery()`
+
+When a user presses an inline button, Telegram displays a loading indicator on that button.
+
+Your code should answer the callback:
+
+```cpp
+bot.answerCallbackQuery(
+  bot.messages[index].query_id,
+  "LED turned ON"
+);
+```
+
+This tells Telegram that the button press has been handled.
+
+It does not normally create a regular chat message. Instead, it:
+
+- Stops the button's loading indicator.
+- Optionally displays a short popup notification.
+- Can optionally display an alert.
+- Can optionally open a URL.
+
+The important identifier is:
+
+```cpp
+query_id
+```
+
+Do not pass `message_id` to `answerCallbackQuery()`.
+
+The library sends the callback ID, optional text, alert setting, cache time, and optional URL to Telegram's `answerCallbackQuery` method.
+
+See the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot/blob/master/src/UniversalTelegramBot.cpp)
+
+## Telegram Identifiers
+
+Do not confuse these identifiers:
+
+| Identifier | Identifies | Used For |
+|---|---|---|
+| `chat_id` | Conversation. | Sending or editing a message. |
+| `from_id` | Telegram user. | User authorisation. |
+| `update_id` | Incoming update envelope. | Polling offset. |
+| `message_id` | Message within one chat. | Editing the control panel. |
+| `query_id` | One inline-button press. | `answerCallbackQuery()`. |
+
+For private chats, `chat_id` and `from_id` are often equal, but you should not assume they are always equal.
+
+In a group:
+
+- `chat_id` identifies the group and may be negative.
+- `from_id` identifies the individual who pressed the button.
+
+For authorisation, this pattern is safer:
+
+```cpp
+bool isAuthorizedUser(
+  const String& fromId
+) {
+  return fromId ==
+    AUTHORIZED_USER_ID;
+}
+```
+
+## Other Relevant Members
+
+### `getMe()`
+
+`getMe()` validates the token and loads basic bot information:
+
+```cpp
+if (bot.getMe()) {
+  Serial.println(
+    bot.name
+  );
+
+  Serial.println(
+    bot.userName
+  );
+}
+```
+
+### `setMyCommands()`
+
+`setMyCommands()` registers the commands Telegram shows in its `/` menu.
+
+It does not implement those commands. Your update handler must still process them.
+
+### `last_sent_message_id`
+
+Stores the message ID returned by Telegram after a successful send.
+
+### `waitForResponse`
+
+Controls how long the library waits for local HTTP response data.
+
+It is different from `longPoll`.
+
+### `maxMessageLength`
+
+Controls the ArduinoJson document capacity.
+
+If responses grow beyond this capacity, JSON parsing may fail.
+
+### `telegramClient`
+
+The secure network transport.
+
+### `TELEGRAM_CERTIFICATE_ROOT`
+
+The trusted CA certificate used to authenticate Telegram's HTTPS server.
+
+### `BOT_POLL_INTERVAL_MS`
+
+If present in your sketch, this is your own delay between completed polling cycles.
+
+It is separate from:
+
+```cpp
+bot.longPoll
+```
+
+---
 # Print Parsed Telegram Fields
 
 You can print every parsed field stored in `bot.messages[index]` by adding a dedicated debug function.
