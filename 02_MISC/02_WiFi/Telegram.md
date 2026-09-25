@@ -5850,7 +5850,7 @@ sequenceDiagram
 7. The handler reads:
 
    ```cpp
-   bot.messages.text[0]
+   bot.messages[0].text
    ```
 
 8. When the text is `/panel`, the ESP32 sends the status panel and inline keyboard.
