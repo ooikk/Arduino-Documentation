@@ -7040,26 +7040,18 @@ const char CONTROL_KEYBOARD[] = R"json(
 Process the button in `handleCallbackQuery()`:
 
 ```cpp
-void handleCallbackQuery(
-  int index
-) {
-  const String chatId =
-    bot.messages[index].chat_id;
+void handleCallbackQuery(int index) {
+  const String chatId = bot.messages[index].chat_id;
+  const String queryId = bot.messages[index].query_id;
+  const String action = bot.messages[index].text;
+  const int messageId = bot.messages[index].message_id;
 
-  const String queryId =
-    bot.messages[index].query_id;
 
-  const String command =
-    bot.messages[index].text;
 
-  if (
-    command == "UPLOAD_IMAGE"
-  ) {
+  if (action == "UPLOAD_IMAGE") {
     bot.answerCallbackQuery(
       queryId,
-      "Please attach an image"
-    );
-
+      "Please attach an image");
     bot.sendMessage(
       chatId,
       "Please send the image as a File/Document:\n\n"
@@ -7069,23 +7061,27 @@ void handleCallbackQuery(
       "4. Send it to this bot.\n\n"
       "Do not select Gallery/Photo because the current "
       "ESP32 library only detects incoming documents.",
-      ""
-    );
-
+      "");
     return;
   }
 
-  // Existing callback controls follow.
-  if (
-    command == "LED_ON"
-  ) {
-    // Existing LED ON code.
+
+  if (!executeCallback(action)) {
+    bot.answerCallbackQuery(
+      queryId,
+      "Unknown action",
+      true);
+    return;
   }
-  else if (
-    command == "LED_OFF"
-  ) {
-    // Existing LED OFF code.
-  }
+
+  // Remove Telegram's button-loading animation.
+  bot.answerCallbackQuery(
+    queryId,
+    "Device updated",
+    false);
+
+  // Refresh the status by editing the existing inline-keyboard message.
+  sendControlPanel(chatId, messageId);
 }
 ```
 
