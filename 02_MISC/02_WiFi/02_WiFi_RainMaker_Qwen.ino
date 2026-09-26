@@ -3,7 +3,12 @@
 #include <WiFiProv.h>
 #include <esp_wifi.h>
 
-//#define PROVISION_WIFI
+#define ESP32_CORE3_3_12
+
+// This WiFi Prov option is not available 
+//#define PROVISION_WIFI  
+
+
 //#define TELEMETRY_VALUE
 
 // ------------------------------------------------------------------
@@ -116,12 +121,12 @@ void reportTelemetry() {
   if (temp_device) {
     temp_device->updateAndReportParam(PARAM_TEMP, temp_c);
   }
-  
+
 #ifdef TELEMETRY_VALUE
   // Send raw numeric values so the dashboard can chart them
   telemetry_device->updateAndReportParam(PARAM_RSSI, rssi);
   telemetry_device->updateAndReportParam(PARAM_UPTIME, (int)uptime_seconds);
-#else // Display as text string
+#else  // Display as text string
   char rssi_str[16];
   snprintf(rssi_str, sizeof(rssi_str), "%d dBm", rssi);
   telemetry_device->updateAndReportParam(PARAM_RSSI, rssi_str);
@@ -172,12 +177,12 @@ void sysProvEvent(arduino_event_t* sys_event) {
   switch (sys_event->event_id) {
     case ARDUINO_EVENT_PROV_INIT:
       //wifi_prov_mgr_disable_auto_stop(10000);
-      Serial.println("PROV_INIT");
+      Serial.println("[PROV] PROV_INIT");
       break;
 
     case ARDUINO_EVENT_PROV_START:
 #ifdef PROVISION_WIFI
-      Serial.println("WiFi Provisioning Started: PROV_START");
+      Serial.println("[PROV] WiFi Provisioning Started: PROV_START");
       WiFiProv.printQR(PROV_SERVICE_NAME, PROV_POP, "softap");
       // Manual fallback (if needed)
       Serial.println("Manual print QR Code link");
@@ -188,7 +193,7 @@ void sysProvEvent(arduino_event_t* sys_event) {
       Serial.printf("QR URL: https://rainmaker.espressif.com/qrcode.html?data=%s\n", payload);
 
 #else
-      Serial.println("BLE Provisioning Started: PROV_START");
+      Serial.println("[PROV] BLE Provisioning Started: PROV_START");
       WiFiProv.printQR(PROV_SERVICE_NAME, PROV_POP, "ble");
       // Manual fallback (if needed)
       Serial.println("Manual print QR Code link");
@@ -201,15 +206,15 @@ void sysProvEvent(arduino_event_t* sys_event) {
 #endif
       break;
     case ARDUINO_EVENT_PROV_CRED_RECV:
-      Serial.println("PROV_CRED_RECV");
+      Serial.println("[PROV] PROV_CRED_RECV");
       break;
 
     case ARDUINO_EVENT_PROV_CRED_SUCCESS:
       //wifi_prov_mgr_stop_provisioning();
-      Serial.println("WiFi credentials received: PROV_CRED_SUCCESS");
+      Serial.println("[PROV] WiFi credentials received: PROV_CRED_SUCCESS");
       break;
     case ARDUINO_EVENT_PROV_END:
-      Serial.println("PROV_END");
+      Serial.println("[PROV] PROV_END");
       break;
 
     case ARDUINO_EVENT_WIFI_STA_CONNECTED:
@@ -225,6 +230,16 @@ void sysProvEvent(arduino_event_t* sys_event) {
     case ARDUINO_EVENT_WIFI_STA_GOT_IP:
       Serial.printf("GOT_IP: %s\n",
                     WiFi.localIP().toString().c_str());
+      break;
+    case ARDUINO_EVENT_WIFI_SCAN_DONE:
+      Serial.println("WiFi Scan done: ARDUINO_EVENT_WIFI_SCAN_DONE");
+      break;
+
+    case ARDUINO_EVENT_WIFI_STA_GOT_IP6:
+      Serial.println("WIFI_STA_GOT_IP6");
+      break;
+    case ARDUINO_EVENT_PROV_DEINIT:
+      Serial.println("[PROV] PROV_DEINIT");
       break;
     case 34:
     default:
@@ -311,7 +326,7 @@ void setup() {
     Param rssi_param(PARAM_RSSI, "esp.param.text", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
     //Param rssi_param(PARAM_RSSI, "esp.param.speed", value(0), PROP_FLAG_READ | PROP_FLAG_TIME_SERIES);
 #else
-    Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ );
+    Param rssi_param(PARAM_RSSI, "esp.param.text", value("0 dBm"), PROP_FLAG_READ);
     rssi_param.addUIType(ESP_RMAKER_UI_TEXT);
 #endif
     telemetry_device->addParam(rssi_param);
@@ -327,7 +342,7 @@ void setup() {
 #else
     Param uptime_param(PARAM_UPTIME, "esp.param.text", value("0 s"), PROP_FLAG_READ);
     uptime_param.addUIType(ESP_RMAKER_UI_TEXT);
-#endif    
+#endif
     telemetry_device->addParam(uptime_param);
 
     my_node.addDevice(*telemetry_device);
@@ -355,6 +370,19 @@ void setup() {
   RMaker.enableSchedule();
   RMaker.enableScenes();
 
+#ifdef ESP32_CORE3_3_12
+
+#ifdef PROVISION_WIFI
+  WiFiProv.initProvision(
+    NETWORK_PROV_SCHEME_SOFTAP,
+    NETWORK_PROV_SCHEME_HANDLER_NONE);
+#else
+  WiFiProv.initProvision(
+    NETWORK_PROV_SCHEME_BLE,
+    NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM);
+#endif
+
+#endif
 
   // Start RainMaker now that WiFi is ready
   if (RMaker.start() == ESP_OK) {
@@ -364,6 +392,21 @@ void setup() {
   }
 
   WiFi.onEvent(sysProvEvent);
+#ifdef ESP32_CORE3_3_12
+
+  WiFiProv.beginProvision(
+#ifdef PROVISION_WIFI
+    NETWORK_PROV_SCHEME_SOFTAP,
+    NETWORK_PROV_SCHEME_HANDLER_NONE,
+#else
+    NETWORK_PROV_SCHEME_BLE,
+    NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM,
+#endif
+    NETWORK_PROV_SECURITY_1,
+    PROV_POP,
+    PROV_SERVICE_NAME);
+
+#else
 
   WiFiProv.beginProvision(
 #ifdef PROVISION_WIFI
@@ -377,6 +420,7 @@ void setup() {
     PROV_POP,
     PROV_SERVICE_NAME);
 
+#endif
 
   Serial.printf("Provisioning service: %s, PoP: %s\n", PROV_SERVICE_NAME, PROV_POP);
 }
