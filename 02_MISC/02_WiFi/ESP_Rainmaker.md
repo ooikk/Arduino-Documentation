@@ -3776,3 +3776,77 @@ See the [Arduino-ESP32 WiFiProv.h header](https://github.com/espressif/arduino-e
 This change addresses the listed compilation errors.
 
 If the code compiles but the ESP32 reboots when provisioning starts, inspect the Serial Monitor log and verify the exact board selection. That would be a separate runtime issue.
+
+## ESP32 Provisioning Event Handler
+
+Callback's named `ARDUINO_EVENT_...` cases can remain unchanged. They are still used in the current Arduino-ESP32 core.
+
+### Recommended Changes
+
+#### 1. Remove `case 34`
+
+Remove this case:
+
+```cpp
+case 34:
+```
+
+It is a numeric event from an older event layout.
+
+Provisioning events now use named IDs starting at `160`, so the `default` case is sufficient.
+
+See the [Arduino-ESP32 NetworkEvents.h file](https://github.com/espressif/arduino-esp32/blob/master/libraries/Network/src/NetworkEvents.h).
+
+#### 2. Provisioning Manager Calls
+
+Leave the two manager calls commented out if provisioning currently completes successfully.
+
+You do not need to replace them simply to compile.
+
+If you want to use the explicit cleanup pattern from Espressif's RainMaker example, use the `WiFiProv` methods together:
+
+```cpp
+case ARDUINO_EVENT_PROV_INIT:
+  WiFiProv.disableAutoStop(10000);
+
+  Serial.println(
+    "PROV_INIT"
+  );
+  break;
+
+case ARDUINO_EVENT_PROV_CRED_SUCCESS:
+  Serial.println(
+    "Wi-Fi provisioning successful"
+  );
+
+  WiFiProv.endProvision();
+  break;
+```
+
+Espressif's RainMaker example pairs these two calls.
+
+> **Important:** Do not enable `disableAutoStop()` without also handling the end of provisioning.
+
+See the [Espressif RainMaker example](https://github.com/espressif/arduino-esp32/blob/master/libraries/RainMaker/examples/RMakerSwitch/RMakerSwitch.ino).
+
+### QR Code Calls
+
+The following calls are valid:
+
+```cpp
+WiFiProv.printQR(
+  serviceName,
+  password,
+  "softap"
+);
+
+WiFiProv.printQR(
+  serviceName,
+  password,
+  "ble"
+);
+```
+
+The manual QR URL is optional and does not require a core 3.3.12 name change.
+
+See the [Arduino-ESP32 WiFiProv example](https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFiProv/examples/WiFiProv/WiFiProv.ino).
