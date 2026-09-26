@@ -85,6 +85,12 @@ Instead of subscribing to `TOPIC_LED_SET`, RainMaker invokes your LED write call
 
 6. Install **esp32 by Espressif Systems**.
 
+**ESP32 Core 3.3.12** has resolved the provisioning hang bug in earlier version. Follow this link for the new provisioning:      
+[Core 3.3.12 Provisioning](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Rainmaker.md#arduino-esp32-3312-and-beyond-provisioning-names)
+
+Skip 2.0.17 steps     
+
+
 **Use a version 2.0.17 because ESP RainMaker compatibilty issue with BLE Provision and ESP32 S3 Reboot bugs.**    
 <img width="351" height="287" alt="image" src="https://github.com/user-attachments/assets/86d77a0e-fd9f-4e05-ad97-5683d34e21dc" />
 
@@ -173,8 +179,11 @@ Pressed     = LOW
 ## 4. ESP RainMaker Mobile-App Setup
 
 1. Install the ESP RainMaker application from the Google Play Store or Apple App Store.
-2. Create an ESP RainMaker account or sign in.
-3. Later, select:
+2. Thera are 2 versions of the RainMaker Apps, choose either one:
+   - [ESP RAINMAKER](https://play.google.com/store/apps/details?id=com.espressif.rainmaker) - Able to show Time Series of temperature in a chart
+   - [ESP RAINMAKER HOME](https://play.google.com/store/apps/details?id=com.espressif.novahome) -  Able to Toggle LED On/Off with touch button
+3. Create an **ESP RainMaker Classic** account or sign in.
+4. Later, select:
 
    ```text
    Add Device
@@ -201,6 +210,7 @@ Paste the following code:
 #include <WiFiProv.h>
 #include <esp_wifi.h>
 
+#define ESP32_CORE3_3_12  // For latest ESP32 Core 3.3.12 and beyond
 //#define PROVISION_WIFI
 
 // ------------------------------------------------------------------
@@ -536,6 +546,17 @@ void setup() {
   RMaker.enableSchedule();
   RMaker.enableScenes();
 
+#ifdef ESP32_CORE3_3_12
+#ifdef PROVISION_WIFI
+  WiFiProv.initProvision(
+    NETWORK_PROV_SCHEME_SOFTAP,
+    NETWORK_PROV_SCHEME_HANDLER_NONE);
+#else
+  WiFiProv.initProvision(
+    NETWORK_PROV_SCHEME_BLE,
+    NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM);
+#endif
+#endif
 
   // Start RainMaker now that WiFi is ready
   if (RMaker.start() == ESP_OK) {
@@ -545,6 +566,21 @@ void setup() {
   }
 
   WiFi.onEvent(sysProvEvent);
+#ifdef ESP32_CORE3_3_12
+
+  WiFiProv.beginProvision(
+#ifdef PROVISION_WIFI
+    NETWORK_PROV_SCHEME_SOFTAP,
+    NETWORK_PROV_SCHEME_HANDLER_NONE,
+#else
+    NETWORK_PROV_SCHEME_BLE,
+    NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM,
+#endif
+    NETWORK_PROV_SECURITY_1,
+    PROV_POP,
+    PROV_SERVICE_NAME);
+
+#else
 
   WiFiProv.beginProvision(
 #ifdef PROVISION_WIFI
@@ -558,6 +594,7 @@ void setup() {
     PROV_POP,
     PROV_SERVICE_NAME);
 
+#endif
 
   Serial.printf("Provisioning service: %s, PoP: %s\n", PROV_SERVICE_NAME, PROV_POP);
 }
@@ -902,6 +939,18 @@ This starts the RainMaker core, MQTT handling, cloud-association logic, and rela
 
 The example uses BLE provisioning:
 
+For ESP32 Core 3.3.12:   
+
+```cpp
+  WiFiProv.beginProvision(
+    NETWORK_PROV_SCHEME_BLE,
+    NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM,
+    NETWORK_PROV_SECURITY_1,
+    PROV_POP,
+    PROV_SERVICE_NAME);
+```
+For ESP32 Core 2.0.17:   
+
 ```cpp
   WiFiProv.beginProvision(
   WIFI_PROV_SCHEME_BLE,                // for BLE
@@ -910,6 +959,7 @@ The example uses BLE provisioning:
   PROV_POP,
   PROV_SERVICE_NAME);
 ```
+
 
 
 ## 7. Uploading and Provisioning
@@ -978,6 +1028,14 @@ Provisioning service: PROV_OOIKK, PoP: abcd1234
 
 ### 7.3 Add the Device in the ESP RainMaker App
 
+Thera are 2 versions of the RainMaker Apps, choose either one:
+1. [ESP RAINMAKER](https://play.google.com/store/apps/details?id=com.espressif.rainmaker) - Able to show Time Series of temperature in a chart
+2. [ESP RAINMAKER HOME](https://play.google.com/store/apps/details?id=com.espressif.novahome) -  Able to Toggle LED On/Off with touch button
+
+**Note:** Example below using ESP RAIMMAKER HOME        
+
+
+Registered your apps as ESP RainMaker Classic:    
 1. Copy the attached QR URL to a browser. `https://rainmaker.espressif.com/qrcode.html?data={"ver":"v1","name":"PROV_OOIKK","pop":"abcd1234","transport":"ble"}`
 2. Open the ESP RainMaker application.
 3. Tap **Add Device**.
@@ -1074,8 +1132,22 @@ To visualize custom values such as `status`, `rssi`, `uptime`, and `button`, you
 
 ### 10.1 Use SoftAP Provisioning
 
+**NOTE:** This option currently is not supported by the ESP RainMaker apps
+
 If BLE provisioning is unstable, use SoftAP provisioning instead:
 
+For ESP32 Core 3.3.12        
+```
+WiFiProv.beginProvision(
+  NETWORK_PROV_SCHEME_SOFTAP,
+  NETWORK_PROV_SCHEME_HANDLER_NONE,
+  NETWORK_PROV_SECURITY_1,
+  PROV_POP,
+  PROV_SERVICE_NAME
+);
+```
+
+For ESP32 Core 12.0.17      
 ```cpp
 WiFiProv.beginProvision(
   WIFI_PROV_SCHEME_SOFTAP,
@@ -2420,6 +2492,20 @@ If the problem is specifically BLE, you can use SoftAP provisioning.
 
 Replace the BLE provisioning call:
 
+ESP32 Core 3.3.12:
+
+```cpp
+WiFiProv.beginProvision(
+  NETWORK_PROV_SCHEME_BLE,
+  NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM,
+  NETWORK_PROV_SECURITY_1,
+  PROV_POP,
+  PROV_SERVICE_NAME);
+```
+
+
+ESP32 Core 2.0.17:     
+
 ```cpp
 WiFiProv.beginProvision(
   WIFI_PROV_SCHEME_BLE,
@@ -2432,6 +2518,19 @@ WiFiProv.beginProvision(
 ```
 
 with SoftAP provisioning:
+
+ESP32 Core 3.3.12:
+
+```cpp
+WiFiProv.beginProvision(
+  NETWORK_PROV_SCHEME_SOFTAP,
+  NETWORK_PROV_SCHEME_HANDLER_NONE,
+  NETWORK_PROV_SECURITY_1,
+  PROV_POP,
+  PROV_SERVICE_NAME);
+```
+
+ESP32 Core 2.0.17:     
 
 ```cpp
 WiFiProv.beginProvision(
@@ -2562,16 +2661,7 @@ Use provisioning once:
 
 After that, the ESP32-S3 should reconnect automatically without using BLE or the application on every boot.
 
-If BLE is unstable, use SoftAP provisioning:
-
-```cpp
-  WiFiProv.beginProvision(
-  WIFI_PROV_SCHEME_SOFTAP,        // for WiFi
-  WIFI_PROV_SCHEME_HANDLER_NONE,  // for WiFi
-  WIFI_PROV_SECURITY_1,
-  PROV_POP,
-  PROV_SERVICE_NAME);
-```
+If BLE is unstable, use SoftAP provisioning.
 
 ### If You Want to Avoid the Application Completely
 
