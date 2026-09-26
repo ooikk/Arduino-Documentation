@@ -33,6 +33,14 @@
 // User settings
 // -----------------------------------------------------------------------------
 
+#define UPLOAD_PHOTO
+
+#ifdef UPLOAD_PHOTO
+#include <HTTPClient.h>
+#include <SD.h>
+#include <SPI.h>
+#endif
+
 const char WIFI_SSID[] = "";
 const char WIFI_PASSWORD[] = "";
 const char BOT_TOKEN[] = "";
@@ -40,6 +48,7 @@ const char AUTHORIZED_CHAT_ID[] = "";
 
 // Change these GPIO assignments for your ESP32 board and hardware.
 constexpr uint8_t LED_PIN = 1;
+constexpr uint8_t BUTTON_PIN = 2;  // Boot button on ESP32-S3 (Pull-up)
 constexpr uint8_t FAN_PWM_PIN = 39;
 constexpr uint8_t MOTOR_PWM_PIN = 40;
 constexpr uint8_t MOTOR_IN1_PIN = 41;
@@ -52,6 +61,18 @@ constexpr uint8_t PWM_RESOLUTION_BITS = 8;
 constexpr uint16_t PWM_MAX_DUTY = 255;
 
 constexpr unsigned long BOT_POLL_INTERVAL_MS = 1000;
+#ifdef UPLOAD_PHOTO
+
+#define SD_SCLK_PIN 4
+#define SD_MISO_PIN 5
+#define SD_MOSI_PIN 6
+#define SD_CS_PIN 7
+#define SD_FREQUENCY 4000000  //16000000  // 16MHz or 4MHz
+
+SPIClass sdSPI(FSPI);
+
+constexpr size_t MAX_PHOTO_SIZE = 20 * 1024 * 1024;
+#endif
 
 // -----------------------------------------------------------------------------
 // Telegram and device state
@@ -106,6 +127,9 @@ const char CONTROL_KEYBOARD[] = R"json(
   [
     {"text":"Motor 75%","callback_data":"MOTOR_75"},
     {"text":"Motor 100%","callback_data":"MOTOR_100"}
+  ],
+  [
+    {"text": "UPLOAD IMAGE","callback_data": "UPLOAD_IMAGE"}
   ],
   [
     {"text":"REFRESH STATUS","callback_data":"STATUS"}
@@ -258,12 +282,15 @@ String buildStatusText() {
   status += String(WiFi.RSSI());
   status += " dBm";
 
+  status += "\nButton: ";
+  status += digitalRead(BUTTON_PIN) == LOW ? "Pressed" : "Released";
+
   status += "\n\nSelect an action:";
   return status;
 }
 
 void sendControlPanel(
-  const String &chatId,
+  const String& chatId,
   int messageId = 0) {
   // messageId == 0 sends a new message.
   // A non-zero messageId edits the existing dashboard message.
@@ -280,12 +307,13 @@ void sendControlPanel(
   Serial.println(Status);
 }
 
-bool isAuthorized(const String &chatId) {
+bool isAuthorized(const String& chatId) {
   //Serial.printf("chatID %s Authorized chatID %s\n", chatId, AUTHORIZED_CHAT_ID);
   return chatId == AUTHORIZED_CHAT_ID;
+  //return chatId.equals(AUTHORIZED_CHAT_ID);
 }
 
-bool executeCallback(const String &action) {
+bool executeCallback(const String& action) {
   if (action == "LED_ON") {
     ledIsOn = true;
     applyLedOutput();
@@ -338,6 +366,7 @@ void handleCallbackQuery(int index) {
   const String action = bot.messages[index].text;
   const int messageId = bot.messages[index].message_id;
 
+  /**
   if (!isAuthorized(chatId)) {
     bot.answerCallbackQuery(
       queryId,
@@ -345,6 +374,29 @@ void handleCallbackQuery(int index) {
       true);
     return;
   }
+*/
+
+#ifdef UPLOAD_PHOTO
+  if (action == "UPLOAD_IMAGE") {
+    bot.answerCallbackQuery(
+      queryId,
+      "Please attach an image");
+    bot.sendMessage(
+      chatId,
+      "Please send the image as a File/Document:\n\n"
+      "1. Press the attachment icon.\n"
+      "2. Select File or Document.\n"
+      "3. Select a JPG or PNG file.\n"
+      "4. Send it to this bot.\n\n"
+      "Do not select Gallery/Photo because the current "
+      "ESP32 library only detects incoming documents.\n"
+      "Max file size 20MB.",
+      "");
+
+    Serial.println("Received Text Message command: " + action);
+    return;
+  }
+#endif
 
   if (!executeCallback(action)) {
     bot.answerCallbackQuery(
@@ -364,13 +416,190 @@ void handleCallbackQuery(int index) {
   sendControlPanel(chatId, messageId);
 }
 
+#ifdef UPLOAD_PHOTO
+
+bool isAcceptedImage(const String& name) {
+  String lowerName = name;
+  lowerName.toLowerCase();
+  return lowerName.endsWith(
+           ".jpg")
+         || lowerName.endsWith(
+           ".jpeg")
+         || lowerName.endsWith(
+           ".png");
+}
+
+bool downloadPhotoToSD(const String& fileUrl, const String& destination, long expectedSize) {
+  WiFiClientSecure downloadClient;
+  downloadClient.setCACert(TELEGRAM_CERTIFICATE_ROOT);
+
+  HTTPClient https;
+  if (!https.begin(downloadClient, fileUrl)) {
+    Serial.println("[PHOTO] HTTPS begin failed");
+    return false;
+  }
+
+  https.setConnectTimeout(15000);
+  https.setTimeout(30000);
+
+
+  //https.setReuse(false);  // before https.GET()
+
+  const int httpCode = https.GET();
+  // Immediately after https.GET():
+  Serial.printf("[PHOTO] GET=%d, HTTP length=%d, Telegram length=%ld\n",
+                httpCode, https.getSize(), expectedSize);
+
+  //Serial.printf("[PHOTO] HTTP GET: %d\n", httpCode);
+
+
+
+  if (httpCode != HTTP_CODE_OK) {
+    https.end();
+    return false;
+  }
+
+  File outputFile = SD.open(destination, FILE_WRITE);
+  if (!outputFile) {
+    Serial.println("[PHOTO] Cannot open SD file for writing");
+    https.end();
+    return false;
+  }
+
+  // Immediately before writeToStream():
+  Serial.println("[PHOTO] Starting Telegram-to-SD transfer, please wait...");
+
+  const int bytesWritten = https.writeToStream(&outputFile);
+
+  // Immediately after writeToStream():
+  Serial.printf("[PHOTO] Transfer returned %d\n", bytesWritten);
+
+
+  outputFile.flush();
+  const size_t savedSize = outputFile.size();
+  outputFile.close();
+  https.end();
+
+  Serial.printf("[PHOTO] Download result: %d, SD file size: %u, expected: %ld\n",
+                bytesWritten, (unsigned)savedSize, expectedSize);
+
+  const bool success =
+    bytesWritten > 0 && savedSize == (size_t)bytesWritten && (expectedSize <= 0 || savedSize == (size_t)expectedSize);
+
+  if (!success) {
+    SD.remove(destination);  // Remove an empty or incomplete image
+  }
+  return success;
+}
+
+String makeSafeFileName(String fileName) {
+  fileName.replace("/", "_");
+  fileName.replace("\\", "_");
+  fileName.replace("..", "_");
+  fileName.replace(":", "_");
+  fileName.replace("*", "_");
+  fileName.replace("?", "_");
+  fileName.replace("\"", "_");
+  fileName.replace("<", "_");
+  fileName.replace(">", "_");
+  fileName.replace("|", "_");
+
+  if (fileName.length() == 0) {
+    fileName = "image.jpg";
+  }
+
+  return fileName;
+}
+
+void handleIncomingDocument(int index) {
+  const String chatId = bot.messages[index].chat_id;
+
+  const String fileName = bot.messages[index].file_name;
+
+  const String filePath = bot.messages[index].file_path;
+
+  const long fileSize = bot.messages[index].file_size;
+
+  const String caption = bot.messages[index].file_caption;
+
+  Serial.println();
+  Serial.println(
+    "========== DOCUMENT RECEIVED ==========");
+
+  Serial.printf("File name: %s\n", fileName.c_str());
+
+  Serial.printf("File size: %ld bytes\n", fileSize);
+
+  Serial.printf("Caption: %s\n", caption.c_str());
+
+  // Do not print filePath publicly because
+  // it contains the bot token.
+  Serial.println("Telegram download path obtained");
+
+  bot.sendMessage(
+    chatId,
+    "Image document received: " + fileName + "\nSize: " + String(fileSize) + " bytes",
+    "");
+
+  // validate file extension and file size
+  if (!isAcceptedImage(fileName)) {
+    bot.sendMessage(
+      chatId,
+      "Please send a JPG or PNG image.",
+      "");
+    return;
+  }
+
+  if (fileSize <= 0 || fileSize > MAX_PHOTO_SIZE) {
+    bot.sendMessage(
+      chatId,
+      "The image is too large.",
+      "");
+
+    return;
+  }
+
+  // Next step:
+  // downloadPhotoToSD(
+  //   filePath,
+  //   "/telegram_photo.jpg"
+  // );
+
+  String safeFileName = makeSafeFileName(fileName);
+
+  String destination = String("/tel_") + safeFileName;
+  //Serial.printf("[PHOTO] Saving as: %s\n", destination.c_str());
+  Serial.printf("[PHOTO] Downloading %s (%ld bytes)...\n",
+                destination.c_str(), fileSize);
+  unsigned long started = millis();
+  bool success = downloadPhotoToSD(filePath, destination, fileSize);
+  Serial.printf("[PHOTO] %s after %lu seconds\n",
+                success ? "Complete" : "Failed",
+                (millis() - started) / 1000);
+
+  if (success) {
+    bot.sendMessage(
+      chatId,
+      "Image downloaded successfully:\n" + destination,
+      "");
+  } else {
+    bot.sendMessage(
+      chatId,
+      "Image download failed.",
+      "");
+  }
+}
+#endif
+
 void handleTextMessage(int index) {
   const String chatId = bot.messages[index].chat_id;
 
+  /**
   if (!isAuthorized(chatId)) {
     bot.sendMessage(chatId, "Unauthorized chat.", "");
     return;
   }
+*/
 
   String command = bot.messages[index].text;
   command.trim();
@@ -405,8 +634,34 @@ void handleTextMessage(int index) {
 
 void handleTelegramUpdates(int updateCount) {
   for (int i = 0; i < updateCount; i++) {
+
+    const String chatId =
+      bot.messages[i].chat_id;
+
+    // Reject unauthorized chats before processing anything.
+    if (!isAuthorized(chatId)) {
+      Serial.printf(
+        "[TELEGRAM] Unauthorized chat ID: %s\n",
+        chatId.c_str());
+
+      bot.sendMessage(
+        chatId,
+        "Unauthorized user.",
+        "");
+
+      continue;  // continue to next chatId, i+1
+    }
+
+    // 1. Inline keyboard button press
     if (bot.messages[i].type == "callback_query") {
       handleCallbackQuery(i);
+#ifdef UPLOAD_PHOTO
+      // 2. Incoming file/document
+    } else if (
+      bot.messages[i].type == "message" && bot.messages[i].hasDocument) {
+      handleIncomingDocument(i);
+#endif
+      // 3. Ordinary text message
     } else {
       handleTextMessage(i);
     }
@@ -449,6 +704,7 @@ void synchronizeClock() {
 
 void setupOutputs() {
   pinMode(LED_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(MOTOR_IN1_PIN, OUTPUT);
   pinMode(MOTOR_IN2_PIN, OUTPUT);
 
@@ -479,6 +735,34 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
+#ifdef UPLOAD_PHOTO
+  sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
+
+  if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
+    Serial.print("SD Card initialization failed! Try again.");
+    if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
+      delay(1000);  // Halt
+      Serial.print(".");
+    }
+  }
+  Serial.println("SD card ready");
+
+  Serial.printf("Card size: %llu MB\n", SD.cardSize() / (1024ULL * 1024ULL));
+  /*
+  File test = SD.open("/sd_test.txt", FILE_WRITE);
+  if (!test) {
+    Serial.println("[TEST] SD.open failed");
+  } else {
+    size_t written = test.print("SD write test\n");
+    test.flush();
+    Serial.printf("[TEST] SD wrote %u bytes; file size %u\n",
+                  (unsigned)written, (unsigned)test.size());
+    test.close();
+  }
+*/
+
+#endif
+
   setupOutputs();
   connectWiFi();
   synchronizeClock();
@@ -489,8 +773,12 @@ void setup() {
   Serial.println("CA Cert setup success.");
   // Wait up to 10 seconds for a new update during each long-poll request.
   bot.longPoll = 10;
-  // Increae the defaul JSON length of 1500 byte to support long CONTROL_KEYBOARD
+  // Increae the default JSON length of 1500 byte to support long CONTROL_KEYBOARD
+#ifdef UPLOAD_PHOTO
+  bot.maxMessageLength = 6144;
+#else
   bot.maxMessageLength = 4096;
+#endif
   Serial.println("Send to bot: ESP32 inline controller is online. Send /panel.");
   bot.sendMessage(
     AUTHORIZED_CHAT_ID,
