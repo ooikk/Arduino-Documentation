@@ -6740,3 +6740,789 @@ For example, document fields are normally empty for text messages and button pre
 This function prints every field retained by `UniversalTelegramBot`, but it does not print the complete raw JSON returned by Telegram.
 
 The library discards Telegram fields that are not included in its `telegramMessage` structure.
+
+---
+
+# Receiving Telegram Photos on the ESP32
+
+## Overview
+
+When you send a photo from Telegram to the ESP32, Telegram does not place the JPEG data directly inside `getUpdates()`.
+
+The transfer happens in three stages:
+
+```mermaid
+sequenceDiagram
+    participant S as SD card or flash
+    participant E as ESP32
+    participant T as Telegram server
+    participant U as Telegram user
+
+    U->>T: Send photo
+    E->>T: getUpdates()
+    T-->>E: JSON metadata and file_id
+    E->>T: getFile(file_id)
+    T-->>E: file_path and file_size
+    E->>T: HTTPS GET file URL
+    T-->>E: JPEG binary stream
+    E->>S: Save image in small blocks
+    E->>T: sendMessage("Photo received")
+    T-->>U: Confirmation message
+```
+
+The important distinction is:
+
+```text
+getUpdates() receives information about the photo.
+getFile() obtains the temporary download path.
+A separate HTTPS GET downloads the actual JPEG bytes.
+```
+
+Telegram keeps pending updates for up to 24 hours. Polling with `getUpdates()` and webhooks are mutually exclusive.
+
+See the [Telegram Bot API](https://core.telegram.org/bots/api?utm_source=chatgpt.com).
+
+## 1. Communication Protocols
+
+Several protocol layers work together:
+
+| Layer | Protocol | Purpose |
+|---|---|---|
+| Application | Telegram Bot API | `getUpdates`, `getFile`, and `sendMessage`. |
+| Data format | JSON | Photo metadata, IDs, and file path. |
+| Security | TLS/HTTPS | Encrypts and authenticates Telegram communication. |
+| Transport | TCP | Reliable delivery of JSON and JPEG bytes. |
+| Network | Wi-Fi/IP | Connects the ESP32 to the Internet. |
+| Image data | JPEG or PNG | Binary image stored or processed by the ESP32. |
+
+All Telegram Bot API requests use port `443`:
+
+```text
+ESP32 → HTTPS/TCP → api.telegram.org:443
+```
+
+The ESP32 initiates every connection. Telegram does not open a connection directly to the ESP32.
+
+## 2. Limitation of the Current Library
+
+Your installed `UniversalTelegramBot` version supports incoming documents, but its current message parser does not extract Telegram's normal `message.photo[]` field.
+
+Its parser handles:
+
+```text
+message["text"]
+message["location"]
+message["document"]
+```
+
+For a document, the library automatically:
+
+1. Reads the document's `file_id`.
+2. Calls `getFile()`.
+3. Places the download URL in:
+
+   ```cpp
+   bot.messages[index].file_path
+   ```
+
+4. Places the file size in:
+
+   ```cpp
+   bot.messages[index].file_size
+   ```
+
+5. Sets:
+
+   ```cpp
+   bot.messages[index].hasDocument = true;
+   ```
+
+This behaviour is visible in the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Bot/blob/master/src/UniversalTelegramBot.cpp?utm_source=chatgpt.com).
+
+There are two implementation choices:
+
+### Method A — Recommended Initially
+
+Send the image from Telegram as a file or document instead of a compressed photo.
+
+This works with the existing library without modification.
+
+### Method B — Normal Telegram Photo
+
+Modify the library or manually parse the raw `getUpdates()` JSON to extract:
+
+```text
+message.photo[]
+```
+
+This provides the normal Telegram photo-sharing experience but requires additional code.
+
+Prove the complete download and storage process using Method A first.
+
+## 3. Prepare ESP32 Storage
+
+A Telegram photograph can easily be hundreds of kilobytes or several megabytes.
+
+Do not place the complete image in a normal RAM array.
+
+Choose one storage destination:
+
+| Storage | Use Case |
+|---|---|
+| SD card | Recommended for large or multiple images. |
+| LittleFS | Suitable for smaller images. |
+| PSRAM | Useful for temporary processing, but data disappears after restart. |
+| Direct streaming | Useful when forwarding or processing without permanent storage. |
+
+### SD Card Setup
+
+Include the required libraries:
+
+```cpp
+#include <SD.h>
+#include <SPI.h>
+```
+
+Initialise the SD card in `setup()`:
+
+```cpp
+if (!SD.begin(SD_CS_PIN)) {
+  Serial.println(
+    "[SD] Initialization failed"
+  );
+} else {
+  Serial.println(
+    "[SD] Ready"
+  );
+}
+```
+
+The ESP32 should verify that it has somewhere to place the photo before starting a potentially large network transfer.
+
+## 4. Configure Secure Telegram Communication
+
+The existing structure should look approximately like this:
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <UniversalTelegramBot.h>
+
+WiFiClientSecure telegramClient;
+
+UniversalTelegramBot bot(
+  BOT_TOKEN,
+  telegramClient
+);
+```
+
+After Wi-Fi connects, synchronise the system clock and install Telegram's root certificate:
+
+```cpp
+configTime(
+  0,
+  0,
+  "pool.ntp.org",
+  "time.nist.gov"
+);
+
+telegramClient.setCACert(
+  TELEGRAM_CERTIFICATE_ROOT
+);
+```
+
+### Why This Is Required
+
+- The root certificate authenticates `api.telegram.org`.
+- The system clock is needed to check whether Telegram's TLS certificate is currently valid.
+- Without a valid clock, certificate verification may fail.
+- Do not use `setInsecure()` in the final application because it disables server authentication.
+
+## 5. Increase JSON Capacity
+
+A document update contains more information than a simple text message. A large inline keyboard may also increase the response size.
+
+Set:
+
+```cpp
+bot.maxMessageLength = 4096;
+bot.longPoll = 10;
+```
+
+If parsing still fails:
+
+```cpp
+bot.maxMessageLength = 6144;
+```
+
+`maxMessageLength` is used for the Telegram JSON response, not for storing the actual JPEG.
+
+The image itself must be streamed separately.
+
+## 6. Send the Photo as a Document
+
+In Telegram:
+
+1. Open your bot conversation.
+2. Press the attachment button.
+3. Select **File** or **Document**.
+4. Select the JPEG file.
+5. Send it to the bot.
+
+Do not initially select the normal **Gallery/Photo** option.
+
+Telegram will create an update similar to:
+
+```json
+{
+  "message": {
+    "message_id": 152,
+    "from": {
+      "id": 123456789
+    },
+    "chat": {
+      "id": 123456789
+    },
+    "document": {
+      "file_name": "test.jpg",
+      "mime_type": "image/jpeg",
+      "file_id": "BQACAg..."
+    },
+    "caption": "Test image"
+  }
+}
+```
+
+The image bytes are not present in this JSON. The `file_id` is a reference to the file stored on Telegram's server.
+
+## 7. Poll for the Incoming Update
+
+Continue using the existing polling loop:
+
+```cpp
+int updateCount =
+  bot.getUpdates(
+    bot.last_message_received + 1
+  );
+
+while (updateCount > 0) {
+  handleTelegramUpdates(
+    updateCount
+  );
+
+  updateCount =
+    bot.getUpdates(
+      bot.last_message_received + 1
+    );
+}
+```
+
+Telegram assigns every update an `update_id`.
+
+```text
+last_message_received + 1
+```
+
+requests only newer updates.
+
+The `while` loop drains multiple waiting messages.
+
+After processing the document, the library provides:
+
+```cpp
+bot.messages[index].hasDocument
+bot.messages[index].file_name
+bot.messages[index].file_caption
+bot.messages[index].file_size
+bot.messages[index].file_path
+bot.messages[index].chat_id
+bot.messages[index].from_id
+```
+
+## 8. Detect and Validate the Image
+
+Add document handling to `handleTelegramUpdates()`:
+
+```cpp
+void handleTelegramUpdates(
+  int updateCount
+) {
+  for (
+    int index = 0;
+    index < updateCount;
+    index++
+  ) {
+    const String chatId =
+      bot.messages[index].chat_id;
+
+    const String fromId =
+      bot.messages[index].from_id;
+
+    if (
+      !fromId.equals(
+        AUTHORIZED_CHAT_ID
+      )
+    ) {
+      bot.sendMessage(
+        chatId,
+        "Unauthorized user.",
+        ""
+      );
+
+      continue;
+    }
+
+    if (
+      bot.messages[index].hasDocument
+    ) {
+      handleIncomingDocument(
+        index
+      );
+
+      continue;
+    }
+
+    handleTextMessage(
+      index
+    );
+  }
+}
+```
+
+Then inspect the document:
+
+```cpp
+void handleIncomingDocument(
+  int index
+) {
+  const String chatId =
+    bot.messages[index].chat_id;
+
+  const String fileName =
+    bot.messages[index].file_name;
+
+  const String fileUrl =
+    bot.messages[index].file_path;
+
+  const long fileSize =
+    bot.messages[index].file_size;
+
+  Serial.println(
+    "[PHOTO] Document received"
+  );
+
+  Serial.println(
+    "[PHOTO] Name: " +
+    fileName
+  );
+
+  Serial.println(
+    "[PHOTO] URL obtained"
+  );
+
+  Serial.printf(
+    "[PHOTO] Size: %ld bytes\n",
+    fileSize
+  );
+
+  // Download function will be called here.
+}
+```
+
+Authorisation must happen before downloading. Otherwise, any Telegram user who can reach the bot could consume ESP32 storage and network bandwidth.
+
+## 9. Check the File Extension and Size
+
+Before downloading:
+
+```cpp
+bool isAcceptedImage(
+  const String& name
+) {
+  String lowerName =
+    name;
+
+  lowerName.toLowerCase();
+
+  return lowerName.endsWith(
+           ".jpg"
+         ) ||
+         lowerName.endsWith(
+           ".jpeg"
+         ) ||
+         lowerName.endsWith(
+           ".png"
+         );
+}
+```
+
+Use a practical size limit:
+
+```cpp
+constexpr size_t MAX_PHOTO_SIZE =
+  2 * 1024 * 1024;
+```
+
+Validate the file:
+
+```cpp
+if (
+  !isAcceptedImage(
+    fileName
+  )
+) {
+  bot.sendMessage(
+    chatId,
+    "Please send a JPG or PNG image.",
+    ""
+  );
+
+  return;
+}
+
+if (
+  fileSize <= 0 ||
+  fileSize > MAX_PHOTO_SIZE
+) {
+  bot.sendMessage(
+    chatId,
+    "The image is too large.",
+    ""
+  );
+
+  return;
+}
+```
+
+Telegram's hosted Bot API currently permits bots to download files up to 20 MB. The `getFile()` download link is guaranteed to remain valid for at least one hour.
+
+See the [Telegram Bot API](https://core.telegram.org/bots/api?utm_source=chatgpt.com).
+
+The ESP32 limit should normally be much lower than Telegram's limit because of:
+
+- Storage space.
+- Download duration.
+- Watchdog timing.
+- Image-decoder requirements.
+- Display resolution.
+- Heap fragmentation.
+
+## 10. Understand the Generated File URL
+
+The library's `getFile()` function constructs a URL in this form:
+
+```text
+[https://api.telegram.org/file/bot](https://api.telegram.org/file/bot)<TOKEN>/<file_path>
+```
+
+For example:
+
+```text
+[https://api.telegram.org/file/bot123456:ABC/photos/file_7.jpg](https://api.telegram.org/file/bot123456:ABC/photos/file_7.jpg)
+```
+
+The library stores that complete URL in:
+
+```cpp
+bot.messages[index].file_path
+```
+
+The URL includes your bot token.
+
+Therefore:
+
+- Never print it in publicly shared logs.
+- Do not publish screenshots containing it.
+- Do not send it to another user.
+- Do not store it permanently.
+
+Telegram documents this download-URL format and temporary validity.
+
+See the [Telegram Bot API](https://core.telegram.org/bots/api?utm_source=chatgpt.com).
+
+For safer diagnostics:
+
+```cpp
+Serial.println(
+  "[PHOTO] Download URL obtained"
+);
+```
+
+Do not print the actual URL.
+
+## 11. Download the Binary Image
+
+Use a separate HTTPS client for the download:
+
+```cpp
+#include <HTTPClient.h>
+```
+
+```cpp
+bool downloadPhotoToSD(
+  const String& fileUrl,
+  const String& destination
+) {
+  WiFiClientSecure downloadClient;
+
+  downloadClient.setCACert(
+    TELEGRAM_CERTIFICATE_ROOT
+  );
+
+  HTTPClient https;
+
+  if (
+    !https.begin(
+      downloadClient,
+      fileUrl
+    )
+  ) {
+    Serial.println(
+      "[PHOTO] HTTPS begin failed"
+    );
+
+    return false;
+  }
+
+  https.setConnectTimeout(
+    15000
+  );
+
+  https.setTimeout(
+    30000
+  );
+
+  int httpCode =
+    https.GET();
+
+  if (
+    httpCode != HTTP_CODE_OK
+  ) {
+    Serial.printf(
+      "[PHOTO] HTTP GET failed: %d\n",
+      httpCode
+    );
+
+    https.end();
+
+    return false;
+  }
+
+  File outputFile =
+    SD.open(
+      destination,
+      FILE_WRITE
+    );
+
+  if (!outputFile) {
+    Serial.println(
+      "[PHOTO] Cannot create output file"
+    );
+
+    https.end();
+
+    return false;
+  }
+
+  WiFiClient* stream =
+    https.getStreamPtr();
+
+  uint8_t buffer[1024];
+
+  int remaining =
+    https.getSize();
+
+  while (
+    https.connected() &&
+    (
+      remaining > 0 ||
+      remaining == -1
+    )
+  ) {
+    size_t available =
+      stream->available();
+
+    if (available > 0) {
+      size_t bytesToRead =
+        min(
+          available,
+          sizeof(buffer)
+        );
+
+      int bytesRead =
+        stream->readBytes(
+          buffer,
+          bytesToRead
+        );
+
+      if (bytesRead <= 0) {
+        break;
+      }
+
+      outputFile.write(
+        buffer,
+        bytesRead
+      );
+
+      if (remaining > 0) {
+        remaining -= bytesRead;
+      }
+    }
+
+    delay(1);
+  }
+
+  outputFile.close();
+  https.end();
+
+  return (
+    remaining == 0 ||
+    remaining == -1
+  );
+}
+```
+
+Call it using a controlled filename:
+
+```cpp
+bool success =
+  downloadPhotoToSD(
+    fileUrl,
+    "/telegram_photo.jpg"
+  );
+```
+
+### Why Use a 1 KB Buffer?
+
+The ESP32 never holds the full image in internal RAM.
+
+Data is read from Wi-Fi and immediately written to storage. Memory usage remains nearly constant regardless of image size.
+
+## 12. Acknowledge the Result
+
+After downloading:
+
+```cpp
+if (success) {
+  bot.sendMessage(
+    chatId,
+    "Photo received and saved.",
+    ""
+  );
+} else {
+  bot.sendMessage(
+    chatId,
+    "Photo download failed.",
+    ""
+  );
+}
+```
+
+This acknowledgement is a new outgoing Telegram API request:
+
+```text
+ESP32 → sendMessage → Telegram → User
+```
+
+It does not affect the downloaded file or the original update.
+
+## 13. Display the Image on a TFT
+
+Receiving the image and displaying it are separate operations.
+
+The ESP32 must:
+
+1. Download the compressed JPEG.
+2. Store it or stream it.
+3. Decode the JPEG into pixel data.
+4. Resize or crop it to the display resolution.
+5. Send RGB pixels to the TFT.
+
+For example:
+
+```text
+Telegram JPEG: 1920 × 1080
+TFT display:    160 × 128
+```
+
+A TFT cannot normally display the JPEG file directly.
+
+Use a decoder such as:
+
+- `TJpg_Decoder`.
+- `JPEGDEC`.
+- `PNGdec` for PNG files.
+
+For a small ST7735 display, request or prepare a smaller image when possible. Decoding a full phone photograph only to reduce it to `160 × 128` wastes time and memory.
+
+## 14. Receive a Normal Telegram Photo
+
+When the user sends an image through Telegram's **Gallery/Photo** interface, the update contains an array:
+
+```json
+{
+  "photo": [
+    {
+      "file_id": "small-id",
+      "width": 90,
+      "height": 67,
+      "file_size": 1468
+    },
+    {
+      "file_id": "medium-id",
+      "width": 320,
+      "height": 240,
+      "file_size": 18542
+    },
+    {
+      "file_id": "large-id",
+      "width": 1280,
+      "height": 960,
+      "file_size": 173421
+    }
+  ]
+}
+```
+
+Telegram generates several `PhotoSize` versions.
+
+Normally, select the last entry:
+
+```text
+photo[photo.size() - 1]
+```
+
+because it is usually the largest available version.
+
+The sequence is then:
+
+```text
+photo[last].file_id
+        ↓
+getFile(file_id)
+        ↓
+file_path
+        ↓
+HTTPS GET binary JPEG
+```
+
+However, the current `UniversalTelegramBot` parser does not copy `message.photo[]` into `bot.messages[]`.
+
+Supporting this properly requires either:
+
+- Extending `telegramMessage` with photo fields and modifying `processResult()`.
+- Replacing `bot.getUpdates()` for media reception with a custom HTTP and ArduinoJson parser.
+
+Do not run a custom `getUpdates()` implementation alongside `bot.getUpdates()`. One poller may consume updates before the other sees them.
+
+## Recommended Development Sequence
+
+1. Send a small JPG as a Telegram document.
+2. Confirm `hasDocument`, `file_name`, and `file_size`.
+3. Download it to the SD card.
+4. Verify the JPEG on a computer.
+5. Add TFT decoding.
+6. Add filename, extension, and size protection.
+7. Only then extend the parser to accept normal Telegram photos.
+
+This separates Telegram communication, storage, and image decoding into testable stages and makes fault isolation much easier.
