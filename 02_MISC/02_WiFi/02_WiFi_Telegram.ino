@@ -538,7 +538,7 @@ void handleIncomingDocument(int index) {
 
   bot.sendMessage(
     chatId,
-    "Image document received: " + fileName + "\nSize: " + String(fileSize) + " bytes",
+    "Image document received: " + fileName + "\nSize: " + String(fileSize) + " bytes\nStart transferring...",
     "");
 
   // validate file extension and file size
