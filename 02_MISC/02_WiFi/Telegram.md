@@ -6906,7 +6906,7 @@ The ESP32 should verify that it has somewhere to place the photo before starting
 
 ### Accessing the ILI9488 SD Card Slot
 
-No. The SD slot built into your ILI9488 module can be accessed using the Arduino-ESP32 `SD` and `SPI` libraries.
+The SD slot built into ILI9488 module can be accessed using the Arduino-ESP32 `SD` and `SPI` libraries.
 
 Include `TFT_eSPI.h` only if your sketch also uses it to draw on the display or handle touch input.
 
