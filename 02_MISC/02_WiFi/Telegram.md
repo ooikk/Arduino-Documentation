@@ -6959,7 +6959,227 @@ bot.maxMessageLength = 6144;
 
 The image itself must be streamed separately.
 
-## 6. Send the Photo as a Document
+
+## 6. Add an Upload Image Button
+
+An inline keyboard cannot directly open Telegram's photo or file picker, nor can it automatically send an image.
+
+The button should instruct the user to attach the image manually.
+
+### 1. Add the `UPLOAD IMAGE` Button
+
+Add this button to the inline keyboard:
+
+```json
+[
+  {
+    "text": "UPLOAD IMAGE",
+    "callback_data": "UPLOAD_IMAGE"
+  }
+]
+```
+
+For example, add it before the `REFRESH STATUS` button:
+
+```cpp
+const char CONTROL_KEYBOARD[] = R"json(
+[
+  [
+    {
+      "text": "LED ON",
+      "callback_data": "LED_ON"
+    },
+    {
+      "text": "LED OFF",
+      "callback_data": "LED_OFF"
+    }
+  ],
+  [
+    {
+      "text": "FAN ON",
+      "callback_data": "FAN_ON"
+    },
+    {
+      "text": "FAN OFF",
+      "callback_data": "FAN_OFF"
+    }
+  ],
+  [
+    {
+      "text": "MOTOR Forward",
+      "callback_data": "MOTOR_FORWARD"
+    },
+    {
+      "text": "MOTOR Reverse",
+      "callback_data": "MOTOR_REVERSE"
+    }
+  ],
+  [
+    {
+      "text": "UPLOAD IMAGE",
+      "callback_data": "UPLOAD_IMAGE"
+    }
+  ],
+  [
+    {
+      "text": "REFRESH STATUS",
+      "callback_data": "STATUS"
+    }
+  ]
+]
+)json";
+```
+
+### 2. Process the Button Press
+
+Process the button in `handleCallbackQuery()`:
+
+```cpp
+void handleCallbackQuery(
+  int index
+) {
+  const String chatId =
+    bot.messages[index].chat_id;
+
+  const String queryId =
+    bot.messages[index].query_id;
+
+  const String command =
+    bot.messages[index].text;
+
+  if (
+    command == "UPLOAD_IMAGE"
+  ) {
+    bot.answerCallbackQuery(
+      queryId,
+      "Please attach an image"
+    );
+
+    bot.sendMessage(
+      chatId,
+      "Please send the image as a File/Document:\n\n"
+      "1. Press the attachment icon.\n"
+      "2. Select File or Document.\n"
+      "3. Select a JPG or PNG file.\n"
+      "4. Send it to this bot.\n\n"
+      "Do not select Gallery/Photo because the current "
+      "ESP32 library only detects incoming documents.",
+      ""
+    );
+
+    return;
+  }
+
+  // Existing callback controls follow.
+  if (
+    command == "LED_ON"
+  ) {
+    // Existing LED ON code.
+  }
+  else if (
+    command == "LED_OFF"
+  ) {
+    // Existing LED OFF code.
+  }
+}
+```
+
+### 3. Communication Sequence
+
+```text
+User presses UPLOAD IMAGE
+          ↓
+Telegram creates callback_query
+          ↓
+ESP32 receives UPLOAD_IMAGE
+          ↓
+ESP32 sends upload instructions
+          ↓
+User manually attaches the image as a document
+          ↓
+ESP32 receives hasDocument == true
+          ↓
+handleIncomingDocument(index)
+```
+
+### 4. Update Routing
+
+Keep the update routing structured as follows:
+
+```cpp
+void handleTelegramUpdates(
+  int updateCount
+) {
+  for (
+    int i = 0;
+    i < updateCount;
+    i++
+  ) {
+    const String chatId =
+      bot.messages[i].chat_id;
+
+    if (
+      !isAuthorized(chatId)
+    ) {
+      Serial.printf(
+        "[TELEGRAM] Unauthorized chat ID: %s\n",
+        chatId.c_str()
+      );
+
+      bot.sendMessage(
+        chatId,
+        "Unauthorized user.",
+        ""
+      );
+
+      continue;
+    }
+
+    if (
+      bot.messages[i].type ==
+      "callback_query"
+    ) {
+      handleCallbackQuery(i);
+    }
+    else if (
+      bot.messages[i].type == "message" &&
+      bot.messages[i].hasDocument
+    ) {
+      handleIncomingDocument(i);
+    }
+    else {
+      handleTextMessage(i);
+    }
+  }
+}
+```
+
+### Important Limitation
+
+The `UPLOAD IMAGE` button only begins the upload workflow.
+
+Telegram does not provide an inline-keyboard button type that directly requests or attaches a photo. The user must still:
+
+1. Press Telegram's attachment icon.
+2. Select **File** or **Document**.
+3. Select the image.
+4. Send it to the bot.
+
+If you instead want a button that makes the ESP32 send an image back to Telegram, the implementation is different. The callback would call:
+
+```cpp
+bot.sendPhoto();
+```
+
+or:
+
+```cpp
+bot.sendPhotoByBinary();
+```
+
+
+
+## 7. Send the Photo as a Document
 
 In Telegram:
 
@@ -6995,7 +7215,7 @@ Telegram will create an update similar to:
 
 The image bytes are not present in this JSON. The `file_id` is a reference to the file stored on Telegram's server.
 
-## 7. Poll for the Incoming Update
+## 8. Poll for the Incoming Update
 
 Continue using the existing polling loop:
 
@@ -7039,7 +7259,7 @@ bot.messages[index].chat_id
 bot.messages[index].from_id
 ```
 
-## 8. Detect and Validate the Image
+## 9. Detect and Validate the Image
 
 Add document handling to `handleTelegramUpdates()`:
 
@@ -7172,7 +7392,7 @@ One limitation remains: this detects an image sent using Telegram’s **File/Doc
 
 Authorisation must happen before downloading. Otherwise, any Telegram user who can reach the bot could consume ESP32 storage and network bandwidth.
 
-## 9. Check the File Extension and Size
+## 10. Check the File Extension and Size
 
 Before downloading:
 
@@ -7248,7 +7468,7 @@ The ESP32 limit should normally be much lower than Telegram's limit because of:
 - Display resolution.
 - Heap fragmentation.
 
-## 10. Understand the Generated File URL
+## 11. Understand the Generated File URL
 
 The library's `getFile()` function constructs a URL in this form:
 
@@ -7291,7 +7511,7 @@ Serial.println(
 
 Do not print the actual URL.
 
-## 11. Download the Binary Image
+## 12. Download the Binary Image
 
 Use a separate HTTPS client for the download:
 
@@ -7439,7 +7659,7 @@ The ESP32 never holds the full image in internal RAM.
 
 Data is read from Wi-Fi and immediately written to storage. Memory usage remains nearly constant regardless of image size.
 
-## 12. Acknowledge the Result
+## 13. Acknowledge the Result
 
 After downloading:
 
@@ -7467,7 +7687,7 @@ ESP32 → sendMessage → Telegram → User
 
 It does not affect the downloaded file or the original update.
 
-## 13. Display the Image on a TFT
+## 14. Display the Image on a TFT
 
 Receiving the image and displaying it are separate operations.
 
@@ -7496,7 +7716,7 @@ Use a decoder such as:
 
 For a small ST7735 display, request or prepare a smaller image when possible. Decoding a full phone photograph only to reduce it to `160 × 128` wastes time and memory.
 
-## 14. Receive a Normal Telegram Photo
+## 15. Receive a Normal Telegram Photo
 
 When the user sends an image through Telegram's **Gallery/Photo** interface, the update contains an array:
 
