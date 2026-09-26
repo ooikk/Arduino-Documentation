@@ -7063,7 +7063,7 @@ void handleTelegramUpdates(int updateCount) {
         ""
       );
 
-      continue;
+      continue;   // continue to next chatId, i+1
     }
 
     // 1. Inline keyboard button press
