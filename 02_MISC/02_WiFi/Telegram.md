@@ -7044,25 +7044,19 @@ bot.messages[index].from_id
 Add document handling to `handleTelegramUpdates()`:
 
 ```cpp
-void handleTelegramUpdates(
-  int updateCount
-) {
-  for (
-    int index = 0;
-    index < updateCount;
-    index++
-  ) {
+void handleTelegramUpdates(int updateCount) {
+  for (int i = 0; i < updateCount; i++) {
+
     const String chatId =
-      bot.messages[index].chat_id;
+      bot.messages[i].chat_id;
 
-    const String fromId =
-      bot.messages[index].from_id;
+    // Reject unauthorized chats before processing anything.
+    if (!isAuthorized(chatId)) {
+      Serial.printf(
+        "[TELEGRAM] Unauthorized chat ID: %s\n",
+        chatId.c_str()
+      );
 
-    if (
-      !fromId.equals(
-        AUTHORIZED_CHAT_ID
-      )
-    ) {
       bot.sendMessage(
         chatId,
         "Unauthorized user.",
@@ -7072,19 +7066,26 @@ void handleTelegramUpdates(
       continue;
     }
 
+    // 1. Inline keyboard button press
     if (
-      bot.messages[index].hasDocument
+      bot.messages[i].type ==
+      "callback_query"
     ) {
-      handleIncomingDocument(
-        index
-      );
-
-      continue;
+      handleCallbackQuery(i);
     }
 
-    handleTextMessage(
-      index
-    );
+    // 2. Incoming file/document
+    else if (
+      bot.messages[i].type == "message" &&
+      bot.messages[i].hasDocument
+    ) {
+      handleIncomingDocument(i);
+    }
+
+    // 3. Ordinary text message
+    else {
+      handleTextMessage(i);
+    }
   }
 }
 ```
@@ -7092,42 +7093,82 @@ void handleTelegramUpdates(
 Then inspect the document:
 
 ```cpp
-void handleIncomingDocument(
-  int index
-) {
+void handleIncomingDocument(int index) {
   const String chatId =
     bot.messages[index].chat_id;
 
   const String fileName =
     bot.messages[index].file_name;
 
-  const String fileUrl =
+  const String filePath =
     bot.messages[index].file_path;
 
   const long fileSize =
     bot.messages[index].file_size;
 
-  Serial.println(
-    "[PHOTO] Document received"
-  );
+  const String caption =
+    bot.messages[index].file_caption;
 
+  Serial.println();
   Serial.println(
-    "[PHOTO] Name: " +
-    fileName
-  );
-
-  Serial.println(
-    "[PHOTO] URL obtained"
+    "========== DOCUMENT RECEIVED =========="
   );
 
   Serial.printf(
-    "[PHOTO] Size: %ld bytes\n",
+    "File name: %s\n",
+    fileName.c_str()
+  );
+
+  Serial.printf(
+    "File size: %ld bytes\n",
     fileSize
   );
 
-  // Download function will be called here.
+  Serial.printf(
+    "Caption: %s\n",
+    caption.c_str()
+  );
+
+  // Do not print filePath publicly because
+  // it contains the bot token.
+  Serial.println(
+    "Telegram download path obtained"
+  );
+
+  bot.sendMessage(
+    chatId,
+    "Image document received: " +
+      fileName +
+      "\nSize: " +
+      String(fileSize) +
+      " bytes",
+    ""
+  );
+
+  // Next step:
+  // downloadPhotoToSD(
+  //   filePath,
+  //   "/telegram_photo.jpg"
+  // );
 }
 ```
+
+The routing order matters:
+
+
+```text
+callback query → handleCallbackQuery()
+document       → handleIncomingDocument()
+ordinary text  → handleTextMessage()
+```
+
+Without the document branch, a document message falls into `handleTextMessage()`. Its `.text` value will normally be empty, so it may be treated as an unknown command.
+
+
+Because authorization is now performed centrally inside `handleTelegramUpdates()`, you can remove duplicate `isAuthorized()` checks from `handleTextMessage()`, `handleCallbackQuery()` and `handleIncomingDocument()`. Alternatively, keeping those duplicate checks is harmless and provides defence in depth.
+
+One limitation remains: this detects an image sent using Telegram’s **File/Document** option. A picture sent through the normal **Gallery/Photo** option will not set `hasDocument` in your current `UniversalTelegramBot` library.
+
 
 Authorisation must happen before downloading. Otherwise, any Telegram user who can reach the bot could consume ESP32 storage and network bandwidth.
 
