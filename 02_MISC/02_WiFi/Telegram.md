@@ -5630,7 +5630,7 @@ If this occurs:
 
 # ESP32 Telegram Communication Guide and Explained
 
-## A. Why Must the ESP32 Synchronize Its Clock?
+## 1. Why Must the ESP32 Synchronize Its Clock?
 
 The ESP32 communicates with Telegram over secure HTTPS:
 
@@ -5700,7 +5700,7 @@ telegramClient.setInsecure();
 
 This disables certificate verification and exposes the connection to impersonation or man-in-the-middle attacks.
 
-## B.1. What Happens When `sendMessage()` Runs in `setup()`?
+## 2. What Happens When `sendMessage()` Runs in `setup()`?
 
 ```cpp
 bot.sendMessage(
@@ -5799,7 +5799,7 @@ The library implements `sendMessage()` as a synchronous HTTPS operation and chec
 
 See the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot/blob/master/src/UniversalTelegramBot.cpp)
 
-## B.2. ESP32-to-Telegram Communication Flow
+## 3. ESP32-to-Telegram Communication Flow
 
 There is no direct inbound connection from Telegram to the ESP32 in this design.
 
@@ -5910,7 +5910,7 @@ If a Google Apps Script webhook is still registered, remove it before using dire
 https://api.telegram.org/bot<TOKEN>/deleteWebhook?drop_pending_updates=true
 ```
 
-## B.3. What Is the `bot.xxx` Structure?
+## 4. What Is the `bot.xxx` Structure?
 
 This declaration creates an object named `bot`:
 
@@ -6052,7 +6052,7 @@ messages.xx
 
 `xx` represents whichever field you want.
 
-## B.4. Behaviour of Important Operations
+## 5. Behaviour of Important Operations
 
 ### `getUpdates()`
 
