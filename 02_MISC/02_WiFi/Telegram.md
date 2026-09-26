@@ -6780,7 +6780,7 @@ A separate HTTPS GET downloads the actual JPEG bytes.
 
 Telegram keeps pending updates for up to 24 hours. Polling with `getUpdates()` and webhooks are mutually exclusive.
 
-See the [Telegram Bot API](https://core.telegram.org/bots/api?utm_source=chatgpt.com).
+See the [Telegram Bot API](https://core.telegram.org/bots/api).
 
 ## 1. Communication Protocols
 
@@ -6837,7 +6837,7 @@ For a document, the library automatically:
    bot.messages[index].hasDocument = true;
    ```
 
-This behaviour is visible in the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Bot/blob/master/src/UniversalTelegramBot.cpp?utm_source=chatgpt.com).
+This behaviour is visible in the [UniversalTelegramBot implementation](https://github.com/witnessmenow/Universal-Arduino-Bot/blob/master/src/UniversalTelegramBot.cpp).
 
 There are two implementation choices:
 
@@ -7196,7 +7196,7 @@ if (
 
 Telegram's hosted Bot API currently permits bots to download files up to 20 MB. The `getFile()` download link is guaranteed to remain valid for at least one hour.
 
-See the [Telegram Bot API](https://core.telegram.org/bots/api?utm_source=chatgpt.com).
+See the [Telegram Bot API](https://core.telegram.org/bots/api).
 
 The ESP32 limit should normally be much lower than Telegram's limit because of:
 
@@ -7212,13 +7212,13 @@ The ESP32 limit should normally be much lower than Telegram's limit because of:
 The library's `getFile()` function constructs a URL in this form:
 
 ```text
-[https://api.telegram.org/file/bot](https://api.telegram.org/file/bot)<TOKEN>/<file_path>
+https://api.telegram.org/file/bot<TOKEN>/<file_path>
 ```
 
 For example:
 
 ```text
-[https://api.telegram.org/file/bot123456:ABC/photos/file_7.jpg](https://api.telegram.org/file/bot123456:ABC/photos/file_7.jpg)
+https://api.telegram.org/file/bot123456:ABC/photos/file_7.jpg
 ```
 
 The library stores that complete URL in:
@@ -7238,7 +7238,7 @@ Therefore:
 
 Telegram documents this download-URL format and temporary validity.
 
-See the [Telegram Bot API](https://core.telegram.org/bots/api?utm_source=chatgpt.com).
+See the [Telegram Bot API](https://core.telegram.org/bots/api).
 
 For safer diagnostics:
 
