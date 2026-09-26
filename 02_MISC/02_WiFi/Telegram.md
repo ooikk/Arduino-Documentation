@@ -6809,7 +6809,7 @@ Your installed `UniversalTelegramBot` version supports incoming documents, but i
 
 Its parser handles:
 
-```text
+```cpp
 message["text"]
 message["location"]
 message["document"]
