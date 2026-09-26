@@ -7633,126 +7633,67 @@ Use a separate HTTPS client for the download:
 ```
 
 ```cpp
-bool downloadPhotoToSD(
-  const String& fileUrl,
-  const String& destination
-) {
+bool downloadPhotoToSD(const String& fileUrl, const String& destination, long expectedSize) {
   WiFiClientSecure downloadClient;
-
-  downloadClient.setCACert(
-    TELEGRAM_CERTIFICATE_ROOT
-  );
+  downloadClient.setCACert(TELEGRAM_CERTIFICATE_ROOT);
 
   HTTPClient https;
-
-  if (
-    !https.begin(
-      downloadClient,
-      fileUrl
-    )
-  ) {
-    Serial.println(
-      "[PHOTO] HTTPS begin failed"
-    );
-
+  if (!https.begin(downloadClient, fileUrl)) {
+    Serial.println("[PHOTO] HTTPS begin failed");
     return false;
   }
 
-  https.setConnectTimeout(
-    15000
-  );
+  https.setConnectTimeout(15000);
+  https.setTimeout(30000);
 
-  https.setTimeout(
-    30000
-  );
 
-  int httpCode =
-    https.GET();
+  //https.setReuse(false);  // before https.GET()
 
-  if (
-    httpCode != HTTP_CODE_OK
-  ) {
-    Serial.printf(
-      "[PHOTO] HTTP GET failed: %d\n",
-      httpCode
-    );
+  const int httpCode = https.GET();
+  // Immediately after https.GET():
+  Serial.printf("[PHOTO] GET=%d, HTTP length=%d, Telegram length=%ld\n",
+                httpCode, https.getSize(), expectedSize);
 
+  //Serial.printf("[PHOTO] HTTP GET: %d\n", httpCode);
+
+
+
+  if (httpCode != HTTP_CODE_OK) {
     https.end();
-
     return false;
   }
 
-  File outputFile =
-    SD.open(
-      destination,
-      FILE_WRITE
-    );
-
+  File outputFile = SD.open(destination, FILE_WRITE);
   if (!outputFile) {
-    Serial.println(
-      "[PHOTO] Cannot create output file"
-    );
-
+    Serial.println("[PHOTO] Cannot open SD file for writing");
     https.end();
-
     return false;
   }
 
-  WiFiClient* stream =
-    https.getStreamPtr();
+  // Immediately before writeToStream():
+  Serial.println("[PHOTO] Starting Telegram-to-SD transfer");
 
-  uint8_t buffer[1024];
+  const int bytesWritten = https.writeToStream(&outputFile);
 
-  int remaining =
-    https.getSize();
+  // Immediately after writeToStream():
+  Serial.printf("[PHOTO] Transfer returned %d\n", bytesWritten);
 
-  while (
-    https.connected() &&
-    (
-      remaining > 0 ||
-      remaining == -1
-    )
-  ) {
-    size_t available =
-      stream->available();
 
-    if (available > 0) {
-      size_t bytesToRead =
-        min(
-          available,
-          sizeof(buffer)
-        );
-
-      int bytesRead =
-        stream->readBytes(
-          buffer,
-          bytesToRead
-        );
-
-      if (bytesRead <= 0) {
-        break;
-      }
-
-      outputFile.write(
-        buffer,
-        bytesRead
-      );
-
-      if (remaining > 0) {
-        remaining -= bytesRead;
-      }
-    }
-
-    delay(1);
-  }
-
+  outputFile.flush();
+  const size_t savedSize = outputFile.size();
   outputFile.close();
   https.end();
 
-  return (
-    remaining == 0 ||
-    remaining == -1
-  );
+  Serial.printf("[PHOTO] Download result: %d, SD file size: %u, expected: %ld\n",
+                bytesWritten, (unsigned)savedSize, expectedSize);
+
+  const bool success =
+    bytesWritten > 0 && savedSize == (size_t)bytesWritten && (expectedSize <= 0 || savedSize == (size_t)expectedSize);
+
+  if (!success) {
+    SD.remove(destination);  // Remove an empty or incomplete image
+  }
+  return success;
 }
 ```
 
