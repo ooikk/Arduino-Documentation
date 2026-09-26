@@ -1,6 +1,7 @@
 # ESP32 Communication with Telegram
 
 [![logo-color](https://img.shields.io/badge/WiFi-Google_Sheet-blue?logo=github&logoColor=white)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Telegram.md#merged-dogete-design-http-dashboard)
+[![logo-color](https://img.shields.io/badge/WiFi-Telegram_Inline_Controller-FF8F00?logo=github&logoColor=white)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Telegram.md#merged-dogete-design-http-dashboard)
 
 
 An ESP32 can communicate with Telegram through a Telegram Bot. The ESP32 does not communicate directly with the Telegram phone app using Bluetooth or Wi-Fi Direct. Messages normally pass through Telegram's cloud servers using the HTTPS-based Bot API.
