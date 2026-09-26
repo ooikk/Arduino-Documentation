@@ -65,6 +65,7 @@ unsigned long previousBotPollMs = 0;
 bool ledIsOn = false;
 bool fanIsOn = false;
 bool motorIsOn = false;
+bool motorDirectionForward = true;
 
 // The last selected speed is retained when FAN OFF or MOTOR OFF is pressed.
 uint8_t fanSpeedPercent = 50;
@@ -92,6 +93,10 @@ const char CONTROL_KEYBOARD[] = R"json(
   [
     {"text":"MOTOR ON","callback_data":"MOTOR_ON"},
     {"text":"MOTOR OFF","callback_data":"MOTOR_OFF"}
+  ],
+  [
+    {"text":"MOTOR Forward","callback_data":"MOTOR_FORWARD"},
+    {"text":"MOTOR Reverse","callback_data":"MOTOR_REVERSE"}
   ],
   [
     {"text":"Motor 0%","callback_data":"MOTOR_0"},
@@ -137,8 +142,21 @@ void applyMotorOutput() {
   }
 
   // Fixed forward direction. Add direction buttons if required later.
-  digitalWrite(MOTOR_IN1_PIN, HIGH);
-  digitalWrite(MOTOR_IN2_PIN, LOW);
+  //digitalWrite(MOTOR_IN1_PIN, HIGH);
+  //digitalWrite(MOTOR_IN2_PIN, LOW);
+  /*
+  if (currentMotorDirectionForward) {
+    digitalWrite(MOTOR_IN1_PIN, HIGH);
+    digitalWrite(MOTOR_IN2_PIN, LOW);
+  } else {
+    digitalWrite(MOTOR_IN1_PIN, LOW);
+    digitalWrite(MOTOR_IN2_PIN, HIGH);
+  }
+  */
+
+  setMotorDirection(motorDirectionForward);
+
+
   ledcWrite(
     MOTOR_PWM_PIN,
     percentToDuty(motorSpeedPercent));
@@ -166,7 +184,6 @@ void setMotorPower(bool turnOn) {
   if (motorIsOn && motorSpeedPercent == 0) {
     motorSpeedPercent = 50;
   }
-
   applyMotorOutput();
 }
 
@@ -174,6 +191,31 @@ void setMotorSpeed(uint8_t percent) {
   motorSpeedPercent = constrain(percent, 0, 100);
   motorIsOn = motorSpeedPercent > 0;
   applyMotorOutput();
+}
+
+void setMotorDirection(bool forward) {
+  int previousSpeed = motorSpeedPercent;
+
+  if ((motorDirectionForward != forward) || (digitalRead(MOTOR_IN1_PIN) == LOW && digitalRead(MOTOR_IN2_PIN) == LOW)) {
+    // Stop motor before changing direction.
+    setMotorSpeed(0);
+    digitalWrite(MOTOR_IN1_PIN, LOW);
+    digitalWrite(MOTOR_IN2_PIN, LOW);
+    delay(150);
+
+    if (forward) {
+      digitalWrite(MOTOR_IN1_PIN, HIGH);
+      digitalWrite(MOTOR_IN2_PIN, LOW);
+      motorDirectionForward = true;
+    } else {
+      digitalWrite(MOTOR_IN1_PIN, LOW);
+      digitalWrite(MOTOR_IN2_PIN, HIGH);
+      motorDirectionForward = false;
+    }
+
+    delay(50);
+    setMotorSpeed(previousSpeed);
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -200,6 +242,10 @@ String buildStatusText() {
 
   status += "\nMotor: ";
   status += onOffText(motorIsOn);
+
+  status += " | Direction: ";
+  status += motorDirectionForward ? "Forward" : "Reverse";
+
   status += " | Speed setting: ";
   status += String(motorSpeedPercent);
   status += "%";
@@ -262,6 +308,10 @@ bool executeCallback(const String &action) {
     setMotorPower(true);
   } else if (action == "MOTOR_OFF") {
     setMotorPower(false);
+  } else if (action == "MOTOR_FORWARD") {
+    setMotorDirection(true);
+  } else if (action == "MOTOR_REVERSE") {
+    setMotorDirection(false);
   } else if (action == "MOTOR_0") {
     setMotorSpeed(0);
   } else if (action == "MOTOR_25") {
@@ -439,6 +489,8 @@ void setup() {
   Serial.println("CA Cert setup success.");
   // Wait up to 10 seconds for a new update during each long-poll request.
   bot.longPoll = 10;
+  // Increae the defaul JSON length of 1500 byte to support long CONTROL_KEYBOARD
+  bot.maxMessageLength = 4096;
   Serial.println("Send to bot: ESP32 inline controller is online. Send /panel.");
   bot.sendMessage(
     AUTHORIZED_CHAT_ID,
