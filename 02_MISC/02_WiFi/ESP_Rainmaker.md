@@ -3745,6 +3745,25 @@ See the [Arduino-ESP32 WiFiProv.h header](https://github.com/espressif/arduino-e
 
 // ...
 
+#ifdef PROVISION_WIFI
+  WiFiProv.initProvision(
+      NETWORK_PROV_SCHEME_SOFTAP,
+      NETWORK_PROV_SCHEME_HANDLER_NONE);
+#else
+  WiFiProv.initProvision(
+      NETWORK_PROV_SCHEME_BLE,
+      NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM);
+#endif
+
+
+if (RMaker.start() == ESP_OK) {
+  Serial.println("RMaker started successfully");
+} else {
+  Serial.println("Failed to start RMaker");
+}
+
+
+
 WiFi.onEvent(sysProvEvent);
 
 WiFiProv.beginProvision(
