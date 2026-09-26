@@ -3727,3 +3727,52 @@ You should now be able to:
 - Send test commands
 - Validate telemetry updates directly from the web dashboard
 ---
+
+# Arduino-ESP32 3.3.12 (and beyond) Provisioning Names
+
+The provisioning names changed in Arduino-ESP32 3.3.12
+
+Replace all five `WIFI_PROV_...` names in the provisioning call with `NETWORK_PROV_...`, including the security setting.
+
+Espressif's current `WiFiProv.h` and RainMaker examples use these names.
+
+See the [Arduino-ESP32 WiFiProv.h header](https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFiProv/src/WiFiProv.h).
+
+## Updated Code
+
+```cpp
+#include <WiFiProv.h>
+
+// ...
+
+WiFi.onEvent(sysProvEvent);
+
+WiFiProv.beginProvision(
+#ifdef PROVISION_WIFI
+    NETWORK_PROV_SCHEME_SOFTAP,
+    NETWORK_PROV_SCHEME_HANDLER_NONE,
+#else
+    NETWORK_PROV_SCHEME_BLE,
+    NETWORK_PROV_SCHEME_HANDLER_FREE_BTDM,
+#endif
+    NETWORK_PROV_SECURITY_1,
+    PROV_POP,
+    PROV_SERVICE_NAME
+);
+```
+
+## ESP32-S3 BLE Provisioning 
+
+For the ESP32-S3, if the new BLE names are still undefined after this change, check that:
+
+- The selected board is correct.
+- The board configuration supports Bluetooth Low Energy provisioning.
+- BLE support is enabled in the selected Arduino-ESP32 configuration.
+
+The BLE enum entries are compiled conditionally in `WiFiProv.h`. The SoftAP entries are available separately.
+
+See the [Arduino-ESP32 WiFiProv.h header](https://github.com/espressif/arduino-esp32/blob/master/libraries/WiFiProv/src/WiFiProv.h).
+
+This change addresses the listed compilation errors.
+
+If the code compiles but the ESP32 reboots when provisioning starts, inspect the Serial Monitor log and verify the exact board selection. That would be a separate runtime issue.
