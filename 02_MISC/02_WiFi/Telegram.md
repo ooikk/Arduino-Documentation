@@ -6904,6 +6904,118 @@ if (!SD.begin(SD_CS_PIN)) {
 
 The ESP32 should verify that it has somewhere to place the photo before starting a potentially large network transfer.
 
+### Accessing the ILI9488 SD Card Slot
+
+No. The SD slot built into your ILI9488 module can be accessed using the Arduino-ESP32 `SD` and `SPI` libraries.
+
+Include `TFT_eSPI.h` only if your sketch also uses it to draw on the display or handle touch input.
+
+For the ESP32-S3, use `FSPI` for this SD bus. `VSPI` is the name commonly used on the original ESP32; Espressif's ESP32-S3 example maps that bus name to `FSPI`.
+
+See the [Arduino-ESP32 SPI documentation](https://docs.espressif.com/projects/arduino-esp32/en/latest/api/spi.html).
+
+#### Basic SD Card Example
+
+```cpp
+#include <SPI.h>
+#include <SD.h>
+
+#define SD_SCLK_PIN 4
+#define SD_MISO_PIN 5
+#define SD_MOSI_PIN 6
+#define SD_CS_PIN   7
+
+#define SD_FREQUENCY 4000000  // Start at 4 MHz
+
+SPIClass sdSPI(FSPI);
+
+void setup() {
+  Serial.begin(115200);
+
+  sdSPI.begin(
+    SD_SCLK_PIN,
+    SD_MISO_PIN,
+    SD_MOSI_PIN,
+    SD_CS_PIN
+  );
+
+  if (
+    !SD.begin(
+      SD_CS_PIN,
+      sdSPI,
+      SD_FREQUENCY
+    )
+  ) {
+    Serial.println(
+      "SD card initialization failed"
+    );
+
+    return;
+  }
+
+  Serial.println(
+    "SD card ready"
+  );
+
+  Serial.printf(
+    "Card size: %llu MB\n",
+    SD.cardSize() /
+    (1024ULL * 1024ULL)
+  );
+}
+
+void loop() {
+}
+```
+
+#### SPI Bus Configuration
+
+The following call is the correct approach:
+
+```cpp
+SD.begin(
+  SD_CS_PIN,
+  sdSPI,
+  SD_FREQUENCY
+);
+```
+
+Starting at `4 MHz` makes initial wiring checks easier. Once the SD card works reliably, try increasing the frequency:
+
+```cpp
+#define SD_FREQUENCY 16000000
+```
+
+The Arduino-ESP32 SD API accepts a selected `SPIClass` instance and SPI frequency.
+
+See the [Arduino-ESP32 SD library](https://github.com/espressif/arduino-esp32/blob/master/libraries/SD/src/SD.h).
+
+#### Verify the Wiring
+
+Confirm that the selected GPIO pins actually connect to the SD slot:
+
+| SD Signal | ESP32-S3 GPIO |
+|---|---:|
+| `SCK` | `GPIO 4` |
+| `MISO` | `GPIO 5` |
+| `MOSI` | `GPIO 6` |
+| `CS` | `GPIO 7` |
+
+Being on the same display board does not automatically make the SD slot accessible through the ILI9488 display driver.
+
+#### Sharing the SPI Bus with the Display
+
+If the display and SD card share one SPI bus and you also use `TFT_eSPI`:
+
+- Configure the shared SPI pins explicitly in the `TFT_eSPI` setup.
+- Give the display and SD card separate chip-select pins.
+- Ensure only one device is selected at a time.
+- Set the inactive device's chip-select pin HIGH before communicating with the other device.
+
+See the [TFT_eSPI README](https://github.com/Bodmer/TFT_eSPI/blob/master/README.md).
+
+
+
 ## 4. Configure Secure Telegram Communication
 
 The existing structure should look approximately like this:
