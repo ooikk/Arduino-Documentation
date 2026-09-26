@@ -1,7 +1,7 @@
 # ESP32 Communication with Telegram
 
-[![logo-color](https://img.shields.io/badge/WiFi-Google_Sheet-blue?logo=github&logoColor=white)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Telegram.md#merged-dogete-design-http-dashboard)
-[![logo-color](https://img.shields.io/badge/WiFi-Telegram_Inline_Controller-FF8F00?logo=github&logoColor=white)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Telegram.md#option-c-telegram-inline-controller-inline-button-control)
+[![logo-color](https://img.shields.io/badge/WiFi-Google_Sheet-blue?logo=github&logoColor=white)](./Telegram.md#merged-dogete-design-http-dashboard)
+[![logo-color](https://img.shields.io/badge/WiFi-Telegram_Inline_Controller-FF8F00?logo=github&logoColor=white)](./Telegram.md#option-c-telegram-inline-controller-inline-button-control)
 [![logo-color](https://img.shields.io/badge/WiFi-Telegram_Photo-9564DD?logo=github&logoColor=white)](./Telegram.md#receiving-telegram-photos-on-the-esp32)
 
 
