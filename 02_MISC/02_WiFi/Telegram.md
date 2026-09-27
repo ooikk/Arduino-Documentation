@@ -7708,12 +7708,305 @@ bool success =
     "/telegram_photo.jpg"
   );
 ```
+### Validating `writeToStream()` Downloads
 
-### Why Use a 1 KB Buffer?
+`https.writeToStream(&outputFile)` copies the HTTP response body—the actual JPEG or PNG bytes—from Telegram's HTTPS connection directly into the open SD-card file.
 
-The ESP32 never holds the full image in internal RAM.
+```cpp
+int bytesWritten =
+  https.writeToStream(
+    &outputFile
+  );
+```
 
-Data is read from Wi-Fi and immediately written to storage. Memory usage remains nearly constant regardless of image size.
+#### How `writeToStream()` Works
+
+Before this call, you normally have:
+
+```cpp
+int httpCode =
+  https.GET();
+```
+
+`https.GET()`:
+
+1. Connects to Telegram.
+2. Sends the HTTP `GET` request.
+3. Reads the HTTP response headers.
+4. Leaves the response body available for reading.
+
+Then:
+
+```cpp
+https.writeToStream(
+  &outputFile
+);
+```
+
+performs an operation approximately equivalent to:
+
+```cpp
+while (
+  moreHTTPDataIsAvailable
+) {
+  read data from Telegram;
+  write data into outputFile;
+}
+```
+
+The effective data path is:
+
+```text
+Telegram server
+      ↓ HTTPS/TLS
+WiFiClientSecure
+      ↓
+HTTPClient
+      ↓ writeToStream()
+SD file
+```
+
+The image is transferred in smaller internal blocks. The complete image does not need to be loaded into ESP32 RAM first.
+
+#### Return Value
+
+On success:
+
+```cpp
+bytesWritten > 0
+```
+
+The value represents the number of HTTP-body bytes written to the file.
+
+For example:
+
+```text
+Image size:    158,420 bytes
+bytesWritten:  158,420
+```
+
+On failure, it may return zero or a negative error value.
+
+##### Diagnostic Code
+
+```cpp
+int bytesWritten =
+  https.writeToStream(
+    &outputFile
+  );
+
+Serial.printf(
+  "[PHOTO] writeToStream result: %d\n",
+  bytesWritten
+);
+```
+
+#### Flush and Close the File
+
+The file should be flushed and closed before checking its final size:
+
+```cpp
+outputFile.flush();
+outputFile.close();
+
+size_t savedSize =
+  SD.open(destination).size();
+```
+
+A cleaner approach is:
+
+```cpp
+File checkFile =
+  SD.open(
+    destination,
+    FILE_READ
+  );
+
+size_t savedSize = 0;
+
+if (checkFile) {
+  savedSize =
+    checkFile.size();
+
+  checkFile.close();
+}
+```
+
+#### Meaning of the Success Condition
+
+The original expression is:
+
+```cpp
+const bool success =
+  bytesWritten > 0 &&
+  savedSize ==
+    (size_t)bytesWritten &&
+  (
+    expectedSize <= 0 ||
+    savedSize ==
+      (size_t)expectedSize
+  );
+```
+
+It performs three checks.
+
+#### 1. Confirm That Data Was Written
+
+```cpp
+bytesWritten > 0
+```
+
+This rejects:
+
+```text
+0   No image data was written
+-1  Transfer or stream failure
+-2  Other error
+```
+
+It also ensures that the later cast to `size_t` is safe.
+
+`size_t` is unsigned. If a negative `bytesWritten` value were cast directly to `size_t`, it would become a very large positive number.
+
+Short-circuit evaluation prevents the second comparison from running when:
+
+```cpp
+bytesWritten <= 0
+```
+
+#### 2. Compare the SD File Size with the Write Result
+
+```cpp
+savedSize ==
+  (size_t)bytesWritten
+```
+
+Suppose:
+
+```text
+writeToStream() reports: 150,000 bytes
+Actual SD file size:      150,000 bytes
+```
+
+The check passes.
+
+If the SD card stopped accepting data:
+
+```text
+writeToStream() reports: 150,000 bytes
+Actual SD file size:      102,400 bytes
+```
+
+The check fails.
+
+This verifies that the number of bytes reported by the HTTP-to-file transfer matches the actual stored file size.
+
+#### 3. Compare with the Expected HTTP Size
+
+```cpp
+expectedSize <= 0 ||
+savedSize ==
+  (size_t)expectedSize
+```
+
+This means:
+
+- If the expected size is unknown, do not use it for validation.
+- If the expected size is known, require an exact match.
+
+### Why Allow `expectedSize <= 0`?
+
+`expectedSize` is normally obtained from:
+
+```cpp
+int expectedSize =
+  https.getSize();
+```
+
+`https.getSize()` returns the HTTP response's declared content length.
+
+When the server provides:
+
+```http
+Content-Length: 158420
+```
+
+then:
+
+```cpp
+expectedSize == 158420
+```
+
+However, the server may not provide a fixed content length. For example, it may use:
+
+```http
+Transfer-Encoding: chunked
+```
+
+With chunked transfer, the response is delivered in a sequence of chunks, and the total size may not be declared in advance.
+
+In that situation:
+
+```cpp
+https.getSize()
+```
+
+may return:
+
+```text
+-1
+```
+
+This does not necessarily mean the transfer failed. It may mean that the total HTTP body size was unknown before downloading.
+
+Therefore, this would be incorrect:
+
+```cpp
+savedSize ==
+  (size_t)expectedSize
+```
+
+If:
+
+```cpp
+expectedSize == -1
+```
+
+casting it to unsigned `size_t` creates a very large value. The comparison would fail even when the file downloaded correctly.
+
+The following condition handles both cases:
+
+```cpp
+expectedSize <= 0 ||
+savedSize ==
+  (size_t)expectedSize
+```
+
+| `expectedSize` | Meaning | Required Validation |
+|---:|---|---|
+| Greater than `0` | Content length is known. | Saved size must match. |
+| `-1` | Content length is unknown. | Use the other checks. |
+| `0` | Empty or unspecified response. | Do not perform the expected-size comparison. |
+
+
+
+| Check | Purpose |
+|---|---|
+| `bytesWritten` | Verifies the transfer operation. |
+| `savedSize` | Verifies what reached the SD card. |
+| `expectedSize` | Verifies HTTP `Content-Length`, when available. |
+| `telegramFileSize` | Verifies Telegram's file metadata, when available. |
+
+#### Content Integrity Limitation
+
+Equal file sizes do not prove that every byte is correct.
+
+Full content-integrity verification would require a checksum such as SHA-256.
+
+For this ESP32 image-download application, the size checks are normally sufficient.
+
+
+
 
 ## 13. Acknowledge the Result
 
