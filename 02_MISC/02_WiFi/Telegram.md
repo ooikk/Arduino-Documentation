@@ -7869,84 +7869,61 @@ This avoids maintaining an “awaiting text” state between two Telegram messag
 constexpr size_t MAX_RECEIVED_TEXT_LENGTH =
   200;
 
-void handleTextMessage(
-  int index
-) {
-  const String chatId =
-    bot.messages[index].chat_id;
+void handleTextMessage(int index) {
+  const String chatId = bot.messages[index].chat_id;
 
-  String receivedText =
-    bot.messages[index].text;
+  String command = bot.messages[index].text;
+  command.trim();
+  //command.toLowerCase();
 
-  Serial.printf(
-    "[TELEGRAM] Received text: %s\n",
-    receivedText.c_str()
-  );
+  // Convert /status@BotUsername into /status for group compatibility.
+  const int atPosition = command.indexOf('@');
+  if (atPosition > 0) {
+    command = command.substring(0, atPosition);
+  }
 
-  if (
-    receivedText == "/start" ||
-    receivedText ==
-      "/start@YourBotUsername"
-  ) {
+  Serial.println("Received Text Command: " + command);
+
+  if (command == "/start" || command == "/panel") {
+    sendControlPanel(chatId);
+  } else if (command == "/status") {
+    //bot.sendMessage(chatId, buildStatusText(), "");
+    const String Status = buildStatusText();
+    bot.sendMessage(chatId, Status, "");
+    Serial.println("Send Status:");
+    Serial.println(Status);
+  } else if (command == "/help") {
     bot.sendMessage(
       chatId,
-      "ESP32 controller is online.\n"
-      "Use /panel for controls.\n"
-      "Use /text followed by your message.",
-      ""
-    );
+      "/panel - Open inline controls\n"
+      "/status - Show device status\n"
+      "/text - Send text to ESP32\n"
+      "/help - Show commands",
+      "");
 
-    return;
-  }
+  } else if (command.startsWith("/text")) {
+    if (command.startsWith("/text ")) {
+      Serial.print("Received Valid Text:");
+      Serial.println(command);
+      handleReceivedText(
+        chatId,
+        command);
 
-  if (
-    receivedText == "/panel" ||
-    receivedText ==
-      "/panel@YourBotUsername"
-  ) {
-    sendControlPanel(
-      chatId
-    );
+    } else {
+      bot.sendMessage(
+        chatId,
+        "Use /text followed by your message.",
+        "");
+      Serial.print("Invalid Text:");
+      Serial.println(command);
+    }
 
-    return;
-  }
-
-  if (
-    receivedText == "/text" ||
-    receivedText.startsWith(
-      "/text@"
-    )
-  ) {
+  } else {
     bot.sendMessage(
       chatId,
-      "Enter the command and text together.\n\n"
-      "Example:\n"
-      "/text Hello ESP32",
-      ""
-    );
-
-    return;
+      "Unknown command. Send /panel to open the controls.",
+      "");
   }
-
-  if (
-    receivedText.startsWith(
-      "/text "
-    )
-  ) {
-    handleReceivedText(
-      chatId,
-      receivedText
-    );
-
-    return;
-  }
-
-  bot.sendMessage(
-    chatId,
-    "Unknown command.\n"
-    "Use /panel or /text <message>.",
-    ""
-  );
 }
 ```
 
