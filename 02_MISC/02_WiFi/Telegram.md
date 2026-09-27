@@ -7841,3 +7841,586 @@ Do not run a custom `getUpdates()` implementation alongside `bot.getUpdates()`. 
 7. Only then extend the parser to accept normal Telegram photos.
 
 This separates Telegram communication, storage, and image decoding into testable stages and makes fault isolation much easier.
+
+---
+
+
+# Receiving Text from Telegram
+
+The simplest and most reliable approach is a parameterised Telegram command:
+
+```text
+/text Hello ESP32
+```
+
+The ESP32 receives and extracts:
+
+```text
+Hello ESP32
+```
+
+This avoids maintaining an “awaiting text” state between two Telegram messages.
+
+## 1. Add the Command to `handleTextMessage()`
+
+```cpp
+constexpr size_t MAX_RECEIVED_TEXT_LENGTH =
+  200;
+
+void handleTextMessage(
+  int index
+) {
+  const String chatId =
+    bot.messages[index].chat_id;
+
+  String receivedText =
+    bot.messages[index].text;
+
+  Serial.printf(
+    "[TELEGRAM] Received text: %s\n",
+    receivedText.c_str()
+  );
+
+  if (
+    receivedText == "/start" ||
+    receivedText ==
+      "/start@YourBotUsername"
+  ) {
+    bot.sendMessage(
+      chatId,
+      "ESP32 controller is online.\n"
+      "Use /panel for controls.\n"
+      "Use /text followed by your message.",
+      ""
+    );
+
+    return;
+  }
+
+  if (
+    receivedText == "/panel" ||
+    receivedText ==
+      "/panel@YourBotUsername"
+  ) {
+    sendControlPanel(
+      chatId
+    );
+
+    return;
+  }
+
+  if (
+    receivedText == "/text" ||
+    receivedText.startsWith(
+      "/text@"
+    )
+  ) {
+    bot.sendMessage(
+      chatId,
+      "Enter the command and text together.\n\n"
+      "Example:\n"
+      "/text Hello ESP32",
+      ""
+    );
+
+    return;
+  }
+
+  if (
+    receivedText.startsWith(
+      "/text "
+    )
+  ) {
+    handleReceivedText(
+      chatId,
+      receivedText
+    );
+
+    return;
+  }
+
+  bot.sendMessage(
+    chatId,
+    "Unknown command.\n"
+    "Use /panel or /text <message>.",
+    ""
+  );
+}
+```
+
+Replace:
+
+```text
+YourBotUsername
+```
+
+with the actual Telegram bot username, without `@`.
+
+If the bot is used only in a private chat, the username-specific comparisons are optional.
+
+## 2. Add the Text-Extraction Function
+
+```cpp
+void handleReceivedText(
+  const String& chatId,
+  const String& telegramText
+) {
+  const String commandPrefix =
+    "/text ";
+
+  String receivedString =
+    telegramText.substring(
+      commandPrefix.length()
+    );
+
+  receivedString.trim();
+
+  if (
+    receivedString.length() == 0
+  ) {
+    bot.sendMessage(
+      chatId,
+      "No text was provided.\n"
+      "Example: /text Hello ESP32",
+      ""
+    );
+
+    return;
+  }
+
+  if (
+    receivedString.length() >
+    MAX_RECEIVED_TEXT_LENGTH
+  ) {
+    bot.sendMessage(
+      chatId,
+      "Text is too long. Maximum length is " +
+        String(
+          MAX_RECEIVED_TEXT_LENGTH
+        ) +
+        " characters.",
+      ""
+    );
+
+    return;
+  }
+
+  Serial.println();
+  Serial.println(
+    "========== TEXT FROM TELEGRAM =========="
+  );
+
+  Serial.printf(
+    "Length: %u\n",
+    receivedString.length()
+  );
+
+  Serial.printf(
+    "Content: %s\n",
+    receivedString.c_str()
+  );
+
+  processReceivedString(
+    receivedString
+  );
+
+  bot.sendMessage(
+    chatId,
+    "ESP32 received:\n" +
+      receivedString,
+    ""
+  );
+}
+```
+
+## 3. Add the Application-Processing Function
+
+This separates Telegram communication from the action performed by the ESP32:
+
+```cpp
+void processReceivedString(
+  const String& receivedString
+) {
+  // Replace this with your application.
+  Serial.printf(
+    "[APPLICATION] Processing: %s\n",
+    receivedString.c_str()
+  );
+}
+```
+
+### Store the Text as the Current Display Message
+
+```cpp
+String displayMessage;
+
+void processReceivedString(
+  const String& receivedString
+) {
+  displayMessage =
+    receivedString;
+
+  Serial.printf(
+    "[DISPLAY] New message: %s\n",
+    displayMessage.c_str()
+  );
+
+  // Example:
+  // tft.fillScreen(TFT_BLACK);
+  // tft.setCursor(10, 10);
+  // tft.println(displayMessage);
+}
+```
+
+### Interpret Specific Strings as Device Commands
+
+```cpp
+void processReceivedString(
+  const String& receivedString
+) {
+  if (
+    receivedString.equalsIgnoreCase(
+      "LED ON"
+    )
+  ) {
+    digitalWrite(
+      LED_PIN,
+      HIGH
+    );
+  }
+  else if (
+    receivedString.equalsIgnoreCase(
+      "LED OFF"
+    )
+  ) {
+    digitalWrite(
+      LED_PIN,
+      LOW
+    );
+  }
+  else {
+    Serial.println(
+      "[APPLICATION] Ordinary text received"
+    );
+  }
+}
+```
+
+For structured device control, the inline keyboard remains preferable.
+
+Free-form text is more suitable for:
+
+- TFT display messages.
+- LCD labels.
+- Configuration values.
+- Wi-Fi or device names.
+- Test strings.
+- User notes.
+
+## 4. Existing Update Dispatcher
+
+Because authorisation is performed before routing, unauthorised users cannot send text to the ESP32:
+
+```cpp
+void handleTelegramUpdates(
+  int updateCount
+) {
+  for (
+    int index = 0;
+    index < updateCount;
+    index++
+  ) {
+    const String chatId =
+      bot.messages[index].chat_id;
+
+    if (
+      !isAuthorized(chatId)
+    ) {
+      Serial.printf(
+        "[TELEGRAM] Unauthorized chat ID: %s\n",
+        chatId.c_str()
+      );
+
+      bot.sendMessage(
+        chatId,
+        "Unauthorized user.",
+        ""
+      );
+
+      continue;
+    }
+
+    if (
+      bot.messages[index].type ==
+      "callback_query"
+    ) {
+      handleCallbackQuery(
+        index
+      );
+    }
+    else if (
+      bot.messages[index].type ==
+        "message" &&
+      bot.messages[index].hasDocument
+    ) {
+      handleIncomingDocument(
+        index
+      );
+    }
+    else {
+      handleTextMessage(
+        index
+      );
+    }
+  }
+}
+```
+
+The text command follows this route:
+
+```text
+message update
+   ↓
+authorisation check
+   ↓
+not callback_query
+   ↓
+not document
+   ↓
+handleTextMessage()
+   ↓
+handleReceivedText()
+   ↓
+processReceivedString()
+```
+
+## 5. Register the Command in Telegram
+
+This step is optional, but it makes `/text` appear in Telegram's command menu.
+
+Add the following in `setup()` after Wi-Fi, time synchronisation, and Telegram TLS setup:
+
+```cpp
+const char BOT_COMMANDS[] = R"json(
+[
+  {
+    "command": "start",
+    "description": "Show startup instructions"
+  },
+  {
+    "command": "panel",
+    "description": "Open device control panel"
+  },
+  {
+    "command": "text",
+    "description": "Send text to ESP32"
+  }
+]
+)json";
+
+bool commandSetupSuccess =
+  bot.setMyCommands(
+    BOT_COMMANDS
+  );
+
+Serial.printf(
+  "[TELEGRAM] Command setup: %s\n",
+  commandSetupSuccess
+    ? "SUCCESS"
+    : "FAILED"
+);
+```
+
+Alternatively, configure it manually through BotFather using `/setcommands`:
+
+```text
+start - Show startup instructions
+panel - Open device control panel
+text - Send text to ESP32
+```
+
+Registering a command only creates the menu entry. The Arduino code must still recognise and process `/text`.
+
+## 6. How the String Is Transmitted
+
+Suppose the user enters:
+
+```text
+/text Temperature limit 35 C
+```
+
+The communication sequence is:
+
+```mermaid
+sequenceDiagram
+    participant U as Telegram user
+    participant T as Telegram server
+    participant E as ESP32
+
+    U->>T: /text Temperature limit 35 C
+    E->>T: getUpdates(offset)
+    T-->>E: HTTPS JSON update
+    E->>E: Authorise chat ID
+    E->>E: Extract message.text
+    E->>E: Remove "/text " prefix
+    E->>E: Process received string
+    E->>T: sendMessage acknowledgement
+    T-->>U: ESP32 received text
+```
+
+There is no direct Telegram-to-ESP32 network connection.
+
+The ESP32 periodically asks Telegram for pending updates.
+
+## 7. Telegram JSON Received by the ESP32
+
+Telegram returns an HTTPS response containing JSON similar to:
+
+```json
+{
+  "ok": true,
+  "result": [
+    {
+      "update_id": 7654321,
+      "message": {
+        "message_id": 250,
+        "from": {
+          "id": 123456789
+        },
+        "chat": {
+          "id": 123456789,
+          "type": "private"
+        },
+        "text": "/text Temperature limit 35 C"
+      }
+    }
+  ]
+}
+```
+
+`UniversalTelegramBot` parses that JSON and copies the important values into:
+
+```cpp
+bot.messages[index].chat_id
+bot.messages[index].from_id
+bot.messages[index].text
+bot.messages[index].message_id
+bot.messages[index].update_id
+```
+
+Therefore:
+
+```cpp
+bot.messages[index].text
+```
+
+contains:
+
+```text
+/text Temperature limit 35 C
+```
+
+This code:
+
+```cpp
+telegramText.substring(
+  commandPrefix.length()
+);
+```
+
+removes the first six characters:
+
+```text
+/text 
+```
+
+The resulting application string is:
+
+```text
+Temperature limit 35 C
+```
+
+## 8. Protocol Layers
+
+| Layer | Protocol or Data | Purpose |
+|---|---|---|
+| Application | Telegram Bot API | Provides `getUpdates()` and `sendMessage()`. |
+| Representation | JSON and UTF-8 | Carries chat ID, message text, and other fields. |
+| Security | TLS | Encrypts and authenticates the connection. |
+| Web transport | HTTPS | Carries Telegram API requests and responses. |
+| Transport | TCP | Provides reliable, ordered data delivery. |
+| Network | IP over Wi-Fi | Connects the ESP32 to Telegram. |
+
+The text itself is encoded as UTF-8.
+
+English text works directly. Chinese text is also transported correctly, but the TFT font must contain the required Chinese glyphs to display it.
+
+## 9. Polling Behaviour
+
+The loop should continue using:
+
+```cpp
+int updateCount =
+  bot.getUpdates(
+    bot.last_message_received + 1
+  );
+
+while (
+  updateCount > 0
+) {
+  handleTelegramUpdates(
+    updateCount
+  );
+
+  updateCount =
+    bot.getUpdates(
+      bot.last_message_received + 1
+    );
+}
+```
+
+Using:
+
+```cpp
+last_message_received + 1
+```
+
+prevents the same Telegram update from being processed repeatedly.
+
+String transmission is not instant push communication. Response time depends on:
+
+- `bot.longPoll`.
+- Your polling interval.
+- Wi-Fi quality.
+- Telegram response time.
+- Other blocking operations, such as downloading a large image.
+
+While `downloadPhotoToSD()` is running synchronously, the ESP32 cannot call `getUpdates()`.
+
+Any text sent during the image transfer waits on Telegram's server and is retrieved after the download finishes.
+
+## Final User Operation
+
+The user simply sends:
+
+```text
+/text Hello from Telegram
+```
+
+Expected Serial Monitor output:
+
+```text
+[TELEGRAM] Received text: /text Hello from Telegram
+
+========== TEXT FROM TELEGRAM ==========
+Length: 19
+Content: Hello from Telegram
+[APPLICATION] Processing: Hello from Telegram
+```
+
+Telegram replies:
+
+```text
+ESP32 received:
+Hello from Telegram
+```
