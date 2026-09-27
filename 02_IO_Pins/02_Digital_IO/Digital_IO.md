@@ -72,6 +72,8 @@ If you want completely un-restricted, safe pins for sensors, displays, and relay
 | GPIO 26 to 32 | 🚫 Never Use | Dedicated entirely to SPI Flash memory. |
 | GPIO 33 to 37 | 🚫 Never Use (Usually) | Dedicated to High-speed PSRAM/Flash if using an Octal module variant. |
 
+https://github.com/ooikk/Arduino-Documentation/blob/main/02_IO_Pins/GPIO_Guide.md
+
 ## GPIO API
 
 ### pinMode
