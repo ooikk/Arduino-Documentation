@@ -9183,7 +9183,24 @@ flowchart LR
     T2 --> H
 ```
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e0805133-be77-489c-94d4-fae5708909d5" />
+```mermaid
+flowchart TD
+    U1["User sends to Bot 1"]
+    U2["User sends to Bot 2"]
+    TS["Telegram servers"]
+    B1["ESP32 polls Bot 1 token"]
+    B2["ESP32 polls Bot 2 token"]
+    SC["Shared device controls"]
+
+    U1 --> TS
+    U2 --> TS
+    TS --> B1
+    TS --> B2
+    B1 --> SC
+    B2 --> SC
+```
+
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e0805133-be77-489c-94d4-fae5708909d5" />
 
 
 
