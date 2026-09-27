@@ -40,7 +40,7 @@ While most pins are available, you should generally avoid these pins to prevent 
 **GPIO 19 & 20:** Used for the Native USB port. GPIO 19 (USB_D-) and GPIO 20 (USB_D+).  <br>
 **GPIO 0, 3, 45, 46:** Strapping pins used for boot modes; using them can prevent the board from starting properly. <br>
 
-[![logo-color](https://img.shields.io/badge/GPIO-Digital_IO-A5E9DD?logo=github&logoColor=green)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_IO_Pins/02_Digital_IO/Digital_IO.md)
+[(https://img.shields.io/badge/GPIO-Digital_IO-A5E9DD?logo=github&logoColor=white)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_IO_Pins/02_Digital_IO/Digital_IO.md)
 [![logo-color](https://img.shields.io/badge/GPIO-GPIO_Guide-34908B?logo=github&logoColor=white)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_IO_Pins/GPIO_Guide.md)
 
 
