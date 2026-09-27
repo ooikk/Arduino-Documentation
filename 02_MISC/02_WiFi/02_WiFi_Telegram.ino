@@ -33,9 +33,10 @@
 // User settings
 // -----------------------------------------------------------------------------
 
-#define UPLOAD_PHOTO
+#define SEND_PHOTO
+#define SEND_TEXT
 
-#ifdef UPLOAD_PHOTO
+#ifdef SEND_PHOTO
 #include <HTTPClient.h>
 #include <SD.h>
 #include <SPI.h>
@@ -59,9 +60,10 @@ constexpr uint32_t FAN_PWM_FREQUENCY = 25000;
 constexpr uint32_t MOTOR_PWM_FREQUENCY = 20000;
 constexpr uint8_t PWM_RESOLUTION_BITS = 8;
 constexpr uint16_t PWM_MAX_DUTY = 255;
+uint16_t statusUpdateCount = 0;
 
 constexpr unsigned long BOT_POLL_INTERVAL_MS = 1000;
-#ifdef UPLOAD_PHOTO
+#ifdef SEND_PHOTO
 
 #define SD_SCLK_PIN 4
 #define SD_MISO_PIN 5
@@ -72,6 +74,11 @@ constexpr unsigned long BOT_POLL_INTERVAL_MS = 1000;
 SPIClass sdSPI(FSPI);
 
 constexpr size_t MAX_PHOTO_SIZE = 20 * 1024 * 1024;
+bool sdReady = false;  // Global
+#endif
+
+#ifdef SEND_TEXT
+constexpr size_t MAX_RECEIVED_TEXT_LENGTH = 200;
 #endif
 
 // -----------------------------------------------------------------------------
@@ -285,7 +292,10 @@ String buildStatusText() {
   status += "\nButton: ";
   status += digitalRead(BUTTON_PIN) == LOW ? "Pressed" : "Released";
 
-  status += "\n\nSelect an action:";
+  status += "\nStatus Update Counter: ";
+  status += String(++statusUpdateCount);
+
+  // status += "\n\nSelect an action:";
   return status;
 }
 
@@ -294,7 +304,8 @@ void sendControlPanel(
   int messageId = 0) {
   // messageId == 0 sends a new message.
   // A non-zero messageId edits the existing dashboard message.
-  const String Status = buildStatusText();
+  const String Status = buildStatusText() + "\n\nSelect an action:";
+  //status += "\n\nSelect an action:";
   bot.sendMessageWithInlineKeyboard(
     chatId,
     //buildStatusText(),
@@ -303,7 +314,7 @@ void sendControlPanel(
     CONTROL_KEYBOARD,
     messageId);
 
-  Serial.println("Send Status & Control Keyboard:");
+  Serial.println("Send Control Panel:");
   Serial.println(Status);
 }
 
@@ -376,7 +387,7 @@ void handleCallbackQuery(int index) {
   }
 */
 
-#ifdef UPLOAD_PHOTO
+#ifdef SEND_PHOTO
   if (action == "UPLOAD_IMAGE") {
     bot.answerCallbackQuery(
       queryId,
@@ -390,7 +401,8 @@ void handleCallbackQuery(int index) {
       "4. Send it to this bot.\n\n"
       "Do not select Gallery/Photo because the current "
       "ESP32 library only detects incoming documents.\n"
-      "Max file size 20MB.",
+      "Max file size "
+        + String(MAX_PHOTO_SIZE / (1024 * 1024)) + " MB.",
       "");
 
     Serial.println("Received Text Message command: " + action);
@@ -416,11 +428,15 @@ void handleCallbackQuery(int index) {
   sendControlPanel(chatId, messageId);
 }
 
-#ifdef UPLOAD_PHOTO
+// -----------------------------------------------------------------------------
+// Receive photo from Telegram
+// -----------------------------------------------------------------------------
+#ifdef SEND_PHOTO
 
 bool isAcceptedImage(const String& name) {
   String lowerName = name;
   lowerName.toLowerCase();
+  // return true;   // Allow receiving any file
   return lowerName.endsWith(
            ".jpg")
          || lowerName.endsWith(
@@ -512,6 +528,7 @@ String makeSafeFileName(String fileName) {
 }
 
 void handleIncomingDocument(int index) {
+
   const String chatId = bot.messages[index].chat_id;
 
   const String fileName = bot.messages[index].file_name;
@@ -521,6 +538,15 @@ void handleIncomingDocument(int index) {
   const long fileSize = bot.messages[index].file_size;
 
   const String caption = bot.messages[index].file_caption;
+
+  if (!sdReady) {
+    Serial.printf("Cannot save %s: SD card unavailable.\n", fileName.c_str());
+    bot.sendMessage(
+      chatId,
+      "Cannot save " + fileName + ": SD card unavailable.",
+      "");
+    return;
+  }
 
   Serial.println();
   Serial.println(
@@ -591,6 +617,59 @@ void handleIncomingDocument(int index) {
 }
 #endif
 
+
+// -----------------------------------------------------------------------------
+// Receive text from Telegram
+// -----------------------------------------------------------------------------
+#ifdef SEND_TEXT
+void handleReceivedText(const String& chatId, const String& telegramText) {
+  const String commandPrefix = "/text ";
+
+  String receivedString = telegramText.substring(commandPrefix.length());
+  receivedString.trim();
+
+  if (receivedString.length() == 0) {
+    bot.sendMessage(
+      chatId,
+      "No text was provided.\n"
+      "Example: /text Hello ESP32",
+      "");
+
+    return;
+  }
+
+  if (receivedString.length() > MAX_RECEIVED_TEXT_LENGTH) {
+    bot.sendMessage(
+      chatId,
+      "Text is too long. Maximum length is " + String(MAX_RECEIVED_TEXT_LENGTH) + " characters.",
+      "");
+
+    return;
+  }
+
+  Serial.println();
+  Serial.println(
+    "========== TEXT FROM TELEGRAM ==========");
+
+  Serial.printf("Length: %u\n", receivedString.length());
+
+  Serial.printf("Content: %s\n", receivedString.c_str());
+
+  processReceivedString(receivedString);
+
+  bot.sendMessage(
+    chatId,
+    "ESP32 received:\n" + receivedString,
+    "");
+}
+
+void processReceivedString(const String& receivedString) {
+  // Replace this with your application.
+  Serial.printf("[APPLICATION] Processing: %s\n", receivedString.c_str());
+}
+#endif
+
+
 void handleTextMessage(int index) {
   const String chatId = bot.messages[index].chat_id;
 
@@ -603,7 +682,7 @@ void handleTextMessage(int index) {
 
   String command = bot.messages[index].text;
   command.trim();
-  command.toLowerCase();
+  //command.toLowerCase();
 
   // Convert /status@BotUsername into /status for group compatibility.
   const int atPosition = command.indexOf('@');
@@ -611,19 +690,43 @@ void handleTextMessage(int index) {
     command = command.substring(0, atPosition);
   }
 
-  Serial.println("Received Text Message command: " + command);
+  Serial.println("Received Text Command: " + command);
 
   if (command == "/start" || command == "/panel") {
     sendControlPanel(chatId);
   } else if (command == "/status") {
-    bot.sendMessage(chatId, buildStatusText(), "");
+    //bot.sendMessage(chatId, buildStatusText(), "");
+    const String Status = buildStatusText();
+    bot.sendMessage(chatId, Status, "");
+    Serial.println("Send Status:");
+    Serial.println(Status);
   } else if (command == "/help") {
     bot.sendMessage(
       chatId,
       "/panel - Open inline controls\n"
       "/status - Show device status\n"
+      "/text - Send text to ESP32\n"
       "/help - Show commands",
       "");
+#ifdef SEND_TEXT
+  } else if (command.startsWith("/text")) {
+    if (command.startsWith("/text ")) {
+      Serial.print("Received Valid Text:");
+      Serial.println(command);
+      handleReceivedText(
+        chatId,
+        command);
+
+    } else {
+      bot.sendMessage(
+        chatId,
+        "Use /text followed by your message.",
+        "");
+      Serial.print("Invalid Text:");
+      Serial.println(command);
+    }
+
+#endif
   } else {
     bot.sendMessage(
       chatId,
@@ -655,7 +758,7 @@ void handleTelegramUpdates(int updateCount) {
     // 1. Inline keyboard button press
     if (bot.messages[i].type == "callback_query") {
       handleCallbackQuery(i);
-#ifdef UPLOAD_PHOTO
+#ifdef SEND_PHOTO
       // 2. Incoming file/document
     } else if (
       bot.messages[i].type == "message" && bot.messages[i].hasDocument) {
@@ -735,9 +838,9 @@ void setup() {
   Serial.begin(115200);
   delay(200);
 
-#ifdef UPLOAD_PHOTO
+#ifdef SEND_PHOTO
+  /*
   sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
-
   if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
     Serial.print("SD Card initialization failed! Try again.");
     if (!SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY)) {
@@ -746,8 +849,29 @@ void setup() {
     }
   }
   Serial.println("SD card ready");
-
   Serial.printf("Card size: %llu MB\n", SD.cardSize() / (1024ULL * 1024ULL));
+*/
+
+  sdSPI.begin(SD_SCLK_PIN, SD_MISO_PIN, SD_MOSI_PIN, SD_CS_PIN);
+  sdReady = SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY);
+  if (!sdReady) {
+    int retryCount = 0;
+    Serial.print("SD initialization failed. Retry");
+    while (retryCount++ < 3 && !sdReady) {
+      delay(1000);
+      sdReady = SD.begin(SD_CS_PIN, sdSPI, SD_FREQUENCY);
+      Serial.print(".");
+    }
+  }
+
+  if (sdReady) {
+    Serial.println("\nSD card initialized successfully");
+    Serial.printf("Card size: %llu MB\n",
+                  SD.cardSize() / (1024ULL * 1024ULL));
+  } else {
+    Serial.println("\nSD initialization failed after retry");
+  }
+
   /*
   File test = SD.open("/sd_test.txt", FILE_WRITE);
   if (!test) {
@@ -774,7 +898,7 @@ void setup() {
   // Wait up to 10 seconds for a new update during each long-poll request.
   bot.longPoll = 10;
   // Increae the default JSON length of 1500 byte to support long CONTROL_KEYBOARD
-#ifdef UPLOAD_PHOTO
+#ifdef SEND_PHOTO
   bot.maxMessageLength = 6144;
 #else
   bot.maxMessageLength = 4096;
