@@ -8696,3 +8696,531 @@ Telegram replies:
 ESP32 received:
 Hello from Telegram
 ```
+---
+
+# One ESP32 with Multiple Telegram Bots
+
+One ESP32 can communicate with multiple Telegram bots.
+
+Each bot needs:
+
+- Its own BotFather token.
+- Its own `UniversalTelegramBot` object.
+- Its own `last_message_received`.
+- Preferably its own `WiFiClientSecure`.
+- Its own `getUpdates()` polling call.
+
+The main structural change is to pass the active bot object into your handlers instead of using one global bot.
+
+## 1. Declare Two Bots
+
+```cpp
+const char BOT_TOKEN_1[] =
+  "BOT_1_TOKEN";
+
+const char BOT_TOKEN_2[] =
+  "BOT_2_TOKEN";
+
+WiFiClientSecure telegramClient1;
+WiFiClientSecure telegramClient2;
+
+UniversalTelegramBot bot1(
+  BOT_TOKEN_1,
+  telegramClient1
+);
+
+UniversalTelegramBot bot2(
+  BOT_TOKEN_2,
+  telegramClient2
+);
+```
+
+Separate secure clients are recommended because each bot can have its own HTTPS connection state.
+
+## 2. Configure Both Bots in `setup()`
+
+```cpp
+void setup() {
+  Serial.begin(115200);
+
+  // Connect Wi-Fi and synchronize time first.
+
+  telegramClient1.setCACert(
+    TELEGRAM_CERTIFICATE_ROOT
+  );
+
+  telegramClient2.setCACert(
+    TELEGRAM_CERTIFICATE_ROOT
+  );
+
+  bot1.maxMessageLength =
+    4096;
+
+  bot2.maxMessageLength =
+    4096;
+
+  // Keep this short when polling
+  // multiple bots.
+  bot1.longPoll = 1;
+  bot2.longPoll = 1;
+
+  bot1.sendMessage(
+    AUTHORIZED_CHAT_ID,
+    "ESP32 Bot 1 is online.",
+    ""
+  );
+
+  bot2.sendMessage(
+    AUTHORIZED_CHAT_ID,
+    "ESP32 Bot 2 is online.",
+    ""
+  );
+}
+```
+
+Do not use:
+
+```cpp
+bot1.longPoll = 10;
+bot2.longPoll = 10;
+```
+
+when polling sequentially.
+
+If neither bot has a message, the ESP32 could wait approximately 10 seconds on Bot 1 and then another 10 seconds on Bot 2.
+
+Using `0` or `1` provides better responsiveness:
+
+```cpp
+bot1.longPoll = 1;
+bot2.longPoll = 1;
+```
+
+## 3. Make the Update Handler Accept a Bot Reference
+
+Change:
+
+```cpp
+void handleTelegramUpdates(
+  int updateCount
+)
+```
+
+to:
+
+```cpp
+void handleTelegramUpdates(
+  UniversalTelegramBot& activeBot,
+  int updateCount,
+  const char* botName
+)
+```
+
+### Complete Version
+
+```cpp
+void handleTelegramUpdates(
+  UniversalTelegramBot& activeBot,
+  int updateCount,
+  const char* botName
+) {
+  for (
+    int index = 0;
+    index < updateCount;
+    index++
+  ) {
+    const String chatId =
+      activeBot
+        .messages[index]
+        .chat_id;
+
+    Serial.printf(
+      "[%s] Update received from chat %s\n",
+      botName,
+      chatId.c_str()
+    );
+
+    if (
+      !isAuthorized(chatId)
+    ) {
+      Serial.printf(
+        "[%s] Unauthorized chat ID: %s\n",
+        botName,
+        chatId.c_str()
+      );
+
+      activeBot.sendMessage(
+        chatId,
+        "Unauthorized user.",
+        ""
+      );
+
+      continue;
+    }
+
+    if (
+      activeBot
+        .messages[index]
+        .type ==
+      "callback_query"
+    ) {
+      handleCallbackQuery(
+        activeBot,
+        index
+      );
+    }
+    else if (
+      activeBot
+        .messages[index]
+        .type ==
+        "message" &&
+      activeBot
+        .messages[index]
+        .hasDocument
+    ) {
+      handleIncomingDocument(
+        activeBot,
+        index
+      );
+    }
+    else {
+      handleTextMessage(
+        activeBot,
+        index
+      );
+    }
+  }
+}
+```
+
+`activeBot` refers to whichever bot supplied the update.
+
+## 4. Modify the Individual Handlers
+
+### Text Messages
+
+Change:
+
+```cpp
+void handleTextMessage(
+  int index
+)
+```
+
+to:
+
+```cpp
+void handleTextMessage(
+  UniversalTelegramBot& activeBot,
+  int index
+) {
+  const String chatId =
+    activeBot
+      .messages[index]
+      .chat_id;
+
+  const String receivedText =
+    activeBot
+      .messages[index]
+      .text;
+
+  Serial.printf(
+    "[TELEGRAM] Text: %s\n",
+    receivedText.c_str()
+  );
+
+  if (
+    receivedText == "/panel"
+  ) {
+    sendControlPanel(
+      activeBot,
+      chatId
+    );
+
+    return;
+  }
+
+  if (
+    receivedText.startsWith(
+      "/text "
+    )
+  ) {
+    handleReceivedText(
+      activeBot,
+      chatId,
+      receivedText
+    );
+
+    return;
+  }
+
+  activeBot.sendMessage(
+    chatId,
+    "Unknown command.",
+    ""
+  );
+}
+```
+
+### Callback Queries
+
+```cpp
+void handleCallbackQuery(
+  UniversalTelegramBot& activeBot,
+  int index
+) {
+  const String chatId =
+    activeBot
+      .messages[index]
+      .chat_id;
+
+  const String queryId =
+    activeBot
+      .messages[index]
+      .query_id;
+
+  const String command =
+    activeBot
+      .messages[index]
+      .text;
+
+  if (
+    command == "LED_ON"
+  ) {
+    digitalWrite(
+      LED_PIN,
+      HIGH
+    );
+
+    activeBot.answerCallbackQuery(
+      queryId,
+      "LED turned ON"
+    );
+
+    sendControlPanel(
+      activeBot,
+      chatId,
+      activeBot
+        .messages[index]
+        .message_id
+    );
+
+    return;
+  }
+
+  // Other callbacks...
+}
+```
+
+### Incoming Documents
+
+```cpp
+void handleIncomingDocument(
+  UniversalTelegramBot& activeBot,
+  int index
+) {
+  const String chatId =
+    activeBot
+      .messages[index]
+      .chat_id;
+
+  const String fileName =
+    activeBot
+      .messages[index]
+      .file_name;
+
+  const String filePath =
+    activeBot
+      .messages[index]
+      .file_path;
+
+  const long fileSize =
+    activeBot
+      .messages[index]
+      .file_size;
+
+  activeBot.sendMessage(
+    chatId,
+    "Receiving " +
+      fileName +
+      "...",
+    ""
+  );
+
+  // Perform validation and download here.
+}
+```
+
+The acknowledgement must use `activeBot`. Otherwise, a message received through Bot 2 could accidentally be answered through Bot 1.
+
+## 5. Modify the Control-Panel Function
+
+Change:
+
+```cpp
+void sendControlPanel(
+  const String& chatId
+)
+```
+
+to:
+
+```cpp
+void sendControlPanel(
+  UniversalTelegramBot& activeBot,
+  const String& chatId,
+  int messageId = 0
+) {
+  String panelText =
+    buildStatusMessage();
+
+  bool success =
+    activeBot
+      .sendMessageWithInlineKeyboard(
+        chatId,
+        panelText,
+        "",
+        CONTROL_KEYBOARD,
+        messageId
+      );
+
+  Serial.printf(
+    "[TELEGRAM] Panel operation: %s\n",
+    success
+      ? "SUCCESS"
+      : "FAILED"
+  );
+}
+```
+
+## 6. Poll Each Bot
+
+Create a reusable polling function:
+
+```cpp
+void pollTelegramBot(
+  UniversalTelegramBot& activeBot,
+  const char* botName
+) {
+  int updateCount =
+    activeBot.getUpdates(
+      activeBot.last_message_received +
+      1
+    );
+
+  while (
+    updateCount > 0
+  ) {
+    Serial.printf(
+      "[%s] Updates: %d\n",
+      botName,
+      updateCount
+    );
+
+    handleTelegramUpdates(
+      activeBot,
+      updateCount,
+      botName
+    );
+
+    updateCount =
+      activeBot.getUpdates(
+        activeBot.last_message_received +
+        1
+      );
+  }
+}
+```
+
+### Poll Both Bots in `loop()`
+
+```cpp
+constexpr unsigned long
+  BOT_POLL_INTERVAL_MS =
+    1000;
+
+unsigned long
+  previousBotPollMillis = 0;
+
+void loop() {
+  unsigned long currentMillis =
+    millis();
+
+  if (
+    currentMillis -
+      previousBotPollMillis >=
+    BOT_POLL_INTERVAL_MS
+  ) {
+    previousBotPollMillis =
+      currentMillis;
+
+    pollTelegramBot(
+      bot1,
+      "BOT 1"
+    );
+
+    pollTelegramBot(
+      bot2,
+      "BOT 2"
+    );
+  }
+
+  // Other ESP32 operations...
+}
+```
+
+## Communication Behaviour
+
+The bots remain completely separate on Telegram:
+
+```mermaid
+flowchart LR
+    U1["User sends to Bot 1"] --> T1["Telegram Bot 1 queue"]
+    U2["User sends to Bot 2"] --> T2["Telegram Bot 2 queue"]
+    ESP["ESP32"] -->|"getUpdates() with Bot 1 token"| T1
+    ESP -->|"getUpdates() with Bot 2 token"| T2
+    T1 --> H["Shared device controls"]
+    T2 --> H
+```
+
+Each bot token identifies a separate update queue:
+
+```cpp
+bot1.getUpdates(...)
+```
+
+can retrieve only messages sent to Bot 1, while:
+
+```cpp
+bot2.getUpdates(...)
+```
+
+can retrieve only messages sent to Bot 2.
+
+Both bots can control the same ESP32 hardware:
+
+```text
+Bot 1 → LED ON
+Bot 2 → LED OFF
+```
+
+The last command received determines the device state.
+
+## Important Considerations
+
+- Use `activeBot` for every reply, panel edit, and callback answer.
+- Keep `longPoll` short because the two bots are polled sequentially.
+- A large image download blocks polling of both bots until it finishes.
+- Each bot maintains a separate `last_message_received`; do not create one shared update ID.
+- Both bot objects consume additional RAM, particularly with:
+
+  ```cpp
+  maxMessageLength = 4096;
+  ```
+
+- You can use the same authorised chat ID for both bots.
+- Alternatively, provide a different authorisation list for each bot.
+
+For two bots, this reference-based structure is the simplest clean modification.
+
+For many bots or simultaneous non-blocking operation, separate FreeRTOS tasks are possible, but they introduce concurrency and shared-hardware synchronisation issues and are unnecessary for two bots.
