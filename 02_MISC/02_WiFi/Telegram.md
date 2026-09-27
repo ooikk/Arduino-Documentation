@@ -9183,6 +9183,22 @@ flowchart LR
     T2 --> H
 ```
 
+
+The bots remain completely separate on Telegram:
+
+```mermaid
+flowchart LR
+    U1["User sends to Bot 1"] --> T1["Telegram Bot 1 queue"]
+    U2["User sends to Bot 2"] --> T2["Telegram Bot 2 queue"]
+
+    ESP["ESP32"] -->|"getUpdates() with Bot 1 token"| T1
+    ESP -->|"getUpdates() with Bot 2 token"| T2
+
+    T1 --> H["Shared device controls"]
+    T2 --> H
+```
+
+
 Each bot token identifies a separate update queue:
 
 ```cpp
