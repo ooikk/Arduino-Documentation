@@ -10,7 +10,7 @@ Arduino supports this directly: a sketch is a folder, not only an `.ino` file. `
 
 Tabs are useful for quickly splitting a sketch, but `.h`/`.cpp` pairs are a better foundation for reusable code.
 
-See the [Arduino CLI sketch build process](https://docs.arduino.cc/arduino-cli/sketch-build-process?utm_source=chatgpt.com).
+See the [Arduino CLI sketch build process](https://docs.arduino.cc/arduino-cli/sketch-build-process).
 
 ## Suggested Project Structure
 
@@ -139,7 +139,7 @@ Your existing `sdSPI` object can be passed into `SdStore`. The storage code does
 
 The current ESP32 Arduino SD API accepts a `SPIClass` reference and a frequency in `SD.begin()`.
 
-See the [Arduino-ESP32 SD header](https://github.com/espressif/arduino-esp32/blob/master/libraries/SD/src/SD.h?utm_source=chatgpt.com).
+See the [Arduino-ESP32 SD header](https://github.com/espressif/arduino-esp32/blob/master/libraries/SD/src/SD.h).
 
 ## Simplified Main Sketch
 
@@ -229,7 +229,7 @@ Other projects can then use:
 
 Arduino's library format compiles source files under `src/`, while `examples/` provides small sketches that exercise the library independently.
 
-See the [Arduino library specification](https://docs.arduino.cc/arduino-cli/library-specification?utm_source=chatgpt.com).
+See the [Arduino library specification](https://docs.arduino.cc/arduino-cli/library-specification).
 
 Do not extract everything into one large `MyESP32Utils` library.
 
@@ -279,7 +279,7 @@ A library example that initialises the SD card and writes one file is particular
 
 You can also record core and library versions in an Arduino CLI sketch profile when reproducible builds are required.
 
-See the [Arduino CLI sketch project file documentation](https://docs.arduino.cc/arduino-cli/sketch-project-file?utm_source=chatgpt.com).
+See the [Arduino CLI sketch project file documentation](https://docs.arduino.cc/arduino-cli/sketch-project-file).
 
 ## Recommended Next Edit
 
@@ -301,3 +301,101 @@ SD.begin(
 ```
 
 This is a small extraction and establishes the pattern for the larger Telegram and TFT modules.
+
+# Building a Multi-File Arduino Sketch
+
+Open:
+
+```text
+Esp32TelegramDisplay.ino
+```
+
+Then click **Verify** or **Upload**.
+
+Arduino treats the entire `Esp32TelegramDisplay` folder as one sketch, provided that:
+
+- The folder is named `Esp32TelegramDisplay`.
+- The primary `.ino` file is named `Esp32TelegramDisplay.ino`.
+
+Arduino automatically compiles the `.cpp` files located in that sketch folder.
+
+See the [Arduino sketch specification](https://docs.arduino.cc/arduino-cli/sketch-specification).
+
+## Include Headers Explicitly
+
+Headers are not included automatically.
+
+The file that uses a declaration must include its corresponding header:
+
+```cpp
+// Esp32TelegramDisplay.ino
+
+#include "BoardConfig.h"
+#include "SdStore.h"
+#include "TelegramService.h"
+#include "DisplayService.h"
+#include "DownloadService.h"
+#include "secrets.h"
+```
+
+Likewise, `SdStore.cpp` should begin with:
+
+```cpp
+#include "SdStore.h"
+```
+
+`secrets.example.h` is only a template. Do not include it in the build.
+
+Unlike `.ino` files, `.cpp` files do not automatically receive:
+
+- Arduino's automatic `Arduino.h` include.
+- Arduino's generated function prototypes.
+
+Therefore, put required includes and declarations in the relevant header or `.cpp` files.
+
+See the [Arduino sketch build process](https://docs.arduino.cc/arduino-cli/sketch-build-process).
+
+## Rebuilding After Changes
+
+Edits are picked up during the next **Verify** or **Upload** operation.
+
+- Changing a `.cpp` file recompiles that source file.
+- Changing a header recompiles files that include it.
+- Arduino may reuse unaffected compiled files.
+
+Save all edits before building.
+
+## Folder Layout
+
+For the following layout, keep all `.h` and `.cpp` files beside the primary `.ino` file:
+
+```text
+Esp32TelegramDisplay/
+├── Esp32TelegramDisplay.ino
+├── BoardConfig.h
+├── SdStore.h
+├── SdStore.cpp
+├── TelegramService.h
+├── TelegramService.cpp
+├── DisplayService.h
+├── DisplayService.cpp
+├── DownloadService.h
+├── DownloadService.cpp
+├── secrets.h
+└── secrets.example.h
+```
+
+Arduino compiles code in:
+
+- The sketch root.
+- The `src/` directory and its subdirectories.
+
+An arbitrary subfolder such as:
+
+```text
+modules/SdStore.cpp
+```
+
+is not automatically compiled as part of the sketch.
+
+See the [Arduino sketch specification](https://docs.arduino.cc/arduino-cli/sketch-specification).
