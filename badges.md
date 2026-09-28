@@ -4,7 +4,7 @@ Here are copy-paste-ready Markdown code samples for every Shields.io format and 
 ### Frequent Used
 
 <!-- logo and label color -->
-[![logo-color](https://img.shields.io/badge/Pick_Color-Color_Hunt-A5E9DD?logo=github&logoColor=white&labelColor=2373F4)](https://colorhunt.co/)
+![logo-color](https://img.shields.io/badge/Pick_Color-Color_Hunt-A5E9DD?logo=github&logoColor=white&labelColor=2373F4)
 
 ```<!-- logo and label color -->
 [![logo-color](https://img.shields.io/badge/Pick_Color-Color_Hunt-A5E9DD?logo=github&logoColor=white&labelColor=2373F4)](https://colorhunt.co/)
