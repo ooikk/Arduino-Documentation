@@ -400,6 +400,8 @@ is not automatically compiled as part of the sketch.
 
 See the [Arduino sketch specification](https://docs.arduino.cc/arduino-cli/sketch-specification).
 
+
+--- 
 # Splitting SD Functions into a Header (Alternate Method)
 
 For the current sketch, moving the SD functions into `SdCardFeature.h` is a sensible first step.
