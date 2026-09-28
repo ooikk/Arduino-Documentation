@@ -1,6 +1,11 @@
 # Samples copy-paste-ready
 Here are copy-paste-ready Markdown code samples for every Shields.io format and parameter variation:
 
+### 
+
+![logo-color](https://img.shields.io/badge/GPIO-Digital_IO-A5E9DD?logo=github&logoColor=white&labelColor=34908B)
+
+
 ### Style
 <!-- flat (default) -->
 ![flat](https://img.shields.io/badge/build-passing-brightgreen?style=flat)
