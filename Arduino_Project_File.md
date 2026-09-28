@@ -399,3 +399,115 @@ modules/SdStore.cpp
 is not automatically compiled as part of the sketch.
 
 See the [Arduino sketch specification](https://docs.arduino.cc/arduino-cli/sketch-specification).
+
+# Splitting SD Functions into a Header (Alternate Method)
+
+For the current sketch, moving the SD functions into `SdCardFeature.h` is a sensible first step.
+
+Include it near the top of `Esp32TelegramDisplay.ino`:
+
+```cpp
+#include "SdCardFeature.h"
+```
+
+A header containing function definitions can work this way. Arduino does not include the header automatically; the `#include` directive brings its contents into the sketch.
+
+See the [Arduino sketch build process](https://docs.arduino.cc/arduino-cli/sketch-build-process).
+
+## Example
+
+### `SdCardFeature.h`
+
+```cpp
+#pragma once
+
+#include <Arduino.h>
+#include <SPI.h>
+#include <SD.h>
+
+inline bool initSdCard(
+  SPIClass& spi,
+  uint8_t csPin,
+  uint32_t frequency
+) {
+  return SD.begin(
+    csPin,
+    spi,
+    frequency
+  );
+}
+```
+
+### `Esp32TelegramDisplay.ino`
+
+```cpp
+#include "SdCardFeature.h"
+```
+
+In `setup()`, after configuring `sdSPI`:
+
+```cpp
+sdReady =
+  initSdCard(
+    sdSPI,
+    SD_CS_PIN,
+    SD_FREQUENCY
+  );
+```
+
+## Moving Longer SD Functions
+
+You can also move existing longer SD functions into the header with minimal changes.
+
+If the header is included only by the main sketch, ordinary function definitions will work.
+
+The `inline` keyword is used above so the function remains safe to include from multiple `.cpp` files later.
+
+## Practical Rules
+
+### Use `#pragma once`
+
+Put this at the top of the header:
+
+```cpp
+#pragma once
+```
+
+This prevents repeated inclusion within one source file.
+
+### Define Shared Globals in One Place
+
+Define shared globals such as:
+
+```cpp
+SPIClass sdSPI;
+bool sdReady;
+```
+
+in one source file only.
+
+Prefer passing them into functions:
+
+```cpp
+sdReady =
+  initSdCard(
+    sdSPI,
+    SD_CS_PIN,
+    SD_FREQUENCY
+  );
+```
+
+instead of defining a second copy inside the header.
+
+## Recommended Migration Path
+
+Start by splitting the large `.ino` file into feature headers to improve navigation.
+
+When a feature:
+
+- Is shared across several projects.
+- Has significant dependencies.
+- Requires independent testing.
+- Contains substantial implementation code.
+
+move its implementation into a `.cpp` file and keep only declarations in the `.h` file.
