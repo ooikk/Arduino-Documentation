@@ -991,3 +991,22 @@ The `Custom` partition scheme allows you to create an application partition of:
 or another size that fits within the 16 MB flash device.
 
 The essential requirement is that all partitions—including NVS, PHY initialization, application storage, OTA data, and file storage—fit within the selected flash size without overlapping.
+
+
+# Example AI Prompt
+
+Act as an ESP32 embedded expert.
+
+Explain OTA for ESP32-S3: what it is, how it works, and the 2 main types: 1) ArduinoOTA (via Arduino IDE network port) and 2) Web OTA / ElegantOTA (via browser).
+
+Then give me a complete step-by-step setup for ESP32-S3 under Arduino IDE 2.x:
+
+1. Prerequisites: ESP32 board package version, libraries to install (ArduinoOTA, ESPmDNS, WiFi, ElegantOTA)
+2. Critical ESP32-S3 Dev Module board settings: USB CDC On Boot, USB DFU On Boot, Flash Mode, Partition Scheme (must have OTA), PSRAM
+3. Provide 2 full, compilable code examples:
+   a) ArduinoOTA version with password protection and mDNS
+   b) ElegantOTA / AsyncElegantOTA version (better for S3) with web upload page
+4. Upload workflow: first upload via USB, then how to find the network port and do OTA upload
+5. How to verify and common S3 pitfalls: port not showing, partition too small, firewall, upload fails at 90%
+
+Use Arduino IDE 2.3.2 and ESP32 core 3.0.x syntax.
