@@ -48,7 +48,7 @@ See the [ESP-IDF GPIO documentation](https://docs.espressif.com/projects/esp-idf
 | `1` | Digital, ADC1 | Preferred. | Brief low-level power-up glitch. Protect a load that must remain inactive during startup. |
 | `2` | Digital, ADC1 | Preferred. | Same startup-glitch consideration as GPIO1. |
 | `3` | Digital, ADC1 | Usable with conditions. | JTAG-selection strap. Avoid externally forcing its reset level without checking the intended JTAG setup. Brief low-level startup glitch. |
-| `4` - `10` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
+| `4`-`10` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
 | `11` - `14` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Brief low-level startup glitch. ADC2 is shared with Wi-Fi; use ADC1 for dependable analog readings while Wi-Fi runs. |
 | `15` - `16` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Can serve a 32 kHz crystal. Check whether your board uses one. Brief low-level startup glitch. |
 | `17` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Brief low-level startup glitch. |
