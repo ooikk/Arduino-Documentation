@@ -128,3 +128,34 @@ Match external signal levels and power requirements to the module specifications
 If your board marking includes a `V` suffix, identify the exact module before using GPIO47 or GPIO48. The documented R16V variant operates those pins at 1.8 V.
 
 See the [ESP32-S3-WROOM-1 datasheet](https://documentation.espressif.com/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf).
+
+# ESP32-S3 N16R8
+For the ESP32-S3 N16R8 variant (16 MB Flash + 8 MB Octal PSRAM, R8), the Octal PSRAM uses the extra SPI data lines, so GPIO33–GPIO37 are reserved for PSRAM in addition to the standard SPI0/1 flash pins. Based on the ESP32-S3 pin restriction guidance, here is the breakdown:
+
+## ✅ Freely usable GPIOs (Priority 2 – no restrictions)
+GPIO1, GPIO2, GPIO4, GPIO5, GPIO6, GPIO7, GPIO8, GPIO9, GPIO10, GPIO11, GPIO12, GPIO13, GPIO14, GPIO15, GPIO16, GPIO17, GPIO18, GPIO21, GPIO38
+
+These pins can be used without restriction for GPIO Matrix-mapped peripherals. 
+
+[GPIO pin assignment](https://documentation.espressif.com/esp32-s3_datasheet_en.html#page=26)
+
+## ⚠️ Usable with caution (Priority 3 – may conflict with important functions)
+GPIO0, GPIO45, GPIO46: Strapping pins — avoid external pull-up/pull-down that could affect boot mode.
+GPIO3: Strapping pin.
+GPIO19, GPIO20: Used by USB Serial/JTAG by default. If reconfigured to GPIO, USB-JTAG functionality is disabled.
+GPIO39, GPIO40, GPIO41, GPIO42: JTAG interface (MTCK, MTDO, MTDI, MTMS). Usable as GPIO only if you don't need JTAG debugging via these pins (the built-in USB Serial/JTAG is used by default, freeing these for GPIO use).
+GPIO43, GPIO44: UART0 (console) pins — usable as GPIO only if you don't need the default UART console.
+
+[GPIO summary](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/gpio.html)
+
+[Peripheral pin assignment](https://documentation.espressif.com/esp32-s3_datasheet_en.html#page=26)
+
+## ❌ Not recommended for N16R8 (Priority 4 – reserved for Flash/PSRAM)
+GPIO26–GPIO32: SPI0/1 interface connected to in-package flash/PSRAM.
+GPIO33–GPIO37: On N16R8 (Octal PSRAM variant, e.g. ESP32-S3R8), these pins connect to SPIIO4–SPIIO7 and SPIDQS for the Octal PSRAM, and are therefore not recommended for other uses.
+
+[GPIO summary](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/api-reference/peripherals/gpio.html) 
+
+[IO pin restrictions](https://documentation.espressif.com/esp32-s3_datasheet_en.html#page=26)
+
+Summary: For an N16R8 module, the safest set of general-purpose GPIOs to use freely is GPIO1, 2, 4–18, 21, and 38, with GPIO0/3/19/20/39–46/45/46 usable but requiring care due to strapping, USB-JTAG, JTAG, or UART0 functions, and GPIO26–37 reserved for Flash/PSRAM.
