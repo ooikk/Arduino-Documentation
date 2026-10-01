@@ -48,42 +48,20 @@ See the [ESP-IDF GPIO documentation](https://docs.espressif.com/projects/esp-idf
 | `1` | Digital, ADC1 | Preferred. | Brief low-level power-up glitch. Protect a load that must remain inactive during startup. |
 | `2` | Digital, ADC1 | Preferred. | Same startup-glitch consideration as GPIO1. |
 | `3` | Digital, ADC1 | Usable with conditions. | JTAG-selection strap. Avoid externally forcing its reset level without checking the intended JTAG setup. Brief low-level startup glitch. |
-| `4` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
-| `5` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
-| `6` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
-| `7` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
-| `8` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
-| `9` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
-| `10` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
-| `11` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Brief low-level startup glitch. ADC2 is shared with Wi-Fi; use ADC1 for dependable analog readings while Wi-Fi runs. |
-| `12` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Same startup and ADC2 considerations as GPIO11. |
-| `13` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Same startup and ADC2 considerations as GPIO11. |
-| `14` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Same startup and ADC2 considerations as GPIO11. |
-| `15` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Can serve a 32 kHz crystal. Check whether your board uses one. Brief low-level startup glitch. |
-| `16` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Can serve a 32 kHz crystal. Check whether your board uses one. Brief low-level startup glitch. |
+| `4` - `10` | Digital, ADC1 | Preferred. | Brief low-level startup glitch. |
+| `11` - `14` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Brief low-level startup glitch. ADC2 is shared with Wi-Fi; use ADC1 for dependable analog readings while Wi-Fi runs. |
+| `15` - `16` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Can serve a 32 kHz crystal. Check whether your board uses one. Brief low-level startup glitch. |
 | `17` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Brief low-level startup glitch. |
 | `18` | Digital, ADC2 | Preferred for digital; conditional for ADC. | Can have both low- and high-level startup glitches. Avoid for an unprotected enable or trigger signal. |
 | `19` | Digital, ADC2 | Usable with conditions. | Native USB D−. Reassigning it can disrupt USB serial, programming, or USB JTAG. Startup glitches also occur. |
 | `20` | Digital, ADC2 | Usable with conditions. | Native USB D+. Same USB conflict; startup glitches also occur. |
 | `21` | Digital | Preferred. | No special module reservation. Check board wiring. |
 | `22–25` | — | Avoid. | These GPIO numbers do not exist on the ESP32-S3. |
-| `26` | Internal memory bus | Avoid. | Used for the module's flash/PSRAM interface; not a general module pin. |
-| `27` | Internal memory bus | Avoid. | Same restriction as GPIO26. |
-| `28` | Internal memory bus | Avoid. | Same restriction as GPIO26. |
-| `29` | Internal memory bus | Avoid. | Same restriction as GPIO26. |
-| `30` | Internal memory bus | Avoid. | Same restriction as GPIO26. |
-| `31` | Internal memory bus | Avoid. | Same restriction as GPIO26. |
-| `32` | Internal memory bus | Avoid. | Same restriction as GPIO26. |
-| `33` | Internal octal PSRAM bus | Avoid. | Occupied by N16R8 octal PSRAM and not brought out as a WROOM-1 module pin. |
-| `34` | Internal octal PSRAM bus | Avoid. | Same restriction as GPIO33. |
-| `35` | Internal octal PSRAM bus | Avoid. | A module pad exists, but it is connected to octal PSRAM internally. Do not use it externally. |
-| `36` | Internal octal PSRAM bus | Avoid. | Same restriction as GPIO35. |
-| `37` | Internal octal PSRAM bus | Avoid. | Same restriction as GPIO35. |
+| `26` - `32` | Internal memory bus | Avoid. | Used for the module's flash/PSRAM interface; not a general module pin. |
+| `33` - `34` | Internal octal PSRAM bus | Avoid. | Occupied by N16R8 octal PSRAM and not brought out as a WROOM-1 module pin. |
+| `35` - `37` | Internal octal PSRAM bus | Avoid. | A module pad exists, but it is connected to octal PSRAM internally. Do not use it externally. |
 | `38` | Digital | Usable with conditions. | Drives the addressable RGB LED on ESP32-S3-DevKitC-1 v1.1. Otherwise available if your board leaves it free. |
-| `39` | Digital | Usable with conditions. | Pin-based JTAG TCK. Available when that debug interface is unused. |
-| `40` | Digital | Usable with conditions. | Pin-based JTAG TDO. Same JTAG consideration. |
-| `41` | Digital | Usable with conditions. | Pin-based JTAG TDI. Same JTAG consideration. |
-| `42` | Digital | Usable with conditions. | Pin-based JTAG TMS. Same JTAG consideration. |
+| `39` - `42`| Digital | Usable with conditions. | Pin-based JTAG TCK, TD0, TD1 & TMS. Available when that debug interface is unused. |
 | `43` | Digital | Usable with conditions. | Default UART0 TX. Boot messages and a board's USB-to-UART serial console may use it. |
 | `44` | Digital | Usable with conditions. | Default UART0 RX. A board's USB-to-UART programming or console connection may use it. |
 | `45` | Digital | Usable with conditions. | Strap associated with flash supply voltage. On N16R8, preserve its intended reset level; do not pull it high casually. |
