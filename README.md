@@ -30,6 +30,9 @@ https://support.arduino.cc/hc/en-us/articles/4415103213714-Find-sketches-librari
 
 **Espressif Systems**    
 https://www.aliexpress.com/item/1005009523697481.html?
+ 
+**Espressif LLM Chat**      
+https://chat.espressif.com/
 
 ## ESP32-S3 Pins Assignment
 
