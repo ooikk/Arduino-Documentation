@@ -129,6 +129,8 @@ If your board marking includes a `V` suffix, identify the exact module before us
 
 See the [ESP32-S3-WROOM-1 datasheet](https://documentation.espressif.com/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf).
 
+---
+
 # ESP32-S3 N16R8
 For the ESP32-S3 N16R8 variant (16 MB Flash + 8 MB Octal PSRAM, R8), the Octal PSRAM uses the extra SPI data lines, so GPIO33–GPIO37 are reserved for PSRAM in addition to the standard SPI0/1 flash pins. Based on the ESP32-S3 pin restriction guidance, here is the breakdown:
 
