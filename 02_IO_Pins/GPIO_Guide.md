@@ -56,7 +56,7 @@ See the [ESP-IDF GPIO documentation](https://docs.espressif.com/projects/esp-idf
 | `19` | Digital, ADC2 | Usable with conditions. | Native USB D−. Reassigning it can disrupt USB serial, programming, or USB JTAG. Startup glitches also occur. |
 | `20` | Digital, ADC2 | Usable with conditions. | Native USB D+. Same USB conflict; startup glitches also occur. |
 | `21` | Digital | Preferred. | No special module reservation. Check board wiring. |
-| `22`–`25` | — | Avoid. | These GPIO numbers do not exist on the ESP32-S3. |
+| `22`-`25` | — | Avoid. | These GPIO numbers do not exist on the ESP32-S3. |
 | `26`-`32` | Internal memory bus | Avoid. | Used for the module's flash/PSRAM interface; not a general module pin. |
 | `33`-`34` | Internal octal PSRAM bus | Avoid. | Occupied by N16R8 octal PSRAM and not brought out as a WROOM-1 module pin. |
 | `35`-`37` | Internal octal PSRAM bus | Avoid. | A module pad exists, but it is connected to octal PSRAM internally. Do not use it externally. |
