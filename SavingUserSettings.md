@@ -730,6 +730,30 @@ An ordinary application OTA update generally preserves NVS when partition layout
 
 **Verification scope:** The Arduino source was syntax-checked with host API stubs and exercised for validation, save failures, simulated reloads, version preservation, and button timing. It has not been built with the ESP32 toolchain or hardware-tested here. Follow the reboot and complete power-cycle procedure on your board.
 
+## esp_idf_main.cpp
+This file is not as written for a normal Arduino IDE sketch. `esp_idf_main.cpp` was provided for a native ESP-IDF project.
+
+The difference is the application entry point:
+
+| Framework | Your application provides |
+|---|---|
+| Arduino ESP32 | `setup()` and `loop()` |
+| Native ESP-IDF | `app_main()` |
+
+Arduino’s ESP32 core already provides `app_main()` and uses it to initialize Arduino and run `setup()`/`loop()`. Defining your own can conflict with or bypass that startup. [GitHub](https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/main.cpp)
+
+The underlying NVS functions can still be used under Arduino IDE. To adapt that file:
+
+- Include `Arduino.h`.
+- Remove its `app_main()` entry point.
+- Move the startup/load logic into `setup()` and add `loop()`.
+- Keep the storage functions, structures, and validation helpers.
+- Prefer `Serial.printf()` for visible Serial Monitor messages.
+
+Renaming `.cpp` to `.ino` alone is insufficient.
+
+For your current Arduino project, use `SavingUserSettings.ino` from the tutorial. It already implements persistence, Serial commands, and both factory-reset methods using `Preferences`.
+
 ## References
 
 1. Espressif: [ESP32-S3 Non-Volatile Storage](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/api-reference/storage/nvs_flash.html)
