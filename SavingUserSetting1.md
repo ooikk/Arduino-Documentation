@@ -1125,3 +1125,27 @@ This sketch detects unsupported versions and preserves them. It does not impleme
 | Settings change but hardware does not| Add display/PWM/sensor logic that consumes the RAM settings.                            |
 
 **Verification:** The Arduino source passed host-side syntax and logic checks for validation, simulated persistence, failed saves, version preservation, and button timing. It has not been compiled with the ESP32 toolchain or tested on hardware here; use the reboot and complete power-cycle procedure above to verify your board.
+
+## esp_idf_main.cpp
+This file is not as written for a normal Arduino IDE sketch. `esp_idf_main.cpp` was provided for a native ESP-IDF project.
+
+The difference is the application entry point:
+
+| Framework | Your application provides |
+|---|---|
+| Arduino ESP32 | `setup()` and `loop()` |
+| Native ESP-IDF | `app_main()` |
+
+Arduino’s ESP32 core already provides `app_main()` and uses it to initialize Arduino and run `setup()`/`loop()`. Defining your own can conflict with or bypass that startup. [GitHub](https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/main.cpp)
+
+The underlying NVS functions can still be used under Arduino IDE. To adapt that file:
+
+- Include `Arduino.h`.
+- Remove its `app_main()` entry point.
+- Move the startup/load logic into `setup()` and add `loop()`.
+- Keep the storage functions, structures, and validation helpers.
+- Prefer `Serial.printf()` for visible Serial Monitor messages.
+
+Renaming `.cpp` to `.ino` alone is insufficient.
+
+For your current Arduino project, use `SavingUserSettings.ino` from the tutorial. It already implements persistence, Serial commands, and both factory-reset methods using `Preferences`.
