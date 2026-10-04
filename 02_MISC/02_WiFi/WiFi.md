@@ -1,14 +1,6 @@
 # WiFi
 
----
-## TO DO
-1. [ThingsBoard](https://thingsboard.io/)
-2. HTTP Google Sheet
-3. Telegram
-4. Weather
-5. SG Bus Arrival
-
-  
+ 
 [![MQTT](https://img.shields.io/badge/WiFi-MQTT-yellow)](./MQTT.md)
 [![ESPNow](https://img.shields.io/badge/WiFi-ESP_Now-green)](./ESP_Now.md)
 [![WiFi Provisioning](https://img.shields.io/badge/WiFi-Provision-brightgreen)](https://randomnerdtutorials.com/esp32-wi-fi-provisioning-ble-arduino/)
