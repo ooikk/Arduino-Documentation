@@ -2,6 +2,22 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](./LICENSE)
 
+---
+[![logo-color](https://img.shields.io/badge/Index-Badges-70FFD2?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/badges.md)
+[![logo-color](https://img.shields.io/badge/Index-General_Info-FFFC8C?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/General_Info.md)
+[![logo-color](https://img.shields.io/badge/Index-Arduino_Project_File-FFCC4D?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/Arduino_Project_File.md)
+[![logo-color](https://img.shields.io/badge/Index-SavingUserSetting-FF9137?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/SavingUserSetting.md)
+[![logo-color](https://img.shields.io/badge/Index-OTA_Update-F4CEFF?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/OTA_Update.md)
+
+[![logo-color](https://img.shields.io/badge/Index-I2C-5996FF?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/I2C.md)
+[![logo-color](https://img.shields.io/badge/Index-I2S-3874FF?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/I2S.md)
+[![logo-color](https://img.shields.io/badge/Index-SPI-1B4EF5?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/SPI.md)
+[![logo-color](https://img.shields.io/badge/Index-UART-00E0BA?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/UART.md)
+![logo-color](https://img.shields.io/badge/Index-Badges-DA6556?logo=github&logoColor=white&labelColor=5B7E3C)
+
+
+---
+
 ## Install and Setup Arduino IDE
 1. Get the latest Arduino IDE here: https://www.arduino.cc/en/software/
 2. Open IDE, go to: **File > Preferences**, under **Settings > Additional Boards Manager URLs**. Add this:
