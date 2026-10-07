@@ -1403,6 +1403,676 @@ memchr(s.deviceName,
 
 It requires the null terminator to exist inside the
 
+
+## 6.3 Understanding the CRC-32 Function
+
+This function calculates a CRC-32 checksum for a block of bytes.
+
+In your NVS project, its purpose is to detect whether the saved `StoredSettings` record has been changed or corrupted.
+
+```cpp
+uint32_t crc32(const uint8_t *data, size_t length) {
+  uint32_t crc = 0xFFFFFFFFu;
+
+  while (length--) {
+    crc ^= *data++;
+
+    for (int bit = 0; bit < 8; ++bit) {
+      crc = (crc >> 1) ^
+            ((crc & 1u) ? 0xEDB88320u : 0u);
+    }
+  }
+
+  return ~crc;
+}
+```
+
+### 1. What Is CRC-32?
+
+CRC stands for **Cyclic Redundancy Check**.
+
+You can think of it as a fingerprint for binary data.
+
+Suppose your ESP32 stores:
+
+```text
+brightness = 50
+autoMode   = true
+deviceName = "ESP32-S3"
+threshold  = 25.0
+```
+
+The actual NVS record is stored as binary data:
+
+```text
+┌──────────────────────────────────────────────┐
+│ version │ brightness │ ... │ threshold │ CRC │
+└──────────────────────────────────────────────┘
+                                      ↑
+                                  checksum
+```
+
+The CRC is calculated from all data before the CRC field:
+
+```text
+Data
+  ↓
+CRC-32 algorithm
+  ↓
+0xXXXXXXXX
+```
+
+That CRC value is then stored together with the record.
+
+When you later read the record:
+
+```text
+Flash
+  ↓
+StoredSettings
+  ↓
+Calculate CRC again
+  ↓
+Compare with stored CRC
+```
+
+If the two CRC values do not match, something changed.
+
+### 2. Why Do We Need CRC?
+
+Imagine the ESP32 saved:
+
+```text
+brightness = 50
+autoMode   = 1
+deviceName = "ESP32-S3"
+threshold  = 25.0
+```
+
+and calculated:
+
+```text
+CRC = 0x12345678
+```
+
+Later, suppose one byte in flash becomes corrupted:
+
+```text
+brightness = 51
+```
+
+The newly calculated CRC will almost certainly be different:
+
+```text
+Stored CRC:       0x12345678
+Calculated CRC:   0x8A.......
+```
+
+Therefore:
+
+```text
+stored CRC != calculated CRC
+```
+
+and your program rejects the record.
+
+CRC is a data-integrity check. It is not encryption.
+
+### 3. Function Declaration
+
+```cpp
+uint32_t crc32(const uint8_t *data, size_t length)
+```
+
+There are three important parts.
+
+#### `uint32_t`
+
+The function returns a 32-bit unsigned integer:
+
+```text
+32 bits = 4 bytes
+```
+
+This is the CRC-32 value.
+
+#### `const uint8_t *data`
+
+This is a pointer to the data being checked.
+
+For example:
+
+```cpp
+crc32(
+  reinterpret_cast<const uint8_t *>(&r),
+  offsetof(StoredSettings, crc)
+);
+```
+
+The `data` pointer points to the first byte of `StoredSettings`.
+
+Conceptually:
+
+```text
+data
+ ↓
+┌──────────────────────────────────────┐
+│ version │ brightness │ ... threshold │
+└──────────────────────────────────────┘
+```
+
+`uint8_t` means that the structure is processed one byte at a time.
+
+#### `size_t length`
+
+This tells the function how many bytes to process.
+
+In your code:
+
+```cpp
+offsetof(StoredSettings, crc)
+```
+
+is:
+
+```text
+48
+```
+
+Therefore:
+
+```cpp
+crc32(data, 48)
+```
+
+means:
+
+> Calculate the CRC over the first 48 bytes.
+
+The CRC field itself is not included.
+
+### 4. Initial CRC Value
+
+```cpp
+uint32_t crc = 0xFFFFFFFFu;
+```
+
+The CRC starts with:
+
+```text
+FFFFFFFF
+```
+
+in hexadecimal.
+
+That is:
+
+```text
+11111111 11111111 11111111 11111111
+```
+
+The `u` suffix means that the constant is an unsigned integer.
+
+This initial value is part of the CRC-32 algorithm being used.
+
+### 5. Process Every Byte
+
+```cpp
+while (length--) {
+```
+
+This keeps processing bytes until `length` becomes zero.
+
+Suppose:
+
+```cpp
+length = 48;
+```
+
+The loop processes:
+
+```text
+byte 0
+byte 1
+byte 2
+...
+byte 47
+```
+
+That is a total of 48 bytes.
+
+### 6. Get the Current Byte
+
+```cpp
+crc ^= *data++;
+```
+
+This line combines two operations.
+
+#### `*data`
+
+This means:
+
+> Get the byte currently pointed to by `data`.
+
+For example:
+
+```text
+data
+ ↓
+A5  34  78  12 ...
+↑
+current byte
+```
+
+The value of `*data` is:
+
+```text
+0xA5
+```
+
+#### `data++`
+
+This moves the pointer to the next byte.
+
+After processing `0xA5`:
+
+```text
+A5  34  78  12
+    ↑
+  data
+```
+
+The pointer now refers to `0x34`.
+
+#### `^=`
+
+The `^=` operator means XOR and assign.
+
+This:
+
+```cpp
+crc ^= *data;
+```
+
+is equivalent to:
+
+```cpp
+crc = crc ^ *data;
+```
+
+The current byte is XORed into the CRC.
+
+For example:
+
+```text
+CRC before:    FFFFFFFF
+Current byte:  000000A5
+               --------
+XOR result:    FFFFFF5A
+```
+
+The internal CRC value continues changing as the algorithm processes each bit.
+
+## 7. Why Process Eight Bits?
+
+```cpp
+for (int bit = 0; bit < 8; ++bit)
+```
+
+There are 8 bits in every byte.
+
+For example:
+
+```text
+A5 = 10100101
+     ↑↑↑↑↑↑↑↑
+      8 bits
+```
+
+CRC-32 processes each bit individually.
+
+For every byte, it processes:
+
+```text
+bit 0
+bit 1
+bit 2
+bit 3
+bit 4
+bit 5
+bit 6
+bit 7
+```
+
+It then moves to the next byte.
+
+## 8. The Main CRC Operation
+
+```cpp
+crc = (crc >> 1) ^
+      ((crc & 1u) ? 0xEDB88320u : 0u);
+```
+
+This is the core of the CRC algorithm.
+
+### `crc & 1u`
+
+This checks the least significant bit of the CRC.
+
+For example:
+
+```text
+CRC = 10110110
+             ↑
+           bit 0
+```
+
+If the last bit is zero:
+
+```cpp
+crc & 1u == 0
+```
+
+If the last bit is one:
+
+```cpp
+crc & 1u == 1
+```
+
+The code is asking:
+
+> Is the lowest bit of the CRC currently zero or one?
+
+## 9. `crc >> 1`
+
+This shifts the CRC right by one bit.
+
+Before:
+
+```text
+10110110
+```
+
+After:
+
+```text
+01011011
+```
+
+For a 32-bit CRC:
+
+```text
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                               ↓
+                         right shift
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx0
+```
+
+The rightmost bit is removed, and a zero enters from the left.
+
+## 10. Meaning of `0xEDB88320`
+
+```cpp
+0xEDB88320u
+```
+
+This is the CRC-32 polynomial represented in the form used by this right-shifting implementation.
+
+It is a standard constant associated with the widely used CRC-32 algorithm.
+
+The algorithm uses it when the outgoing bit is one.
+
+## 11. The Conditional Operator
+
+This part:
+
+```cpp
+((crc & 1u) ? 0xEDB88320u : 0u)
+```
+
+uses the conditional operator.
+
+It means:
+
+```cpp
+if (crc & 1u) {
+  use 0xEDB88320u;
+} else {
+  use 0u;
+}
+```
+
+The complete operation can therefore be written more explicitly as:
+
+```cpp
+if (crc & 1u) {
+  crc = (crc >> 1) ^ 0xEDB88320u;
+} else {
+  crc = crc >> 1;
+}
+```
+
+The original code combines both cases into one line.
+
+## 12. Invert the CRC
+
+After every byte and every bit has been processed:
+
+```cpp
+return ~crc;
+```
+
+The `~` operator performs a bitwise NOT operation.
+
+For example:
+
+```text
+crc:
+
+10110010
+
+~crc:
+
+01001101
+```
+
+For 32 bits:
+
+```text
+FFFFFFFF
+   ↓ ~
+00000000
+```
+
+This final inversion is also part of the CRC-32 algorithm used here.
+
+## 13. The Complete Algorithm
+
+You can visualize the algorithm like this:
+
+```text
+                StoredSettings
+                     │
+                     ▼
+              48 bytes of data
+                     │
+                     ▼
+          ┌─────────────────────┐
+          │ Initial CRC         │
+          │ 0xFFFFFFFF          │
+          └──────────┬──────────┘
+                     │
+                     ▼
+                Take one byte
+                     │
+                     ▼
+                XOR with CRC
+                     │
+                     ▼
+          Process 8 individual bits
+                     │
+                     ├── LSB = 0
+                     │      │
+                     │      ▼
+                     │   Shift right
+                     │
+                     └── LSB = 1
+                            │
+                            ▼
+                    Shift right
+                            +
+                     XOR polynomial
+                     0xEDB88320
+                            │
+                            ▼
+                         Next bit
+                            │
+                         ... 8 bits
+                            │
+                            ▼
+                       Next byte
+                            │
+                         ... 48 bytes
+                            │
+                            ▼
+                           ~crc
+                            │
+                            ▼
+                     32-bit CRC value
+```
+
+## 14. How It Fits Into the NVS Code
+
+When saving the record:
+
+```cpp
+r.crc = crc32(
+  reinterpret_cast<const uint8_t *>(&r),
+  offsetof(StoredSettings, crc)
+);
+```
+
+Your structure is arranged like this:
+
+```text
+0                       48                 52
+│                        │                  │
+▼                        ▼                  ▼
+┌────────────────────────┬──────────────────┐
+│          DATA           │       CRC        │
+│        48 bytes         │      4 bytes     │
+└────────────────────────┴──────────────────┘
+                         ↑
+                     CRC starts here
+```
+
+The program:
+
+1. Calculates the CRC over data bytes 0 through 47.
+2. Stores the result in bytes 48 through 51.
+3. Writes the complete 52-byte record to NVS.
+
+In other words:
+
+```text
+CRC(data bytes 0–47)
+```
+
+is stored in:
+
+```text
+bytes 48–51
+```
+
+## 15. Reading the Record Back
+
+Your code checks the record using:
+
+```cpp
+if (r.version != SETTINGS_VERSION ||
+    r.autoMode > 1 ||
+    r.crc != crc32(
+      reinterpret_cast<const uint8_t *>(&r),
+      offsetof(StoredSettings, crc))) {
+  return false;
+}
+```
+
+The important comparison is:
+
+```cpp
+r.crc != calculated_crc
+```
+
+For example:
+
+```text
+Flash record:
+
+Stored CRC:       0xA73F291C
+Recalculated CRC: 0xA73F291C
+                   ──────────
+                      MATCH
+```
+
+The record is probably intact.
+
+If one byte was corrupted:
+
+```text
+Stored CRC:       0xA73F291C
+Recalculated CRC: 0x61B8D442
+                   ──────────
+                     DIFFERENT
+```
+
+Then:
+
+```cpp
+decodeRecord()
+```
+
+returns:
+
+```cpp
+false
+```
+
+and your program does not trust the record.
+
+## Important Limitation
+
+CRC provides error detection, not security.
+
+It can detect accidental problems such as:
+
+- Flash data corruption.
+- Incomplete or incorrect data.
+- Unexpected modifications.
+- Memory or data errors.
+
+However, CRC cannot protect against someone deliberately modifying the NVS data and recalculating the CRC.
+
+For your ESP32 user-settings NVS tutorial, CRC-32 is therefore a good choice for integrity checking. It should not be described as encryption or tamper-proof protection.
+
+## Summary
+
+Your function takes the 48 bytes of settings data, processes every bit using the CRC-32 algorithm, and produces a 4-byte fingerprint.
+
+That fingerprint is stored in the final 4 bytes of your 52-byte NVS record.
+
+When loading the record, the program calculates the CRC again and compares the new value with the stored value:
+
+```text
+Matching CRCs:
+Record is probably valid.
+
+Different CRCs:
+Record is rejected as corrupted or invalid.
+```
+
+
 ---
 
 # 7. Demonstrating persistence
