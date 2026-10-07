@@ -1803,10 +1803,17 @@ After:
 For a 32-bit CRC:
 
 ```text
+Step 1: Right shift
+
+Before:
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
                                ↓
-                         right shift
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx0
+                         discarded
+
+After:
+0xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+↑
+new zero
 ```
 
 The rightmost bit is removed, and a zero enters from the left.
@@ -1960,8 +1967,8 @@ Your structure is arranged like this:
 │                        │                  │
 ▼                        ▼                  ▼
 ┌────────────────────────┬──────────────────┐
-│          DATA           │       CRC        │
-│        48 bytes         │      4 bytes     │
+│          DATA          │       CRC        │
+│        48 bytes        │      4 bytes     │
 └────────────────────────┴──────────────────┘
                          ↑
                      CRC starts here
