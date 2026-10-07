@@ -7,7 +7,7 @@
 
 ---
 
-## 1. Introduction: Why settings need NVS
+# 1. Introduction: Why settings need NVS
 
 Ordinary variables live in RAM. After a reboot, the program initializes them again. Removing power loses their contents. External PSRAM is also volatile.
 
@@ -27,7 +27,7 @@ Reading settings does not consume flash program/erase endurance. Avoid writing t
 
 ---
 
-## 2. Library choice
+# 2. Library choice
 
 | Library            | Approach                                                                 | Recommended use                              |
 |--------------------|--------------------------------------------------------------------------|----------------------------------------------|
@@ -46,7 +46,7 @@ For native ESP-IDF:
 
 ---
 
-## 3. Settings structure and defaults
+# 3. Settings structure and defaults
 
 The application uses the requested structure:
 
@@ -77,7 +77,7 @@ For this example, valid settings are:
 
 The `threshold` range is an example application rule. Replace it with limits appropriate to your sensor or control system.
 
-### RAM structure versus stored record
+## RAM structure versus stored record
 
 The sketch converts `DeviceSettings` into a 52-byte stored record containing:
 
@@ -128,7 +128,7 @@ The format is intended for ESP32-S3. For storage shared with other architectures
 
 > A CRC detects accidental corruption; it does not authenticate the data.
 
-### Redefine padding as reserved byte
+## Redefine padding as reserved byte
 It is a good idea for a deliberately defined flash-storage format. You can explicitly reclaim the compiler's 2-byte padding by declaring it as a `uint8_t` array.
 Instead of relying on implicit padding, you can make the layout explicit:
 
@@ -200,9 +200,9 @@ will also include those two reserved bytes in the CRC.
 
 ---
 
-## 4. Core logic
+# 4. Core logic
 
-### On boot
+## On boot
 
 The sketch opens the application namespace:
 
@@ -224,7 +224,7 @@ It then calls `loadSettings()` and handles the result:
 
 Preserving an unsupported format is useful after an OTA update or firmware rollback. The sketch blocks ordinary saves until the format is migrated or the user explicitly performs a factory reset.
 
-### Loading
+## Loading
 
 `loadSettings()` checks:
 
@@ -236,7 +236,7 @@ Preserving an unsupported format is useful after an OTA update or firmware rollb
 
 It updates the RAM settings only after validation succeeds.
 
-### Saving on demand
+## Saving on demand
 
 For example:
 
@@ -253,9 +253,9 @@ if (saveSettings()) {
 
 ---
 
-## 5. Arduino setup and factory-reset button
+# 5. Arduino setup and factory-reset button
 
-### Arduino IDE setup
+## Arduino IDE setup
 
 1. Install **esp32 by Espressif Systems** through Boards Manager.
 2. Select **ESP32S3 Dev Module**, or your matching DevKitC-1 board definition.
@@ -274,7 +274,7 @@ For Serial output:
 
 These settings determine where Arduino `Serial` sends its output. [Arduino ESP32 Troubleshooting](https://docs.espressif.com/projects/arduino-esp32/en/latest/troubleshooting.html)
 
-### Method 1: BOOT button held for five seconds
+## Method 1: BOOT button held for five seconds
 
 DevKitC-1 already has a BOOT button connected to **GPIO 0**, active LOW. No additional wiring is needed.
 
@@ -291,7 +291,7 @@ Let the application start normally, then hold BOOT for five seconds. GPIO 0 is a
 
 The implementation includes debounce, nonblocking timing, and one reset action per continuous press.
 
-### Method 2: Serial command
+## Method 2: Serial command
 
 Send:
 
@@ -311,7 +311,7 @@ The defaults become active immediately. A reboot is unnecessary.
 
 ---
 
-## 6. Complete Arduino sketch
+# 6. Complete Arduino sketch
 
 Create a sketch named `SavingUserSettings` and paste the following into `SavingUserSettings.ino`.
 
@@ -866,7 +866,7 @@ void loop() {
 
 ```
 
-### 6.1 `static_assert()` in C++
+## 6.1 `static_assert()` in C++
 
 `static_assert()` is a compile-time check in C++. It lets you tell the compiler:
 
@@ -874,7 +874,7 @@ void loop() {
 
 It is not a function that runs on the ESP32. Nothing is executed at runtime.
 
-#### 1. Check the Size of `float`
+### 1. Check the Size of `float`
 
 ```cpp
 static_assert(sizeof(float) == 4,
@@ -912,7 +912,7 @@ This format requires a 32-bit float
 
 This is useful because your NVS binary format assumes a 4-byte `float`.
 
-#### 2. Check Where `crc` Is Located
+### 2. Check Where `crc` Is Located
 
 ```cpp
 static_assert(offsetof(StoredSettings, crc) == 48,
@@ -979,7 +979,7 @@ Storage layout changed
 
 This is extremely useful for your NVS application because changing the structure layout can make existing flash data incompatible.
 
-#### 3. Check the Total Structure Size
+### 3. Check the Total Structure Size
 
 ```cpp
 static_assert(sizeof(StoredSettings) == 52,
@@ -1017,7 +1017,7 @@ should return:
 
 If someone later changes the structure and it becomes 56 bytes, compilation fails instead of silently producing a different flash format.
 
-#### Why These Checks Are Useful for NVS
+### Why These Checks Are Useful for NVS
 
 Your program stores the structure using:
 
@@ -1078,11 +1078,11 @@ The three assertions act as guard rails:
        Compile OK    Compile ERROR
 ```
 
-#### `static_assert` vs. Normal `assert`
+### `static_assert` vs. Normal `assert`
 
 This distinction is important.
 
-##### `static_assert`
+#### `static_assert`
 
 ```cpp
 static_assert(sizeof(StoredSettings) == 52,
@@ -1091,7 +1091,7 @@ static_assert(sizeof(StoredSettings) == 52,
 
 This check is performed during compilation.
 
-##### Normal `assert`
+#### Normal `assert`
 
 ```cpp
 assert(sizeof(StoredSettings) == 52);
@@ -1103,7 +1103,7 @@ Because `sizeof()` and `offsetof()` are known at compile time, `static_assert()`
 
 
 
-### 6.2 Understanding `memchr()` in ESP32 C++ Code
+## 6.2 Understanding `memchr()` in ESP32 C++ Code
 
 `memchr()` is a C/C++ function used to search a block of memory for a particular byte.
 
@@ -1111,7 +1111,7 @@ In your ESP32 code, it is being used to answer:
 
 > “Does `deviceName[32]` contain a null (`'\0'`) byte somewhere within its 32-byte buffer?”
 
-#### Basic Syntax
+### Basic Syntax
 
 ```cpp
 memchr(memory, value, number_of_bytes);
@@ -1127,7 +1127,7 @@ This means:
 
 > Start at `s.deviceName` and search the next `sizeof(s.deviceName)` bytes for `'\0'`.
 
-#### 1. Why Use `memchr()`?
+### 1. Why Use `memchr()`?
 
 Your structure contains:
 
@@ -1171,7 +1171,7 @@ Serial.printf("%s");
 
 where the string ends.
 
-#### 2. What Does This Code Do?
+### 2. What Does This Code Do?
 
 You have:
 
@@ -1181,7 +1181,7 @@ memchr(s.deviceName, '\0', sizeof(s.deviceName)) != nullptr
 
 Break it down as follows.
 
-##### `s.deviceName`
+#### `s.deviceName`
 
 This is the memory buffer being searched:
 
@@ -1189,7 +1189,7 @@ This is the memory buffer being searched:
 char deviceName;
 ```
 
-##### `'\0'`
+#### `'\0'`
 
 This is the byte being searched for:
 
@@ -1197,7 +1197,7 @@ This is the byte being searched for:
 0x00
 ```
 
-##### `sizeof(s.deviceName)`
+#### `sizeof(s.deviceName)`
 
 Because the field is declared as:
 
@@ -1221,7 +1221,7 @@ means:
 
 > Search all 32 bytes of `deviceName` for a zero byte.
 
-#### 3. What Does `memchr()` Return?
+### 3. What Does `memchr()` Return?
 
 `memchr()` returns a pointer to the byte it finds.
 
@@ -1257,7 +1257,7 @@ means:
 
 > A `'\0'` byte was found inside the buffer.
 
-#### 4. Why Not Use `strlen()`?
+### 4. Why Not Use `strlen()`?
 
 This is an important reason for using `memchr()`.
 
@@ -1295,7 +1295,7 @@ sizeof(s.deviceName)
 
 This restricts the search to exactly 32 bytes.
 
-#### 5. Complete Validation Function
+### 5. Complete Validation Function
 
 Your validation function is:
 
@@ -1315,7 +1315,7 @@ bool validateSettings(const DeviceSettings &s) {
 
 There are two different checks involving `deviceName`.
 
-##### Check 1: The Name Is Not Empty
+#### Check 1: The Name Is Not Empty
 
 ```cpp
 s.deviceName != '\0'
@@ -1333,7 +1333,7 @@ Therefore, the name cannot be empty.
 "ESP32-S3"  → VALID
 ```
 
-##### Check 2: The Buffer Contains a Terminator
+#### Check 2: The Buffer Contains a Terminator
 
 ```cpp
 memchr(s.deviceName,
@@ -1363,7 +1363,7 @@ E S P 3 2 - S 3 A B C D E F G ...
 
 If all 32 bytes are occupied and there is no `'\0'`, the value is invalid.
 
-#### 6. Why This Matters When Reading NVS
+### 6. Why This Matters When Reading NVS
 
 Your NVS contains binary data:
 
@@ -1405,7 +1405,7 @@ It requires the null terminator to exist inside the
 
 ---
 
-## 7. Demonstrating persistence
+# 7. Demonstrating persistence
 
 Send these commands one at a time:
 
@@ -1435,7 +1435,7 @@ threshold=30.50
 
 Now disconnect power completely and reconnect it. Send `SHOW` again to verify retention after a power cycle.
 
-### Demonstrating an unsaved change
+## Demonstrating an unsaved change
 
 Send:
 
@@ -1446,7 +1446,7 @@ REBOOT
 
 Brightness returns to `80`, because `20` was changed only in RAM.
 
-### Example Serial Monitor output
+## Example Serial Monitor output
 
 The `>` lines represent commands you enter; the sketch does not print those prompts.
 
@@ -1487,7 +1487,7 @@ The sketch rejects these without changing the active settings.
 
 ---
 
-## 8. ESP-IDF equivalent using `nvs_flash`
+# 8. ESP-IDF equivalent using `nvs_flash`
 
 The native API follows the same storage pattern:
 
@@ -1653,9 +1653,9 @@ This native example loads or initializes settings. Connect its save and reset fu
 
 ---
 
-## 9. Best practices
+# 9. Best practices
 
-### Namespace naming and handle lifetime
+## Namespace naming and handle lifetime
 
 Use short, descriptive names such as:
 
@@ -1675,7 +1675,7 @@ Call `end()` when finished with a handle. It closes access without erasing saved
 
 The complete sketch keeps its namespace open because commands may arrive throughout operation. It closes the handle before its controlled reboot. Opening and closing around occasional operations is also valid.
 
-### `putBytes`/`getBytes` versus individual keys
+## `putBytes`/`getBytes` versus individual keys
 
 | Approach            | Advantages                                      | Tradeoffs                                         |
 |---------------------|-------------------------------------------------|---------------------------------------------------|
@@ -1698,7 +1698,7 @@ Check each write's result in production. A getter returning a fallback does not 
 
 `getBytes()` returns bytes without preserving their C++ type. Your application must manage length and interpretation. Never persist pointers or an Arduino `String` by copying the object's memory; use a bounded character array or string storage. [Preferences tutorial](https://docs.espressif.com/projects/arduino-esp32/en/latest/tutorials/preferences.html)
 
-### Flash wear
+## Flash wear
 
 - Save after explicit user action or after a quiet period following edits.
 - Coalesce rapid slider changes.
@@ -1708,7 +1708,7 @@ Check each write's result in production. A getter returning a fallback does not 
 
 The sketch uses a `dirty` flag to skip saves when no changes are pending.
 
-### Handling NVS full or unavailable
+## Handling NVS full or unavailable
 
 Check initialization and write results. On failure, retain the active RAM settings and tell the user they remain unsaved.
 
@@ -1726,13 +1726,13 @@ Possible remedies include removing obsolete application keys or allocating a lar
 
 `nvs_flash_erase()` is much broader than `preferences.clear()`: it erases the default NVS partition and its other namespaces, potentially including Wi-Fi configuration. Use it only as part of a deliberate recovery policy. [nvs_flash.h](https://github.com/espressif/esp-idf/blob/master/components/nvs_flash/include/nvs_flash.h)
 
-### Interrupted operations
+## Interrupted operations
 
 - Do not assume an interrupted save succeeded.
 - Factory reset here consists of two operations: clear, then save. If power fails between them, the next boot finds the missing settings key and recreates defaults.
 - A checksum detects an invalid record; it does not guarantee that the newest change survives power loss.
 
-### Versioning for future OTA updates
+## Versioning for future OTA updates
 
 Treat `SETTINGS_VERSION` as a storage-schema version, separate from firmware release numbers.
 
@@ -1753,7 +1753,7 @@ This sketch detects unsupported versions and preserves them. It does not impleme
 
 ---
 
-## 10. Troubleshooting
+# 10. Troubleshooting
 
 | Symptom                              | Likely cause and action                                                                 |
 |--------------------------------------|------------------------------------------------------------------------------------------|
@@ -1771,7 +1771,7 @@ This sketch detects unsupported versions and preserves them. It does not impleme
 
 **Verification:** The Arduino source passed host-side syntax and logic checks for validation, simulated persistence, failed saves, version preservation, and button timing. It has not been compiled with the ESP32 toolchain or tested on hardware here; use the reboot and complete power-cycle procedure above to verify your board.
 
-## esp_idf_main.cpp
+# esp_idf_main.cpp
 This file is not as written for a normal Arduino IDE sketch. `esp_idf_main.cpp` was provided for a native ESP-IDF project.
 
 The difference is the application entry point:
