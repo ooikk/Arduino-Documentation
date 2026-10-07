@@ -87,30 +87,32 @@ The sketch converts `DeviceSettings` into a 52-byte stored record containing:
 
 ```cpp
 struct StoredSettings {
-  uint32_t version;
-  int32_t brightness;
-  uint8_t autoMode;              // Must be 0 or 1
-  uint8_t reserved;
-  char deviceName[32];
-  float threshold;
-  uint32_t crc;
+  uint32_t version;       // 4 bytes
+  int32_t  brightness;    // 4 bytes
+  uint8_t  autoMode;      // 1 byte
+  uint8_t  reserved;      // 1 byte
+  char     deviceName[32];// 32 bytes
+  float    threshold;     // 4 bytes
+  uint32_t crc;           // 4 bytes
 };
 ```
 
-the intended layout becomes: 
+The structure itself has an alignment requirement of 4 bytes because of `uint32_t`, `int32_t`, and `float`, the compiler rounds the total structure size up to the next multiple of 4. The `float threshold` requires **4-byte alignment** on ESP32-S3, so the compiler inserts **2 bytes of padding before threshold**.
+The intended layout becomes: 
 
 
 ```text
-version       4
-brightness    4
-autoMode      1
-reserved      1
-padding       2
-deviceName   32
-threshold     4
-crc           4
-----------------
-total        52 bytes
+Offset
+0–3      version             4 bytes
+4–7      brightness          4 bytes
+8        autoMode            1 byte
+9        reserved            1 byte
+10–41    deviceName         32 bytes
+42–43    padding             2 bytes
+44–47    threshold           4 bytes
+48–51    crc                 4 bytes
+--------------------------------------
+         sizeof()            52 bytes
 ```
 
 and therefore:
