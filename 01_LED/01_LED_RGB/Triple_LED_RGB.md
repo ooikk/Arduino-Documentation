@@ -61,6 +61,12 @@ void loop()
 }
 ```
 
+## Light Emitting Diodes I-V Characteristics
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/499e37c2-4fcc-4b5b-952b-1408a5917749" />
+
+https://www.electronics-tutorials.ws/diode/diode_8.html
+
 ## Reference
 
 [https://robot-r-us.com.sg/p/5mm-triple-output-led-rgb-common-cathode-5pcs](https://robot-r-us.com.sg/p/5mm-triple-output-led-rgb-common-cathode-5pcs)
