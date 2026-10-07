@@ -866,7 +866,7 @@ void loop() {
 
 ```
 
-### `static_assert()` in C++
+### 6.1 `static_assert()` in C++
 
 `static_assert()` is a compile-time check in C++. It lets you tell the compiler:
 
