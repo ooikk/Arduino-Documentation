@@ -128,6 +128,76 @@ The format is intended for ESP32-S3. For storage shared with other architectures
 
 > A CRC detects accidental corruption; it does not authenticate the data.
 
+### Redefine padding as reserved byte
+It is a good idea for a deliberately defined flash-storage format. You can explicitly reclaim the compiler's 2-byte padding by declaring it as a `uint8_t` array.
+Instead of relying on implicit padding, you can make the layout explicit:
+
+```cpp
+struct StoredSettings {
+  uint32_t version;          // 0–3
+  int32_t brightness;        // 4–7
+  uint8_t autoMode;          // 8
+  uint8_t reserved;          // 9
+  char deviceName[32];       // 10–41
+  uint8_t reserved2[2];      // 42–43
+  float threshold;           // 44–47
+  uint32_t crc;              // 48–51
+};
+```
+
+Then the layout becomes:
+
+```text
+Offset
+0–3      version             4
+4–7      brightness          4
+8        autoMode            1
+9        reserved            1
+10–41    deviceName         32
+42–43    reserved2           2
+44–47    threshold           4
+48–51    crc                 4
+--------------------------------
+         total              52
+```
+
+Making those two bytes explicit has advantages:
+- The format is easier to understand.
+- You can document exactly what every byte means.
+- The two bytes can potentially be used in a future format revision.
+- You are less dependent on the reader understanding compiler-generated padding.
+- The `static_assert()` becomes a stronger check of your intended format.
+
+For example, you could name them:
+```cpp
+uint8_t reserved2[2];
+```
+
+Therefore your initialization:
+
+```cpp
+StoredSettings r;
+memset(&r, 0, sizeof(r));
+```
+
+is particularly useful because it guarantees:
+```cpp
+reserved     = 0
+reserved2[0] = 0
+reserved2[1] = 0
+```
+
+Your existing CRC calculation:
+```cpp
+r.crc = crc32(
+  reinterpret_cast<const uint8_t *>(&r),
+  offsetof(StoredSettings, crc)
+);
+```
+will also include those two reserved bytes in the CRC.
+
+
+
 ---
 
 ## 4. Core logic
