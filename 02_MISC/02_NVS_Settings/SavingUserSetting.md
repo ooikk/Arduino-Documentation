@@ -1103,7 +1103,305 @@ Because `sizeof()` and `offsetof()` are known at compile time, `static_assert()`
 
 
 
+### 6.2 Understanding `memchr()` in ESP32 C++ Code
 
+`memchr()` is a C/C++ function used to search a block of memory for a particular byte.
+
+In your ESP32 code, it is being used to answer:
+
+> “Does `deviceName[32]` contain a null (`'\0'`) byte somewhere within its 32-byte buffer?”
+
+#### Basic Syntax
+
+```cpp
+memchr(memory, value, number_of_bytes);
+```
+
+For example:
+
+```cpp
+memchr(s.deviceName, '\0', sizeof(s.deviceName));
+```
+
+This means:
+
+> Start at `s.deviceName` and search the next `sizeof(s.deviceName)` bytes for `'\0'`.
+
+#### 1. Why Use `memchr()`?
+
+Your structure contains:
+
+```cpp
+char deviceName;
+```
+
+This is a fixed 32-byte buffer:
+
+```text
+deviceName
+
+┌──────────────────────────────────────────────┐
+│ 32 bytes                                     │
+└──────────────────────────────────────────────┘
+```
+
+A normal C string must end with a null terminator:
+
+```cpp
+'\0'
+```
+
+For example:
+
+```cpp
+"ESP32-S3"
+```
+
+is actually stored in memory as:
+
+```text
+E S P 3 2 - S 3 \0
+```
+
+The `'\0'` tells functions such as `strlen()`, `strcmp()`, and:
+
+```cpp
+Serial.printf("%s");
+```
+
+where the string ends.
+
+#### 2. What Does This Code Do?
+
+You have:
+
+```cpp
+memchr(s.deviceName, '\0', sizeof(s.deviceName)) != nullptr
+```
+
+Break it down as follows.
+
+##### `s.deviceName`
+
+This is the memory buffer being searched:
+
+```cpp
+char deviceName;
+```
+
+##### `'\0'`
+
+This is the byte being searched for:
+
+```text
+0x00
+```
+
+##### `sizeof(s.deviceName)`
+
+Because the field is declared as:
+
+```cpp
+char deviceName;
+```
+
+this expression evaluates to:
+
+```text
+32
+```
+
+Therefore:
+
+```cpp
+memchr(s.deviceName, '\0', 32)
+```
+
+means:
+
+> Search all 32 bytes of `deviceName` for a zero byte.
+
+#### 3. What Does `memchr()` Return?
+
+`memchr()` returns a pointer to the byte it finds.
+
+If it finds the requested byte:
+
+```text
+E S P 3 2 - S 3 \0
+              ↑
+         Found byte
+```
+
+`memchr()` returns a pointer to the null byte.
+
+If it does not find a null byte:
+
+```text
+E S P 3 2 - S 3 A B C D ...
+```
+
+it returns:
+
+```cpp
+nullptr
+```
+
+Therefore:
+
+```cpp
+memchr(...) != nullptr
+```
+
+means:
+
+> A `'\0'` byte was found inside the buffer.
+
+#### 4. Why Not Use `strlen()`?
+
+This is an important reason for using `memchr()`.
+
+Suppose you have:
+
+```cpp
+char deviceName;
+```
+
+and the contents are corrupted:
+
+```text
+E S P 3 2 - S 3 A B C D E F ...
+```
+
+There is no null terminator within the 32-byte buffer.
+
+If you call:
+
+```cpp
+strlen(s.deviceName);
+```
+
+`strlen()` does not know that the buffer is limited to 32 bytes.
+
+It continues reading memory until it eventually finds a `'\0'`.
+
+This can potentially read beyond the end of your structure.
+
+`memchr()` is safer because you explicitly limit the search:
+
+```cpp
+sizeof(s.deviceName)
+```
+
+This restricts the search to exactly 32 bytes.
+
+#### 5. Complete Validation Function
+
+Your validation function is:
+
+```cpp
+bool validateSettings(const DeviceSettings &s) {
+  return s.brightness >= 0 &&
+         s.brightness <= 100 &&
+         s.deviceName != '\0' &&
+         memchr(s.deviceName,
+                '\0',
+                sizeof(s.deviceName)) != nullptr &&
+         isfinite(s.threshold) &&
+         s.threshold >= -1000.0f &&
+         s.threshold <= 1000.0f;
+}
+```
+
+There are two different checks involving `deviceName`.
+
+##### Check 1: The Name Is Not Empty
+
+```cpp
+s.deviceName != '\0'
+```
+
+This means:
+
+> The first character cannot be `'\0'`.
+
+Therefore, the name cannot be empty.
+
+```text
+""          → INVALID
+"\0"        → INVALID
+"ESP32-S3"  → VALID
+```
+
+##### Check 2: The Buffer Contains a Terminator
+
+```cpp
+memchr(s.deviceName,
+       '\0',
+       sizeof(s.deviceName)) != nullptr
+```
+
+This means:
+
+> There must be a null terminator somewhere within the 32-byte buffer.
+
+For example:
+
+```text
+E S P 3 2 - S 3 \0
+↑               ↑
+byte 0          terminator
+```
+
+This is valid.
+
+However:
+
+```text
+E S P 3 2 - S 3 A B C D E F G ...
+```
+
+If all 32 bytes are occupied and there is no `'\0'`, the value is invalid.
+
+#### 6. Why This Matters When Reading NVS
+
+Your NVS contains binary data:
+
+```cpp
+StoredSettings record{};
+```
+
+You cannot blindly assume that the `deviceName` field is a valid C string.
+
+For example, corrupted flash could theoretically contain:
+
+```text
+deviceName:
+
+E S P 3 2 - S 3 X X X X X X X X ...
+```
+
+with no terminating null byte.
+
+If you then execute:
+
+```cpp
+Serial.printf("%s", candidate.deviceName);
+```
+
+the function could continue reading beyond the end of the `deviceName` field.
+
+This is an out-of-bounds string read.
+
+Your validation check protects against this:
+
+```cpp
+memchr(s.deviceName,
+       '\0',
+       sizeof(s.deviceName)) != nullptr
+```
+
+It requires the null terminator to exist inside the
 
 ---
 
