@@ -54,7 +54,7 @@ The application uses the requested structure:
 struct DeviceSettings {
   int brightness;       // 0–100
   bool autoMode;
-  char deviceName;  // Maximum 31 bytes plus terminating '\0'
+  char deviceName[32];  // Maximum 31 bytes plus terminating '\0'
   float threshold;
 };
 
@@ -84,6 +84,29 @@ The sketch converts `DeviceSettings` into a 52-byte stored record containing:
 - A storage-format version.
 - The four settings.
 - CRC-32 for detecting accidental corruption.
+
+the intended layout becomes: 
+
+
+```text
+version       4
+brightness    4
+autoMode      1
+reserved      1
+padding       2
+deviceName   32
+threshold     4
+crc           4
+----------------
+total        52 bytes
+```
+
+and therefore:
+
+```cpp
+offsetof(StoredSettings, crc) == 48
+sizeof(StoredSettings) == 52
+```
 
 This avoids blindly reading arbitrary flash bytes into a C++ `bool` and provides an explicit layout for future firmware updates.
 
@@ -223,7 +246,7 @@ This example changes and saves configuration values. It does not drive a physica
 struct DeviceSettings {
   int brightness;               // 0–100
   bool autoMode;
-  char deviceName;           // Up to 31 bytes plus '\0'
+  char deviceName[32];         // Up to 31 bytes plus '\0'
   float threshold;
 };
 
@@ -238,7 +261,7 @@ struct StoredSettings {
   int32_t brightness;
   uint8_t autoMode;              // Must be 0 or 1
   uint8_t reserved;
-  char deviceName;
+  char deviceName[32];
   float threshold;
   uint32_t crc;
 };
@@ -256,7 +279,7 @@ static_assert(sizeof(StoredSettings) == 52,
 // threshold must be finite and between -1000 and +1000.
 bool validateSettings(const DeviceSettings &s) {
   return s.brightness >= 0 && s.brightness <= 100 &&
-         s.deviceName != '\0' &&
+         s.deviceName[0] != '\0' &&
          memchr(s.deviceName, '\0',
                 sizeof(s.deviceName)) != nullptr &&
          isfinite(s.threshold) &&
@@ -756,6 +779,7 @@ void loop() {
   pollSerial();
   delay(1);
 }
+
 ```
 
 ---
