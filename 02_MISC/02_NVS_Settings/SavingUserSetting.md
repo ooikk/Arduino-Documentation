@@ -929,8 +929,8 @@ struct StoredSettings {
   int32_t brightness;        // 4–7
   uint8_t autoMode;          // 8
   uint8_t reserved;          // 9
-  char deviceName;       // 10–41
-  uint8_t reserved2;      // 42–43
+  char deviceName;           // 10–41
+  uint8_t reserved2;         // 42–43
   float threshold;           // 44–47
   uint32_t crc;              // 48–51
 };
@@ -1059,14 +1059,14 @@ The three assertions act as guard rails:
                   │
                   ▼
        ┌──────────────────────┐
-       │ static_assert checks  │
+       │ static_assert checks │
        └──────────┬───────────┘
                   │
-        ┌─────────┼──────────┐
-        ▼         ▼          ▼
+        ┌─────────┼─────────────┐
+        ▼         ▼             ▼
      float      CRC offset   total size
-      = 4          = 48        = 52
-     bytes        bytes       bytes
+      = 4         = 48         = 52
+     bytes       bytes        bytes
         │         │             │
         └─────────┼─────────────┘
                   │
