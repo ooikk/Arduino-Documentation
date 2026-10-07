@@ -85,6 +85,18 @@ The sketch converts `DeviceSettings` into a 52-byte stored record containing:
 - The four settings.
 - CRC-32 for detecting accidental corruption.
 
+```cpp
+struct StoredSettings {
+  uint32_t version;
+  int32_t brightness;
+  uint8_t autoMode;              // Must be 0 or 1
+  uint8_t reserved;
+  char deviceName[32];
+  float threshold;
+  uint32_t crc;
+};
+```
+
 the intended layout becomes: 
 
 
