@@ -2468,6 +2468,319 @@ This is a common embedded-systems technique when working with:
 - CRC calculations.
 
 
+### Understanding `0xEDB88320u` in CRC-32
+
+Yes, you can change `0xEDB88320u`, but you will no longer be calculating the same CRC-32 algorithm.
+
+The value is not an arbitrary constant. It represents the CRC polynomial used by the mathematical algorithm.
+
+Your code contains:
+
+```cpp
+crc = (crc >> 1) ^
+      ((crc & 1u) ? 0xEDB88320u : 0u);
+```
+
+The value:
+
+```text
+0xEDB88320
+```
+
+is a specific polynomial representation.
+
+#### 1. Mathematical Meaning
+
+CRC is based on polynomial arithmetic over \( GF(2) \), where addition is equivalent to XOR.
+
+The standard CRC-32 polynomial is commonly written as:
+
+```text
+P(x) =
+x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 +
+x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1
+```
+
+This polynomial is commonly represented as:
+
+```text
+0x04C11DB7
+```
+
+However, your implementation processes bits least-significant-bit first, or LSB-first. It therefore uses the reflected representation:
+
+```text
+0xEDB88320
+```
+
+Therefore:
+
+```text
+0xEDB88320
+```
+
+is not a random magic number. It encodes the mathematical feedback polynomial used by this particular CRC implementation.
+
+#### 2. Why Is It XORed?
+
+Consider this part of the algorithm:
+
+```cpp
+if (crc & 1u) {
+  crc = (crc >> 1) ^ 0xEDB88320u;
+} else {
+  crc = crc >> 1;
+}
+```
+
+The least significant bit tells the algorithm whether the polynomial division requires a correction step.
+
+Conceptually:
+
+```text
+              Is outgoing bit 1?
+                     │
+             ┌───────┴───────┐
+             │               │
+            NO              YES
+             │               │
+             ▼               ▼
+        Shift only       Shift + XOR
+                            │
+                            ▼
+                       Polynomial
+                      0xEDB88320
+```
+
+This performs polynomial division without using expensive division operations.
+
+#### 3. What Happens If You Change It?
+
+Suppose you change:
+
+```cpp
+0xEDB88320u
+```
+
+to:
+
+```cpp
+0x12345678u
+```
+
+The code will still compile and run.
+
+However, you have changed the generator polynomial. You have therefore created a different CRC algorithm.
+
+For example:
+
+```text
+CRC_A:
+polynomial = 0xEDB88320
+
+CRC_B:
+polynomial = 0x12345678
+```
+
+The same data will generally produce completely different CRC values:
+
+```text
+Same data
+    │
+    ├── CRC_A → 0x........
+    │
+    └── CRC_B → 0x........
+```
+
+Neither is necessarily mathematically “wrong”, but they are different CRC schemes.
+
+#### 4. Why This Matters for NVS Settings
+
+This is particularly important in your ESP32 project.
+
+Suppose you save the settings using:
+
+```text
+Settings data
+     ↓
+CRC using 0xEDB88320
+     ↓
+0xA37B9214
+```
+
+Later, you load the record and calculate the CRC using:
+
+```text
+0x12345678
+```
+
+You will almost certainly get a different result:
+
+```text
+Calculated CRC = 0x????????   ← different
+Stored CRC     = 0xA37B9214
+```
+
+Therefore:
+
+```text
+calculated CRC != stored CRC
+```
+
+and your settings will be rejected as corrupted.
+
+The polynomial must remain identical when saving and loading.
+
+#### 5. Can You Design Your Own CRC?
+
+Yes, you could theoretically choose another polynomial.
+
+However, you should not simply select an arbitrary number.
+
+A CRC polynomial has mathematical properties that affect its ability to detect:
+
+- Single-bit errors.
+- Multiple-bit errors.
+- Burst errors.
+- Certain patterns of corrupted data.
+
+Good CRC polynomials are carefully selected because they provide strong error-detection properties.
+
+Therefore:
+
+```text
+0xEDB88320
+```
+
+is not merely a convenient constant. It is part of the well-known CRC-32/IEEE 802.3 algorithm.
+
+#### 6. CRC-32 Has More Than a Polynomial
+
+It is important not to think of CRC-32 as only a polynomial.
+
+A CRC algorithm is defined by several parameters:
+
+```text
+Width      = 32 bits
+Polynomial = 0x04C11DB7
+Init       = 0xFFFFFFFF
+RefIn      = true
+RefOut     = true
+XorOut     = 0xFFFFFFFF
+```
+
+Your implementation corresponds to the common reflected CRC-32 variant.
+
+That is why the function begins with:
+
+```cpp
+uint32_t crc = 0xFFFFFFFFu;
+```
+
+and ends with:
+
+```cpp
+return ~crc;
+```
+
+The complete mathematical recipe matters.
+
+#### 7. Why `0x04C11DB7` and `0xEDB88320`?
+
+This is an important point.
+
+The conventional CRC-32 polynomial is:
+
+```text
+0x04C11DB7
+```
+
+Your algorithm shifts right:
+
+```cpp
+crc >> 1
+```
+
+Therefore, it uses the reflected polynomial:
+
+```text
+0xEDB88320
+```
+
+You can think of the relationship approximately as bit reflection:
+
+```text
+0x04C11DB7
+      ↓ bit reflection
+0xEDB88320
+```
+
+The two constants represent the same underlying CRC polynomial in different orientations.
+
+Therefore, you should not simply replace:
+
+```cpp
+0xEDB88320u
+```
+
+with:
+
+```cpp
+0x04C11DB7u
+```
+
+while keeping:
+
+```cpp
+crc >> 1
+```
+
+That would mix two different representations.
+
+#### 8. Mathematical Model
+
+A simple conceptual model is:
+
+```text
+             CRC register
+        ┌───────────────────┐
+        │ 32-bit remainder  │
+        └───────────────────┘
+                  │
+                  ▼
+             Shift right
+                  │
+                  ▼
+          Outgoing bit = 1?
+             /          \
+           NO            YES
+           │              │
+           ▼              ▼
+       Continue       XOR with
+                    polynomial
+                   0xEDB88320
+```
+
+The polynomial determines how the CRC remainder evolves after each bit.
+
+Therefore:
+
+> Changing `0xEDB88320` changes the mathematical feedback rule, which changes the CRC algorithm and the resulting checksum.
+
+#### Recommendation for Your ESP32 Tutorial
+
+Keep the constant unchanged:
+
+```cpp
+0xEDB88320u
+```
+
+You can describe it as:
+
+> The reflected representation of the standard CRC-32/IEEE 802.3 generator polynomial. It determines the mathematical feedback operation used during each bit iteration.
+
+This is more accurate than calling it simply a “CRC constant” or “magic number”.
+
 ---
 
 # 7. Demonstrating persistence
