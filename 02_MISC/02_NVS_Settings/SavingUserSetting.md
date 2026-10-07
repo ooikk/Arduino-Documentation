@@ -866,6 +866,245 @@ void loop() {
 
 ```
 
+### `static_assert()` in C++
+
+`static_assert()` is a compile-time check in C++. It lets you tell the compiler:
+
+> “This condition must always be true. If it isn't, stop compilation and show an error.”
+
+It is not a function that runs on the ESP32. Nothing is executed at runtime.
+
+#### 1. Check the Size of `float`
+
+```cpp
+static_assert(sizeof(float) == 4,
+              "This format requires a 32-bit float");
+```
+
+This checks:
+
+```cpp
+sizeof(float)
+```
+
+which tells you how many bytes a `float` occupies.
+
+You require:
+
+```text
+float = 4 bytes = 32 bits
+```
+
+If the compiler confirms that:
+
+```cpp
+sizeof(float) == 4
+```
+
+the assertion passes and compilation continues.
+
+If `float` were 8 bytes, compilation would fail. Conceptually, the compiler would report:
+
+```text
+error: static assertion failed:
+This format requires a 32-bit float
+```
+
+This is useful because your NVS binary format assumes a 4-byte `float`.
+
+#### 2. Check Where `crc` Is Located
+
+```cpp
+static_assert(offsetof(StoredSettings, crc) == 48,
+              "Storage layout changed");
+```
+
+`offsetof()` tells you the byte offset of a structure member.
+
+With your explicit format:
+
+```cpp
+struct StoredSettings {
+  uint32_t version;          // 0–3
+  int32_t brightness;        // 4–7
+  uint8_t autoMode;          // 8
+  uint8_t reserved;          // 9
+  char deviceName;       // 10–41
+  uint8_t reserved2;      // 42–43
+  float threshold;           // 44–47
+  uint32_t crc;              // 48–51
+};
+```
+
+you expect:
+
+```cpp
+offsetof(StoredSettings, crc)
+```
+
+to be:
+
+```text
+48
+```
+
+Therefore, the assertion is effectively checking:
+
+```cpp
+static_assert(48 == 48, "Storage layout changed");
+```
+
+The assertion passes.
+
+However, suppose somebody later changes:
+
+```cpp
+char deviceName[32];
+```
+
+to:
+
+```cpp
+char deviceName[40];
+```
+
+The `crc` member would move from byte offset `48` to byte offset `56`.
+
+The compiler would then stop with an error similar to:
+
+```text
+error: static assertion failed:
+Storage layout changed
+```
+
+This is extremely useful for your NVS application because changing the structure layout can make existing flash data incompatible.
+
+#### 3. Check the Total Structure Size
+
+```cpp
+static_assert(sizeof(StoredSettings) == 52,
+              "Storage layout changed");
+```
+
+This checks that the entire record is exactly 52 bytes.
+
+Your intended format is:
+
+```text
+version        4 bytes
+brightness     4 bytes
+autoMode       1 byte
+reserved       1 byte
+deviceName    32 bytes
+reserved2      2 bytes
+threshold      4 bytes
+crc            4 bytes
+------------------------
+              52 bytes
+```
+
+Therefore:
+
+```cpp
+sizeof(StoredSettings)
+```
+
+should return:
+
+```text
+52
+```
+
+If someone later changes the structure and it becomes 56 bytes, compilation fails instead of silently producing a different flash format.
+
+#### Why These Checks Are Useful for NVS
+
+Your program stores the structure using:
+
+```cpp
+preferences.putBytes(
+    SETTINGS_KEY,
+    &record,
+    sizeof(record)
+);
+```
+
+You are effectively storing this binary structure in ESP32 NVS:
+
+```text
+ESP32 NVS
+
+┌──────────────────────────────────────────────┐
+│ version │ brightness │ ... │ threshold │ CRC │
+└──────────────────────────────────────────────┘
+                    52 bytes
+```
+
+Later, you read the structure using:
+
+```cpp
+preferences.getBytes(
+    SETTINGS_KEY,
+    &record,
+    sizeof(record)
+);
+```
+
+Therefore, your program depends on the structure having a known and stable layout.
+
+The three assertions act as guard rails:
+
+```text
+             COMPILE TIME
+                  │
+                  ▼
+       ┌──────────────────────┐
+       │ static_assert checks  │
+       └──────────┬───────────┘
+                  │
+        ┌─────────┼──────────┐
+        ▼         ▼          ▼
+     float      CRC offset   total size
+      = 4          = 48        = 52
+     bytes        bytes       bytes
+        │         │             │
+        └─────────┼─────────────┘
+                  │
+            All correct?
+             /         \
+           YES          NO
+            │            │
+            ▼            ▼
+       Compile OK    Compile ERROR
+```
+
+#### `static_assert` vs. Normal `assert`
+
+This distinction is important.
+
+##### `static_assert`
+
+```cpp
+static_assert(sizeof(StoredSettings) == 52,
+              "Storage layout changed");
+```
+
+This check is performed during compilation.
+
+##### Normal `assert`
+
+```cpp
+assert(sizeof(StoredSettings) == 52);
+```
+
+This is a runtime assertion. It is not what you want for validating a binary storage format.
+
+Because `sizeof()` and `offsetof()` are known at compile time, `static_assert()` is the ideal choice.
+
+
+
+
+
 ---
 
 ## 7. Demonstrating persistence
