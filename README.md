@@ -43,6 +43,10 @@
 **Find sketches, libraries, board cores, and other files on your computer**   
 https://support.arduino.cc/hc/en-us/articles/4415103213714-Find-sketches-libraries-board-cores-and-other-files-on-your-computer
 
+
+**YD-ESP32-S3 Core Board**
+https://github.com/vcc-gnd/YD-ESP32-S3
+
 **Espressif Systems**    
 https://www.aliexpress.com/item/1005009523697481.html?
  
