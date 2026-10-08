@@ -3472,8 +3472,8 @@ The complete system can be visualized like this:
      52-byte record         │
           │                 │
           ▼                 │
-      ┌─────────┐            │
-      │   NVS   │────────────┘
+      ┌─────────┐           │
+      │   NVS   │───────────┘
       │  Flash  │
       └─────────┘
 ```
