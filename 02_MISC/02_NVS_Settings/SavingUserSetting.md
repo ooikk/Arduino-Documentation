@@ -3007,6 +3007,494 @@ The `{}` syntax is not specific to ESP32 or NVS. It is standard C++ initializati
 
 In embedded code, it is particularly useful because it prevents your program from accidentally working with unpredictable memory contents.
 
+
+## 6.7 Understanding `loadSettings()` and `saveSettings()`
+
+These two functions are the core of your NVS settings system.
+
+A simple way to remember them is:
+
+```text
+loadSettings()
+
+NVS Flash ──────────► RAM
+```
+
+```text
+saveSettings()
+
+RAM ────────────────► NVS Flash
+```
+
+### 1. `loadSettings()`
+
+```cpp
+LoadStatus loadSettings()
+```
+
+This function reads saved settings from NVS, checks that they are valid, and then places them into the global `settings` variable.
+
+#### Step 1: Check Whether NVS Is Available
+
+```cpp
+if (!nvsReady) {
+  return LoadStatus::ReadError;
+}
+```
+
+If NVS was not successfully initialized, the function stops immediately:
+
+```text
+NVS unavailable
+      ↓
+ReadError
+```
+
+#### Step 2: Check Whether the Settings Key Exists
+
+```cpp
+if (!preferences.isKey(SETTINGS_KEY)) {
+  return LoadStatus::Missing;
+}
+```
+
+This checks whether the `"settings"` key has ever been saved.
+
+On the first boot, the key may not exist:
+
+```text
+No "settings" key
+       ↓
+    Missing
+```
+
+The caller can then use the default settings.
+
+#### Step 3: Check the Stored Type and Size
+
+```cpp
+if (preferences.getType(SETTINGS_KEY) != PT_BLOB ||
+    preferences.getBytesLength(SETTINGS_KEY) !=
+      sizeof(StoredSettings)) {
+  return LoadStatus::Incompatible;
+}
+```
+
+Your settings are stored as a BLOB, which means raw binary data.
+
+The code also checks that the stored size is exactly:
+
+```cpp
+sizeof(StoredSettings)
+```
+
+In your design, this is:
+
+```text
+52 bytes
+```
+
+The check is conceptually:
+
+```text
+Expected:
+
+BLOB
+52 bytes
+
+        ↓
+
+NVS:
+
+Is it a BLOB?
+Is it 52 bytes?
+
+        ↓
+      YES → Continue
+       NO → Incompatible
+```
+
+This protects you from an old or incompatible storage format.
+
+#### Step 4: Create an Empty Record
+
+```cpp
+StoredSettings record{};
+```
+
+This creates a local `StoredSettings` structure and initializes all its fields to zero.
+
+The structure temporarily holds the data read from NVS.
+
+```text
+NVS
+ ↓
+record
+ ↓
+settings
+```
+
+#### Step 5: Read the NVS Data
+
+```cpp
+if (preferences.getBytes(
+      SETTINGS_KEY,
+      &record,
+      sizeof(record)
+    ) != sizeof(record)) {
+  return LoadStatus::ReadError;
+}
+```
+
+This reads the 52-byte NVS record into:
+
+```cpp
+record
+```
+
+The expression:
+
+```cpp
+&record
+```
+
+means:
+
+> Give `getBytes()` the memory address where it should place the data.
+
+The function expects exactly 52 bytes to be read.
+
+If it receives fewer than 52 bytes:
+
+```text
+ReadError
+```
+
+#### Step 6: Check the Version
+
+```cpp
+if (record.version != SETTINGS_VERSION) {
+  return LoadStatus::Incompatible;
+}
+```
+
+The stored record contains:
+
+```cpp
+uint32_t version;
+```
+
+For example:
+
+```text
+Current version = 1
+```
+
+If the ESP32 finds:
+
+```text
+Stored version = 2
+Current version = 1
+```
+
+it does not try to interpret the data.
+
+Instead:
+
+```text
+Different format
+      ↓
+Incompatible
+```
+
+This allows you to change the storage format in future firmware versions.
+
+#### Step 7: Validate and Decode the Record
+
+```cpp
+if (!decodeRecord(record, settings)) {
+  return LoadStatus::Invalid;
+}
+```
+
+This is an important step.
+
+`decodeRecord()` takes the raw stored record and checks items such as:
+
+- CRC.
+- Brightness range.
+- Whether `autoMode` is `0` or `1`.
+- Whether `deviceName` has a valid null terminator.
+- Whether `threshold` is valid.
+
+If everything is valid, it copies the values into:
+
+```cpp
+settings
+```
+
+The process is:
+
+```text
+NVS
+ ↓
+record
+ ↓ decodeRecord()
+ ├── CRC OK?
+ ├── Values OK?
+ ├── Strings OK?
+ └── Format OK?
+ ↓
+settings
+```
+
+#### Step 8: Mark the Settings as Clean
+
+```cpp
+dirty = false;
+```
+
+The settings have just been loaded from flash, so there are no unsaved changes.
+
+Then:
+
+```cpp
+return LoadStatus::Loaded;
+```
+
+indicates success.
+
+### 2. `saveSettings()`
+
+```cpp
+bool saveSettings()
+```
+
+This function performs the opposite operation.
+
+It takes the current RAM settings, validates them, creates a 52-byte storage record, and writes it to NVS.
+
+#### Step 1: Check Whether Saving Is Allowed
+
+```cpp
+if (!nvsReady || saveBlocked) {
+  return false;
+}
+```
+
+There are two reasons not to save:
+
+```text
+NVS is not ready
+        OR
+Saving has been blocked
+```
+
+If either condition is true:
+
+```cpp
+return false;
+```
+
+No flash write occurs.
+
+#### Step 2: Validate the RAM Settings
+
+```cpp
+if (!validateSettings(settings)) {
+  return false;
+}
+```
+
+Before writing anything to flash, the function verifies that the current settings are valid.
+
+For example:
+
+```text
+brightness = 0–100
+autoMode   = 0 or 1
+name       = valid
+threshold  = valid
+```
+
+If the settings are invalid:
+
+```cpp
+return false;
+```
+
+This prevents bad data from being permanently stored.
+
+#### Step 3: Check the `dirty` Flag
+
+```cpp
+if (!dirty) {
+  return true;
+}
+```
+
+If nothing has changed since the last save, there is no reason to write to flash.
+
+```text
+No changes
+    ↓
+No NVS write
+```
+
+This is useful because unnecessary writes consume flash and NVS write endurance.
+
+The function returns `true` because there was no error. There simply was nothing to save.
+
+#### Step 4: Create the Storage Record
+
+```cpp
+const StoredSettings record = makeRecord(settings);
+```
+
+This converts your RAM representation:
+
+```text
+DeviceSettings
+```
+
+into your NVS representation:
+
+```text
+StoredSettings
+```
+
+`makeRecord()` also calculates the CRC.
+
+Conceptually:
+
+```text
+settings
+   │
+   ▼
+makeRecord()
+   │
+   ├── version
+   ├── brightness
+   ├── autoMode
+   ├── deviceName
+   ├── threshold
+   └── CRC
+   │
+   ▼
+52-byte record
+```
+
+#### Step 5: Write the Record to NVS
+
+```cpp
+if (preferences.putBytes(
+      SETTINGS_KEY,
+      &record,
+      sizeof(record)
+    ) != sizeof(record)) {
+  return false;
+}
+```
+
+This writes the complete `StoredSettings` structure as a binary BLOB.
+
+Expected result:
+
+```text
+52 bytes written
+```
+
+If fewer than 52 bytes are reported:
+
+```text
+Save failed
+```
+
+The `dirty` flag remains `true`.
+
+This is important because the code deliberately does not execute:
+
+```cpp
+dirty = false;
+```
+
+when the write fails.
+
+Therefore, the RAM changes remain marked as unsaved.
+
+#### Step 6: Mark the Save as Successful
+
+```cpp
+dirty = false;
+```
+
+At this point, the RAM and NVS copies are synchronized.
+
+```text
+RAM settings
+     │
+     │ save
+     ▼
+NVS settings
+
+Both are now identical
+        ↓
+   dirty = false
+```
+
+Then:
+
+```cpp
+return true;
+```
+
+indicates that the save succeeded.
+
+### The Two Functions Together
+
+The complete system can be visualized like this:
+
+```text
+                 ESP32
+              ┌──────────┐
+              │   RAM    │
+              │ settings │
+              └────┬─────┘
+                   │
+          ┌────────┴────────┐
+          │                 │
+        SAVE              LOAD
+          │                 ▲
+          ▼                 │
+   makeRecord()             │
+          │                 │
+          ▼                 │
+     52-byte record         │
+          │                 │
+          ▼                 │
+      ┌─────────┐            │
+      │   NVS   │────────────┘
+      │  Flash  │
+      └─────────┘
+```
+
+The design philosophy is:
+
+```text
+loadSettings():
+
+“Do not trust what is in flash until I check it.”
+```
+
+```text
+saveSettings():
+
+“Do not write to flash unless the data is valid and has actually changed.”
+```
+
+This combination makes your NVS settings implementation much more robust than simply using `putBytes()` and `getBytes()` without validation.
+
+
 ---
 
 # 7. Demonstrating persistence
