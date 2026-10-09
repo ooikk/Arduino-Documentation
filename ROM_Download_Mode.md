@@ -179,7 +179,24 @@ If you're using `py` instead, run:
 py -m esptool --chip esp32s3 -p COM4 chip-id
 ```
 
-Replace `COM4` if Device Manager shows a different port.
+Replace `COM4` if Device Manager shows a different port. Below is the example of the response from Command Prompt:    
+
+```text
+PS C:\WINDOWS\system32> python -m esptool --chip esp32s3 -p COM4 chip-id
+esptool v5.5.0
+Connected to ESP32-S3 on COM4:
+Chip type:          ESP32-S3 (QFN56) (revision v0.2)
+Features:           Wi-Fi, BT 5 (LE), Dual Core + LP Core, 240MHz, Embedded PSRAM 8MB (AP_3v3)
+Crystal frequency:  40MHz
+MAC:                ac:a7:04:e0:4e:64
+
+Stub flasher running.
+
+WARNING: ESP32-S3 has no chip ID. Reading MAC address instead.
+MAC:                ac:a7:04:e0:4e:64
+
+Hard resetting via RTS pin...
+```
 
 **Expected result if communication succeeds:** `esptool` identifies the ESP32-S3 and prints chip information.
 
