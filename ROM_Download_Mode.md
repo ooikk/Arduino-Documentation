@@ -213,4 +213,84 @@ What happened when you ran the command?
 
 ### Continue troubleshooting
 
+---
+# ROM download mode (bootloader mode)
+
 The result will tell us whether to focus on Arduino IDE, the Windows serial port/driver, or the ESP32-S3 bootloader itself.
+
+
+The most reliable way to confirm that your ESP32-S3 is in ROM download mode (bootloader mode) is to run `esptool` and see whether it can identify the chip.
+
+The blue LED blinking is not a reliable indicator. The LED may be controlled by your existing sketch, and its behaviour varies by board.
+
+## Step 1 — Enter download mode
+
+Using your normal USB/UART connector:
+
+1. Disconnect USB.
+2. Press and hold **BOOT**.
+3. Connect USB while continuing to hold BOOT.
+4. Release BOOT.
+5. Open Command Prompt and run:
+
+```powershell
+python -m esptool --chip esp32s3 -p COM4 chip-id
+```
+
+Replace `COM4` if your board uses another port.
+
+## Step 2 — Understand the result
+
+| What you see | What it means |
+|---|---|
+| `Chip is ESP32-S3` or chip information is displayed | **Success** — The bootloader is responding. |
+| `DOWNLOAD_BOOT` in the ROM boot log | The chip entered download mode. |
+| `No serial data received` | Communication failed; bootloader mode is not yet confirmed. |
+| `SPI_FAST_FLASH_BOOT` in the ROM boot log | The chip booted normally from flash, not into download mode. |
+
+Espressif documents the download-mode message and the BOOT/GPIO0 reset procedure in its [ESP32-S3 boot-mode guide](https://documentation.espressif.com/projects/esptool/en/latest/esp32s3/advanced-topics/boot-mode-selection.html).
+
+Espressif Documentation
+
+## Step 3 — Check the boot log directly (optional)
+
+If the command still fails, you can inspect the ROM boot message:
+
+1. Open Arduino IDE Serial Monitor or another serial terminal.
+2. Select `COM4` and set the baud rate to `115200`.
+3. Hold **BOOT**, press and release **EN/RESET**, then release BOOT.
+4. Look for a line similar to:
+
+```text
+boot:0x... (DOWNLOAD_BOOT...)
+```
+
+If you see `DOWNLOAD_BOOT`, the chip entered download mode. If you see `SPI_FAST_FLASH_BOOT`, it started the existing firmware instead. The ROM log may not appear if the serial connection is not working or the relevant output is unavailable.
+
+**Important:** Close Serial Monitor before running `esptool` again, because only one application can normally use `COM4` at a time.
+
+If you still cannot confirm the mode, tell me exactly what appears when you run the `chip-id` command. That will help us decide the next diagnostic step.
+
+---
+# Recover from Bootloader Mode
+
+Yes. For your ESP32-S3, unplugging and reconnecting the USB cable will normally return it to its regular startup sequence after you have entered ROM bootloader mode.
+
+Here is what happens:
+
+- Hold BOOT and reset/connect USB → the ESP32-S3 enters ROM download mode.
+- Unplug USB → the chip loses power.
+- Reconnect USB without pressing BOOT → the chip normally boots from flash and runs your previously uploaded sketch.
+
+The important distinction is that entering bootloader mode does **not** erase or change your existing firmware.
+
+| Action | Expected result |
+|---|---|
+| Hold BOOT while resetting | Enters ROM download mode |
+| Unplug and reconnect without holding BOOT | Boots normally from flash |
+| Upload new firmware successfully | Runs the new sketch after reboot |
+| Erase flash | Removes stored firmware and data, depending on what is erased |
+
+If the blue LED resumes blinking after reconnecting, your previous sketch may be running again.
+
+For your current upload problem: you can safely unplug and reconnect to leave bootloader mode. However, this alone will not fix the `No serial data received` error. We still need to establish why `esptool` cannot communicate with the ESP32-S3 through `COM4`.
