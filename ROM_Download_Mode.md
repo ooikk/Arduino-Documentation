@@ -233,7 +233,7 @@ What happened when you ran the command?
 
 
 ---
-# Success ROM download mode (bootloader mode) Response
+# Success ROM download mode (bootloader mode)
 
 The result will tell us whether to focus on Arduino IDE, the Windows serial port/driver, or the ESP32-S3 bootloader itself.
 
