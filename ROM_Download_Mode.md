@@ -1,0 +1,75 @@
+# ROM Download Mode
+This is a crucial clue! Since the cable, PC port, and drivers are proven to work with another ESP32-S3, **the issue is isolated to this specific board**.
+
+Here is how to troubleshoot a single stubborn ESP32-S3 board:
+
+---
+
+### 🔌 Step 1: Disconnect ALL External Wires (Crucial)
+
+The ESP32-S3 has specific "strapping pins" that determine its boot mode. If **GPIO 0**, **GPIO 3**, or **GPIO 46** are connected to anything (even a sensor, LED, or jumper wire), the chip will refuse to enter download mode.
+
+- **Action**: Unplug *everything* from the board. It should be completely bare, connected only to the USB cable. Then try the manual boot sequence again.
+
+---
+
+### 🎮 Step 2: The "BOOT + EN" Manual Reset Sequence
+
+The auto-reset circuit (a small capacitor and resistor that automatically triggers download mode) might be faulty or out of spec on this specific board. You can do it manually with perfect timing:
+
+1. **Unplug** the USB cable.
+2. Press and **hold down the BOOT button**.
+3. While holding BOOT, press and **release the EN (or RESET) button** once.
+4. Wait 1 second, then **release the BOOT button**.
+5. *Immediately* run the command:
+
+```powershell
+esptool --chip esp32s3 --port COM4 erase-flash
+```
+
+---
+
+### 🔄 Step 3: Are You Using the "Native" USB Port?
+
+If your board has two USB-C ports, they behave differently:
+
+- **UART Port** (usually labeled "UART" or has a CH340/CP210x chip): Works reliably with standard `esptool` commands.
+- **Native USB Port** (usually labeled "USB"): Connects directly to the ESP32-S3's internal USB-JTAG. Standard DTR/RTS auto-reset often fails here.
+- **Action**: If you are using the Native USB port, tell `esptool` to use the USB reset sequence by adding `--before usb-reset`:
+
+```powershell
+esptool --chip esp32s3 --port COM4 --before usb-reset erase-flash
+```
+
+*(And remember to use the BOOT + EN button trick right before running it).*
+
+---
+
+### 🔊 Step 4: Listen to Windows & Watch Device Manager
+
+Plug the board in and watch **Device Manager** closely:
+
+- **Scenario A**: The COM port appears, stays stable, but `esptool` still fails. → This points to a firmware crash or strapping pin issue (see Step 1 & 2).
+- **Scenario B**: The COM port appears for 1 second, then disappears (and you hear the Windows "device disconnect" sound). → The board is crashing immediately upon boot. This can happen if the flashed firmware is putting the USB peripheral to sleep or causing a brownout. The **BOOT + EN** trick (Step 2) is the only way to catch it before it crashes.
+- **Scenario C**: The COM port never appears at all, and the board's LED does not turn on. → The board has a hardware fault (dead USB-to-Serial chip, broken USB port, or damaged ESP32-S3 module).
+
+---
+
+### 🔍 Step 5: Hardware Inspection
+
+Look closely at the board:
+
+- Are there any **cold solder joints** or bridged pins on the USB-C connector?
+- If it's a bare module (WROOM) soldered to a custom PCB, check the soldering on the ESP32-S3 module pins, especially **GPIO 0**, **GPIO 3**, and **EN**.
+
+---
+
+### What to do next
+
+Try **Step 1** and **Step 2** first. If it still fails, please reply with:
+
+1. The **exact model/name** of this specific board (e.g., "ESP32-S3-DevKitC-1-N8", "LilyGO T-Display S3", or a custom PCB).
+2. Does it have **one or two** USB ports?
+3. What happens in Device Manager when you plug it in (does it stay, or does it disconnect)?
+
+We will get it working!
