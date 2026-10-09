@@ -5,7 +5,7 @@ Here is how to troubleshoot a single stubborn ESP32-S3 board:
 
 ---
 
-### 🔌 Step 1: Disconnect ALL External Wires (Crucial)
+## 🔌 Step 1: Disconnect ALL External Wires (Crucial)
 
 The ESP32-S3 has specific "strapping pins" that determine its boot mode. If **GPIO 0**, **GPIO 3**, or **GPIO 46** are connected to anything (even a sensor, LED, or jumper wire), the chip will refuse to enter download mode.
 
@@ -13,7 +13,7 @@ The ESP32-S3 has specific "strapping pins" that determine its boot mode. If **GP
 
 ---
 
-### 🎮 Step 2: The "BOOT + EN" Manual Reset Sequence
+## 🎮 Step 2: The "BOOT + EN" Manual Reset Sequence
 
 The auto-reset circuit (a small capacitor and resistor that automatically triggers download mode) might be faulty or out of spec on this specific board. You can do it manually with perfect timing:
 
@@ -29,7 +29,7 @@ esptool --chip esp32s3 --port COM4 erase-flash
 
 ---
 
-### 🔄 Step 3: Are You Using the "Native" USB Port?
+## 🔄 Step 3: Are You Using the "Native" USB Port?
 
 If your board has two USB-C ports, they behave differently:
 
@@ -45,7 +45,7 @@ esptool --chip esp32s3 --port COM4 --before usb-reset erase-flash
 
 ---
 
-### 🔊 Step 4: Listen to Windows & Watch Device Manager
+## 🔊 Step 4: Listen to Windows & Watch Device Manager
 
 Plug the board in and watch **Device Manager** closely:
 
@@ -55,7 +55,7 @@ Plug the board in and watch **Device Manager** closely:
 
 ---
 
-### 🔍 Step 5: Hardware Inspection
+## 🔍 Step 5: Hardware Inspection
 
 Look closely at the board:
 
@@ -64,7 +64,7 @@ Look closely at the board:
 
 ---
 
-### What to do next
+## What to do next
 
 Try **Step 1** and **Step 2** first. If it still fails, please reply with:
 
