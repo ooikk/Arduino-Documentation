@@ -228,10 +228,10 @@ What happened when you ran the command?
 - It says the COM port cannot be opened or does not exist.
 - Python or `esptool` is not recognized / installation failed.
 
-### Continue troubleshooting
+
 
 ---
-# ROM download mode (bootloader mode)
+# Success ROM download mode (bootloader mode) Response
 
 The result will tell us whether to focus on Arduino IDE, the Windows serial port/driver, or the ESP32-S3 bootloader itself.
 
