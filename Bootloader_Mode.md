@@ -74,15 +74,6 @@ Check the board closely for:
 - Poor soldering on the ESP32-S3 module pins if it is a bare WROOM module on a custom PCB.
 - Soldering problems on **GPIO 0**, **GPIO 3**, and **EN**.
 
----
-
-## 6. Report the Following
-
-If Steps 1 and 2 do not resolve the issue, reply with:
-
-1. The exact model or name of the board, such as `ESP32-S3-DevKitC-1-N8`, `LilyGO T-Display S3`, or a custom PCB.
-2. Whether the board has one or two USB ports.
-3. What happens in Device Manager when the board is plugged in—whether the COM port stays connected or disconnects.
 
 ---
 
@@ -153,6 +144,13 @@ py -m esptool version
 
 You should see the installed `esptool` version. The exact version may differ from Arduino IDE's bundled version.
 
+```powershell
+PS C:\WINDOWS\system32> python -m esptool version
+esptool v5.5.0
+5.5.0
+```
+
+
 ## Check the COM Port
 
 Before testing, close Arduino IDE's Serial Monitor and any other application using `COM4`.
@@ -182,7 +180,7 @@ Replace `COM4` if Device Manager shows a different port.
 
 A successful response looks like this:
 
-```text
+```powershell
 PS C:\WINDOWS\system32> python -m esptool --chip esp32s3 -p COM4 chip-id
 esptool v5.5.0
 Connected to ESP32-S3 on COM4:
@@ -200,6 +198,19 @@ Hard resetting via RTS pin...
 ```
 
 If communication succeeds, `esptool` identifies the ESP32-S3 and prints chip information.
+
+A fail response looks like this:
+
+```powershell
+PS C:\WINDOWS\system32> py -m esptool --chip esp32s3 -p COM4 chip-id
+esptool v5.5.0
+Serial port COM4:
+
+ERROR: A fatal error occurred: Could not open COM4, the port is busy or doesn't exist.
+(could not open port 'COM4': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2))
+
+Hint: Check if the port is correct and ESP connected
+```
 
 If you receive `No serial data received`, continue to the next step. `esptool` requires both a working serial connection and the ESP32-S3 to be in download mode.
 
