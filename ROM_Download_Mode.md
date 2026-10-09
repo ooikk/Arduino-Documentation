@@ -228,6 +228,8 @@ What happened when you ran the command?
 - It says the COM port cannot be opened or does not exist.
 - Python or `esptool` is not recognized / installation failed.
 
+**Reference:** [esptool installation guide](https://documentation.espressif.com/projects/esptool/en/latest/esp32s3/installation.html)
+
 
 
 ---
