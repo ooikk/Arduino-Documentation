@@ -27,6 +27,8 @@ The auto-reset circuit (a small capacitor and resistor that automatically trigge
 esptool --chip esp32s3 --port COM4 erase-flash
 ```
 
+**Follow this link to** [Installing Espressif's esptool
+](https://github.com/ooikk/Arduino-Documentation/blob/main/ROM_Download_Mode.md#installing-espressifs-esptool)
 ---
 
 ## 🔄 Step 3: Are You Using the "Native" USB Port?
