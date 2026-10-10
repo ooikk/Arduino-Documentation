@@ -576,16 +576,14 @@ Uploading: [============================================================] 100% D
    - Go to **Tools → Port → COM7**, then open Serial Monitor at your configured baud rate.
    - The ESP32 should restart into the new firmware, and you can inspect its startup messages and firmware version.
 
-#### One important verification
-
-After uploading, check that the Serial Monitor shows the expected new firmware version and, if you print partition information, that the running partition has changed as expected.
-
 ```cpp
     FW_VERSION = "1.0.1";
 ```
 
-You can also open PowerShell and ping whether the ESP32 is reachable:
+#### Important NOTE: 
+If you power up your ESP32-S3 from a USB power adapter or another power source at a different location, without connecting it to Arduino IDE. If your firmware already connects to Wi-Fi and calls `ArduinoOTA.begin()`, the ESP32 can remain available for OTA uploads.
 
+You can open PowerShell and ping whether the ESP32 is reachable:
 
 ```text
 ping 192.168.0.187
@@ -620,7 +618,6 @@ Approximate round trip times in milli-seconds:
     Minimum = 3ms, Maximum = 11ms, Average = 7ms
 ```
 
->You can power your ESP32-S3 from a USB power adapter or another power source at a different location, without connecting it to Arduino IDE. If your firmware already connects to Wi-Fi and calls `ArduinoOTA.begin()`, the ESP32 can remain available for OTA uploads.
 
 
 ## 5. Example B: ElegantOTA Web Upload
