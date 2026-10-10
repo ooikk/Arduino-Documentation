@@ -1236,3 +1236,183 @@ Consider ElegantOTA Async if you already use `ESPAsyncWebServer` or need to serv
 Plan for authenticated updates, firmware integrity, a suitable OTA partition scheme, rollback or recovery, and secure delivery.
 
 **Key takeaway:** ArduinoOTA vs Web OTA describes how you initiate and deliver the update. Sync vs async describes how the web server handles requests. These are separate design choices, and both OTA methods ultimately rely on suitable firmware-update and flash-partition support.
+
+---
+
+# Example A (Arduino OTA) Explain: ESP32-S3 OTA Partition Functions
+
+These two functions are commonly used in ESP32-S3 OTA (Over-The-Air) firmware updates. They allow your program to identify which flash partition is currently running the firmware and which partition should receive the next firmware update.
+
+Both functions return a pointer to an `esp_partition_t` structure defined by ESP-IDF, which is also available when using the ESP32 Arduino framework.
+
+## 1. Understanding the two functions
+
+### Function 1: `esp_ota_get_running_partition()`
+
+```cpp
+const esp_partition_t* running =
+    esp_ota_get_running_partition();
+```
+
+**Purpose:** Get information about the flash partition from which the currently running application was loaded.
+
+For example, your ESP32-S3 might have two application partitions:
+
+- `ota_0` — currently running firmware.
+- `ota_1` — available for the next firmware update.
+
+The function returns a pointer to the partition structure describing `ota_0` in this example.
+
+### Example ESP32-S3 flash layout
+
+- `ota_0` — Running application
+  - Address: `0x10000` (example).
+  - Contains the firmware currently executing.
+- `ota_1` — Update target
+  - Contains the other application slot, ready to receive new firmware.
+
+*Illustrative layout only. Actual addresses and sizes depend on your partition table.*
+
+The returned pointer does not contain the firmware itself. It points to a metadata structure describing the partition.
+
+### Function 2: `esp_ota_get_next_update_partition(nullptr)`
+
+```cpp
+const esp_partition_t* next =
+    esp_ota_get_next_update_partition(nullptr);
+```
+
+**Purpose:** Find the application partition that the OTA system recommends for the next firmware update.
+
+The argument `nullptr` means that you are not specifying a particular partition as the reference. The OTA function uses the currently running partition to determine the next update partition.
+
+For a typical two-slot OTA arrangement:
+
+| Current running partition | Next update partition |
+|---|---|
+| `ota_0` | `ota_1` |
+| `ota_1` | `ota_0` |
+
+This is the usual A/B firmware update strategy: run firmware from one slot while writing the new firmware to the other slot.
+
+The function returns `nullptr` if it cannot find a suitable update partition.
+
+## 2. The `esp_partition_t` data structure
+
+Both `running` and `next` have the same C++ type:
+
+```cpp
+const esp_partition_t*
+```
+
+Break this down:
+
+- `esp_partition_t` — a structure containing information about a flash partition.
+- `*` — a pointer to that structure.
+- `const` — your code must not modify the structure through this pointer.
+
+Conceptually, the structure looks like this:
+
+```cpp
+typedef struct {
+    esp_partition_type_t type;
+    esp_partition_subtype_t subtype;
+    uint32_t address;
+    uint32_t size;
+    bool encrypted;
+    char label;
+} esp_partition_t;
+```
+
+This is an illustrative representation of the commonly used ESP-IDF structure; use the definition in your installed ESP-IDF headers as the authoritative version.
+
+### What each field means
+
+| Field | Meaning | Example |
+|---|---|---|
+| `type` | Partition category | `ESP_PARTITION_TYPE_APP` |
+| `subtype` | Specific partition purpose | `ESP_PARTITION_SUBTYPE_APP_OTA_0` |
+| `address` | Starting address in flash | `0x10000` |
+| `size` | Partition capacity in bytes | `0x1E0000` |
+| `encrypted` | Whether flash encryption applies | `true` or `false` |
+| `label` | Human-readable partition name | `"ota_0"` |
+
+The address and size examples are illustrative, not guaranteed values for your ESP32-S3 N16R8.
+
+## 3. How to access the structure's fields
+
+Because `running` and `next` are pointers, use the `->` operator to access their members.
+
+```cpp
+if (running != nullptr) {
+    Serial.printf("Running partition: %s\n", running->label);
+    Serial.printf("Address: 0x%08X\n",
+                  (unsigned int)running->address);
+    Serial.printf("Size: %u bytes\n",
+                  (unsigned int)running->size);
+}
+
+if (next != nullptr) {
+    Serial.printf("Next OTA partition: %s\n", next->label);
+    Serial.printf("Address: 0x%08X\n",
+                  (unsigned int)next->address);
+    Serial.printf("Size: %u bytes\n",
+                  (unsigned int)next->size);
+}
+```
+
+Possible output:
+
+```text
+Running partition: ota_0
+Address: 0x00010000
+Size: 1966080 bytes
+
+Next OTA partition: ota_1
+Address: 0x001F0000
+Size: 1966080 bytes
+```
+
+These values are only an example; your actual partition table may differ.
+
+**Important:** Always check for `nullptr` before accessing a returned pointer. Otherwise, accessing `running->label` or `next->label` could cause a crash if the pointer is null.
+
+## 4. How the two functions work together during OTA
+
+1. Identify the running firmware:
+
+   ```cpp
+   esp_ota_get_running_partition()
+   ```
+
+2. Find the update target:
+
+   ```cpp
+   esp_ota_get_next_update_partition(nullptr)
+   ```
+
+3. Write the new firmware, typically using `esp_ota_begin()`, `esp_ota_write()`, and `esp_ota_end()`.
+
+4. Select the new firmware and reboot using `esp_ota_set_boot_partition(next)`, followed by a reboot, after successful validation.
+
+The two functions only identify partitions. They do not write firmware, change the boot partition, or reboot the ESP32 by themselves.
+
+## 5. Why use `const esp_partition_t*` instead of `esp_partition_t`?
+
+Consider these two declarations:
+
+```cpp
+const esp_partition_t* running;
+```
+
+This is a pointer to a read-only structure. You can read its fields, but you cannot modify them through `running`.
+
+```cpp
+esp_partition_t running;
+```
+
+This declares a local structure variable. It is a different object, not automatically populated with the running partition's information.
+
+For these ESP-IDF APIs, use the pointer returned by the function directly. You generally do not need to copy the structure.
+
+One final distinction: the partition table describes the available flash partitions, while the OTA data partition records which OTA application slot should be booted. The functions above help you inspect the former and identify the next update target; they do not themselves change the latter.
