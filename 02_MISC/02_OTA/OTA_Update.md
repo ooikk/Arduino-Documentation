@@ -584,10 +584,6 @@ After uploading, check that the Serial Monitor shows the expected new firmware v
     FW_VERSION = "1.0.1";
  ```
 
-Your earlier TCP test failed because ArduinoOTA uses UDP for its initial OTA service, so that test was not a valid test of OTA availability. The successful upload now confirms that your OTA path works.
-
-**Practical tip:** Keep this procedure in your ESP32-S3 project notes. Once the network port is discovered and Windows permissions are configured, subsequent OTA uploads should generally be much more straightforward.
-
 
 ## 5. Example B: ElegantOTA Web Upload
 
