@@ -517,6 +517,8 @@ See the [ArduinoOTA implementation](https://github.com/espressif/arduino-esp32/b
 
 ### Upload Workflow for Example A
 
+#### Upload first OTA program
+
 1. Connect the ESP32-S3 through USB.
 2. Select its COM port.
 3. Apply the board settings above.
@@ -525,40 +527,67 @@ See the [ArduinoOTA implementation](https://github.com/espressif/arduino-esp32/b
 6. Reset the board if necessary.
 7. Confirm that it prints an IP address and:
 
-   ```text
-   ArduinoOTA ready
-   ```
+```text
+IP address: 192.168.0.187
+ArduinoOTA ready: esp32s3-ota.local
+```
 
-8. Put the computer and ESP32 on the same local network.
-9. Wait briefly.
-10. Open **Tools → Port**.
-11. Look for a network entry resembling:
+#### Perform OTA with new Firmware
 
-    ```text
-    esp32s3-ota at 192.168.1.123
-    ```
+1. Put the computer and ESP32 on the same local network.
+2. Wait briefly.
+3. Go to **Tools → Port**.
+4. Look for a network entry resembling:
 
-12. Select that network port.
-13. If the IDE asks which board it belongs to, choose:
+```text
+    esp32s3-ota at 192.168.0.187
+```
+5. Select that network port.
 
-    ```text
+> Ignore the Serial Monitor warning when switching to the network port. The network port is for OTA uploading, not USB serial monitoring.
+
+7. If the IDE asks which board it belongs to, choose:
+
+ ```text
     ESP32S3 Dev Module
-    ```
+ ```
 
-14. Check the Tools settings again.
-15. Change:
+7. **Compile and upload:** Choose **Sketch → Upload** (`Ctrl+U`), or **Sketch → Configure and Upload** if needed.     
 
-    ```cpp
+> Allow Arduino IDE through Windows Security/Firewall when prompted, and enter your configured OTA password when requested.
+
+8. Wait for upload to complete 100% and Done. Below is the example of the output:
+
+
+```text
+Sketch uses 941735 bytes (29%) of program storage space. Maximum is 3145728 bytes.
+Global variables use 51228 bytes (15%) of dynamic memory, leaving 276452 bytes for local variables. Maximum is 327680 bytes.
+Sending invitation to 192.168.0.187 
+Authenticating (PBKDF2-HMAC-SHA256)...
+OK
+
+Uploading: [                                                            ] 0%
+Uploading: [=                                                           ] 1%
+:
+Uploading: [============================================================] 100% Done...
+```
+
+9. Return to USB serial monitoring:
+   - Go to **Tools → Port → COM7**, then open Serial Monitor at your configured baud rate.
+   - The ESP32 should restart into the new firmware, and you can inspect its startup messages and firmware version.
+
+#### One important verification
+
+After uploading, check that the Serial Monitor shows the expected new firmware version and, if you print partition information, that the running partition has changed as expected.
+
+ ```cpp
     FW_VERSION = "1.0.1";
-    ```
+ ```
 
-16. Click **Upload**.
-17. Enter the OTA password when prompted.
-18. After the restart, verify that the board reports version `1.0.1`.
+Your earlier TCP test failed because ArduinoOTA uses UDP for its initial OTA service, so that test was not a valid test of OTA availability. The successful upload now confirms that your OTA path works.
 
-USB can remain connected for power and diagnostics.
+**Practical tip:** Keep this procedure in your ESP32-S3 project notes. Once the network port is discovered and Windows permissions are configured, subsequent OTA uploads should generally be much more straightforward.
 
-To read serial logs after uploading, select the USB COM port again.
 
 ## 5. Example B: ElegantOTA Web Upload
 
@@ -1831,36 +1860,4 @@ For your use case, a practical strategy is:
 
 One final precaution: test this procedure on your development board before relying on it remotely. Ensure the old firmware is actually present, can boot with your current settings and partition layout, and is compatible with any changes the new firmware made to persistent settings in NVS.
 
----
 
-Correct! Your steps are right. Great that you managed to upload successfully after clearing the Windows Security warning and entering the OTA password.
-
-Here is the finalized procedure for your ESP32-S3 + Arduino IDE 2.3.10 + ArduinoOTA setup.
-
-## Successful OTA upload procedure
-
-### 1. Select the network port
-
-Go to **Tools → Port** and select the ESP32-S3 network port, such as `esp32s3-ota`.
-
-Ignore the Serial Monitor warning when switching to the network port. The network port is for OTA uploading, not USB serial monitoring.
-
-### 2. Compile and upload
-
-Choose **Sketch → Upload** (`Ctrl+U`), or **Sketch → Configure and Upload** if needed.
-
-Allow Arduino IDE through Windows Security/Firewall when prompted, and enter your configured OTA password when requested.
-
-### 3. Return to USB serial monitoring
-
-Go to **Tools → Port → COM7**, then open Serial Monitor at your configured baud rate.
-
-The ESP32 should restart into the new firmware, and you can inspect its startup messages and firmware version.
-
-## One important verification
-
-After uploading, check that the Serial Monitor shows the expected new firmware version and, if you print partition information, that the running partition has changed as expected.
-
-Your earlier TCP test failed because ArduinoOTA uses UDP for its initial OTA service, so that test was not a valid test of OTA availability. The successful upload now confirms that your OTA path works.
-
-**Practical tip:** Keep this procedure in your ESP32-S3 project notes. Once the network port is discovered and Windows permissions are configured, subsequent OTA uploads should generally be much more straightforward.
