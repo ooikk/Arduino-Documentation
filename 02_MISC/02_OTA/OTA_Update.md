@@ -1676,3 +1676,157 @@ Call `printRunningPartition()` in `setup()`.
 Then perform an OTA update and watch the Serial Monitor after the ESP32 restarts. For a normal alternating two-slot update, you should see the running partition change from `ota_0` to `ota_1`, or vice versa.
 
 In summary: `setup()` configures and starts the OTA service; `loop()` keeps it responsive through `ArduinoOTA.handle()`; Arduino IDE initiates the upload; and the standard ArduinoOTA library handles successful finalization, boot-partition selection, and restart.
+
+
+## 8. Manual OTA Rollback on ESP32-S3
+
+For your ESP32-S3 using Arduino IDE and ArduinoOTA, you can implement a manual firmware rollback that lets you test new firmware for several days and then return to the previous version if necessary.
+
+The important distinction is that ESP32 OTA rollback has two different mechanisms:
+
+- **Automatic rollback:** The bootloader can revert to the previous firmware if a newly installed image fails its first-boot validation.
+- **Manual rollback after days of testing:** Your currently running firmware deliberately selects the previous application partition and reboots into it.
+
+For your scenario—testing for a few days and deciding later that you want the old firmware back—you need the second mechanism, or a remote command that triggers it.
+
+### 1. How manual rollback works
+
+Assume your ESP32-S3 has two OTA application slots.
+
+#### Before the OTA update
+
+| Partition | Firmware | Status |
+|---|---|---|
+| `ota_0` | Firmware v1.0 | Running |
+| `ota_1` | Old / available | Not running |
+
+Upload v1.1 through ArduinoOTA.
+
+#### After the OTA update
+
+| Partition | Firmware | Status |
+|---|---|---|
+| `ota_0` | Firmware v1.0 | Previous |
+| `ota_1` | Firmware v1.1 | Running |
+
+#### After manual rollback and reboot
+
+| Partition | Firmware | Status |
+|---|---|---|
+| `ota_0` | Firmware v1.0 | Running |
+| `ota_1` | Firmware v1.1 | Not running |
+
+This works only if the previous firmware image remains intact in the other OTA slot. A subsequent OTA update can overwrite that image, so two slots do not provide a permanent history of firmware versions.
+
+### 2. Code to manually roll back to the previous firmware
+
+For a typical ESP32-S3 partition table with exactly two OTA slots, you can use the following function:
+
+```cpp
+#include <esp_ota_ops.h>
+#include <esp_partition.h>
+#include <esp_system.h>
+
+void rollbackFirmware() {
+  const esp_partition_t* running =
+      esp_ota_get_running_partition();
+
+  if (running == nullptr) {
+    Serial.println("Rollback failed: no running partition.");
+    return;
+  }
+
+  // In a two-slot OTA layout, this identifies
+  // the other OTA application partition.
+  const esp_partition_t* previous =
+      esp_ota_get_next_update_partition(running);
+
+  if (previous == nullptr) {
+    Serial.println("Rollback failed: no other OTA slot.");
+    return;
+  }
+
+  Serial.printf("Current firmware: %s\n", running->label);
+  Serial.printf("Rollback target: %s\n", previous->label);
+
+  // Select the old firmware for the next boot.
+  esp_err_t err = esp_ota_set_boot_partition(previous);
+
+  if (err != ESP_OK) {
+    Serial.printf(
+        "Rollback selection failed: %s\n",
+        esp_err_to_name(err));
+    return;
+  }
+
+  Serial.println("Rollback selected. Restarting...");
+
+  delay(200);
+  esp_restart();
+}
+```
+
+> **Important limitation:** This example assumes a two-slot OTA layout and that the other slot contains the previous firmware you want. The function `esp_ota_get_next_update_partition(running)` identifies an OTA update target; it does not prove that the partition contains your desired previous version. For a layout with more than two OTA slots, explicitly identify the previous partition.
+
+The call to `esp_ota_set_boot_partition(previous)` selects the target for the next boot. `esp_restart()` then restarts the chip so the bootloader can load that firmware. ESP-IDF documents this selection-and-restart behavior in its OTA API.
+
+*Source note: ESP-IDF Programming Guide v6.1 documentation.*
+
+### 3. How do you trigger rollback after a few days?
+
+The rollback function does nothing until your application calls it. You need to decide how you want to issue that command.
+
+For example, you could use the Serial Monitor during development:
+
+```cpp
+void loop() {
+  ArduinoOTA.handle();
+
+  if (Serial.available()) {
+    String command = Serial.readStringUntil('\n');
+    command.trim();
+
+    if (command == "rollback") {
+      rollbackFirmware();
+    }
+  }
+
+  // Other application tasks...
+}
+```
+
+After uploading the new firmware and testing it for several days:
+
+1. Open the Arduino IDE Serial Monitor.
+2. Set the baud rate to match your sketch.
+3. Type `rollback` and send it.
+4. The ESP32 selects the other OTA slot and restarts.
+5. In `setup()`, print the running partition and firmware version to verify the result.
+
+This example uses a serial command for simplicity. If the device is deployed remotely, you could instead trigger rollback through an authenticated web endpoint, MQTT command, or another secure management channel.
+
+### 4. What about automatic rollback?
+
+Automatic rollback is useful for a different situation: a new firmware image fails shortly after installation, before it has been confirmed as working.
+
+ESP-IDF supports functions such as:
+
+```cpp
+esp_ota_mark_app_invalid_rollback_and_reboot();
+```
+
+This marks the running application as invalid and requests a reboot into the previous working application, provided rollback is enabled and a valid fallback exists.
+
+*Source note: ESP-IDF Programming Guide v6.1 documentation.*
+
+However, this is not a timer-based rollback mechanism. If your new firmware runs normally for three days and has already been confirmed as valid, automatic rollback will not occur just because you decide the new version is unsatisfactory.
+
+For your use case, a practical strategy is:
+
+1. Keep the previous firmware in the other OTA slot.
+2. Include a firmware version string in each build.
+3. Test the new firmware for several days.
+4. Trigger a manual rollback command if needed.
+5. Verify the running version after reboot.
+
+One final precaution: test this procedure on your development board before relying on it remotely. Ensure the old firmware is actually present, can boot with your current settings and partition layout, and is compatible with any changes the new firmware made to persistent settings in NVS.
