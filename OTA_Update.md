@@ -1185,7 +1185,10 @@ This is where the distinction matters most for your Arduino IDE project.
 
 ElegantOTA's async mode must be enabled and requires the appropriate asynchronous server library. You cannot use the synchronous `WebServer` and `ESPAsyncWebServer` as interchangeable server implementations in the same configuration.
 
-- Source note: ElegantOTA Docs (+1).
+- Source note: ElegantOTA Docs
+  + [Async Mode](https://docs.elegantota.pro/getting-started/async-mode)
+  + [ElegantOTA Example](https://docs.elegantota.pro/getting-started/examples)
+
 
 One important nuance: async does not mean the ESP32 can continue every application task uninterrupted during an update. Flash writing, memory use, callbacks, and rebooting can still affect other tasks. Design the application to handle these conditions safely.
 
@@ -1197,7 +1200,7 @@ These names are easy to confuse.
 - `ElegantOTA` is the newer library name commonly used in current tutorials. It supports both synchronous and asynchronous web-server configurations. Its async mode uses `ESPAsyncWebServer`.
 - Source note: ElegantOTA Docs
   + [Async Mode](https://docs.elegantota.pro/getting-started/async-mode)
-  + [ElegantOTA](https://registry.platformio.org/libraries/ayushsharma82/ElegantOTA)
+  + [ElegantOTA - Github](https://github.com/mathieucarbou/ayushsharma82-ElegantOTA)
 
 For a new ESP32-S3 project, I would start with ElegantOTA in synchronous mode unless your project already uses an asynchronous web server or needs its concurrency benefits.
 
