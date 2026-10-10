@@ -1538,9 +1538,9 @@ Your actual code uses a `uint64_t` intermediate, which helps avoid overflow duri
 
 For example, if `progress` is 500,000 bytes and `total` is 1,000,000 bytes:
 
-\[
-\frac{500000 \times 100}{1000000}=50\%
-\]
+```text
+(500000 * 100) / 1000000 = 50%
+```
 
 Your `millis()` condition limits routine progress messages to approximately one per second, with an additional message when the transfer reaches 100%.
 
