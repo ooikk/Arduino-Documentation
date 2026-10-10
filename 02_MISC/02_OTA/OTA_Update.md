@@ -1830,3 +1830,37 @@ For your use case, a practical strategy is:
 5. Verify the running version after reboot.
 
 One final precaution: test this procedure on your development board before relying on it remotely. Ensure the old firmware is actually present, can boot with your current settings and partition layout, and is compatible with any changes the new firmware made to persistent settings in NVS.
+
+---
+
+Correct! Your steps are right. Great that you managed to upload successfully after clearing the Windows Security warning and entering the OTA password.
+
+Here is the finalized procedure for your ESP32-S3 + Arduino IDE 2.3.10 + ArduinoOTA setup.
+
+## Successful OTA upload procedure
+
+### 1. Select the network port
+
+Go to **Tools → Port** and select the ESP32-S3 network port, such as `esp32s3-ota`.
+
+Ignore the Serial Monitor warning when switching to the network port. The network port is for OTA uploading, not USB serial monitoring.
+
+### 2. Compile and upload
+
+Choose **Sketch → Upload** (`Ctrl+U`), or **Sketch → Configure and Upload** if needed.
+
+Allow Arduino IDE through Windows Security/Firewall when prompted, and enter your configured OTA password when requested.
+
+### 3. Return to USB serial monitoring
+
+Go to **Tools → Port → COM7**, then open Serial Monitor at your configured baud rate.
+
+The ESP32 should restart into the new firmware, and you can inspect its startup messages and firmware version.
+
+## One important verification
+
+After uploading, check that the Serial Monitor shows the expected new firmware version and, if you print partition information, that the running partition has changed as expected.
+
+Your earlier TCP test failed because ArduinoOTA uses UDP for its initial OTA service, so that test was not a valid test of OTA availability. The successful upload now confirms that your OTA path works.
+
+**Practical tip:** Keep this procedure in your ESP32-S3 project notes. Once the network port is discovered and Windows permissions are configured, subsequent OTA uploads should generally be much more straightforward.
