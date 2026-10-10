@@ -580,9 +580,47 @@ Uploading: [============================================================] 100% D
 
 After uploading, check that the Serial Monitor shows the expected new firmware version and, if you print partition information, that the running partition has changed as expected.
 
- ```cpp
+```cpp
     FW_VERSION = "1.0.1";
- ```
+```
+
+You can also open PowerShell and ping whether the ESP32 is reachable:
+
+
+```text
+ping 192.168.0.187
+```
+
+You should see the response:
+
+```text
+PS C:\WINDOWS\system32> ping 192.168.0.187
+
+Pinging 192.168.0.187 with 32 bytes of data:
+Reply from 192.168.0.187: bytes=32 time=47ms TTL=64
+Reply from 192.168.0.187: bytes=32 time=4ms TTL=64
+Reply from 192.168.0.187: bytes=32 time=3ms TTL=64
+Reply from 192.168.0.187: bytes=32 time=6ms TTL=64
+```
+
+Or check whether the hostname resolves:
+
+```text
+PS C:\WINDOWS\system32> ping esp32s3-ota.local
+
+Pinging esp32s3-ota.local [192.168.0.187] with 32 bytes of data:
+Reply from 192.168.0.187: bytes=32 time=3ms TTL=64
+Reply from 192.168.0.187: bytes=32 time=4ms TTL=64
+Reply from 192.168.0.187: bytes=32 time=10ms TTL=64
+Reply from 192.168.0.187: bytes=32 time=11ms TTL=64
+
+Ping statistics for 192.168.0.187:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 3ms, Maximum = 11ms, Average = 7ms
+```
+
+>You can power your ESP32-S3 from a USB power adapter or another power source at a different location, without connecting it to Arduino IDE. If your firmware already connects to Wi-Fi and calls `ArduinoOTA.begin()`, the ESP32 can remain available for OTA uploads.
 
 
 ## 5. Example B: ElegantOTA Web Upload
