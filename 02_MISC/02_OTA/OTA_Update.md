@@ -1241,11 +1241,37 @@ Plan for authenticated updates, firmware integrity, a suitable OTA partition sch
 
 # Example A (Arduino OTA) Explain: ESP32-S3 OTA Partition Functions
 
+## 1. Compilation Timestamp
+
+In your ESP32 Arduino code:
+
+```cpp
+Serial.printf("Build: %s %s\n", __DATE__, __TIME__);
+```
+
+`__DATE__` and `__TIME__` are predefined C/C++ compiler macros. They record the date and time when the source code was compiled.
+
+| Macro | Meaning | Example |
+|---|---|---|
+| `__DATE__` | Compilation date | `"Oct 10 2026"` |
+| `__TIME__` | Compilation time | `"11:35:42"` |
+| `\n` | Newline character | Moves to the next line |
+
+Example Serial Monitor output:
+
+```text
+Build: Oct 10 2026 11:35:42
+```
+
+The example date and time above are illustrative, not your actual compilation timestamp.
+
+
+
+## 2. Understanding the two functions: `esp_ota_get_running_partition()` and `esp_ota_get_next_update_partition(nullptr)`
+
 These two functions are commonly used in ESP32-S3 OTA (Over-The-Air) firmware updates. They allow your program to identify which flash partition is currently running the firmware and which partition should receive the next firmware update.
 
 Both functions return a pointer to an `esp_partition_t` structure defined by ESP-IDF, which is also available when using the ESP32 Arduino framework.
-
-## 1. Understanding the two functions
 
 ### Function 1: `esp_ota_get_running_partition()`
 
@@ -1297,7 +1323,7 @@ This is the usual A/B firmware update strategy: run firmware from one slot while
 
 The function returns `nullptr` if it cannot find a suitable update partition.
 
-## 2. The `esp_partition_t` data structure
+## 3. The `esp_partition_t` data structure
 
 Both `running` and `next` have the same C++ type:
 
@@ -1339,7 +1365,7 @@ This is an illustrative representation of the commonly used ESP-IDF structure; u
 
 The address and size examples are illustrative, not guaranteed values for your ESP32-S3 N16R8.
 
-## 3. How to access the structure's fields
+## 4. How to access the structure's fields
 
 Because `running` and `next` are pointers, use the `->` operator to access their members.
 
@@ -1377,7 +1403,7 @@ These values are only an example; your actual partition table may differ.
 
 **Important:** Always check for `nullptr` before accessing a returned pointer. Otherwise, accessing `running->label` or `next->label` could cause a crash if the pointer is null.
 
-## 4. How the two functions work together during OTA
+## 5. How the two functions work together during OTA
 
 1. Identify the running firmware:
 
@@ -1397,7 +1423,7 @@ These values are only an example; your actual partition table may differ.
 
 The two functions only identify partitions. They do not write firmware, change the boot partition, or reboot the ESP32 by themselves.
 
-## 5. Why use `const esp_partition_t*` instead of `esp_partition_t`?
+## 6. Why use `const esp_partition_t*` instead of `esp_partition_t`?
 
 Consider these two declarations:
 
