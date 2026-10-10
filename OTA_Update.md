@@ -1136,7 +1136,9 @@ There are several ways to update firmware. The distinction here is how the updat
 Select the ESP32's network port in Arduino IDE and upload as usual. It uses the ArduinoOTA service, with `ArduinoOTA.begin()` and regular calls to `ArduinoOTA.handle()`.
 
 - No browser upload page is required.
-- Source note: GitHub (+1).
+- Source note: Github
+  + [BasicOTA.ino](https://github.com/espressif/arduino-esp32/blob/master/libraries/ArduinoOTA/examples/BasicOTA/BasicOTA.ino)
+  + [ArduinoOTA.h](https://github.com/espressif/arduino-esp32/blob/master/libraries/ArduinoOTA/src/ArduinoOTA.h)
 
 ### 2. Web OTA — upload in a browser
 
@@ -1148,7 +1150,9 @@ Select the ESP32's network port in Arduino IDE and upload as usual. It uses the 
 Open the ESP32's IP address in a browser, select a compiled firmware `.bin` file, and upload it. ElegantOTA can use either the built-in synchronous WebServer or an asynchronous web server.
 
 - Useful when a device is installed remotely on your local network.
-- Source note: ElegantOTA Docs (+1).
+- Source note: ElegantOTA Docs
+  + [Async Mode](https://docs.elegantota.pro/getting-started/async-mode)
+  + [ElegantOTA](https://registry.platformio.org/libraries/ayushsharma82/ElegantOTA)
 
 ### 3. HTTPS or direct-download OTA
 
