@@ -1084,7 +1084,7 @@ Two OTA slots do not automatically provide crash rollback. Rollback requires exp
 
 See the [ESP-IDF OTA documentation](https://docs.espressif.com/projects/esp-idf/en/v5.1.4/esp32s3/api-reference/system/ota.html?utm_source=chatgpt.com).
 
-
+---
 # ESP32-S3 OTA: Sync vs Async
 
 For your ESP32-S3 using Arduino IDE 2.x, OTA (Over-The-Air) means updating firmware over Wi-Fi instead of connecting the board to your computer with a USB cable.
