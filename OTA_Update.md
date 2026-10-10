@@ -1195,7 +1195,9 @@ These names are easy to confuse.
 
 - `AsyncElegantOTA` was an older library that provided browser-based OTA using asynchronous networking.
 - `ElegantOTA` is the newer library name commonly used in current tutorials. It supports both synchronous and asynchronous web-server configurations. Its async mode uses `ESPAsyncWebServer`.
-- Source note: ElegantOTA Docs (+1).
+- Source note: ElegantOTA Docs
+  + [Async Mode](https://docs.elegantota.pro/getting-started/async-mode)
+  + [ElegantOTA](https://registry.platformio.org/libraries/ayushsharma82/ElegantOTA)
 
 For a new ESP32-S3 project, I would start with ElegantOTA in synchronous mode unless your project already uses an asynchronous web server or needs its concurrency benefits.
 
