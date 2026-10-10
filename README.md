@@ -14,7 +14,7 @@
 [![logo-color](https://img.shields.io/badge/Index-SPI-1B4EF5?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/SPI.md)
 [![logo-color](https://img.shields.io/badge/Index-UART-00E0BA?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/UART.md)
 
-=Frequent used:=
+==Frequent used:==    
 ![logo-color](https://img.shields.io/badge/Index-Badges-DA6556?logo=github&logoColor=white&labelColor=5B7E3C)
 ```
 ![logo-color](https://img.shields.io/badge/Index-Badges-DA6556?logo=github&logoColor=white&labelColor=5B7E3C)
