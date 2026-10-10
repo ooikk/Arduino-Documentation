@@ -1239,7 +1239,7 @@ Plan for authenticated updates, firmware integrity, a suitable OTA partition sch
 
 ---
 
-# Example A (Arduino OTA) Explain: ESP32-S3 OTA Partition Functions
+# Example A (Arduino OTA) Explain how it works
 
 ## 1. Compilation Timestamp
 
@@ -1442,3 +1442,237 @@ This declares a local structure variable. It is a different object, not automati
 For these ESP-IDF APIs, use the pointer returned by the function directly. You generally do not need to copy the structure.
 
 One final distinction: the partition table describes the available flash partitions, while the OTA data partition records which OTA application slot should be booted. The functions above help you inspect the former and identify the next update target; they do not themselves change the latter.
+
+
+## 7. How ArduinoOTA Works
+
+The key point is that `ArduinoOTA.begin()` prepares the ESP32-S3 to receive an OTA upload, while `ArduinoOTA.handle()` checks for and processes an incoming OTA request. The actual firmware update happens only when an OTA uploader, such as Arduino IDE, connects and sends a new firmware image.
+
+Your `setup()` does not perform the firmware update by itself.
+
+### 1. The overall OTA sequence
+
+1. **ESP32 executes `setup()`**
+   - Print partition information and connect to Wi-Fi.
+
+2. **Configure OTA callbacks**
+   - Set the hostname, port, password, timeout, progress handler, and error handler.
+
+3. **Call `ArduinoOTA.begin()`**
+   - Initialize the OTA service and make it ready to accept uploads.
+
+4. **Call `ArduinoOTA.handle()` repeatedly from `loop()`**
+   - The ESP32 checks for incoming OTA activity and processes requests.
+
+5. **Arduino IDE sends the firmware**
+   - Authentication, data transfer, progress reporting, and finalization take place.
+
+6. **OTA finishes and the ESP32 restarts**
+   - The bootloader selects the updated application partition on reboot.
+
+The sequence is important: the OTA listener is initialized in `setup()`, but the uploader—not `setup()` or `loop()` alone—initiates the upload.
+
+### 2. Explanation of each section in your `setup()`
+
+#### A. Configure OTA identity and security
+
+```cpp
+ArduinoOTA.setHostname(OTA_HOSTNAME);
+ArduinoOTA.setPort(3232);
+ArduinoOTA.setPassword(OTA_PASSWORD);
+ArduinoOTA.setMdnsEnabled(true);
+ArduinoOTA.setTimeout(15000);
+```
+
+| Function | Purpose |
+|---|---|
+| `setHostname()` | Sets the device's network name, for example, `ESP32S3-OTA`. |
+| `setPort(3232)` | Configures the OTA service's TCP port. |
+| `setPassword()` | Sets the password required for OTA authentication. |
+| `setMdnsEnabled(true)` | Enables mDNS service advertising so the device can be discovered by name on a compatible local network. |
+| `setTimeout(15000)` | Sets an OTA timeout of 15,000 ms (15 seconds) for supported OTA operations. |
+
+If the hostname is `ESP32S3-OTA`, Arduino IDE may show a network port such as `ESP32S3-OTA at ...`, and the device may be reachable as `ESP32S3-OTA.local` when mDNS resolution works.
+
+The `.local` name is not guaranteed to resolve on every network. Network isolation, multicast filtering, and computer configuration can interfere.
+
+#### B. `onStart()` — called when an OTA update begins
+
+```cpp
+ArduinoOTA.onStart([]() {
+  lastProgressLog = 0;
+  Serial.println("\nOTA started.");
+});
+```
+
+This registers a callback. It does not execute the callback immediately.
+
+When the OTA process starts, ArduinoOTA invokes it. This is a good place to:
+
+- Stop motors or other moving hardware.
+- Put outputs into a safe state.
+- Pause operations that could interfere with firmware updating.
+- Reset progress-reporting variables.
+
+The callback should remain short. Avoid lengthy delays or blocking operations.
+
+#### C. `onProgress()` — called during firmware transfer
+
+```cpp
+ArduinoOTA.onProgress(
+  [](unsigned int progress, unsigned int total) {
+    // Calculate percentage and print progress.
+  }
+);
+```
+
+`progress` is the amount of firmware data received so far, and `total` is the expected total amount.
+
+The calculation is:
+
+```text
+(progress * 100) / total
+```
+
+Your actual code uses a `uint64_t` intermediate, which helps avoid overflow during multiplication.
+
+For example, if `progress` is 500,000 bytes and `total` is 1,000,000 bytes:
+
+\[
+\frac{500000 \times 100}{1000000}=50\%
+\]
+
+Your `millis()` condition limits routine progress messages to approximately one per second, with an additional message when the transfer reaches 100%.
+
+This callback reports transfer progress. It does not itself write or activate the firmware; ArduinoOTA manages those operations.
+
+#### D. `onEnd()` — called when the update completes
+
+```cpp
+ArduinoOTA.onEnd([]() {
+  Serial.println(
+    "OTA completed. Restarting into new firmware.");
+});
+```
+
+This callback runs when ArduinoOTA has successfully finalized the upload.
+
+The important distinction is that your callback only prints a message. It does not call `ESP.restart()` or select the new partition itself.
+
+In the standard ESP32 ArduinoOTA implementation, the library handles update finalization and then initiates a restart after the end callback. Therefore, you normally do not need to add another `ESP.restart()` inside this callback.
+
+#### E. `onError()` — called when the update fails
+
+Your code registers an error handler:
+
+```cpp
+ArduinoOTA.onError([](ota_error_t error) {
+  Serial.printf("OTA error %u: ",
+                (unsigned int)error);
+
+  // Identify the error...
+});
+```
+
+This lets you diagnose common failures:
+
+| Error | Meaning |
+|---|---|
+| `OTA_AUTH_ERROR` | Password authentication failed. |
+| `OTA_BEGIN_ERROR` | The update could not be started. |
+| `OTA_CONNECT_ERROR` | The OTA connection could not be established. |
+| `OTA_RECEIVE_ERROR` | Firmware data reception failed. |
+| `OTA_END_ERROR` | Firmware finalization failed. |
+
+Your `Update.hasError()` and `Update.printError(Serial)` calls provide additional diagnostic information when the Arduino Update subsystem reports an error.
+
+An error does not mean the new firmware has been activated. Typically, the ESP32 continues running its existing firmware, provided the failure has not affected other parts of the application.
+
+#### F. `ArduinoOTA.begin()` — starts the OTA service
+
+```cpp
+ArduinoOTA.begin();
+
+Serial.printf("ArduinoOTA ready: %s.local\n",
+              OTA_HOSTNAME);
+```
+
+This is the initialization step.
+
+The call starts the OTA service using the settings you configured and, when enabled, its mDNS advertising service.
+
+It does not upload firmware, switch partitions, or reboot the ESP32.
+
+The message `ArduinoOTA ready` means the initialization code has run. It does not guarantee that your computer can discover the device or successfully connect to it.
+
+### 3. How does `ArduinoOTA.handle()` trigger an update?
+
+Your `loop()` should include:
+
+```cpp
+void loop() {
+  ArduinoOTA.handle();
+
+  // Other application tasks...
+}
+```
+
+Think of `ArduinoOTA.handle()` as a service that the main loop must regularly give an opportunity to run.
+
+It processes OTA protocol activity when a compatible uploader connects and sends commands or firmware data. It does not continuously scan for firmware files or decide on its own to install an update.
+
+The process is roughly:
+
+1. **Select the network port in Arduino IDE.** Compile your sketch and initiate the upload through the network port.
+2. **The uploader connects to the ESP32.** The device's OTA service accepts the connection and handles authentication and the upload protocol.
+3. **Firmware is written to the update partition.** The existing running application partition remains active while the new image is written to the other OTA slot.
+4. **The library finalizes and restarts.** After a successful update, the library selects the new boot partition and restarts the ESP32.
+
+One practical detail: `ArduinoOTA.handle()` must be called frequently. If your `loop()` spends a long time in `delay()`, lengthy display operations, or blocking sensor reads, OTA responsiveness may suffer. Keep your main loop responsive, especially while waiting for an upload.
+
+### 4. Why does the ESP32 reboot and switch partitions without your code doing it?
+
+The ArduinoOTA library and ESP-IDF OTA APIs perform those steps internally.
+
+For a conventional two-slot OTA partition table, the sequence is:
+
+1. **Before the upload:** The ESP32 runs `ota_0`, for example.
+2. **During the upload:** The new image is written to `ota_1`. The running application is still `ota_0`.
+3. **After successful finalization:** The OTA update mechanism selects `ota_1` as the next boot partition and records that selection in the OTA data partition.
+4. **On restart:** The bootloader reads the OTA data and boots the selected application partition.
+5. **After reboot:** Your `setup()` runs again, and `esp_ota_get_running_partition()` should now identify `ota_1`.
+
+This is why your sketch does not necessarily need to call these functions explicitly:
+
+```cpp
+esp_ota_set_boot_partition(next);
+ESP.restart();
+```
+
+The standard ArduinoOTA implementation handles the corresponding operations as part of a successful update. If you implement your own OTA process using the lower-level ESP-IDF OTA API, you would normally handle partition selection and restart yourself.
+
+One additional caveat: firmware rollback and first-boot validation depend on the project's OTA configuration. If rollback is enabled, the newly booted application may need to mark itself valid; otherwise, the bootloader can revert to the previous working application.
+
+### 5. How to verify that the partition really changed
+
+Since you already print partition information in `setup()`, use it to verify the result:
+
+```cpp
+void printRunningPartition() {
+  const esp_partition_t* running =
+      esp_ota_get_running_partition();
+
+  if (running != nullptr) {
+    Serial.printf(
+      "Running partition: %s, address: 0x%08X\n",
+      running->label,
+      (unsigned int)running->address);
+  }
+}
+```
+
+Call `printRunningPartition()` in `setup()`.
+
+Then perform an OTA update and watch the Serial Monitor after the ESP32 restarts. For a normal alternating two-slot update, you should see the running partition change from `ota_0` to `ota_1`, or vice versa.
+
+In summary: `setup()` configures and starts the OTA service; `loop()` keeps it responsive through `ArduinoOTA.handle()`; Arduino IDE initiates the upload; and the standard ArduinoOTA library handles successful finalization, boot-partition selection, and restart.
