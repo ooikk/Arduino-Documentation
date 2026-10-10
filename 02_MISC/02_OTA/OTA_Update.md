@@ -1817,7 +1817,7 @@ esp_ota_mark_app_invalid_rollback_and_reboot();
 
 This marks the running application as invalid and requests a reboot into the previous working application, provided rollback is enabled and a valid fallback exists.
 
-*Source note: ESP-IDF Programming Guide v6.1 documentation.*
+*Source note: [ESP-IDF Programming Guide v6.1 documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/ota.html).*
 
 However, this is not a timer-based rollback mechanism. If your new firmware runs normally for three days and has already been confirmed as valid, automatic rollback will not occur just because you decide the new version is unsatisfactory.
 
