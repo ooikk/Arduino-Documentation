@@ -1095,12 +1095,17 @@ The terms synchronous (sync) and asynchronous (async) describe how the program h
 
 ### Synchronous OTA (Sync)
 
+<img width="800" height="800" alt="image" src="https://github.com/user-attachments/assets/7f87f3a5-c396-4f4c-85a7-9116c7273876" />
+
 - The program handles a request and waits for the operation to complete before proceeding to the next step.
 - Simpler programming model.
 - A long operation may block other application tasks.
 - Often easier for beginners to understand.
 
 ### Asynchronous OTA (Async)
+
+<img width="1200" height="900" alt="image" src="https://github.com/user-attachments/assets/a907221f-df84-4c0f-b15d-9171e5d6972f" />
+
 
 - Network operations can be handled through callbacks or event-driven processing, without waiting for each client request to finish before servicing other requests.
 - Better responsiveness when multiple clients connect.
@@ -1124,6 +1129,10 @@ There are several ways to update firmware. The distinction here is how the updat
 
 **Best for development**
 
+<img width="708" height="443" alt="image" src="https://github.com/user-attachments/assets/01f47754-d17a-47b0-88c3-2b68b54ab41d" />
+
+
+
 Select the ESP32's network port in Arduino IDE and upload as usual. It uses the ArduinoOTA service, with `ArduinoOTA.begin()` and regular calls to `ArduinoOTA.handle()`.
 
 - No browser upload page is required.
@@ -1133,6 +1142,9 @@ Select the ESP32's network port in Arduino IDE and upload as usual. It uses the 
 
 **Best for IoT projects**
 
+<img width="665" height="496" alt="image" src="https://github.com/user-attachments/assets/a8698def-6b1b-46df-8378-5a07462c08f3" />
+
+
 Open the ESP32's IP address in a browser, select a compiled firmware `.bin` file, and upload it. ElegantOTA can use either the built-in synchronous WebServer or an asynchronous web server.
 
 - Useful when a device is installed remotely on your local network.
@@ -1140,11 +1152,17 @@ Open the ESP32's IP address in a browser, select a compiled firmware `.bin` file
 
 ### 3. HTTPS or direct-download OTA
 
+<img width="600" height="414" alt="image" src="https://github.com/user-attachments/assets/7f21fac9-1996-43e9-9a2a-cbd17502ecc6" />
+
+
 The ESP32 downloads firmware from a server rather than receiving a file uploaded directly from your computer. HTTPS can protect the connection when correctly configured with server certificate verification.
 
 - Useful for deployed devices and fleet updates.
 
 ### 4. USB serial flashing — not OTA
+
+<img width="680" height="587" alt="image" src="https://github.com/user-attachments/assets/26aff480-c0a2-420a-a8d6-030537f83400" />
+
 
 Upload firmware over USB using the serial bootloader. This is a recovery method if Wi-Fi or the OTA firmware stops working.
 
