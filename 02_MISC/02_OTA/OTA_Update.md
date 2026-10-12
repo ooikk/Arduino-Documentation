@@ -2176,6 +2176,14 @@ Get-FileHash .\YourSketch.ino.bin -Algorithm SHA256
 
 Replace `YourSketch.ino.bin` with the actual filename. Copy the 64-character hash into line 2 of `version.txt`, then commit that file.
 
+```powershell
+PS C:\Users\ooikk\Documents\Arduino\02_OTA_Elegant\build\esp32.esp32.esp32s3> Get-FileHash .\02_OTA_Elegant.ino.bin -Algorithm SHA256
+
+Algorithm       Hash                                                                   Path
+---------       ----                                                                   ----
+SHA256          AF7D816315A176D6D651631A9DB317A3762E7C4571813435D59A4949FA2E65D6       C:\Users\ooikk\Documents\Ardu...
+```
+
 ### Step 3.3 — Publish a GitHub Release
 
 Create a GitHub Release with tag `v1.0.0`, and upload the application binary as a release asset named exactly:
