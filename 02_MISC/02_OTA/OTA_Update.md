@@ -2671,8 +2671,165 @@ void loop() {
   delay(10);
 }
 ```
+## 6
 
-## 6. How to test it safely
+### Step-by-step: Create a GitHub Release for ESP32-S3 automatic OTA
+
+We'll use your repository, [ooikk/Arduino-Documentation](https://github.com/ooikk/Arduino-Documentation), and publish the ESP32-S3 firmware as a GitHub Release.
+
+The goal is to make this URL work for your ESP32:
+
+```text
+https://github.com/ooikk/Arduino-Documentation/releases/latest/download/firmware.bin
+```
+
+Your release will contain the compiled firmware file `firmware.bin`. Your `version.txt` file will remain in `02_MISC` on the `main` branch and contain the firmware version and SHA-256 hash.
+
+### Step 1 — Compile the ESP32-S3 firmware
+
+1. Open your automatic OTA sketch in Arduino IDE 2.3.10.
+2. Confirm that the board is your ESP32-S3 and that the selected partition scheme supports OTA with two application slots.
+3. Set the firmware version, for example:
+
+   ```cpp
+   #define FIRMWARE_VERSION "1.0.0"
+   ```
+
+4. Choose **Sketch → Export Compiled Binary**.
+5. Locate the exported application `.bin` file in your sketch folder. Use the application binary, not the bootloader, partition-table, or merged binary.
+6. Rename a copy of that application binary to:
+
+   ```text
+   firmware.bin
+   ```
+
+7. Keep the original exported file as a backup.
+
+### Step 2 — Calculate the SHA-256 hash
+
+On Windows, open PowerShell in the folder containing `firmware.bin` and run:
+
+```powershell
+Get-FileHash .\firmware.bin -Algorithm SHA256
+```
+
+Copy the value shown under `Hash`. It should be 64 hexadecimal characters.
+
+For example, your `02_MISC/version.txt` file should look like this:
+
+```text
+1.0.0
+paste_your_actual_64_character_sha256_hash_here
+```
+
+Do not use the example placeholder as the real hash. Save and commit the updated `version.txt` file to your repository's `main` branch before testing the release.
+
+### Step 3 — Open the Releases page
+
+1. Open your repository: [ooikk/Arduino-Documentation](https://github.com/ooikk/Arduino-Documentation).
+2. On the repository page, find **Releases**. Depending on your screen layout, it may appear in the right-hand sidebar.
+3. Click **Releases**, then click **Draft a new release**.
+
+[Managing releases in a repository](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)
+
+<img width="1000" height="631" alt="image" src="https://github.com/user-attachments/assets/2c524e6a-3da1-4b7d-9724-2d12c146180f" />
+
+
+If you cannot find **Releases** in the sidebar, open this direct link: 
+
+[Open your repository's Releases page](https://github.com/ooikk/Arduino-Documentation/releases)
+
+### Step 4 — Fill in the new release details
+
+On the **Draft a new release** page, enter these values:
+
+| GitHub field | Value |
+|---|---|
+| Choose a tag | `v1.0.0` |
+| Target | `main` |
+| Release title | `ESP32-S3 Firmware v1.0.0` |
+| Description | `Initial firmware release for ESP32-S3 automatic pull OTA.` |
+
+For the tag:
+
+1. Click **Choose a tag**.
+2. Type `v1.0.0`.
+3. Select **Create new tag: v1.0.0 on publish** (wording may vary).
+4. Ensure the target branch is `main`.
+
+Use a new tag for each subsequent firmware release, such as `v1.0.1`, `v1.0.2`, and `v1.1.0`. GitHub releases are associated with Git tags.
+
+- [Releasing projects on github](https://github.com/github/docs/blob/main/content/repositories/releasing-projects-on-github/about-releases.md)
+- [Managing releases in a repository](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository)
+
+
+### Step 5 — Upload `firmware.bin`
+
+<img width="1534" height="1194" alt="image" src="https://github.com/user-attachments/assets/f64c8c25-57ab-460f-9f16-5c6dbcee10a4" />
+
+1. Find the **Attach binaries by dropping them here or selecting them** area near the bottom of the release form.
+2. Drag your `firmware.bin` file into that area, or click the area and select the file.
+3. Wait until the upload finishes.
+4. Verify the asset list shows exactly `firmware.bin`.
+
+**Important:** Do not upload `version.txt` as the firmware asset. The manifest is read directly from the `02_MISC` folder; the release asset is the compiled application binary.
+
+GitHub allows manually uploaded binary assets to be downloaded through a stable latest-release URL.
+
+- [Linking to releases](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases)
+- [REST API endpoints for release assets](https://docs.github.com/en/rest/releases/assets?apiVersion=2026-03-10)
+
+### Step 6 — Publish the release
+
+Before publishing, check that:
+
+- The tag is `v1.0.0`.
+- The target is `main`.
+- The release is not marked as a prerelease.
+- The asset is named `firmware.bin`.
+- The binary corresponds to firmware version `1.0.0`.
+- `version.txt` contains `1.0.0` and the matching SHA-256 hash.
+
+Then click **Publish release**. Do not leave it as a draft. If the page offers **Set as the latest release**, ensure the release is selected as latest where appropriate. GitHub's latest-release behavior depends on release status and settings.
+
+
+
+### Step 7 — Test the two URLs
+
+After publishing, open these links in your browser.
+
+#### A. Firmware binary
+
+[Download `firmware.bin` from the latest release](https://github.com/ooikk/Arduino-Documentation/releases/latest/download/firmware.bin)
+
+**Expected result:** Your browser downloads a file named `firmware.bin`.
+
+#### B. Version manifest
+
+[Open `version.txt`](https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/version.txt)
+
+**Expected result:** The browser displays two lines: the firmware version and its SHA-256 hash.
+
+If either URL fails, fix it before testing OTA on the ESP32-S3. The firmware URL will not work until a published release contains an asset with the exact name `firmware.bin`.
+
+### Step 8 — Update the ESP32-S3
+
+Once both URLs work:
+
+1. Upload the automatic OTA sketch to the ESP32-S3 over USB.
+2. Open Serial Monitor at 115200 baud.
+3. Reset the board.
+4. Check that it connects to Wi-Fi and reads `version.txt`.
+5. If the installed firmware and published release versions match, it should report that the firmware is up to date.
+
+When testing an upgrade, publish a new version with its matching binary and hash. The ESP32 should download the newer firmware on its next check.
+
+For the next release, increment the firmware version, compile again, calculate the new SHA-256 hash, update `version.txt`, and publish a new release with the new `firmware.bin`.
+
+
+
+
+## 7. How to test it safely
 
 Do not start by publishing a new release to a board that you cannot recover. First upload this sketch manually over USB using Arduino IDE.
 
@@ -2720,7 +2877,7 @@ const unsigned long OTA_CHECK_INTERVAL_MS =
 
 Publish another test version and verify that the board discovers it on the next scheduled check. Restore the six-hour interval for normal use.
 
-## 7. Recovery and important limitations
+## 8. Recovery and important limitations
 
 - **If the download fails:** The sketch aborts the incomplete update, and the existing application should remain intact.
 - **If the SHA-256 does not match:** The update must not be accepted.
