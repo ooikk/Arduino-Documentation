@@ -623,6 +623,11 @@ Approximate round trip times in milli-seconds:
 ## 5. Example B: ElegantOTA Web Upload
 
 Install the three external libraries and enable async mode as described earlier.
+### Library
+- ElegantOTA by Ayush Sharma: https://github.com/ayushsharma82/ElegantOTA
+- Async TCP by ESP32Async: https://github.com/ESP32Async/AsyncTCP
+- ESP Async WebServer by ESP32Async: https://github.com/ESP32Async/ESPAsyncWebServer
+
 
 Create a separate sketch named:
 
