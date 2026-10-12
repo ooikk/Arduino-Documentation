@@ -1970,7 +1970,7 @@ Publish each firmware `.bin` as a release asset, along with version information.
 
 ### Option C — IoT device-management platform
 
-<img width="1848" height="976" alt="image" src="https://github.com/user-attachments/assets/94cb693c-13be-411a-87b6-5f27bbb69643" />
+<img width="1227" height="923" alt="image" src="https://github.com/user-attachments/assets/8688e0eb-73c5-4610-aff2-7a9d38dbe156" />
 
 
 Use a platform that manages firmware versions, device groups, rollout schedules, and update status.
