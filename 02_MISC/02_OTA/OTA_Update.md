@@ -2063,8 +2063,8 @@ Before deploying automatic updates, make sure you have:
 Espressif documents the OTA partition requirements and rollback behavior in its [OTA guide](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/system/ota.html).
 
 — ESP-IDF Programming Guide v6.1 documentation  
-+ [ESP HTTPS OTA](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/esp_https_ota.html)
-+ [ESP HTTPS OTA](https://github.com/espressif/esp-idf/blob/master/docs/en/api-reference/system/esp_https_ota.rst)
++ [Espressif: ESP HTTPS OTA](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-reference/system/esp_https_ota.html)
++ [Github: ESP HTTPS OTA](https://github.com/espressif/esp-idf/blob/master/docs/en/api-reference/system/esp_https_ota.rst)
 
 ## 7. Recommendation for your ESP32-S3
 
