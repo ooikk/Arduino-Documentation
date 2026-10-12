@@ -2248,11 +2248,11 @@ const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 #define FIRMWARE_VERSION "1.0.0"
 
 const char* MANIFEST_URL =
-  "[https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)"
+  "https://raw.githubusercontent.com/"
   "YOUR_GITHUB_USERNAME/YOUR_REPO/main/version.txt";
 
 const char* FIRMWARE_URL =
-  "[https://github.com/YOUR_GITHUB_USERNAME/](https://github.com/YOUR_GITHUB_USERNAME/)"
+  "https://github.com/YOUR_GITHUB_USERNAME/"
   "YOUR_REPO/releases/latest/download/firmware.bin";
 
 // Check every 6 hours while running.
