@@ -623,10 +623,48 @@ Approximate round trip times in milli-seconds:
 ## 5. Example B: ElegantOTA Web Upload
 
 Install the three external libraries and enable async mode as described earlier.
+
 ### Library
 - ElegantOTA by Ayush Sharma: https://github.com/ayushsharma82/ElegantOTA
 - Async TCP by ESP32Async: https://github.com/ESP32Async/AsyncTCP
 - ESP Async WebServer by ESP32Async: https://github.com/ESP32Async/ESPAsyncWebServer
+
+### Enable asynchronous mode in ElegantOTA
+
+Open this file in a text editor:
+
+```text
+C:\Users\ooikk\Documents\Arduino\libraries\ElegantOTA\src\ElegantOTA.h
+```
+
+Search for:
+
+```cpp
+#define ELEGANTOTA_USE_ASYNC_WEBSERVER
+```
+
+Set its value to `1`:
+
+```cpp
+#define ELEGANTOTA_USE_ASYNC_WEBSERVER 1
+```
+
+If the line already has a value of `0`, change it to `1`. If it is commented out, uncomment it and set it to `1`. Save the file and return to Arduino IDE.
+
+### The check in Example B
+
+```cpp
+#include <ElegantOTA.h>
+
+#if !defined(ELEGANTOTA_USE_ASYNC_WEBSERVER) || \
+    ELEGANTOTA_USE_ASYNC_WEBSERVER != 1
+#error "Enable async mode in libraries/ElegantOTA/src/ElegantOTA.h"
+#endif
+```
+
+Keep `#include <ElegantOTA.h>` before the check so the macro defined by the library header is visible.
+
+> **Note:** Example B uses asynchronous ElegantOTA, which requires ESPAsyncWebServer. Do not mix it with the synchronous `WebServer` implementation in the same firmware.
 
 
 Create a separate sketch named:
@@ -645,9 +683,7 @@ S3_WebOTA
 #include <Update.h>
 #include <esp_ota_ops.h>
 
-#if !defined(
-  ELEGANTOTA_USE_ASYNC_WEBSERVER
-) || \
+#if !defined(ELEGANTOTA_USE_ASYNC_WEBSERVER) || \
     ELEGANTOTA_USE_ASYNC_WEBSERVER != 1
 #error "Enable async mode in libraries/ElegantOTA/src/ElegantOTA.h"
 #endif
