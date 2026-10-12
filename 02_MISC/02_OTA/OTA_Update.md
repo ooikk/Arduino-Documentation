@@ -2728,3 +2728,9 @@ For production use, Espressif documents the relevant partition and rollback beha
 - [HTTPS_OTA_Update.ino](https://github.com/espressif/arduino-esp32/blob/master/libraries/Update/examples/HTTPS_OTA_Update/HTTPS_OTA_Update.ino)
 
 One final detail: `FIRMWARE_VERSION` is compiled into the firmware. Every time you publish a new release, update that constant before compiling, then publish the matching `.bin` and manifest hash. Otherwise, a device may repeatedly consider a release newer than the version it believes it is running.
+
+
+---
+# Reference & Other Resources
+
+https://simpleota.com/blog/
