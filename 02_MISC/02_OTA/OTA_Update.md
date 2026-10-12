@@ -2189,13 +2189,13 @@ The OTA code will use these URLs:
 **Manifest:**
 
 ```text
-[https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/version.txt](https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/version.txt)
+https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/version.txt
 ```
 
 **Firmware:**
 
 ```text
-[https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO/releases/latest/download/firmware.bin](https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO/releases/latest/download/firmware.bin)
+https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO/releases/latest/download/firmware.bin
 ```
 
 Keep the manifest version and release asset in sync. When publishing a new version, upload the new binary to a new release and update `version.txt` with the new version and matching hash.
