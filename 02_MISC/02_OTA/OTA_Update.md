@@ -2077,7 +2077,7 @@ One decision will determine the most practical step-by-step setup:
 - **When the ESP32 should check:** At startup only, periodically while running, or at startup and every 6 hours.
 - **How much update protection you want:** HTTPS, version checks, and SHA-256 verification; those safeguards plus rollback after a failed first boot; or signed firmware and stronger production security.
 
-
+---
 # Automatic Pull OTA for ESP32-S3 — Arduino IDE 2.3.10
 
 This implementation is designed for your ESP32-S3, Arduino-ESP32 core 3.3.12, and GitHub Releases. It checks for firmware at startup and every six hours, verifies the firmware's SHA-256 digest, and installs an update without requiring Arduino IDE to initiate it.
