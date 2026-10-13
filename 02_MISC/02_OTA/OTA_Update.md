@@ -2243,7 +2243,6 @@ These are the official references worth bookmarking:
 - **GitHub — TLS certificate troubleshooting**  
   Explains why an outdated or unsuitable CA certificate causes HTTPS verification failures.  
   [GitHub certificate troubleshooting](https://docs.github.com/en/authentication/troubleshooting-ssh/error-ssl-certificate-problem-verify-that-the-ca-cert-is-ok)  
-  *GitHub Docs*
 
 - **Let's Encrypt — Certificate authority certificates**  
   Official source for ISRG Root X1, ISRG Root X2, and related certificate-chain information.  
