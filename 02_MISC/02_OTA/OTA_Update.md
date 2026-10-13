@@ -3234,7 +3234,7 @@ If you paste your current `downloadAndInstall()` function, I can annotate your a
 
 # Using OneDrive, Google Drive, and other cloud storage for ESP32-S3 OTA
 
-Yes. In principle, you can host both `version.txt` and `firmware.bin` on almost any cloud storage service that supports publicly accessible downloads. Your ESP32-S3 does not fundamentally care whether the files are stored on GitHub, Google Drive, OneDrive, Dropbox, or your own web server.
+In principle, you can host both `version.txt` and `firmware.bin` on almost any cloud storage service that supports publicly accessible downloads. Your ESP32-S3 does not fundamentally care whether the files are stored on GitHub, Google Drive, OneDrive, Dropbox, or your own web server.
 
 The important requirement is that the ESP32 must receive the actual file contents over HTTPS, not an HTML preview page, sign-in page, or download-confirmation page.
 
