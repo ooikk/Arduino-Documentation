@@ -2214,13 +2214,81 @@ Keep the manifest version and release asset in sync. When publishing a new versi
 
 The code below uses `WiFiClientSecure` with a trusted root CA certificate. It does not use `setInsecure()`, which would disable server-certificate validation.
 
-GitHub's TLS chain can use DigiCert's Global Root G2. The certificate is available from [DigiCert's official root certificate page](https://knowledge.digicert.com/general-information/digicert-trusted-root-authority-certificates).
+GitHub's TLS chain can use Let's Encrypt. The certificate is available from [Let's Encrypt](https://letsencrypt.org/certificates/)
 
-— DigiCert Knowledge Base  
-- [DigiCert Trusted Root Authority Certificates](https://knowledge.digicert.com/general-information/digicert-trusted-root-authority-certificates)
-- [Download Certificate](https://www.digicert.com/secure/download-certificate/sc8r65py6v9y5vgy1p0tptkyjkvbw1p)
+**ISRG Root X1**
+- Subject: C=US, O=Internet Security Research Group, CN=ISRG Root X1
+- Key type: RSA 4096
+- Trusted until: 2030-06-04 (generated 2015-06-04)
+- CA details: crt.sh, issued certs
+- Certificate details (self-signed): crt.sh, der, [pem](https://letsencrypt.org/certs/isrgrootx1.pem), txt
+- Certificate details (cross-signed by DST Root CA X3): crt.sh, der, pem, txt (retired)
+- CRL hostname: x1.c.lencr.org
+- Test websites: valid, revoked, expired
 
-The code includes the DigiCert Global Root G2 PEM certificate. Since GitHub may change its certificate chain or redirect destinations over time, test both the manifest request and firmware download against the actual network you use. If certificate verification fails, investigate the server's current certificate chain rather than disabling verification.
+ISRG Root X1: [pem](https://letsencrypt.org/certs/isrgrootx1.pem)
+
+The code includes the Let's Encrypt ISRG Root X1 PEM certificate. Since GitHub may change its certificate chain or redirect destinations over time, test both the manifest request and firmware download against the actual network you use. If certificate verification fails, investigate the server's current certificate chain rather than disabling verification.
+
+### NOTE: Root CA Certificates
+
+For your ESP32-S3 automatic OTA project, there are two useful approaches: use the correct individual root CA certificates, as you are doing now, or use a maintained bundle of trusted root certificates.
+
+#### 1. Where to find the CA requirements
+
+GitHub does not provide one permanent root CA certificate that every client must use. The certificate chain can vary by hostname, hosting infrastructure, and changes over time. Your ESP32 must trust a root CA that validates the chain presented by each HTTPS server it contacts.
+
+These are the official references worth bookmarking:
+
+- **GitHub — TLS certificate troubleshooting**  
+  Explains why an outdated or unsuitable CA certificate causes HTTPS verification failures.  
+  [GitHub certificate troubleshooting](https://docs.github.com/en/authentication/troubleshooting-ssh/error-ssl-certificate-problem-verify-that-the-ca-cert-is-ok)  
+  *GitHub Docs*
+
+- **Let's Encrypt — Certificate authority certificates**  
+  Official source for ISRG Root X1, ISRG Root X2, and related certificate-chain information.  
+  [Let's Encrypt certificate list](https://letsencrypt.org/certificates/)  
+  *Let's Encrypt*
+  - [ISRG CPS v2.0](https://letsencrypt.org/documents/isrg-cps-v2.0/)
+  - [ISRG CP/CPS v5.8](https://letsencrypt.org/documents/isrg-cp-cps-v5.8/)
+
+- **Espressif — ESP x509 Certificate Bundle**  
+  Explains how ESP-IDF uses a collection of trusted root certificates instead of requiring one manually selected root for every public HTTPS server.  
+  [Espressif certificate-bundle documentation](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/protocols/esp_crt_bundle.html)  
+  *ESP-IDF Programming Guide*
+  - [ESP x509 Certificate Bundle](https://docs.espressif.com/projects/esp-idf/en/v6.1/esp32/api-reference/protocols/esp_crt_bundle.html)
+
+
+#### 2. What other CA sources can you use?
+
+| Source | What it provides | Suitability for your project |
+|---|---|---|
+| Let's Encrypt — ISRG Root X1 | Individual root certificate | Already confirmed to work for your manifest endpoint. |
+| Mozilla CA Certificate Store | A broad collection of public root CAs | Useful if GitHub endpoints or other services use different certificate chains. |
+| curl CA bundle | A PEM bundle of trusted roots derived from Mozilla's store | Convenient for obtaining a maintained CA collection, but consider ESP32 memory and bundle compatibility. |
+| Espressif certificate bundle | Root certificates in an ESP-IDF-compatible bundle format | A good option for applications that connect to multiple HTTPS services. |
+
+Useful official sources:
+
+- [Mozilla — CA Certificate Program](https://www.mozilla.org/en-US/about/governance/policies/security-group/certs/)
+- [curl — CA certificates](https://curl.se/docs/caextract.html)
+- [Espressif — Certificate Bundle](https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-reference/protocols/esp_crt_bundle.html)
+
+The Mozilla and curl sources provide broader collections, while Espressif documents how to convert and integrate a certificate bundle into ESP-IDF firmware.
+
+#### 3. My recommendation for your ESP32-S3
+
+For your current Arduino IDE 2.3.10 and ESP32 core 3.3.12 setup, I suggest:
+
+1. **Keep ISRG Root X1 for now.** It has successfully validated your connection to `raw.githubusercontent.com`.
+2. **Test the actual firmware download separately.** Your release URL redirects to a different asset-hosting domain, so success with the manifest does not guarantee the firmware download will work with the same CA.
+3. **If you plan to add more HTTPS services, investigate an Espressif-compatible certificate bundle** rather than manually collecting individual roots.
+4. **Keep certificate verification enabled.** Do not use `setInsecure()` for production OTA.
+
+One final point: root certificates are not selected merely by the website's brand. They must validate the certificate chain the ESP32 receives for the specific hostname. That chain can change, so verify it again if an endpoint starts failing.
+
+
+
 
 ## 5. Complete Arduino sketch
 
@@ -2264,32 +2332,41 @@ const size_t MAX_FIRMWARE_SIZE = 8UL * 1024UL * 1024UL;
 
 // ============================================================
 // 2. TLS ROOT CERTIFICATE
-// DigiCert Global Root G2
-// Obtain/verify the current PEM from DigiCert's official site.
+// Let's Encrypt certificate chain terminating at ISRG Root X1
+// Obtain/verify the current PEM from Let's Encrypt's official site.
 // ============================================================
 
 static const char ROOT_CA[] PROGMEM = R"PEM(
 -----BEGIN CERTIFICATE-----
-MIIDjjCCAnagAwIBAgIQAzrx5qcRqaC7KGSxHQn65TANBgkqhkiG9w0BAQsFADBh
-MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
-d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBH
-MjAeFw0xMzA4MDExMjAwMDBaFw0zODAxMTUxMjAwMDBaMGExCzAJBgNVBAYTAlVT
-MRUwEwYDVQQKEwxEaWdpY2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j
-b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IEcyMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuzfNNNx7a8myaJCtSnX/RrohCgiN9RlUyfuI
-2/Ou8jqJkTx65qsGGmvPrC3oXgkkRLpimn7Wo6h+4FR1IAWsULecYxpsMNzaHxmx
-1x7e/dfgy5SDN67sH0NO3Xss0r0upS/kqbitOtSZpLYl6ZtrAGCSYP9PIUkY92eQ
-q2EGnI/yuum06ZIya7XzV+hdG82MHauVBJVJ8zUtluNJbd134/tJS7SsVQepj5Wz
-tCO7TG1F8PapspUwtP1MVYwnSlcUfIKdzXOS0zZKBgyMUNGPHgm+F6HmIcr9g+UQ
-vIOlCsRnKPZzFBQ9RnbDhxSJITRNrw9FDKZJobq7nMWxM4MphQIDAQABo0IwQDAP
-BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNVHQ4EFgQUTiJUIBiV
-5uNu5g/6+rkS7QYXjzkwDQYJKoZIhvcNAQELBQADggEBAGBnKJRvDkhj6zHd6mcY
-1Yl9PMWLSn/pvtsrF9+wX3N3KjITOYFnQoQj8kVnNeyIv/iPsGEMNKSuIEyExtv4
-NeF22d+mQrvHRAiGfzZ0JFrabA0UWTW98kndth/Jsw1HKj2ZL7tcu7XUIOGZX1NG
-Fdtom/DzMNU+MeKNhJ7jitralj41E6Vf8PlwUHBHQRFXGU7Aj64GxJUTFy8bJZ91
-8rGOmaFvE7FBcf6IKshPECBV1/MUReXgRPTqh5Uykw7+U0b6LJ3/iyK5S9kJRaTe
-pLiaWN0bfVKfjllDiIGknibVb63dDcY3fe0Dkhvld1927jyNxF1WW6LZZm6zNTfl
-MrY=
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
+h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
+0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
+A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
+T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
+B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
+B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
+KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
+OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
+jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
+qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
+rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
+HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
+hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
+ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
+3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
+NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
+ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
+TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
+jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
+oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
+4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
+mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
+emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
 -----END CERTIFICATE-----
 )PEM";
 
