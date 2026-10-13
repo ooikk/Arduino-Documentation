@@ -1340,7 +1340,7 @@ Plan for authenticated updates, firmware integrity, a suitable OTA partition sch
 
 ---
 
-# Example A (Arduino OTA) Explain how it works
+# Explain how it works: Example A (Arduino OTA) 
 
 ## 1. Compilation Timestamp
 
