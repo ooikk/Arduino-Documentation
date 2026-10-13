@@ -2761,7 +2761,7 @@ void loop() {
 
 ## 6. Step-by-step: Create a GitHub Release for ESP32-S3 automatic OTA
 
-Two repositoty location optiond for `firmware.bin`.
+Two repositoty location options for `firmware.bin`.
 
 ### Option 1: Release Independence
 
@@ -2776,7 +2776,7 @@ Your release will contain the compiled firmware file `firmware.bin`. Your `versi
 
 ### Option 2: Direct Repository Path
 
-Upload the `firmware.bin' directly to the `02_MISC/02_OTA/`
+Upload the `firmware.bin` directly to the `02_MISC/02_OTA/`
 
 Your `version.txt` and `firmware.bin` files will remain in `02_MISC/02_OTA/`.
 
