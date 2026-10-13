@@ -2177,7 +2177,7 @@ Get-FileHash .\YourSketch.ino.bin -Algorithm SHA256
 Replace `YourSketch.ino.bin` with the actual filename. Copy the 64-character hash into line 2 of `version.txt`, then commit that file.
 
 ```powershell
-PS C:\Users\ooikk\Documents\Arduino\02_OTA_Elegant\build\esp32.esp32.esp32s3> Get-FileHash .\02_OTA_Elegant.ino.bin -Algorithm SHA256
+PS C:\Users\ooikk\Documents\Arduino\02_OTA_Elegant\build\esp32.esp32.esp32s3> Get-FileHash .\firmware.ino.bin -Algorithm SHA256
 
 Algorithm       Hash                                                                   Path
 ---------       ----                                                                   ----
@@ -2197,14 +2197,26 @@ The OTA code will use these URLs:
 **Manifest:**
 
 ```text
-https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/version.txt
+https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/02_MISC/02_OTA/version.txt
 ```
 
 **Firmware:**
 
+#### Option 1: Release Independence Path
+
 ```text
 https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO/releases/latest/download/firmware.bin
 ```
+>Note: Need to use `setInsecure()` with your GitHub Releases URL, to bypass the certificate verification check entirely. This allows the ESP32 to trust the github.com certificate and successfully follow the redirect to GitHub's CDN without throwing error -9984.
+
+#### Option 2: Direct Repository Path
+
+Upload directly to the sub-repository folder, preferbly at same location as `version.txt`.   
+
+```text
+https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/02_MISC/02_OTA/firmware.bin
+```
+>Note: This is the secure path with CA Cert
 
 Keep the manifest version and release asset in sync. When publishing a new version, upload the new binary to a new release and update `version.txt` with the new version and matching hash.
 
@@ -2314,13 +2326,10 @@ const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 // Change this when building a new release.
 #define FIRMWARE_VERSION "1.0.0"
 
-const char* MANIFEST_URL =
-  "https://raw.githubusercontent.com/"
-  "YOUR_GITHUB_USERNAME/YOUR_REPO/main/version.txt";
+const char* MANIFEST_URL ="https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/version.txt";
 
-const char* FIRMWARE_URL =
-  "https://github.com/YOUR_GITHUB_USERNAME/"
-  "YOUR_REPO/releases/latest/download/firmware.bin";
+// const char* FIRMWARE_URL = "https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO/releases/latest/download/firmware.bin";
+const char* FIRMWARE_URL = "https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/firmware.bin";
 
 // Check every 6 hours while running.
 const unsigned long OTA_CHECK_INTERVAL_MS =
@@ -2747,7 +2756,12 @@ void loop() {
   delay(10);
 }
 ```
+
 ## 6. Step-by-step: Create a GitHub Release for ESP32-S3 automatic OTA
+
+Two repositoty location optiond for `firmware.bin`.
+
+### Option 1: Release Independence
 
 We'll use your repository, [ooikk/Arduino-Documentation](https://github.com/ooikk/Arduino-Documentation), and publish the ESP32-S3 firmware as a GitHub Release.
 
@@ -2756,8 +2770,18 @@ The goal is to make this URL work for your ESP32:
 ```text
 https://github.com/ooikk/Arduino-Documentation/releases/latest/download/firmware.bin
 ```
+Your release will contain the compiled firmware file `firmware.bin`. Your `version.txt` file will remain in `02_MISC/02_OTA/` on the `main` branch and contain the firmware version and SHA-256 hash.
 
-Your release will contain the compiled firmware file `firmware.bin`. Your `version.txt` file will remain in `02_MISC` on the `main` branch and contain the firmware version and SHA-256 hash.
+### Option 2: Direct Repository Path
+
+Upload the `firmware.bin' directly to the `02_MISC/02_OTA/`
+
+Your `version.txt` and `firmware.bin` files will remain in `02_MISC/02_OTA/`.
+
+```text
+https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/firmware.bin
+https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/version.txt
+```
 
 ### Step 1 — Compile the ESP32-S3 firmware
 
@@ -2789,7 +2813,7 @@ Get-FileHash .\firmware.bin -Algorithm SHA256
 
 Copy the value shown under `Hash`. It should be 64 hexadecimal characters.
 
-For example, your `02_MISC/version.txt` file should look like this:
+For example, your `02_MISC/02_OTA/version.txt` file should look like this:
 
 ```text
 1.0.0
@@ -2797,6 +2821,8 @@ paste_your_actual_64_character_sha256_hash_here
 ```
 
 Do not use the example placeholder as the real hash. Save and commit the updated `version.txt` file to your repository's `main` branch before testing the release.
+
+>Note: skip **Step 3 to 6** if you are using *Direct Repository Path*
 
 ### Step 3 — Open the Releases page
 
@@ -2867,14 +2893,19 @@ Before publishing, check that:
 Then click **Publish release**. Do not leave it as a draft. If the page offers **Set as the latest release**, ensure the release is selected as latest where appropriate. GitHub's latest-release behavior depends on release status and settings.
 
 
-
 ### Step 7 — Test the two URLs
 
 After publishing, open these links in your browser.
 
 #### A. Firmware binary
 
+### For Option 1: Release Independence
+
 [Download `firmware.bin` from the latest release](https://github.com/ooikk/Arduino-Documentation/releases/latest/download/firmware.bin)
+
+### For Option 2: Direct Repository Path
+
+[Download `firmware.bin` from direct repository path](https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/firmware.bin)
 
 **Expected result:** Your browser downloads a file named `firmware.bin`.
 
