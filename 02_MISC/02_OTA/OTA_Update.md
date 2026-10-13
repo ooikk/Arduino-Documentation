@@ -3273,10 +3273,10 @@ Your URLs can remain in this form:
 
 ```cpp
 static const char* MANIFEST_URL =
-    "[https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/version.txt](https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/version.txt)";
+    "https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/version.txt";
 
 static const char* FIRMWARE_URL =
-    "[https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/firmware.bin](https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/firmware.bin)";
+    "https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/firmware.bin";
 ```
 
 Replace `OWNER` and `REPO` with the repository owner and repository name.
@@ -3299,7 +3299,7 @@ Typical workflow:
 A commonly used download URL pattern is:
 
 ```text
-[https://drive.google.com/uc?export=download&id=FILE_ID](https://drive.google.com/uc?export=download&id=FILE_ID)
+https://drive.google.com/uc?export=download&id=FILE_ID
 ```
 
 This is a URL pattern to test, not a guarantee that every file will download directly. Google Drive can return redirects, confirmation pages, or access-denied responses, so you must test the actual response.
@@ -3328,7 +3328,7 @@ Dropbox provides another option. Its official guidance explains that adding `dl=
 Example pattern:
 
 ```text
-[https://www.dropbox.com/scl/fi/SHARE_ID/firmware.bin?rlkey=KEY&dl=1](https://www.dropbox.com/scl/fi/SHARE_ID/firmware.bin?rlkey=KEY&dl=1)
+https://www.dropbox.com/scl/fi/SHARE_ID/firmware.bin?rlkey=KEY&dl=1
 ```
 
 Use the actual link Dropbox generates, retaining its required parameters. Your ESP32 may still need to handle redirects.
