@@ -3230,6 +3230,200 @@ One final engineering detail: successful installation is not the same as success
 
 If you paste your current `downloadAndInstall()` function, I can annotate your actual code line by line, including where the SHA-256 check occurs, which partition `Update` writes to, and precisely when the boot partition changes.
 
+---
+
+# Using OneDrive, Google Drive, and other cloud storage for ESP32-S3 OTA
+
+Yes. In principle, you can host both `version.txt` and `firmware.bin` on almost any cloud storage service that supports publicly accessible downloads. Your ESP32-S3 does not fundamentally care whether the files are stored on GitHub, Google Drive, OneDrive, Dropbox, or your own web server.
+
+The important requirement is that the ESP32 must receive the actual file contents over HTTPS, not an HTML preview page, sign-in page, or download-confirmation page.
+
+For your existing Arduino OTA project, the update flow can remain largely unchanged:
+
+```text
+ESP32-S3
+Checks the manifest and compares firmware versions
+
+Cloud storage
+version.txt and firmware.bin are downloaded over HTTPS
+
+Existing OTA updater
+Verify digest → write inactive partition → finalize → reboot
+```
+
+You normally change the two URL constants and perhaps the redirect-handling code. Your version comparison, partition handling, `Update` calls, and reboot logic need not change if the cloud provider serves compatible responses.
+
+## 1. Compare the cloud-storage options
+
+These options differ mainly in how they expose files to a device that has no browser session or interactive sign-in.
+
+| Cloud option | Can host OTA files? | Main consideration |
+|---|---|---|
+| GitHub raw content | Yes | Simple direct file URLs; you already have this working |
+| Google Drive | Yes, with a suitable public-download link | Share links may return a confirmation page or redirect |
+| OneDrive | Yes, with a suitable anonymous download link | Sharing URLs and redirect behaviour can vary |
+| Dropbox | Yes, with a suitable shared link | `dl=1` requests a download, but redirects may still occur |
+| Object storage / static hosting | Yes | Often best suited to a production firmware distribution endpoint |
+
+For your project, I'd compare GitHub raw content, Google Drive, and OneDrive first because they fit your existing workflow. Dropbox is another workable option. For a larger deployment, object storage or a static web host can give you more predictable control over URLs, caching, and access policies.
+
+### GitHub raw content — your current working solution
+
+Your URLs can remain in this form:
+
+```cpp
+static const char* MANIFEST_URL =
+    "[https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/version.txt](https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/version.txt)";
+
+static const char* FIRMWARE_URL =
+    "[https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/firmware.bin](https://raw.githubusercontent.com/OWNER/REPO/main/02_MISC/02_OTA/firmware.bin)";
+```
+
+Replace `OWNER` and `REPO` with the repository owner and repository name.
+
+**Advantages:** direct file content, simple URLs, and no need to implement cloud authentication for a public repository.
+
+**Considerations:** repository contents are public, and a branch-based URL can serve a different file after a later commit. For reproducible releases, a versioned path or immutable commit reference is preferable.
+
+### Google Drive
+
+Google Drive is usable if the files can be downloaded anonymously. Google's sharing controls allow you to make files available to anyone with the link, subject to account or administrator restrictions.
+
+Typical workflow:
+
+1. Upload `version.txt` and `firmware.bin`.
+2. Set each file's access to **Anyone with the link — Viewer**, if that option is available.
+3. Obtain each file's sharing URL and file ID.
+4. Test whether the URL returns the actual content to an unauthenticated client.
+
+A commonly used download URL pattern is:
+
+```text
+[https://drive.google.com/uc?export=download&id=FILE_ID](https://drive.google.com/uc?export=download&id=FILE_ID)
+```
+
+This is a URL pattern to test, not a guarantee that every file will download directly. Google Drive can return redirects, confirmation pages, or access-denied responses, so you must test the actual response.
+
+For a small manifest, Google Drive may be adequate. For a firmware binary, I would be more cautious about confirmation pages, redirects, and download quotas.
+
+### OneDrive
+
+OneDrive also supports anonymous sharing when the account and sharing policies allow it. Microsoft documents that an **Anyone** link can allow access without requiring recipients to sign in, though organizational policies may disable that option.
+
+Typical workflow:
+
+1. Upload both files.
+2. Create a view-only sharing link for each.
+3. Ensure the link permits downloading without an account or interactive authentication.
+4. Test the link from a private browser window and then from the ESP32.
+
+A `download=1` parameter is used with some OneDrive and SharePoint sharing URLs, but it should not be assumed to work for every link type.
+
+The key issue is not just obtaining a share URL; it is ensuring that the final HTTPS response is the firmware file itself.
+
+### Dropbox
+
+Dropbox provides another option. Its official guidance explains that adding `dl=1` requests a file download, while `raw=1` can redirect to a URL that serves the content directly.
+
+Example pattern:
+
+```text
+[https://www.dropbox.com/scl/fi/SHARE_ID/firmware.bin?rlkey=KEY&dl=1](https://www.dropbox.com/scl/fi/SHARE_ID/firmware.bin?rlkey=KEY&dl=1)
+```
+
+Use the actual link Dropbox generates, retaining its required parameters. Your ESP32 may still need to handle redirects.
+
+## 2. What needs to change in your Arduino code?
+
+In the simplest case, only the URL definitions change. Your manifest parser and firmware writer can stay as they are.
+
+For example, if you choose Google Drive:
+
+```cpp
+static const char* MANIFEST_URL =
+    "[https://drive.google.com/uc?export=download&id=MANIFEST_FILE_ID](https://drive.google.com/uc?export=download&id=MANIFEST_FILE_ID)";
+
+static const char* FIRMWARE_URL =
+    "[https://drive.google.com/uc?export=download&id=FIRMWARE_FILE_ID](https://drive.google.com/uc?export=download&id=FIRMWARE_FILE_ID)";
+```
+
+If you choose OneDrive, substitute the actual anonymous download URLs for those two constants instead.
+
+However, because your existing project uses strict TLS verification and has already encountered a certificate issue with GitHub, you should check both the initial hostname and every redirected hostname before concluding that a provider is compatible.
+
+### The four areas to check
+
+- **URL configuration:** Point `MANIFEST_URL` and `FIRMWARE_URL` at the new files.
+- **Redirect handling:** Determine whether the provider responds directly with the file or redirects to another hostname. If it redirects, the client must follow it correctly.
+- **TLS certificates:** Ensure the configured CA certificates validate each hostname in the download chain. Do not use `setInsecure()` to work around a failure.
+- **Response validation:** Verify the HTTP status, binary size, and SHA-256 digest. Do not pass an HTML preview or login page to `Update.write()`.
+
+## 3. Why redirects matter for your HTTPClient code
+
+Your Google Sheets code already demonstrates manual redirect handling:
+
+```cpp
+http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+
+int httpCode = http.GET();
+
+if (httpCode == 302) {
+    String redirectUrl = http.getLocation();
+    // Close the first request and issue a new HTTPS request.
+}
+```
+
+This is useful when you want to inspect the redirect destination and create a new `WiFiClientSecure` for it.
+
+But note two differences:
+
+- Your telemetry code handles Google Apps Script redirects for its particular response pattern. It does not automatically handle every possible cloud-storage redirect.
+- A redirect may use `301`, `302`, `303`, `307`, or `308`, and there may be more than one redirect. Your handler should account for the statuses that the selected provider actually uses.
+
+For a GET request to retrieve a firmware binary, following a redirect normally means issuing another GET request to the destination URL. For a POST request, redirect semantics can be different, so your telemetry code should not be copied blindly into the OTA downloader.
+
+**My recommendation:** keep the OTA downloader's redirect logic separate from the telemetry logic. First test each provider's actual response, then add only the handling that is needed.
+
+## 4. How to test a cloud provider before changing the ESP32
+
+Test each file URL independently.
+
+| Test | Expected result |
+|---|---|
+| Open manifest URL in a private browser window | Displays the two manifest lines, without sign-in |
+| Open firmware URL in a private browser window | Downloads `firmware.bin`, not an HTML page |
+| Check initial HTTP response | Usually `200 OK` or a redirect that can be followed |
+| Check TLS for each hostname | Certificate validation succeeds |
+| Check downloaded binary size | Matches the expected file size |
+| Check SHA-256 | Matches the manifest digest for that exact binary |
+
+For a quick Windows test, download the files with `curl.exe`:
+
+```powershell
+curl.exe -fL "YOUR_MANIFEST_URL" -o version.txt
+curl.exe -fL "YOUR_FIRMWARE_URL" -o firmware.bin
+```
+
+The `-L` option follows redirects. Then calculate the firmware's SHA-256:
+
+```powershell
+Get-FileHash .\firmware.bin -Algorithm SHA256
+```
+
+Compare that hash with the second line of `version.txt`. This verifies the downloaded file, although Windows' successful TLS connection does not guarantee that the ESP32's configured CA certificates will validate the same host.
+
+## 5. My recommendation for your ESP32-S3 project
+
+I'd use this order:
+
+1. **Keep GitHub raw content as the baseline.** Your current OTA download and installation already work with this URL.
+2. **Test Google Drive or OneDrive as an experiment.** Upload both files, create anonymous download links, and verify the actual responses before changing the firmware.
+3. **Keep the update logic provider-independent.** The downloader should accept a URL, handle supported redirects, validate the response and digest, and write to the inactive OTA partition.
+4. **Consider object storage for production.** A service designed to serve binary objects is generally a better fit than a consumer file-sharing interface when you need predictable downloads and repeated firmware releases.
+
+One final security point: a publicly accessible firmware URL is effectively a public distribution endpoint. Keep the firmware digest check, and consider signing the firmware or manifest if you intend to deploy this updater beyond your own test devices.
+
+If you'd like to experiment next, I suggest trying Google Drive first. You can retain your current `downloadAndInstall()` implementation and change the URL constants initially, then inspect the ESP32's HTTP status and TLS diagnostics to determine whether additional redirect handling is necessary.
 
 ---
 # Reference & Other Resources
