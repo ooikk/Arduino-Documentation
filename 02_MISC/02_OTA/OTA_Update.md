@@ -3341,10 +3341,10 @@ For example, if you choose Google Drive:
 
 ```cpp
 static const char* MANIFEST_URL =
-    "[https://drive.google.com/uc?export=download&id=MANIFEST_FILE_ID](https://drive.google.com/uc?export=download&id=MANIFEST_FILE_ID)";
+    "https://drive.google.com/uc?export=download&id=MANIFEST_FILE_ID";
 
 static const char* FIRMWARE_URL =
-    "[https://drive.google.com/uc?export=download&id=FIRMWARE_FILE_ID](https://drive.google.com/uc?export=download&id=FIRMWARE_FILE_ID)";
+    "https://drive.google.com/uc?export=download&id=FIRMWARE_FILE_ID";
 ```
 
 If you choose OneDrive, substitute the actual anonymous download URLs for those two constants instead.
