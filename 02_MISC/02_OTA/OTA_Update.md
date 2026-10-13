@@ -2209,6 +2209,8 @@ https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO/releases/latest/download/firmw
 ```
 >Note: Need to use `setInsecure()` with your GitHub Releases URL, to bypass the certificate verification check entirely. This allows the ESP32 to trust the github.com certificate and successfully follow the redirect to GitHub's CDN without throwing error -9984.
 
+**Important:** If the release is a draft or prerelease, don't assume the latest URL will point to it. Publish a normal release for this initial implementation.
+
 #### Option 2: Direct Repository Path
 
 Upload directly to the sub-repository folder, preferbly at same location as `version.txt`.   
@@ -2220,7 +2222,7 @@ https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/YOUR_REPO/main/02_MISC/02
 
 Keep the manifest version and release asset in sync. When publishing a new version, upload the new binary to a new release and update `version.txt` with the new version and matching hash.
 
-**Important:** If the release is a draft or prerelease, don't assume the latest URL will point to it. Publish a normal release for this initial implementation.
+
 
 ## 4. TLS certificate configuration
 
