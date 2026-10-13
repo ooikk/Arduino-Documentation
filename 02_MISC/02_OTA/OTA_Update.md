@@ -3001,6 +3001,235 @@ For production use, Espressif documents the relevant partition and rollback beha
 
 One final detail: `FIRMWARE_VERSION` is compiled into the firmware. Every time you publish a new release, update that constant before compiling, then publish the matching `.bin` and manifest hash. Otherwise, a device may repeatedly consider a release newer than the version it believes it is running.
 
+---
+## ESP32-S3 OTA: How `downloadAndInstall()` and Update work
+
+In your ESP32-S3 automatic pull OTA project, `downloadAndInstall()` is the function responsible for downloading the new firmware binary from GitHub and writing it into the ESP32-S3's inactive OTA application partition.
+
+The important distinction is that downloading firmware and installing firmware are two separate operations. `HTTPClient` retrieves the bytes over HTTPS; the Arduino `Update` library writes those bytes into flash and validates the update process.
+
+### 1. The overall OTA sequence
+
+1. **Check for an update** — Download `version.txt`; compare installed and published versions.
+2. **`downloadAndInstall()`** — Open HTTPS connection to the firmware URL.
+3. **Prepare the update** — Check image size and SHA-256; call `Update.begin()`.
+4. **Download and write** — Read HTTP stream in chunks; pass bytes to `Update.write()`.
+5. **Finalize** — Call `Update.end()`; check success and image integrity.
+6. **Reboot** — ESP32 boots the newly selected OTA application partition.
+
+The exact checks and call order depend on your implementation, but this is the usual structure for Arduino-ESP32 OTA using `HTTPClient`, `Update.h`, and the ESP-IDF OTA partition mechanism.
+
+### 2. What happens inside `downloadAndInstall()`
+
+Your implementation uses these main components:
+
+| Component | Responsibility |
+|---|---|
+| `WiFiClientSecure` | Establishes HTTPS and validates the server certificate |
+| `HTTPClient` | Sends the HTTP GET request and obtains the response |
+| `Update` | Writes firmware bytes to the inactive OTA flash partition |
+| `esp_ota_ops.h` | Provides ESP-IDF OTA partition functions |
+| `esp_partition.h` | Provides partition information and operations |
+
+Let's examine the steps in detail.
+
+#### Step 1 — Create a secure connection and request the binary
+
+Conceptually, the function starts with something like:
+
+```cpp
+WiFiClientSecure client;
+client.setCACert(ROOT_CA);
+
+HTTPClient http;
+http.begin(client, FIRMWARE_URL);
+
+int httpCode = http.GET();
+```
+
+- `WiFiClientSecure client;` creates a TLS-capable network client.
+- `setCACert(ROOT_CA)` configures certificate verification.
+- `http.begin()` prepares the request for the firmware URL.
+- `http.GET()` sends an HTTP GET request to retrieve the binary.
+
+The GET request can only proceed successfully if the TLS connection and HTTP exchange succeed.
+
+You should normally require an HTTP `200 OK` response before accepting the firmware body. A redirect or an HTTP error page must not be mistaken for a firmware binary.
+
+#### Step 2 — Check the firmware size
+
+The HTTP response can provide the firmware length through the `Content-Length` header.
+
+The function should check that:
+
+- The length is known and greater than zero, if your download method requires it.
+- The image fits inside the inactive OTA partition.
+- The download is not obviously incomplete.
+
+Your ESP32-S3 has two OTA application partitions, each approximately 3 MiB in your current partition layout. The firmware image must fit into the destination partition, regardless of the board's 16 MB total flash capacity.
+
+#### Step 3 — Prepare flash using `Update.begin()`
+
+This is the first major `Update` operation.
+
+```cpp
+if (!Update.begin(firmwareSize)) {
+    Serial.printf("Update.begin failed: %s\n",
+                  Update.errorString());
+    http.end();
+    return false;
+}
+```
+
+Here, `firmwareSize` is the expected number of firmware bytes.
+
+`Update.begin()` prepares the update subsystem to receive a new image. In the normal OTA configuration, the library targets the inactive application partition rather than overwriting the application currently running.
+
+It also checks whether the update can be started, including whether the target partition has enough capacity.
+
+**Why this matters:** your running firmware must remain intact while the new firmware is being downloaded and written. If the update fails before it is finalized, the currently running application can generally continue running.
+
+#### Step 4 — Stream the firmware and call `Update.write()`
+
+The firmware is not normally downloaded into one enormous RAM buffer. Instead, the function reads the response stream in manageable chunks.
+
+The simplified pattern is:
+
+```cpp
+uint8_t buffer[1024];
+size_t written = 0;
+
+while (httpConnectedAndDataAvailable) {
+    size_t bytesRead = readChunk(buffer, sizeof(buffer));
+
+    if (bytesRead > 0) {
+        size_t bytesWritten = Update.write(buffer, bytesRead);
+
+        if (bytesWritten != bytesRead) {
+            // Write failed or was incomplete.
+            Update.abort();
+            return false;
+        }
+
+        written += bytesWritten;
+    }
+}
+```
+
+The names `httpConnectedAndDataAvailable` and `readChunk()` above are illustrative placeholders, not actual Arduino API functions.
+
+The key operation is:
+
+```cpp
+Update.write(buffer, bytesRead);
+```
+
+It passes bytes to the `Update` library, which handles writing them to the destination flash partition.
+
+A robust implementation checks that the number of bytes written equals the number of bytes read. It should also distinguish a completed download from a connection that drops unexpectedly.
+
+#### Step 5 — Validate the downloaded firmware
+
+Your OTA workflow also uses a SHA-256 value from `version.txt`.
+
+Conceptually, the manifest contains:
+
+```text
+1.2.0
+<64-character SHA-256 digest>
+```
+
+The firmware download must be compared with the digest published in the manifest. This detects a binary that differs from the expected file, whether due to corruption, an incomplete download, or an unintended file change.
+
+For a secure design, calculate SHA-256 over the complete downloaded binary and compare it with the trusted expected digest before accepting the update.
+
+There are two separate security checks here:
+
+- **TLS certificate verification:** validates the HTTPS server's identity and protects the transfer.
+- **SHA-256 comparison:** verifies that the downloaded bytes match the expected digest.
+
+A plain SHA-256 digest does not authenticate the publisher if an attacker can change both the binary and the manifest. A signed manifest or signed firmware image offers stronger protection against that scenario.
+
+#### Step 6 — Finalize with `Update.end()`
+
+This is the second major `Update` operation.
+
+```cpp
+if (!Update.end()) {
+    Serial.printf("Update.end failed: %s\n",
+                  Update.errorString());
+    return false;
+}
+```
+
+The `Update` library finalizes the write operation and checks whether the expected update data has been received. When finalization succeeds, the library completes the OTA process and arranges for the updated application partition to be used on the next boot.
+
+An important distinction:
+
+- `Update.write()` writes the incoming bytes.
+- `Update.end()` finalizes the update.
+
+A successful `Update.end()` does not mean the new application has already started executing.
+
+The device is still running the old firmware until a reboot transfers control to the new image.
+
+Some implementations use `Update.end(true)`, where the argument permits finalization even when fewer bytes than expected have arrived. You should not use that as a workaround for an incomplete download; it can weaken the expected-size safeguard.
+
+#### Step 7 — Close the HTTP connection and reboot
+
+After a successful update, the function should release the HTTP resources and reboot:
+
+```cpp
+http.end();
+
+if (updateSucceeded) {
+    delay(500);
+    ESP.restart();
+}
+```
+
+`http.end()` releases the HTTP connection resources. `ESP.restart()` resets the ESP32 so the bootloader can start the newly selected application.
+
+On your current two-partition layout, the expected sequence is:
+
+1. Firmware version 1.1.0 runs from `app0`.
+2. The new image is written to `app1`.
+3. The update is finalized successfully.
+4. The device reboots.
+5. The bootloader starts the application selected by the OTA update process.
+
+The new firmware should report version 1.2.0, assuming that is the version compiled into the downloaded binary.
+
+On subsequent updates, the target normally alternates between the OTA application partitions, depending on the currently running partition.
+
+### 3. The key Update API functions
+
+| Function | Purpose |
+|---|---|
+| `Update.begin(size)` | Start preparing the update for the specified image size |
+| `Update.write(data, len)` | Write a block of firmware bytes |
+| `Update.end()` | Finalize the update and verify that the expected write operation completed |
+| `Update.isFinished()` | Check whether the Update library considers the update finished |
+| `Update.hasError()` | Check whether the Update library recorded an error |
+| `Update.errorString()` | Obtain a human-readable description of the latest Update error |
+| `Update.abort()` | Abort an update in progress |
+| `ESP.restart()` | Reboot the ESP32 |
+
+Your project also uses ESP-IDF OTA and partition APIs for inspecting the current and next partitions. Those APIs help with diagnostics, but they serve a different role from the `Update` library's write and finalization operations.
+
+### 4. What if something fails?
+
+| Failure case | Recommended response |
+|---|---|
+| TLS or HTTP request fails | No valid firmware should be installed. Close the connection and retain the currently running application. |
+| `Update.begin()` fails | The update cannot be started, often because of a size or partition issue. Report the error and do not reboot as if the update succeeded. |
+| Download or hash verification fails | Abort the update and do not finalize an invalid image. The active application should remain the one in use. |
+| `Update.end()` succeeds | The update is finalized. Reboot to start the new application, then verify its version and health. |
+
+One final engineering detail: successful installation is not the same as successful operation of the new firmware. If you want automatic rollback when a new image boots but crashes or fails initialization, you need to configure and implement ESP-IDF's OTA rollback mechanism. Merely calling `ESP.restart()` does not guarantee rollback.
+
+If you paste your current `downloadAndInstall()` function, I can annotate your actual code line by line, including where the SHA-256 check occurs, which partition `Update` writes to, and precisely when the boot partition changes.
+
 
 ---
 # Reference & Other Resources
