@@ -3002,7 +3002,7 @@ For production use, Espressif documents the relevant partition and rollback beha
 One final detail: `FIRMWARE_VERSION` is compiled into the firmware. Every time you publish a new release, update that constant before compiling, then publish the matching `.bin` and manifest hash. Otherwise, a device may repeatedly consider a release newer than the version it believes it is running.
 
 ---
-## ESP32-S3 OTA: How `downloadAndInstall()` and Update work
+## ESP32-S3 OTA: How `downloadAndInstall()` and `Update` work
 
 In your ESP32-S3 automatic pull OTA project, `downloadAndInstall()` is the function responsible for downloading the new firmware binary from GitHub and writing it into the ESP32-S3's inactive OTA application partition.
 
