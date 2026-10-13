@@ -45,6 +45,8 @@ const size_t MAX_FIRMWARE_SIZE = 8UL * 1024UL * 1024UL;
 // 2. TLS ROOT CERTIFICATE
 // DigiCert Global Root G2
 // Obtain/verify the current PEM from DigiCert's official site.
+// DigiCert Global Root G2 PEM
+// https://cacerts.digicert.com/DigiCertGlobalRootG2.crt.pem
 // ============================================================
 
 static const char ROOT_CA[] PROGMEM = R"PEM(
@@ -138,6 +140,7 @@ int compareVersions(const String& a, const String& b) {
 
 bool fetchManifest(String& remoteVersion, String& expectedSha256) {
   WiFiClientSecure tls;
+
   tls.setCACert(ROOT_CA);
   tls.setTimeout(15000);
 
@@ -260,6 +263,7 @@ bool downloadAndInstall(const String& expectedSha256) {
   }
 
   int code = http.GET();
+  Serial.printf("Firmware HTTP result: %d\n", code);
 
 #ifdef DEBUG_TRACE
   if (code < 0) {
