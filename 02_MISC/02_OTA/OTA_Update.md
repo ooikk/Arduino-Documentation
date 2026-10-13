@@ -2671,9 +2671,7 @@ void loop() {
   delay(10);
 }
 ```
-## 6
-
-### Step-by-step: Create a GitHub Release for ESP32-S3 automatic OTA
+## 6. Step-by-step: Create a GitHub Release for ESP32-S3 automatic OTA
 
 We'll use your repository, [ooikk/Arduino-Documentation](https://github.com/ooikk/Arduino-Documentation), and publish the ESP32-S3 firmware as a GitHub Release.
 
