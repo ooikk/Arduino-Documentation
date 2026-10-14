@@ -436,7 +436,7 @@ void checkForFirmwareUpdate() {
   Serial.println("New firmware version available");
 
 #ifdef RELEASE_LOG
-  Serial.printf("Release log:\n %s\n", releaseLog.c_str());
+  Serial.printf("Release log:\n%s\n", releaseLog.c_str());
 #endif
 
   downloadAndInstall(expectedSha256);
