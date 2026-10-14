@@ -13,12 +13,12 @@ const char* WIFI_SSID = "Nightingale_IoT";
 const char* WIFI_PASSWORD = "1122334455";
 
 //#define GITHUB_RELEASE_URL
-
 //#define DEBUG_TRACE
+#define RELEASE_LOG
 
 // Version of THIS compiled firmware.
 // Change this when building a new release.
-#define FIRMWARE_VERSION "1.6.0"
+#define FIRMWARE_VERSION "1.9.0"
 
 const char* MANIFEST_URL = "https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/version.txt";
 // "https://raw.githubusercontent.com/"
@@ -137,8 +137,14 @@ int compareVersions(const String& a, const String& b) {
 // 64-character SHA-256 hash
 // ============================================================
 
+#ifdef RELEASE_LOG
+
+bool fetchManifest(String& remoteVersion, String& expectedSha256, String& releaseLog) {
+#else
 
 bool fetchManifest(String& remoteVersion, String& expectedSha256) {
+#endif
+
   WiFiClientSecure tls;
 
   tls.setCACert(ROOT_CA);
@@ -176,7 +182,7 @@ bool fetchManifest(String& remoteVersion, String& expectedSha256) {
     return false;
   }
 #endif
-  
+
   if (code != HTTP_CODE_OK) {
     http.end();
     return false;
@@ -189,6 +195,7 @@ bool fetchManifest(String& remoteVersion, String& expectedSha256) {
   body.trim();
 
   int newline = body.indexOf('\n');
+
   if (newline < 0) {
     Serial.println("Manifest format error: missing hash line");
     return false;
@@ -197,9 +204,25 @@ bool fetchManifest(String& remoteVersion, String& expectedSha256) {
   remoteVersion = body.substring(0, newline);
   remoteVersion.trim();
 
+#ifdef RELEASE_LOG
+  int newline1 = body.indexOf('\n', newline + 1);  // find end of second line
+  if (newline1 < 0) {
+    Serial.println("Manifest format error: missing release log");
+    return false;
+  }
+  releaseLog = body.substring(newline1 + 1);
+  releaseLog.trim();
+
+  expectedSha256 = body.substring(newline + 1, newline1);
+
+#else
+
   expectedSha256 = body.substring(newline + 1);
+#endif
+
   expectedSha256.trim();
   expectedSha256.toLowerCase();
+
 
   unsigned long a, b, c;
   if (!parseVersion(remoteVersion, a, b, c)) {
@@ -235,8 +258,8 @@ bool downloadAndInstall(const String& expectedSha256) {
   WiFiClientSecure tls;
 
 #ifdef GITHUB_RELEASE_URL
-// Bypass certificate verification for GitHub's complex redirect chain
-  tls.setInsecure(); 
+  // Bypass certificate verification for GitHub's complex redirect chain
+  tls.setInsecure();
 #else
   tls.setCACert(ROOT_CA);
 #endif
@@ -280,7 +303,7 @@ bool downloadAndInstall(const String& expectedSha256) {
     return false;
   }
 #endif
-  
+
 
   if (code != HTTP_CODE_OK) {
     Serial.printf("Firmware HTTP error: %d\n", code);
@@ -383,8 +406,13 @@ void checkForFirmwareUpdate() {
 
   String remoteVersion;
   String expectedSha256;
+  String releaseLog;
 
+#ifdef RELEASE_LOG
+  if (!fetchManifest(remoteVersion, expectedSha256, releaseLog)) {
+#else
   if (!fetchManifest(remoteVersion, expectedSha256)) {
+#endif
     Serial.println("OTA check failed; existing firmware retained");
     otaInProgress = false;
     return;
@@ -406,6 +434,10 @@ void checkForFirmwareUpdate() {
   }
 
   Serial.println("New firmware version available");
+
+#ifdef RELEASE_LOG
+  Serial.printf("Release log:\n %s\n", releaseLog.c_str());
+#endif
 
   downloadAndInstall(expectedSha256);
 
