@@ -31,6 +31,8 @@ The implementation will also demonstrate task priorities, core pinning, queues, 
 
 ### 2.1 The scheduler and task execution
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b044765f-66a8-4c00-ad91-a240c0fa7120" />
+
 [RTOS Task Scheduling and Prioritization](https://images.openai.com/static-rsc-4/Nbkc_7Moif4qRFrSZbla37pSUtWR4zzU7gpW6XeAgH1FMGWyiVgqHZW_3nYGUbKWR6O3YGiTVtX6-pmzmPukM1eywgJhN2Fta60Hf_hVwfbfmP9fNuc6qJiwNNk-Ei7gll371jphD5bkld1rJlK3SbjbWslLrOcwQCSP1czAZqU?purpose=inline)
 
 [digikey.jp](https://www.digikey.jp/ja/maker/projects/introduction-to-rtos-solution-to-part-3-task-scheduling/8fbb9e0b0eed4279a2dd698f02ce125f)
