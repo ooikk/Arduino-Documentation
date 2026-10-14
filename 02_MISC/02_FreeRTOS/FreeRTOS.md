@@ -290,9 +290,9 @@ The PID control output is:
 In a digital controller, the integral and derivative terms are approximated at regular intervals. A simple implementation uses:
 
 <img width="195" height="51" alt="image" src="https://github.com/user-attachments/assets/a32e47fe-9913-461a-8e76-4a7acfb4c75c" />      
-
+<br>
 <img width="180" height="57" alt="image" src="https://github.com/user-attachments/assets/a90f0d94-fd31-44ec-89ea-e61596853487" />      
-
+<br>
 <img width="301" height="48" alt="image" src="https://github.com/user-attachments/assets/0c3dd751-b682-416d-9bb6-db2b9868593f" />      
 
 
