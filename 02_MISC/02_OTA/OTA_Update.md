@@ -3009,7 +3009,9 @@ One final detail: `FIRMWARE_VERSION` is compiled into the firmware. Every time y
 ```text
 1.9.0
 8FF47977331403ED4629E790E541337F2A3ABCC1EF99067DB3E75C9C93FD34B2
-Release new revision to display key changes
+Below are the changes:
+1. Release new revision number, to test again
+2. Second line of the comment
 ```
 ### 2. Update `fetchManifest()` function
 
