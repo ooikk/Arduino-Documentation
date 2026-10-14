@@ -3011,7 +3011,7 @@ One final detail: `FIRMWARE_VERSION` is compiled into the firmware. Every time y
 8FF47977331403ED4629E790E541337F2A3ABCC1EF99067DB3E75C9C93FD34B2
 Release new revision to display key changes
 ```
-### 2. Update `fetchManifest` function
+### 2. Update `fetchManifest()` function
 
 ```cpp
 bool fetchManifest(String& remoteVersion, String& expectedSha256, String& releaseLog) {
@@ -3050,7 +3050,7 @@ bool fetchManifest(String& remoteVersion, String& expectedSha256, String& releas
 //:
 ```
 
-### 3. Update `fetchManifest` function
+### 3. Update `checkForFirmwareUpdate()` function
 
 ```cpp
 void checkForFirmwareUpdate() {
