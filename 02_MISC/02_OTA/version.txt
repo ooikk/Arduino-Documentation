@@ -1,4 +1,4 @@
-1.9.0
+1.10.0
 8FF47977331403ED4629E790E541337F2A3ABCC1EF99067DB3E75C9C93FD34B3
 Below are the changes:
 1. Release new revision number, to test again
