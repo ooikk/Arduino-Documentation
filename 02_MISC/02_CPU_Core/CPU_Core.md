@@ -34,6 +34,9 @@ Shared peripherals
 GPIO, timers, SPI, I²C, UART, Wi-Fi subsystem
 ```
 
+<img width="1003" height="495" alt="image" src="https://github.com/user-attachments/assets/4e1a1630-e772-47ab-a4ac-401e7b3535a5" />
+
+
 This is a conceptual diagram rather than a detailed electrical bus diagram. The actual chip contains several bus paths, memory controllers, caches, DMA-capable peripherals and hardware-specific access restrictions.
 
 ### Core specifications
