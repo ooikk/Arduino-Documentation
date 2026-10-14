@@ -112,19 +112,19 @@ A task can also be created using `xTaskCreate()` when pinning is unnecessary.
 
 Tasks execute independently, but they often need to exchange data or share hardware resources. FreeRTOS provides several synchronization mechanisms, each intended for a different purpose.
 
-Queues — transfer data between tasks
+**Queues — transfer data between tasks**
 
 An acquisition task sends measured RPM to the control task. The receiving task can block until a measurement arrives, instead of polling continuously.
 
-Mutexes — protect shared resources
+**Mutexes — protect shared resources**
 
 A mutex can protect a shared settings or status structure from simultaneous task access. It is also useful when multiple tasks need exclusive access to a resource.
 
-Semaphores — signal events or manage resources
+**Semaphores — signal events or manage resources**
 
 A binary semaphore can signal that an external event has occurred. A counting semaphore can represent multiple available resources or pending events.
 
-Task notifications — signal a particular task efficiently
+**Task notifications — signal a particular task efficiently**
 
 An encoder or timer-related event can notify a control task that work is ready. Notifications can also carry a small integer value or event bits.
 
@@ -168,15 +168,15 @@ In practice, an encoder ISR should be kept as short as possible. For simple puls
 
 Consider this data flow:
 
-Acquisition task
+**Acquisition task**
 
 Reads encoder count and calculates RPM
 
-FreeRTOS queue
+**FreeRTOS queue**
 
 Transfers the latest measurement
 
-PID control task
+**PID control task**
 
 Calculates the new motor PWM command
 
@@ -244,6 +244,9 @@ Also avoid holding a mutex while waiting for serial input, performing network op
 
 The lab will implement a basic closed-loop speed controller using an ESP32-S3, a DC motor, a motor driver and an encoder.
 
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/d64f9179-bd30-472c-9c4c-e77f9648ae4d" />
+
+
 [Positioning with the N20 miniature geared DC motors — Curious Scientist](https://images.openai.com/static-rsc-4/-0GauxhFfzifdNqm7XHQcx1sdBSfHPZSIkQuqiGCGv-DZMUbgM9OJ18kDtDy8O3Of64ELSAyTSi4VpiTblJ5VHULGrrO3iEHF37yaL4rkQfcBFxyIN4wf9pQ7C_tVyyK6MxuMmNHh86i0dJLCTgkhW0QviaVpVCbb3yA--3NKGQ?purpose=inline)
 
 [curiousscientist.tech](https://curiousscientist.tech/blog/positioning-with-the-n20-miniature-geared-dc-motors)
@@ -269,25 +272,29 @@ The encoder resolution must be calibrated. If the encoder specifies pulses per r
 
 The controller compares the target speed with the measured speed.
 
-\[ e(t)=r(t)-y(t) \]
+<img width="211" height="48" alt="image" src="https://github.com/user-attachments/assets/e08a48a1-94e2-4c74-8224-4d0577c7274e" />
+
 
 where:
 
-- \(r(t)\) is the target RPM.
-- \(y(t)\) is the measured RPM.
-- \(e(t)\) is the speed error.
+- \r(t)\ is the target RPM.
+- \y(t)\ is the measured RPM.
+- \e(t)\ is the speed error.
 
 The PID control output is:
 
-\[ u(t)=K_p e(t)+K_i\int e(t)\\,dt+ K_d\frac{de(t)}{dt} \]
+<img width="457" height="87" alt="image" src="https://github.com/user-attachments/assets/d7569683-b146-4c37-9eb5-48744e6932ab" />
+
+
 
 In a digital controller, the integral and derivative terms are approximated at regular intervals. A simple implementation uses:
 
-\[ I_k=I\_{k-1}+e_k\Delta t \]
+<img width="195" height="51" alt="image" src="https://github.com/user-attachments/assets/a32e47fe-9913-461a-8e76-4a7acfb4c75c" />
 
-\[ D_k=\frac{e_k-e\_{k-1}}{\Delta t} \]
+<img width="180" height="57" alt="image" src="https://github.com/user-attachments/assets/a90f0d94-fd31-44ec-89ea-e61596853487" />
 
-\[ u_k=K_p e_k+K_i I_k+K_d D_k \]
+<img width="301" height="48" alt="image" src="https://github.com/user-attachments/assets/0c3dd751-b682-416d-9bb6-db2b9868593f" />
+
 
 The result is limited to the available PWM range. The integral term must also be managed to prevent excessive accumulation when the motor cannot reach the target speed.
 
