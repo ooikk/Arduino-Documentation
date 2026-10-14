@@ -304,25 +304,25 @@ For this introductory lab, the derivative gain is set to zero initially. Proport
 
 The application divides work into four tasks.
 
-Task 1 — Acquisition (core 1)
+**Task 1 — Acquisition (core 1)**
 
 Priority 4 · 100 ms sample period
 
 Reads the encoder count, calculates RPM and publishes a measurement through a queue.
 
-Task 2 — PID control (core 1)
+**Task 2 — PID control (core 1)**
 
 Priority 5 · 100 ms nominal period
 
 Receives speed measurements, computes the controller output and adjusts PWM.
 
-Task 3 — Serial interface (core 0)
+**Task 3 — Serial interface (core 0)**
 
 Priority 2
 
 Receives `START`, `STOP`, `SET` and `STATUS` commands without blocking the control task.
 
-Task 4 — Reporting (core 0)
+**Task 4 — Reporting (core 0)**
 
 Priority 1
 
@@ -851,7 +851,8 @@ The acquisition task reads and resets this counter every 100 ms.
 
 Suppose the encoder produces 40 pulses during one sample window and the configured resolution is 20 pulses per revolution:
 
-\[ RPM=\frac{40}{20}\times\frac{60}{0.1} =1200\ RPM \]
+<img width="374" height="90" alt="image" src="https://github.com/user-attachments/assets/e31ee160-75b7-4bc9-823f-a73983005fe9" />
+
 
 The task then publishes the calculated value through `rpmQueue`.
 
