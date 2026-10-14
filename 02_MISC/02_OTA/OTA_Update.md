@@ -3002,6 +3002,80 @@ For production use, Espressif documents the relevant partition and rollback beha
 One final detail: `FIRMWARE_VERSION` is compiled into the firmware. Every time you publish a new release, update that constant before compiling, then publish the matching `.bin` and manifest hash. Otherwise, a device may repeatedly consider a release newer than the version it believes it is running.
 
 ---
+## Add Release Log in `version.txt`
+
+### 1. Add release log comment in  `version.txt`, update version number and SHA256 and save
+
+```text
+1.9.0
+8FF47977331403ED4629E790E541337F2A3ABCC1EF99067DB3E75C9C93FD34B2
+Release new revision to display key changes
+```
+### 2. Update `fetchManifest` function
+
+```cpp
+bool fetchManifest(String& remoteVersion, String& expectedSha256, String& releaseLog) {
+//: setup TLS and HTTP
+//:
+  String body = http.getString();
+  http.end();
+
+  body.trim();
+
+  int newline = body.indexOf('\n');
+
+  if (newline < 0) {
+    Serial.println("Manifest format error: missing hash line");
+    return false;
+  }
+
+  remoteVersion = body.substring(0, newline);
+  remoteVersion.trim();
+
+  int newline1 = body.indexOf('\n', newline + 1);  // find end of second line
+  if (newline1 < 0) {
+    Serial.println("Invalid manifest: missing release log");
+    return false;
+  }
+  releaseLog = body.substring(newline1 + 1);
+  releaseLog.trim();
+
+  expectedSha256 = body.substring(newline + 1, newline1);
+
+
+  expectedSha256.trim();
+  expectedSha256.toLowerCase();
+
+//: Continue
+//:
+```
+
+### 3. Update `fetchManifest` function
+
+```cpp
+void checkForFirmwareUpdate() {
+// ...
+
+  if (!fetchManifest(remoteVersion, expectedSha256, releaseLog)) {
+    Serial.println("OTA check failed; existing firmware retained");
+    otaInProgress = false;
+    return;
+  }
+
+//...
+
+
+  Serial.println("New firmware version available");
+// print the release log before download and install
+  Serial.printf("Release log: %s\n", releaseLog.c_str());
+
+  downloadAndInstall(expectedSha256);
+
+//...
+
+```
+
+---
 ## ESP32-S3 OTA: How `downloadAndInstall()` and `Update` work
 
 In your ESP32-S3 automatic pull OTA project, `downloadAndInstall()` is the function responsible for downloading the new firmware binary from GitHub and writing it into the ESP32-S3's inactive OTA application partition.
