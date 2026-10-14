@@ -15,6 +15,9 @@ These recommendations are compared against the topics visible in your repository
 **Highest priority**  
 **New depth beyond CPU Core**
 
+<img width="800" height="800" alt="image" src="https://github.com/user-attachments/assets/9eb7a18f-a299-4f4f-bdb0-b989745f52e2" />
+
+
 You already have a CPU Core topic. The next step is learning how software actually uses the cores.
 
 Cover task creation and priorities, task states, scheduling, task pinning, queues, semaphores, mutexes, task notifications, race conditions and watchdogs.
@@ -27,6 +30,9 @@ Cover task creation and priorities, task states, scheduling, task pinning, queue
 
 **Builds on existing hardware-information material**
 
+<img width="1299" height="866" alt="image" src="https://github.com/user-attachments/assets/2d215980-57c4-494d-aef3-3e5ba976518f" />
+
+
 Your README already covers flash size, PSRAM size, free heap, sketch size and partition schemes. Extend this into runtime memory management: stack versus heap, fragmentation, allocation failure, task stack sizing, internal RAM versus PSRAM, and memory leaks.
 
 **Practical lab:** allocate and release buffers of different sizes, observe free heap and largest allocatable blocks, and compare internal RAM with PSRAM.
@@ -37,6 +43,9 @@ This is particularly valuable on your N16R8 board, which has 16 MB flash and 8 M
 
 **Distinct reliability topic**
 
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/f1501141-ab5b-4d71-9078-b993b9b7b52e" />
+
+
 Explain the task watchdog, interrupt watchdog, reset causes, panic output, backtraces, stack overflow and common causes of reboot loops.
 
 **Practical lab:** intentionally block a task, trigger a watchdog event, capture the serial output, then correct the problem.
@@ -46,6 +55,9 @@ This builds on your bootloader troubleshooting topic but focuses on failures aft
 ### 4. Hardware acceleration: DMA, RMT and LEDC
 
 **New feature-focused module**
+
+<img width="675" height="642" alt="image" src="https://github.com/user-attachments/assets/4c778e08-c3c9-4013-a1ec-0e5454295c7e" />
+
 
 Explain the difference between CPU-driven operations and hardware-assisted operations.
 
@@ -61,13 +73,20 @@ This is an excellent bridge into motors, addressable LEDs, pulse sensors and com
 
 **Builds on your USB and bootloader notes**
 
+<img width="488" height="620" alt="image" src="https://github.com/user-attachments/assets/9b0d4f16-54a7-4848-b904-d7504ca677a1" />
+
+
 Your README already explains the USB-to-UART bridge versus the ESP32-S3 native USB connection. The next step is a feature-oriented tutorial on USB device classes, USB descriptors, CDC serial, HID keyboard/mouse, mass storage, host mode and the limits of each mode.
 
 **Practical lab:** create a native USB CDC device, then a separate HID demonstration. Keep the USB-to-UART upload and debugging path clearly distinguished.
 
 ### 6. ESP32 security fundamentals
 
+<img width="681" height="771" alt="image" src="https://github.com/user-attachments/assets/22f105c1-f515-4975-b61d-70face6d84cc" />
+
+
 **Extends OTA and HTTPS**
+
 
 You have already worked with HTTPS, TLS certificates, SHA-256 and OTA. Broaden this to the difference between integrity and authenticity, certificate validation, credential storage, secure boot, flash encryption, firmware signing and threat models.
 
