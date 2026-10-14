@@ -3034,7 +3034,7 @@ bool fetchManifest(String& remoteVersion, String& expectedSha256, String& releas
 
   int newline1 = body.indexOf('\n', newline + 1);  // find end of second line
   if (newline1 < 0) {
-    Serial.println("Invalid manifest: missing release log");
+    Serial.println("Manifest format error: missing release log");
     return false;
   }
   releaseLog = body.substring(newline1 + 1);
