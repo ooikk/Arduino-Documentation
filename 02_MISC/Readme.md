@@ -5,6 +5,7 @@
 [![logo-color](https://img.shields.io/badge/Index-Saving_User_Setting-A4CE8B?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_NVS_Settings/SavingUserSetting.md)
 [![logo-color](https://img.shields.io/badge/Index-OTA_Update-DB9558?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/OTA_Update.md)
 [![logo-color](https://img.shields.io/badge/Index-CPU_Core-790D16?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_CPU_Core/CPU_Core.md)
+[![logo-color](https://img.shields.io/badge/Index-FreeRTOS-8ACFF8?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_FreeRTOS/FreeRTOS.md)
 
 [![logo-color](https://img.shields.io/badge/Index-WiFi-007DCC?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/WiFi.md)
 [![logo-color](https://img.shields.io/badge/Index-ESP_Now-FFB900?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Now.md)
