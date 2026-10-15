@@ -2259,3 +2259,185 @@ for (;;) {
 ```
 
 Remember: initialize `lastWake` once; let `vTaskDelayUntil()` advance it on every iteration.
+
+---
+
+In your ESP32-S3 FreeRTOS project, tasks on Core 0 and Core 1 use the same basic FreeRTOS programming model. The main differences are which core executes each task, the task priorities, and how the scheduler decides which task runs next.
+
+For your two functions:
+
+```cpp
+void serialTask(void *parameter)
+```
+
+and
+
+```cpp
+void reportTask(void *parameter) {
+  for (;;) {
+    // Report motor status
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+```
+# `serialTask` and `reportTask`
+
+
+The important question is whether one task must finish before the other can execute. **No, not necessarily.** They can run independently, but the scheduler, task priorities, and blocking operations determine when each gets CPU time.
+
+## 1. First, clarify task priority 0
+
+In the earlier motor-control example, the priorities were:
+
+| Task | Core | Priority |
+|---|---:|---:|
+| `controlTask` | 1 | 5 |
+| `acquisitionTask` | 1 | 4 |
+| `serialTask` | 0 | 2 |
+| `reportTask` | 0 | 1 |
+
+These priorities are illustrative, not fixed requirements.
+
+If you set both `serialTask` and `reportTask` to priority 0, they are at the lowest normal FreeRTOS task priority. This does not mean they execute simultaneously, nor does it mean they must wait for each other to finish.
+
+On Core 0, the scheduler normally chooses the highest-priority task that is ready to run. If two ready tasks have the same priority, they can share CPU time through time slicing when enabled and supported by the configuration. If one blocks or delays, the other can run immediately.
+
+There are also system tasks and interrupts to consider; priority 0 does not mean a task has exclusive access to the core.
+
+## 2. What happens when both tasks run on Core 0?
+
+Imagine both tasks are pinned to Core 0 and have priority 0.
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/606bee6f-878d-420b-92a8-0189f86f17cb" />
+
+
+
+**Example: Core 0 scheduling**
+
+- **`serialTask()` — Priority 0**: Reads user commands, parses input, sends commands to `commandQueue`.
+- **`reportTask()` — Priority 0**: Reads a status snapshot, prints motor information, then delays for 1 second.
+
+**Possible execution sequence**
+
+```text
+Serial
+Report
+Serial
+Report
+```
+
+Illustrative only. Actual switching depends on whether tasks block, become ready, or are preempted, and on the FreeRTOS configuration.
+
+A task does not have to finish permanently before another task can run. A task can run for a while, be switched out, and resume later from where it was interrupted.
+
+However, equal priority alone does not guarantee an immediate switch at every point in the code. Time slicing, blocking, yielding, and interrupts affect the actual schedule.
+
+## 3. How does serialTask() behave?
+
+A serial task often looks something like this:
+
+```cpp
+void serialTask(void *parameter) {
+  for (;;) {
+    if (Serial.available()) {
+      // Read and parse serial input
+      // Send a command to commandQueue
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+}
+```
+
+The `vTaskDelay()` gives the task an opportunity to stop running temporarily.
+
+For example:
+
+- The task checks whether serial data is available.
+- If a command is available, it reads and parses it.
+- It sends the command to `commandQueue`.
+- It delays for 10 ms.
+- During that delay, the task is blocked and cannot consume CPU time.
+- Another ready task on Core 0 can run.
+
+Without a delay or another blocking operation, a loop that repeatedly checks `Serial.available()` could consume CPU time continuously. This is often called a **busy loop**.
+
+In the earlier example, if `serialTask()` waits on `xQueueReceive()` or another blocking API, it may sleep until data or a message becomes available rather than repeatedly polling.
+
+## 4. How does reportTask() behave?
+
+Your code is:
+
+```cpp
+void reportTask(void *parameter) {
+  for (;;) {
+    // Report motor status
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
+```
+
+Let's say reporting takes 5 ms to complete.
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ff666b8e-6f6a-47ca-8782-3b3c4db35998" />
+
+
+```text
+Reporting cycle
+Report — 5 ms
+Delay — 1000 ms
+```
+
+The next iteration starts approximately 1005 ms after the previous iteration began, assuming the task is scheduled promptly and the report takes 5 ms.
+
+Here, `vTaskDelay()` is a **relative delay**. The 1000 ms delay starts when the task reaches that call. It is not the same as `vTaskDelayUntil()`, which schedules execution relative to a previous timing reference.
+
+While `reportTask()` is delayed, it is blocked. It does not occupy Core 0 for that second, so `serialTask()` can run.
+
+## 5. Do tasks on different cores have to wait for each other?
+
+No. Consider all four tasks in your motor-control design.
+
+| Task | Core | Typical behavior |
+|---|---:|---|
+| `controlTask` | 1 | Periodically calculates motor control output |
+| `acquisitionTask` | 1 | Periodically measures encoder speed |
+| `serialTask` | 0 | Processes user commands |
+| `reportTask` | 0 | Reports motor status periodically |
+
+Core 0 and Core 1 can execute tasks at the same time. But tasks can still synchronize with each other through queues, mutexes, notifications, and other shared resources.
+
+For example, `serialTask()` may send a command to `commandQueue`, while `controlTask()` receives it. Neither task must wait for the other to finish all its work. The queue safely transfers the command between them.
+
+Likewise, `reportTask()` can read `motorStatus` under `statusMutex`, while `controlTask()` updates that status under the same mutex. If one task holds the mutex, the other must wait before accessing the protected data.
+
+This distinction is important:
+
+- **Scheduling:** determines which ready task runs on a core.
+- **Blocking:** pauses a task until an event or timeout.
+- **Synchronization:** coordinates access to shared resources or data.
+- **Core assignment:** determines which core a pinned task can execute on.
+
+## 6. What if both tasks have priority 0 but one never delays?
+
+Suppose `serialTask()` continuously loops without blocking:
+
+```cpp
+void serialTask(void *parameter) {
+  for (;;) {
+    // Repeatedly check serial input
+  }
+}
+```
+
+And `reportTask()` has a one-second delay.
+
+If time slicing between equal-priority tasks is enabled, the scheduler can give `reportTask()` CPU time while both tasks are ready. When `reportTask()` calls `vTaskDelay()`, it becomes blocked, so `serialTask()` can run.
+
+But if time slicing is disabled and `serialTask()` remains continuously ready, it may prevent the equal-priority `reportTask()` from getting CPU time. A higher-priority ready task can also preempt either of them.
+
+Therefore, tasks should normally block when they have nothing to do, instead of continuously polling without a reason.
+
+My recommendation for your ESP32-S3 project: keep `serialTask()` responsive but give it a small delay or use suitable blocking operations, and let `reportTask()` sleep between reports. Choose priorities based on responsiveness and deadlines, not simply because the tasks are assigned to Core 0 or Core 1.
