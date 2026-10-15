@@ -1384,6 +1384,8 @@ For your ESP32-S3 project, I recommend retaining the four task handles and addin
 
 One final distinction: a task's stack allocation is not the same as the task's total memory consumption. The task control block and other FreeRTOS objects also consume heap memory, so a complete memory assessment should examine both stack headroom and overall heap availability.
 
+---
+
 # `SemaphoreHandle_t`: `statusMutex`
 
 A mutex is not automatically tied to a variable or structure. It protects shared data only when the tasks accessing that data follow the same locking protocol.
