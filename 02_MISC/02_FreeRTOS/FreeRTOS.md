@@ -2281,6 +2281,8 @@ void reportTask(void *parameter) {
   }
 }
 ```
+
+---
 # `serialTask` and `reportTask`
 
 
