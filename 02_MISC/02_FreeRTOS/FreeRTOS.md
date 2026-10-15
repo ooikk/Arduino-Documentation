@@ -1702,3 +1702,161 @@ Yes. You choose the capacity based on how much buffering the application needs.
 - **`commandQueue`:** 8 is a design choice, not a fixed FreeRTOS requirement. You might choose 4, 8, or 16 depending on command traffic and available RAM.
 
 One important detail: a queue of length 1 does not automatically overwrite its existing item. In this example, `xQueueOverwrite()` is appropriate for the one-item `rpmQueue`; for the command queue, use normal send/receive operations so pending commands remain ordered.
+
+---
+# `xQueueReceive()` and `xQueuePeek()`     
+The key difference is that `xQueueReceive()` removes an item from the queue, whereas `xQueuePeek()` reads an item without removing it. The final parameter `0` means do not wait if the queue operation cannot complete immediately.
+
+## 1. Compare the two commands
+
+| Feature | `xQueueReceive()` | `xQueuePeek()` |
+|---|---|---|
+| Purpose | Read and consume an item | Read an item without consuming it |
+| Removes item? | Yes | No |
+| Queue contents afterward | Item is removed; space becomes available | Item remains in the queue |
+| If queue is empty | Returns immediately with failure when wait time is 0 | Returns immediately with failure when wait time is 0 |
+| Typical use in our motor project | Retrieve and process a motor command | Read the latest RPM measurement |
+
+### Command A: `xQueueReceive(commandQueue, &cmd, 0)`
+
+```cpp
+MotorCommand cmd;
+
+if (xQueueReceive(commandQueue, &cmd, 0) == pdPASS) {
+    // Process the command
+}
+```
+
+Suppose `commandQueue` contains three commands:
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/0c70f551-77d1-4d04-a837-ba2edeb2e96c" />
+
+**Before receiving**
+
+```text
+START
+SET 500
+STOP
+```
+
+Receive the first command into `cmd`.
+
+**After receiving**
+
+
+```text
+cmd = START
+SET 500
+STOP
+```
+
+
+The `START` command has been removed from the queue. The next receive retrieves `SET 500`.
+
+This is suitable for commands because you normally want each command processed once, rather than repeatedly processing the same command.
+
+### Command B: `xQueuePeek(rpmQueue, &measuredRPM, 0)`
+
+```cpp
+float measuredRPM;
+
+if (xQueuePeek(rpmQueue, &measuredRPM, 0) == pdPASS) {
+    // Use measuredRPM for PID control
+}
+```
+
+Suppose `rpmQueue` contains `1200.0` RPM.
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/0773fd4e-b4b2-4cb9-993a-99bb09a49457" />
+
+
+**Before peeking**
+
+```text
+1200.0 RPM
+Stored in rpmQueue
+```
+
+The value is copied into `measuredRPM`.
+
+```text
+measuredRPM
+1200.0
+
+rpmQueue
+1200.0
+Still stored
+```
+
+The controller can peek again and read the same value until another measurement overwrites it.
+
+This is suitable for our RPM queue because the control task wants to read the latest measurement without consuming it. The acquisition task can update the one-item queue using `xQueueOverwrite()`.
+
+## 2. What does the final parameter 0 mean?
+
+The function signatures are conceptually:
+
+```cpp
+xQueueReceive(queue, destination, ticksToWait);
+xQueuePeek(queue, destination, ticksToWait);
+```
+
+The third parameter specifies how long the calling task is willing to wait for the operation to succeed, expressed in FreeRTOS ticks.
+
+| Parameter | Meaning |
+|---|---|
+| `0` | Do not wait; try immediately |
+| `10` | Wait up to 10 ticks |
+| `portMAX_DELAY` | Wait indefinitely, subject to FreeRTOS configuration |
+
+For example:
+
+```cpp
+xQueueReceive(commandQueue, &cmd, 0);
+```
+
+If the queue is empty, the function returns immediately with `errQUEUE_EMPTY` (equivalent to `pdFALSE`). It does not pause the task to wait for a command.
+
+By comparison:
+
+```cpp
+xQueueReceive(commandQueue, &cmd, pdMS_TO_TICKS(100));
+```
+
+This allows the task to wait up to approximately 100 milliseconds for a command, depending on the tick period and scheduling.
+
+> **Important:** `0` does not mean zero bytes or zero queue capacity. It means zero ticks of waiting.
+
+## 3. Why use 0 in our motor-control example?
+
+The control task runs periodically, approximately every 100 ms. It can check for commands without blocking its control loop:
+
+```cpp
+MotorCommand cmd;
+
+while (xQueueReceive(commandQueue, &cmd, 0) == pdPASS) {
+    // Process every currently queued command
+}
+
+// Continue with RPM measurement and PID calculation.
+```
+
+This loop processes all commands currently waiting in the queue, then continues to the control calculation. If no commands are waiting, it exits immediately.
+
+For the RPM measurement:
+
+```cpp
+float measuredRPM;
+
+if (xQueuePeek(rpmQueue, &measuredRPM, 0) != pdPASS) {
+    // No RPM measurement is available yet.
+    // Handle this condition safely.
+}
+```
+
+This avoids blocking the control task while waiting for an RPM sample.
+
+One design consideration: if you want the control task to sleep until a command arrives, a blocking receive can be useful. But for a periodic PID controller, avoid waiting so long for commands or measurements that the control loop misses its intended timing.
+
+In short: **Receive = read and remove; Peek = read and keep; 0 = try immediately without waiting.**
+
