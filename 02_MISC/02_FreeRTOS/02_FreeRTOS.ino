@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define SIMULATION_MODE
+
 // ============================================================
 // 1. Hardware configuration
 // ============================================================
@@ -64,7 +66,26 @@ struct MotorStatus {
   bool running;
 };
 
-MotorStatus motorStatus = {120.0f, 0.0f, 0.0f, false};
+MotorStatus motorStatus = { 120.0f, 0.0f, 0.0f, false };
+
+#ifdef SIMULATION_MODE
+// Initial PI gains: illustrative only.
+float Kp = 3.5f;
+float Ki = 0.6f;
+float Kd = 0.0f;
+
+SemaphoreHandle_t controllerMutex = nullptr;
+
+struct ControllerState {
+  float kState;
+  float iState;
+  float dstate;
+};
+
+ControllerState controllerState = { 0.0f, 0.0f, 0.0f };
+#endif
+
+
 
 // ============================================================
 // 3. Encoder interrupt
@@ -109,8 +130,7 @@ void acquisitionTask(void *parameter) {
   for (;;) {
     vTaskDelayUntil(
       &lastWake,
-      pdMS_TO_TICKS(SAMPLE_PERIOD_MS)
-    );
+      pdMS_TO_TICKS(SAMPLE_PERIOD_MS));
 
     uint32_t pulses;
 
@@ -120,8 +140,7 @@ void acquisitionTask(void *parameter) {
     portEXIT_CRITICAL(&encoderMux);
 
     float rpm =
-      (pulses / PULSES_PER_REV) *
-      (60.0f / SAMPLE_TIME_S);
+      (pulses / PULSES_PER_REV) * (60.0f / SAMPLE_TIME_S);
 
     // A length-one queue stores the newest measurement.
     xQueueOverwrite(rpmQueue, &rpm);
@@ -140,19 +159,22 @@ void controlTask(void *parameter) {
   float integral = 0.0f;
   float previousError = 0.0f;
   float output = 0.0f;
-
+#ifdef SIMULATION_MODE
+  float myMeasuredRPM = 0.0f;
+#endif
   bool running = false;
 
+#ifndef SIMULATION_MODE
   // Initial PI gains: illustrative only.
-  float Kp = 0.5f;
-  float Ki = 0.2f;
+  float Kp = 3.5f;
+  float Ki = 0.6f;
   float Kd = 0.0f;
+#endif
 
   for (;;) {
     vTaskDelayUntil(
       &lastWake,
-      pdMS_TO_TICKS(SAMPLE_PERIOD_MS)
-    );
+      pdMS_TO_TICKS(SAMPLE_PERIOD_MS));
 
     // Process any pending user commands.
     MotorCommand cmd;
@@ -190,7 +212,21 @@ void controlTask(void *parameter) {
     // Read the latest available RPM measurement.
     xQueuePeek(rpmQueue, &measuredRPM, 0);
 
+
+
     if (running) {
+
+#ifdef SIMULATION_MODE
+      float plantOutput = (float)(output * MAX_RPM) / PWM_MAX;
+      float stepChangeRPM = constrain(plantOutput - myMeasuredRPM, -5.0f, 5.0f);
+
+      //float stepChangeRPM = constrain(targetRPM - myMeasuredRPM, -2.0f, 2.0f);
+
+      myMeasuredRPM += stepChangeRPM;
+
+      measuredRPM = myMeasuredRPM + random(-3, 3);
+#endif
+
       float error = targetRPM - measuredRPM;
 
       float derivative =
@@ -201,28 +237,39 @@ void controlTask(void *parameter) {
         integral + error * SAMPLE_TIME_S;
 
       float candidateOutput =
-        Kp * error +
-        Ki * candidateIntegral +
-        Kd * derivative;
+        Kp * error + Ki * candidateIntegral + Kd * derivative;
 
+#ifdef SIMULATION_MODE
+      integral = candidateIntegral;
+#else
       // Limit the controller output to the PWM range.
       // Conditional integration reduces integral windup.
-      if ((candidateOutput >= 0.0f &&
-           candidateOutput <= PWM_MAX) ||
-          (candidateOutput < 0.0f && error < 0.0f) ||
-          (candidateOutput > PWM_MAX && error > 0.0f)) {
+      if ((candidateOutput >= 0.0f && candidateOutput <= PWM_MAX) || (candidateOutput < 0.0f && error < 0.0f) || (candidateOutput > PWM_MAX && error > 0.0f)) {
         integral = candidateIntegral;
       }
-
+#endif
       output =
-        Kp * error +
-        Ki * integral +
-        Kd * derivative;
+        Kp * error + Ki * integral + Kd * derivative;
 
       output = constrain(output, 0.0f, (float)PWM_MAX);
 
       setMotorPWM((int)output);
       previousError = error;
+
+#ifdef SIMULATION_MODE
+      if (xSemaphoreTake(
+            controllerMutex, pdMS_TO_TICKS(5))
+          == pdTRUE) {
+
+        controllerState.kState = error;
+        controllerState.iState = integral;
+        controllerState.dstate = derivative;
+
+
+        xSemaphoreGive(controllerMutex);
+      }
+#endif
+
     } else {
       output = 0.0f;
       setMotorPWM(0);
@@ -230,7 +277,8 @@ void controlTask(void *parameter) {
 
     // Publish a consistent snapshot for reporting.
     if (xSemaphoreTake(
-          statusMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+          statusMutex, pdMS_TO_TICKS(5))
+        == pdTRUE) {
 
       motorStatus.targetRPM = targetRPM;
       motorStatus.measuredRPM = measuredRPM;
@@ -273,17 +321,17 @@ void serialTask(void *parameter) {
 
         // Parse complete commands only.
         if (strcmp(line, "START") == 0) {
-          MotorCommand cmd = {CMD_START, 0.0f};
+          MotorCommand cmd = { CMD_START, 0.0f };
           xQueueSend(commandQueue, &cmd, 0);
           Serial.println("Start requested");
 
         } else if (strcmp(line, "STOP") == 0) {
-          MotorCommand cmd = {CMD_STOP, 0.0f};
+          MotorCommand cmd = { CMD_STOP, 0.0f };
           xQueueSend(commandQueue, &cmd, 0);
           Serial.println("Stop requested");
 
         } else if (strcmp(line, "STATUS") == 0) {
-          MotorCommand cmd = {CMD_STATUS, 0.0f};
+          MotorCommand cmd = { CMD_STATUS, 0.0f };
           xQueueSend(commandQueue, &cmd, 0);
 
           Serial.println("Status is reported periodically.");
@@ -295,13 +343,9 @@ void serialTask(void *parameter) {
           char *endPtr = nullptr;
           float value = strtof(line + 4, &endPtr);
 
-          if (endPtr != line + 4 &&
-              *endPtr == '\0' &&
-              isfinite(value) &&
-              value >= 0.0f &&
-              value <= MAX_RPM) {
+          if (endPtr != line + 4 && *endPtr == '\0' && isfinite(value) && value >= 0.0f && value <= MAX_RPM) {
 
-            MotorCommand cmd = {CMD_SET_RPM, value};
+            MotorCommand cmd = { CMD_SET_RPM, value };
 
             if (xQueueSend(commandQueue, &cmd, 0) == pdPASS) {
               Serial.printf("Target requested: %.1f RPM\n", value);
@@ -311,7 +355,35 @@ void serialTask(void *parameter) {
           } else {
             Serial.println("Invalid RPM. Use SET 0 to SET 500.");
           }
+#ifdef SIMULATION_MODE
+        } else if (strncmp(line, "P ", 2) == 0) {
 
+          char *endPtr = nullptr;
+          float value = strtof(line + 2, &endPtr);
+
+          if (endPtr != line + 2 && *endPtr == '\0' && isfinite(value) && value >= 0.0f && value <= 10) {
+            Kp = value;
+          }
+
+        } else if (strncmp(line, "I ", 2) == 0) {
+
+          char *endPtr = nullptr;
+          float value = strtof(line + 2, &endPtr);
+
+          if (endPtr != line + 2 && *endPtr == '\0' && isfinite(value) && value >= 0.0f && value <= 10) {
+            Ki = value;
+          }
+
+        } else if (strncmp(line, "D ", 2) == 0) {
+
+          char *endPtr = nullptr;
+          float value = strtof(line + 2, &endPtr);
+
+          if (endPtr != line + 2 && *endPtr == '\0' && isfinite(value) && value >= 0.0f && value <= 10) {
+            Kd = value;
+          }
+
+#endif
         } else if (line[0] != '\0') {
           Serial.println("Unknown command. Type HELP.");
         }
@@ -340,7 +412,8 @@ void reportTask(void *parameter) {
     bool valid = false;
 
     if (xSemaphoreTake(
-          statusMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+          statusMutex, pdMS_TO_TICKS(10))
+        == pdTRUE) {
 
       snapshot = motorStatus;
       valid = true;
@@ -348,14 +421,33 @@ void reportTask(void *parameter) {
       xSemaphoreGive(statusMutex);
     }
 
+#ifdef SIMULATION_MODE
+    ControllerState tempState;
+    if (xSemaphoreTake(
+          controllerMutex, pdMS_TO_TICKS(5))
+        == pdTRUE) {
+      tempState = controllerState;
+      xSemaphoreGive(controllerMutex);
+    }
+#endif
+
     if (valid) {
+
+#ifdef SIMULATION_MODE
+      Serial.printf("Kp:%0.1f Ki:%0.1f Kd:%0.1f ", Kp, Ki, Kd);
+
+      Serial.printf(" err:%.1f int:%.1f der:%.1f ",
+                    tempState.kState, tempState.iState, tempState.dstate);
+
+
+#endif
+
       Serial.printf(
         "State:%s Target:%.1f RPM Measured:%.1f RPM PWM:%.1f%%\n",
         snapshot.running ? "RUN" : "STOP",
         snapshot.targetRPM,
         snapshot.measuredRPM,
-        100.0f * snapshot.outputPWM / PWM_MAX
-      );
+        100.0f * snapshot.outputPWM / PWM_MAX);
     }
 
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -378,8 +470,7 @@ void setup() {
   attachInterrupt(
     digitalPinToInterrupt(ENCODER_PIN),
     encoderISR,
-    RISING
-  );
+    RISING);
 
   stopMotor();
 
@@ -398,9 +489,15 @@ void setup() {
   commandQueue = xQueueCreate(8, sizeof(MotorCommand));
   statusMutex = xSemaphoreCreateMutex();
 
-  if (rpmQueue == nullptr ||
-      commandQueue == nullptr ||
-      statusMutex == nullptr) {
+#ifdef SIMULATION_MODE
+  controllerMutex = xSemaphoreCreateMutex();
+#endif
+
+  if (rpmQueue == nullptr || commandQueue == nullptr || statusMutex == nullptr
+#ifdef SIMULATION_MODE
+      || controllerMutex == nullptr
+#endif
+  ) {
     Serial.println("FreeRTOS resource allocation failed");
     stopMotor();
     while (true) {
@@ -415,26 +512,22 @@ void setup() {
 
   result = xTaskCreatePinnedToCore(
     acquisitionTask, "Acquire", 3072, nullptr, 4,
-    &acquisitionHandle, 1
-  );
+    &acquisitionHandle, 1);
   configASSERT(result == pdPASS);
 
   result = xTaskCreatePinnedToCore(
     controlTask, "PIDControl", 4096, nullptr, 5,
-    &controlHandle, 1
-  );
+    &controlHandle, 1);
   configASSERT(result == pdPASS);
 
   result = xTaskCreatePinnedToCore(
     serialTask, "SerialUI", 4096, nullptr, 2,
-    &serialHandle, 0
-  );
+    &serialHandle, 0);
   configASSERT(result == pdPASS);
 
   result = xTaskCreatePinnedToCore(
     reportTask, "Reporting", 3072, nullptr, 1,
-    &reportHandle, 0
-  );
+    &reportHandle, 0);
   configASSERT(result == pdPASS);
 
   Serial.println("ESP32-S3 FreeRTOS motor controller ready.");
