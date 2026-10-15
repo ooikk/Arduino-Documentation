@@ -1038,3 +1038,348 @@ For this DC motor application, the main lessons are:
 6. Measure actual timing, monitor task health and define safe behavior for faults.
 
 Once these concepts are understood, the same architecture can be adapted to ESP32-S3 applications involving sensor acquisition, display updates, data logging, wireless communications and other real-time embedded systems.
+
+---
+
+# How to determine task stack size and use task handles
+
+In your example, two parameters deserve special attention:
+
+```cpp
+xTaskCreatePinnedToCore(
+    controlTask,       // Task function
+    "MotorControl",    // Debugging name
+    4096,              // Stack size in bytes in ESP-IDF
+    nullptr,           // Parameter passed to the task
+    5,                 // Priority
+    &controlHandle,    // Receives the task handle
+    1                  // Core ID
+);
+```
+
+- **Stack size (`4096`)** determines how much memory is allocated for the task's execution stack.
+- **Task handle (`&controlHandle`)** lets the application refer to that specific task later, for example, to notify it, suspend it, or query its state.
+
+These parameters serve different purposes. The stack determines how much memory the task can use for execution; the handle provides a way to identify and interact with the task.
+
+## 1. What is a task stack?
+
+Each FreeRTOS task has its own stack, which stores temporary information needed while the task executes.
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b8622e8f-0261-4373-aadb-cded95f257b9" />
+
+- **MotorControl task**: Task function, priority 5, pinned to core 1. Uses its own stack during execution.
+- **Task stack**: 4096 bytes allocated.
+- **Local data**: Variables such as `error`, `integral` and `output` declared inside `controlTask()`.
+- **Call frames**: Return addresses, saved registers and information needed by called functions.
+- **Other use**: Compiler-generated temporary storage, nested calls and other execution overhead.
+
+The stack is separate from:
+
+- The task's heap-allocated task control block (TCB).
+- Queues, semaphores and mutexes allocated by FreeRTOS.
+- Global and static variables.
+- Large buffers explicitly allocated using `malloc()`, `new` or other heap-allocation APIs.
+
+These distinctions matter when diagnosing memory problems. Increasing the task stack does not automatically increase the memory available to queues or other heap allocations.
+
+### A simple example
+
+```cpp
+void exampleTask(void *parameter) {
+  int count = 0;            // Local variable
+  float error = 0.0f;       // Local variable
+
+  for (;;) {
+    count++;
+    error += 0.1f;
+    vTaskDelay(pdMS_TO_TICKS(100));
+  }
+}
+```
+
+The local variables normally occupy stack space, although compiler optimization can change where and how they are stored. The stack must also accommodate function calls and other execution overhead.
+
+By contrast:
+
+```cpp
+int globalCount = 0;
+
+void exampleTask(void *parameter) {
+  static float total = 0.0f;
+  // ...
+}
+```
+
+`globalCount` and `total` have static storage duration and do not consume stack space for each iteration. However, functions called from the task may still consume stack space.
+
+## 2. How do you determine the correct stack size?
+
+There is no universal formula such as “allocate 1 KB for every task.” Stack requirements depend on the task's code, compiler optimizations, called functions, local variables and the deepest possible call chain.
+
+The recommended approach is to estimate, measure, stress-test and retain a safety margin.
+
+### Step 1 — Estimate the task's complexity
+
+Start by reviewing the task's code.
+
+| Task type | Initial consideration |
+|---|---|
+| Simple periodic counter or GPIO task | Usually modest stack needs |
+| Sensor acquisition and calculations | Allow for driver calls and local buffers |
+| PID motor-control task | Include control calculations, command processing and library calls |
+| Serial command parser | Account for parsing functions, formatting and buffers |
+| Network, JSON or TLS task | Potentially much higher requirements; measure carefully |
+
+These are qualitative categories, not prescribed stack sizes. Even a short task can require a large stack if it calls deeply nested library functions.
+
+For the motor controller, consider this code:
+
+```cpp
+void controlTask(void *parameter) {
+  float error = 0.0f;
+  float integral = 0.0f;
+  float previousError = 0.0f;
+  float output = 0.0f;
+
+  for (;;) {
+    // Read measurements.
+    // Process commands.
+    // Calculate PID output.
+    // Update motor PWM.
+  }
+}
+```
+
+Four floating-point variables require only a small amount of storage. But that does not mean the complete task needs only 16 bytes. Function-call overhead, saved registers, compiler-generated temporaries and the maximum call depth also contribute.
+
+### Step 2 — Start with a reasonable allocation
+
+For your ESP32-S3 Arduino-ESP32 Core 3.3.x project, you might begin with these experimental starting allocations, then verify them using runtime measurements.
+
+| Task | Example starting stack | Reason |
+|---|---:|---|
+| Encoder acquisition | 3072 bytes | Small calculations and queue operations |
+| Motor PID control | 4096 bytes | Control logic, command processing and library calls |
+| Serial interface | 4096 bytes | Parsing and serial-related calls |
+| Status reporting | 3072 bytes | Formatting and printing diagnostic data |
+
+These are starting values, not guaranteed minimums or final recommendations. In particular, serial printing and library calls can have non-obvious stack requirements.
+
+The stack sizes shown are the values passed to `xTaskCreatePinnedToCore()` in the ESP-IDF FreeRTOS implementation used by Arduino-ESP32.
+
+### Step 3 — Measure the stack actually used
+
+FreeRTOS provides a useful function:
+
+```cpp
+uxTaskGetStackHighWaterMark(taskHandle);
+```
+
+It reports the minimum amount of stack space that has remained unused since the task started. This is commonly called the **stack high-water mark**.
+
+In ESP-IDF's FreeRTOS implementation, the returned measurement is in bytes, unlike conventional upstream FreeRTOS implementations where the unit is typically `StackType_t` words.
+
+For example, suppose a task is allocated 4096 bytes and its high-water mark is 1400 bytes.
+
+- **Allocated stack:** 4096 B
+- **Peak-used estimate:** 2696 B
+- **Minimum unused:** 1400 B
+
+Illustrative calculation: `4096 − 1400 = 2696` bytes. The high-water mark estimates the smallest unused stack observed, not the exact instantaneous usage.
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/5fb202e5-4f64-4482-909e-41555c6a619f" />
+
+
+This measurement is much more useful than guessing based only on the number of local variables.
+
+### Step 4 — Add stack monitoring to your application
+
+Because you already have task handles in your motor-control program, you can use them to monitor the stacks without changing the task functions.
+
+Add a diagnostic function:
+
+```cpp
+void printStackUsage(
+    const char *name,
+    TaskHandle_t handle,
+    uint32_t allocatedBytes) {
+
+  if (handle == nullptr) {
+    Serial.printf("%s: task handle unavailable\n", name);
+    return;
+  }
+
+  UBaseType_t unusedBytes =
+      uxTaskGetStackHighWaterMark(handle);
+
+  uint32_t peakUsedBytes =
+      allocatedBytes - unusedBytes;
+
+  Serial.printf(
+      "%s: allocated=%lu B, minimum free=%u B, "
+      "peak-used estimate=%lu B\n",
+      name,
+      (unsigned long)allocatedBytes,
+      (unsigned int)unusedBytes,
+      (unsigned long)peakUsedBytes
+  );
+}
+```
+
+Then call it periodically from a diagnostic task, or temporarily from your reporting task:
+
+```cpp
+printStackUsage("Acquire", acquisitionHandle, 3072);
+printStackUsage("PIDControl", controlHandle, 4096);
+printStackUsage("SerialUI", serialHandle, 4096);
+printStackUsage("Reporting", reportHandle, 3072);
+```
+
+Run the program and exercise all important paths:
+
+- Start and stop the motor repeatedly.
+- Change the target speed.
+- Enter invalid and unusually long serial commands.
+- Exercise error-handling and diagnostic paths.
+- Test under realistic Wi-Fi or other peripheral activity if enabled.
+
+The high-water mark records the lowest unused stack space observed since task creation. If an execution path has not yet been exercised, the measurement cannot guarantee that the stack will be sufficient for that path.
+
+> **Important:** Do not interpret a large unused-stack measurement as proof that the stack can safely be reduced by the entire amount. Preserve a margin for untested paths, compiler changes and future modifications.
+
+### Step 5 — Choose a safety margin
+
+A practical engineering method is to compare the measured minimum unused stack against a margin you choose for the task's risk and complexity.
+
+For example:
+
+- **Allocated stack:** 4096 bytes.
+- **Minimum unused stack observed during testing:** 1400 bytes.
+- **Peak-used estimate:** 2696 bytes.
+
+You could retain 4096 bytes while developing the application. If repeated stress testing shows substantial unused space, you may investigate a smaller allocation. Before reducing it, test the revised allocation across all execution paths and confirm that the remaining free stack still meets your margin.
+
+For complex tasks involving TLS, JSON parsing or deeply nested library calls, a more conservative allocation and more extensive stress testing are appropriate.
+
+A zero or very small high-water mark is a warning, not a desirable target. Enable the available FreeRTOS stack-overflow checking options in your ESP-IDF/Arduino configuration as an additional safeguard. These checks complement high-water monitoring; they do not replace it.
+
+## 3. What is the purpose of a task handle?
+
+A task handle is a reference to a particular FreeRTOS task. It allows other parts of the program to identify that task and request operations on it.
+
+In your example:
+
+```cpp
+TaskHandle_t controlHandle = nullptr;
+```
+
+This declares a variable capable of holding a FreeRTOS task handle. Initially, it is `nullptr` because the task has not yet been created.
+
+When you call:
+
+```cpp
+xTaskCreatePinnedToCore(
+    controlTask,
+    "MotorControl",
+    4096,
+    nullptr,
+    5,
+    &controlHandle,
+    1
+);
+```
+
+FreeRTOS creates the task and writes its handle into `controlHandle`.
+
+The `&` operator is important: it passes the address of the handle variable, allowing the task-creation function to store the resulting handle there.
+
+- **Your application:** `TaskHandle_t controlHandle = nullptr;`
+- **Task creation:** `&controlHandle` passes the variable's address
+- **FreeRTOS:** Creates the task and returns its handle
+- **`controlHandle`:** Now identifies the MotorControl task
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/120900e8-6f3c-4664-b672-23a97a440762" />
+
+
+The handle is not the task's stack, its priority or its core ID. It is an identifier/reference that FreeRTOS APIs can use to operate on the task.
+
+### 3.1 What can you do with a task handle?
+
+| Operation | Example API | Purpose |
+|---|---|---|
+| Notify a task | `xTaskNotifyGive()` | Wake a task waiting for a notification |
+| Query stack usage | `uxTaskGetStackHighWaterMark()` | Measure the minimum unused stack |
+| Query task state | `eTaskGetState()` | Inspect whether a task is ready, blocked, running or suspended |
+| Change priority | `vTaskPrioritySet()` | Adjust the task's scheduling priority |
+| Suspend a task | `vTaskSuspend()` | Temporarily prevent it from running |
+| Resume a task | `vTaskResume()` | Allow a suspended task to run again |
+| Delete a task | `vTaskDelete()` | Remove a task from scheduling |
+
+These operations should be used deliberately. For example, suspending the motor-control task without first ensuring a safe motor output could leave the driver in an unintended state.
+
+### 3.2 Example: notifying the motor-control task
+
+Suppose the acquisition task wants to tell the control task that a new measurement is available.
+
+The acquisition task can use:
+
+```cpp
+xTaskNotifyGive(controlHandle);
+```
+
+The control task can wait for that event:
+
+```cpp
+ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+```
+
+When notified, the control task resumes from the notification wait.
+
+In this example, `controlHandle` lets the acquisition task identify exactly which task to notify.
+
+The existing motor-control application uses a queue for measurements and a periodic controller. If you switch to task notifications, design the timing carefully so that the controller still meets its required control period.
+
+### 3.3 Example: checking the task state
+
+```cpp
+if (controlHandle != nullptr) {
+  eTaskState state = eTaskGetState(controlHandle);
+
+  Serial.printf("Motor-control task state: %d\n",
+                (int)state);
+}
+```
+
+This can help during debugging, but the state is only a snapshot. A task may change state immediately after the query. It should not be used as a substitute for synchronization.
+
+### 3.4 Is a task handle always required?
+
+No. If a task is created and never needs to be referenced by another part of the application, you can pass `nullptr` in the handle parameter:
+
+```cpp
+xTaskCreatePinnedToCore(
+    reportTask,
+    "Reporting",
+    3072,
+    nullptr,
+    1,
+    nullptr,  // Do not retain a task handle
+    0
+);
+```
+
+The task still executes normally. You simply do not retain a handle for later operations.
+
+For your motor controller, retaining handles is useful because you want to monitor stack usage, inspect task states and potentially notify tasks during future extensions.
+
+## 4. How do stack size and task handles work together?
+
+The two concepts complement one another.
+
+- **Stack size: memory allocation** — Determines the memory available for that task's execution stack. An insufficient allocation can cause stack overflow and unpredictable behavior.
+- **Task handle: task reference** — Lets the application query or control the task and obtain diagnostic information, including its observed minimum unused stack.
+
+For your ESP32-S3 project, I recommend retaining the four task handles and adding stack high-water-mark monitoring to the reporting task. That gives you an evidence-based way to assess whether the initial allocations are appropriate before optimizing memory usage.
+
+One final distinction: a task's stack allocation is not the same as the task's total memory consumption. The task control block and other FreeRTOS objects also consume heap memory, so a complete memory assessment should examine both stack headroom and overall heap availability.
