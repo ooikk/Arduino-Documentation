@@ -1690,7 +1690,7 @@ The second argument specifies the size of each item in bytes.
 | `xQueueCreate(1, sizeof(float))` | 1 | `sizeof(float)` bytes, typically 4 |
 | `xQueueCreate(8, sizeof(MotorCommand))` | 8 | `sizeof(MotorCommand)` bytes per structure |
 
-For example, if `sizeof(MotorCommand)` is 8 bytes on your build, the queue's item storage requires approximately \(8 \times 8 = 64\) bytes, excluding queue-management overhead and other allocation overhead.
+For example, if `sizeof(MotorCommand)` is 8 bytes on your build, the queue's item storage requires approximately `8 x 8 = 64` bytes, excluding queue-management overhead and other allocation overhead.
 
 > **Important:** FreeRTOS queues copy items into their own storage. They do not automatically store pointers to your original variables.
 
