@@ -1860,3 +1860,287 @@ One design consideration: if you want the control task to sleep until a command 
 
 In short: **Receive = read and remove; Peek = read and keep; 0 = try immediately without waiting.**
 
+---
+
+# Declaration of `acquisitionTask()` and `controlTask()`
+
+In your ESP32-S3 FreeRTOS motor-control example, both `acquisitionTask()` and `controlTask()` follow the same basic scheduling pattern: initialize a timing reference, enter an infinite loop, and execute periodically.
+
+The important difference is what each task does after waking up:
+
+- `acquisitionTask()` measures the motor's speed and publishes the RPM measurement to a queue.
+- `controlTask()` reads the measurement, processes motor commands, calculates the PID/PI output, and adjusts the motor's PWM.
+
+Let's examine the common structure first, then the timing and `*parameter` syntax.
+
+## 1. Understand the overall structure
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/6cb0d39a-6353-4b41-87f4-de4d53cdae36" />
+
+
+- **Task starts**: FreeRTOS creates the task and calls its function.
+- **Initialize timing reference**: `lastWake = xTaskGetTickCount()`
+- **Infinite loop: `for (;;)`**: Wait until the next scheduled execution time.
+- **`vTaskDelayUntil(...)`**
+- **Acquisition task**: Read encoder pulses → calculate RPM → update `rpmQueue`
+- **Control task**: Read commands/RPM → calculate control output → update PWM
+
+After the work is complete, each task returns to the loop and waits for its next scheduled execution.
+
+## 2. What does void *parameter mean?
+
+Consider the function declaration:
+
+```cpp
+void acquisitionTask(void *parameter)
+```
+
+Break it into three parts:
+
+| Part | Meaning |
+|---|---|
+| `void` | The function returns no value. |
+| `*parameter` | `parameter` is a pointer to an object whose type is not specified here. |
+| `acquisitionTask` | The name of the task function. |
+
+The `*` means **pointer**, not multiplication.
+
+A pointer holds an address in memory. The `void *` type is a generic pointer, so it can point to different kinds of objects. The function can interpret that pointer as a particular type if needed.
+
+FreeRTOS expects task functions to follow this form:
+
+```cpp
+void taskFunction(void *parameter)
+```
+
+When you create a task, you can pass it an optional parameter:
+
+```cpp
+xTaskCreatePinnedToCore(
+  acquisitionTask,  // Task function
+  "Acquisition",   // Task name
+  3072,            // Stack size in bytes in ESP-IDF-based Arduino-ESP32
+  nullptr,         // Parameter passed to the task
+  4,               // Priority
+  nullptr,         // Optional task handle
+  1                // Core 1
+);
+```
+
+Here, `nullptr` means you are not passing any parameter. The task function still declares `void *parameter` because that is the required task-function signature.
+
+You could pass a parameter instead, for example:
+
+```cpp
+int sensorPin = 16;
+
+xTaskCreatePinnedToCore(
+  acquisitionTask,
+  "Acquisition",
+  3072,
+  &sensorPin,  // Pass the address of sensorPin
+  4,
+  nullptr,
+  1
+);
+```
+
+Then retrieve it inside the task:
+
+```cpp
+void acquisitionTask(void *parameter) {
+  int pin = *(int *)parameter;
+
+  // Use pin, for example, to identify the encoder input.
+}
+```
+
+In this example, `parameter` receives the address of `sensorPin`; `(int *)parameter` treats it as a pointer to an integer; and `*` dereferences the pointer to read the integer value.
+
+> **Important:** If you pass a pointer to a local variable, ensure that the variable remains alive for as long as the task uses it. Passing a pointer to a local variable that goes out of scope can cause invalid memory access.
+
+In your existing motor-control code, the parameter is unused, so passing `nullptr` is appropriate.
+
+## 3. What is TickType_t lastWake = xTaskGetTickCount();?
+
+```cpp
+TickType_t lastWake = xTaskGetTickCount();
+```
+
+This line records the current FreeRTOS tick count when the task begins running.
+
+- **`TickType_t`**: A FreeRTOS data type used to represent the RTOS tick counter.
+- **`lastWake`**: A variable that stores a tick-count value.
+- **`xTaskGetTickCount()`**: Returns the current tick count.
+- **`=`**: Stores that returned value in `lastWake`.
+
+The tick counter advances periodically as part of FreeRTOS scheduling. Its frequency depends on the configured RTOS tick rate.
+
+For example, suppose the RTOS tick rate is 1000 Hz, meaning one tick is 1 millisecond. If the task starts when the tick count is 50,000:
+
+```cpp
+TickType_t lastWake = 50000;
+```
+
+This is an illustrative value; the actual tick count depends on when the ESP32 started and the configured tick rate.
+
+Why record this value? Because FreeRTOS needs a reference point to calculate when the task should next wake up.
+
+## 4. What does vTaskDelayUntil() do?
+
+Your code is:
+
+```cpp
+vTaskDelayUntil(
+  &lastWake,
+  pdMS_TO_TICKS(SAMPLE_PERIOD_MS)
+);
+```
+
+This tells FreeRTOS to schedule the task to resume at a regular interval based on the previous scheduled wake time.
+
+Let's break it down.
+
+| Expression | Meaning |
+|---|---|
+| `vTaskDelayUntil()` | Delays a task until its next scheduled wake time. |
+| `&lastWake` | Passes the address of `lastWake`, allowing FreeRTOS to update the timing reference. |
+| `SAMPLE_PERIOD_MS` | Your desired interval, expressed in milliseconds. |
+| `pdMS_TO_TICKS(...)` | Converts that millisecond interval into RTOS ticks. |
+
+The `&` operator means **address of**. FreeRTOS needs the address because it updates `lastWake` so that subsequent calls can schedule future periods consistently.
+
+For example, if:
+
+```cpp
+#define SAMPLE_PERIOD_MS 100
+```
+
+then:
+
+```cpp
+pdMS_TO_TICKS(SAMPLE_PERIOD_MS)
+```
+
+converts 100 milliseconds into the corresponding number of FreeRTOS ticks. At a 1000 Hz tick rate, this is 100 ticks.
+
+## 5. Why use vTaskDelayUntil() instead of vTaskDelay()?
+
+This is an important distinction for motor control.
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/91e3fd20-1b65-4cc8-b1dc-574818b6c8bb" />
+
+### Relative delay: vTaskDelay()
+
+The delay starts after the task reaches the delay call. Any time spent doing work is added to the interval between executions.
+
+**Illustrative example — 100 ms delay, 20 ms of work**
+
+```text
+Work 20 ms
+Delay 100 ms
+Total interval between starts ≈ 120 ms.
+```
+
+### Periodic delay: vTaskDelayUntil()
+
+The next wake time is calculated from the previous scheduled wake time, keeping the intended period stable when the work finishes within the period.
+
+**Illustrative example — 100 ms period, 20 ms of work**
+
+```text
+Work 20 ms
+Wait 80 ms
+Total interval between scheduled starts ≈ 100 ms.
+```
+
+For a periodic acquisition task or PID controller, `vTaskDelayUntil()` is usually more suitable because you want a regular sampling/control interval, rather than waiting a fixed time after every calculation.
+
+## 6. Step-by-step timing example
+
+Assume `SAMPLE_PERIOD_MS` is 100 ms and the task starts at tick 50,000, with a 1000 Hz tick rate.
+
+### 50,000 — Tick
+
+**Step 1 — Initialize**
+
+```cpp
+lastWake = xTaskGetTickCount();
+```
+
+The initial timing reference is 50,000.
+
+### 50,100 — Tick
+
+**Step 2 — First scheduled wake**
+
+```cpp
+vTaskDelayUntil(&lastWake, 100);
+```
+
+The task waits until its first scheduled wake time, then performs its work.
+
+### 50,200 — Tick
+
+**Step 3 — Next scheduled wake**
+
+At the next loop iteration, `lastWake` has been advanced to the previous scheduled wake time. The next target is 50,200, not 50,100 plus however long the calculations took.
+
+This is the intended schedule, assuming the task is not delayed by higher-priority tasks or other scheduling constraints.
+
+## 7. Why are the two tasks structured similarly?
+
+Your acquisition task begins:
+
+```cpp
+void acquisitionTask(void *parameter) {
+  TickType_t lastWake = xTaskGetTickCount();
+
+  for (;;) {
+    vTaskDelayUntil(
+      &lastWake,
+      pdMS_TO_TICKS(SAMPLE_PERIOD_MS)
+    );
+
+    // Measure encoder pulses and calculate RPM.
+  }
+}
+```
+
+Your control task begins:
+
+```cpp
+void controlTask(void *parameter) {
+  TickType_t lastWake = xTaskGetTickCount();
+
+  float targetRPM = 120.0f;
+  float measuredRPM = 0.0f;
+  float integral = 0.0f;
+  float previousError = 0.0f;
+  float output = 0.0f;
+
+  bool running = false;
+
+  float Kp = 0.5f;
+  float Ki = 0.2f;
+  float Kd = 0.0f;
+
+  for (;;) {
+    vTaskDelayUntil(
+      &lastWake,
+      pdMS_TO_TICKS(SAMPLE_PERIOD_MS)
+    );
+
+    // Read commands and RPM; calculate control output.
+  }
+}
+```
+
+Notice two important details:
+
+- **Each task has its own `lastWake`.** Each task maintains its own independent periodic schedule, even if both use the same sample period.
+- **The control variables are initialized before the loop.** For example, `integral` and `previousError` retain their values between iterations. This is essential for the integral and derivative calculations in a PID controller. If they were declared and initialized inside the loop, their values would be reset each iteration.
+
+One timing caveat: `vTaskDelayUntil()` does not guarantee that the task will always execute exactly on time. If the task takes longer than the intended period, or another task prevents it from running, it may wake late or find that its next scheduled wake time has already passed. It does not automatically skip all missed control cycles. Real motor-control applications should monitor execution time and ensure the control loop can meet its deadline.
+
+In summary: `lastWake` remembers the timing reference, `xTaskGetTickCount()` reads the current RTOS time, `pdMS_TO_TICKS()` converts your interval, and `vTaskDelayUntil()` schedules the next periodic execution.
