@@ -1383,3 +1383,241 @@ The two concepts complement one another.
 For your ESP32-S3 project, I recommend retaining the four task handles and adding stack high-water-mark monitoring to the reporting task. That gives you an evidence-based way to assess whether the initial allocations are appropriate before optimizing memory usage.
 
 One final distinction: a task's stack allocation is not the same as the task's total memory consumption. The task control block and other FreeRTOS objects also consume heap memory, so a complete memory assessment should examine both stack headroom and overall heap availability.
+
+# `SemaphoreHandle_t`: `statusMutex`
+
+A mutex is not automatically tied to a variable or structure. It protects shared data only when the tasks accessing that data follow the same locking protocol.
+
+Let's use your `motorStatus` example to explain how it works.
+
+## 1. How is statusMutex connected to motorStatus?
+
+Your declaration:
+
+```cpp
+SemaphoreHandle_t statusMutex = nullptr;
+```
+
+creates a handle variable, initially set to `nullptr`. It does not create the mutex itself, nor does it reference `motorStatus`.
+
+In `setup()`, you create the actual mutex:
+
+```cpp
+statusMutex = xSemaphoreCreateMutex();
+```
+
+This creates a FreeRTOS mutex and stores its handle in `statusMutex`.
+
+Separately, you declare your shared structure:
+
+```cpp
+struct MotorStatus {
+  float targetRPM;
+  float measuredRPM;
+  float outputPWM;
+  bool running;
+};
+
+MotorStatus motorStatus = {120.0f, 0.0f, 0.0f, false};
+```
+
+There is no direct association between these two objects. The association is established by your code: every task that reads or modifies `motorStatus` must use `statusMutex` appropriately.
+
+- **FreeRTOS mutex — `statusMutex`**: Controls exclusive access
+- **Shared data — `motorStatus`**: `targetRPM` · `measuredRPM` · `outputPWM` · `running`
+- **Logical association established by the programmer, not an automatic binding.**
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a8e97ea6-1f3e-4c41-8293-988d41ceb793" />
+
+
+## 2. Can you use one mutex for any shared data?
+
+Yes. You can use the same mutex to protect multiple shared variables or structures, provided that all accesses that need protection use that mutex.
+
+For example:
+
+```cpp
+float batteryVoltage;
+uint32_t errorCount;
+MotorStatus motorStatus;
+
+SemaphoreHandle_t statusMutex = nullptr;
+```
+
+You could protect all three with the same mutex:
+
+```cpp
+if (xSemaphoreTake(statusMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+  batteryVoltage = 12.1f;
+  errorCount++;
+  motorStatus.targetRPM = 200.0f;
+
+  xSemaphoreGive(statusMutex);
+}
+```
+
+Any other task accessing these shared objects must follow the same locking convention.
+
+However, this means a task accessing `batteryVoltage` must wait if another task is holding the mutex while updating `motorStatus`. Therefore, a single mutex is not always the best design.
+
+### When should you create a second mutex?
+
+| Situation | Recommended design |
+|---|---|
+| Several fields form one logical status snapshot | One mutex protecting the entire structure |
+| Two independent data structures have unrelated access patterns | Consider separate mutexes |
+| A resource is accessed by many tasks, such as an I²C peripheral | A dedicated mutex for that resource |
+| Data is transferred from one task to another | Consider a queue instead of a mutex |
+
+For example, if motor status and a display configuration are independent, you might use:
+
+```cpp
+SemaphoreHandle_t statusMutex = nullptr;
+SemaphoreHandle_t displayMutex = nullptr;
+```
+
+Initialize both in `setup()`:
+
+```cpp
+statusMutex = xSemaphoreCreateMutex();
+displayMutex = xSemaphoreCreateMutex();
+
+if (statusMutex == nullptr || displayMutex == nullptr) {
+  Serial.println("Mutex creation failed");
+  // Enter an appropriate safe error state.
+}
+```
+
+Now tasks accessing `motorStatus` use `statusMutex`, while tasks accessing shared display configuration use `displayMutex`.
+
+Do not create a separate mutex for every variable by default. Mutexes are most useful when they protect a meaningful shared resource or a group of related data.
+
+## 3. Why does motorStatus need a mutex?
+
+Consider these two operations from your code.
+
+The control task publishes the latest status:
+
+```cpp
+if (xSemaphoreTake(statusMutex, pdMS_TO_TICKS(5)) == pdTRUE) {
+  motorStatus.targetRPM = targetRPM;
+  motorStatus.measuredRPM = measuredRPM;
+  motorStatus.outputPWM = output;
+  motorStatus.running = running;
+
+  xSemaphoreGive(statusMutex);
+}
+```
+
+The reporting task reads a snapshot:
+
+```cpp
+if (xSemaphoreTake(statusMutex, pdMS_TO_TICKS(10)) == pdTRUE) {
+  snapshot = motorStatus;
+  valid = true;
+
+  xSemaphoreGive(statusMutex);
+}
+```
+
+The mutex ensures that the reporting task cannot copy the structure while the control task is halfway through updating it, assuming both tasks consistently use the same mutex.
+
+Without synchronization, the reporting task could observe a mixture of old and new values. For example, `targetRPM` might have been updated for a new command while `outputPWM` still reflects the previous control iteration.
+
+The mutex makes the group of field updates and the subsequent snapshot copy mutually exclusive.
+
+> **Important:** Both tasks must use the same mutex. Locking only the writer or only the reader does not provide the intended protection.
+>
+> Also, the lock must be released on every successful acquisition path. Never call `xSemaphoreGive()` if `xSemaphoreTake()` failed.
+
+## 4. Is the main difference between a mutex and a queue the data type?
+
+Not exactly. A queue can carry a single variable or a complete structure. The fundamental difference is their purpose.
+
+### Mutex: control access
+
+A mutex controls which task may enter a protected section at a time. It does not automatically store or transfer data.
+
+```cpp
+xSemaphoreTake(statusMutex, portMAX_DELAY);
+
+// Read or update shared data.
+
+xSemaphoreGive(statusMutex);
+```
+
+### Queue: transfer or buffer data
+
+A queue copies items into an RTOS-managed buffer and allows a receiving task to retrieve them later.
+
+```cpp
+QueueHandle_t rpmQueue;
+
+rpmQueue = xQueueCreate(1, sizeof(float));
+
+float rpm = 120.0f;
+xQueueOverwrite(rpmQueue, &rpm);
+```
+
+Here is a comparison using your motor-control application:
+
+| Feature | Mutex | Queue |
+|---|---|---|
+| Primary purpose | Protect shared resources | Transfer and buffer data |
+| Can carry a structure? | Yes, by protecting shared structure access | Yes, by copying a structure into each queue item |
+| Stores pending messages? | No | Yes |
+| Can block a task? | Yes, while waiting to acquire the mutex | Yes, while waiting to send or receive |
+| Priority inheritance | Yes, for FreeRTOS mutexes | Not applicable to ordinary queues |
+| Typical motor example | Protect `motorStatus` | Transfer RPM measurements or commands |
+
+For example, your command queue can carry a complete command structure:
+
+```cpp
+struct MotorCommand {
+  CommandType type;
+  float value;
+};
+
+QueueHandle_t commandQueue =
+    xQueueCreate(8, sizeof(MotorCommand));
+```
+
+The serial task sends a command:
+
+```cpp
+MotorCommand cmd = {CMD_SET_RPM, 200.0f};
+
+xQueueSend(commandQueue, &cmd, 0);
+```
+
+The control task receives a copy of that command. It doesn't need to access the serial task's mutable command variables directly.
+
+Notice that the queue's item size is `sizeof(MotorCommand)`, whereas your RPM queue uses `sizeof(float)`. Queues can carry either type.
+
+## 5. One subtle but important design distinction
+
+In your current program, the control task owns the live variables:
+
+```cpp
+float targetRPM;
+float measuredRPM;
+float output;
+bool running;
+```
+
+It then publishes a snapshot into `motorStatus`, which is shared with the reporting task.
+
+This is a good design because it limits the shared state that needs synchronization. The control task can manipulate its local variables without a mutex, while the mutex protects the published snapshot.
+
+For a larger application, you can follow the same pattern:
+
+- **Control task:** owns control variables and motor output.
+- **Reporting task:** reads a synchronized status snapshot.
+- **Serial task:** sends commands through a queue.
+- **Display task:** receives snapshots or reads separately protected display data.
+
+This reduces race conditions and avoids using one large mutex around the entire motor-control algorithm.
+
+One final rule: if two mutexes are necessary, establish a consistent order for acquiring them. Otherwise, task A could hold mutex 1 while waiting for mutex 2, while task B holds mutex 2 while waiting for mutex 1. That creates a deadlock.
+
+In summary: you can use one mutex for multiple shared variables or structures, but each mutex protects access only by convention. Use additional mutexes when independent resources need independent locking, and use queues when your objective is to transfer data between tasks rather than share mutable state.
