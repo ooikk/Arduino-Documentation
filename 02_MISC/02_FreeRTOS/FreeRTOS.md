@@ -2443,3 +2443,106 @@ But if time slicing is disabled and `serialTask()` remains continuously ready, i
 Therefore, tasks should normally block when they have nothing to do, instead of continuously polling without a reason.
 
 My recommendation for your ESP32-S3 project: keep `serialTask()` responsive but give it a small delay or use suitable blocking operations, and let `reportTask()` sleep between reports. Choose priorities based on responsiveness and deadlines, not simply because the tasks are assigned to Core 0 or Core 1.
+
+---
+
+# `configASSERT(result == pdPASS);`
+`configASSERT(result == pdPASS);` is a runtime assertion in FreeRTOS. It checks whether `result` equals `pdPASS`. If the condition is false, the assertion triggers a failure handler, typically stopping execution or entering a debugging loop, depending on your FreeRTOS configuration.
+
+## 1. Break down the statement
+
+```cpp
+configASSERT(result == pdPASS);
+```
+
+| Part | Meaning |
+|---|---|
+| `configASSERT(...)` | FreeRTOS macro for checking an assumption at runtime. |
+| `result` | A variable holding the result of an operation. |
+| `==` | Compares two values for equality. |
+| `pdPASS` | FreeRTOS success value. |
+
+For example, suppose you create a queue:
+
+```cpp
+QueueHandle_t rpmQueue = xQueueCreate(1, sizeof(float));
+
+configASSERT(rpmQueue != nullptr);
+```
+
+Here, the assertion checks whether queue creation succeeded. If the queue could not be created, `rpmQueue` would be `nullptr`, and the assertion would fail.
+
+## 2. What happens when the condition is true or false?
+
+```cpp
+BaseType_t result = pdPASS;
+
+configASSERT(result == pdPASS);
+```
+
+The condition is true, so execution continues normally.
+
+Now consider:
+
+```cpp
+BaseType_t result = pdFAIL;
+
+configASSERT(result == pdPASS);
+```
+
+The condition is false, so the configured assertion handler is invoked.
+
+Depending on the ESP32 FreeRTOS configuration, this may result in a panic, a halt, or a breakpoint suitable for debugging. The exact behavior depends on how assertions are configured.
+
+## 3. Why use it when creating a task?
+
+For example:
+
+```cpp
+BaseType_t result = xTaskCreatePinnedToCore(
+    controlTask,
+    "Control",
+    4096,
+    nullptr,
+    5,
+    &controlHandle,
+    1
+);
+
+configASSERT(result == pdPASS);
+```
+
+The task-creation function returns `pdPASS` when successful. If task creation fails, the assertion exposes the failure immediately rather than allowing the program to continue under the false assumption that the task exists.
+
+This is especially useful during development when debugging insufficient heap memory, invalid configuration, or other initialization failures.
+
+## 4. Is configASSERT() always enabled?
+
+Not necessarily. Its definition depends on the FreeRTOS configuration. If assertions are disabled or configured as a no-op, the statement might not detect anything.
+
+For production firmware, you may prefer explicit error handling:
+
+```cpp
+BaseType_t result = xTaskCreatePinnedToCore(
+    controlTask,
+    "Control",
+    4096,
+    nullptr,
+    5,
+    &controlHandle,
+    1
+);
+
+if (result != pdPASS) {
+    Serial.println("ERROR: Failed to create control task!");
+
+    // Enter a safe state or handle the failure.
+    while (true) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+```
+
+This lets you decide what the firmware should do if task creation fails.
+
+In short: `configASSERT(result == pdPASS);` checks that an operation succeeded and helps expose programming or resource problems early. It is primarily a debugging and fault-detection mechanism, not a replacement for deliberate error handling in safety-critical motor-control code.
