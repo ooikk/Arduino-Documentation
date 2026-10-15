@@ -1623,3 +1623,82 @@ This reduces race conditions and avoids using one large mutex around the entire 
 One final rule: if two mutexes are necessary, establish a consistent order for acquiring them. Otherwise, task A could hold mutex 1 while waiting for mutex 2, while task B holds mutex 2 while waiting for mutex 1. That creates a deadlock.
 
 In summary: you can use one mutex for multiple shared variables or structures, but each mutex protects access only by convention. Use additional mutexes when independent resources need independent locking, and use queues when your objective is to transfer data between tasks rather than share mutable state.
+
+---
+# `xQueueCreate`
+
+In FreeRTOS, the first argument of `xQueueCreate()` specifies the queue length — the maximum number of items the queue can hold at one time.
+
+```cpp
+rpmQueue = xQueueCreate(1, sizeof(float));
+commandQueue = xQueueCreate(8, sizeof(MotorCommand));
+```
+
+## 1. What do 1 and 8 mean?
+
+### 1
+
+`rpmQueue` — holds 1 item
+
+```cpp
+xQueueCreate(1, sizeof(float));
+```
+
+- **Capacity:** one `float` value
+- It stores the latest measured motor speed, for example `1200.0` RPM. When a new reading arrives, `xQueueOverwrite()` replaces the old reading.
+
+### 8
+
+`commandQueue` — holds up to 8 items
+
+```cpp
+xQueueCreate(8, sizeof(MotorCommand));
+```
+
+- **Capacity:** eight `MotorCommand` structures
+- It buffers commands such as `START`, `STOP`, and `SET_RPM` until the control task processes them.
+
+## 2. How does queue capacity work?
+
+Imagine the serial UI task sends commands faster than the control task can process them.
+
+**Example: `commandQueue` with capacity 8**
+
+```text
+START
+SET 500
+SET 800
+STOP
+START
+SET 900
+STATUS
+STOP
+```
+
+All 8 slots are occupied.
+
+A ninth command cannot be added immediately. If the sender uses `xQueueSend()` with a zero wait time, the send fails and the command is not queued. If it waits, it may block until space becomes available.
+
+By contrast, `rpmQueue` intentionally holds just one value because the PID controller usually needs the most recent RPM measurement, not a backlog of old measurements.
+
+## 3. What does the second argument mean?
+
+The second argument specifies the size of each item in bytes.
+
+| Code | Maximum items | Size of each item |
+|---|---:|---|
+| `xQueueCreate(1, sizeof(float))` | 1 | `sizeof(float)` bytes, typically 4 |
+| `xQueueCreate(8, sizeof(MotorCommand))` | 8 | `sizeof(MotorCommand)` bytes per structure |
+
+For example, if `sizeof(MotorCommand)` is 8 bytes on your build, the queue's item storage requires approximately \(8 \times 8 = 64\) bytes, excluding queue-management overhead and other allocation overhead.
+
+> **Important:** FreeRTOS queues copy items into their own storage. They do not automatically store pointers to your original variables.
+
+## 4. Can you change these numbers?
+
+Yes. You choose the capacity based on how much buffering the application needs.
+
+- **`rpmQueue`:** usually 1 when only the latest reading matters.
+- **`commandQueue`:** 8 is a design choice, not a fixed FreeRTOS requirement. You might choose 4, 8, or 16 depending on command traffic and available RAM.
+
+One important detail: a queue of length 1 does not automatically overwrite its existing item. In this example, `xQueueOverwrite()` is appropriate for the one-item `rpmQueue`; for the command queue, use normal send/receive operations so pending commands remain ordered.
