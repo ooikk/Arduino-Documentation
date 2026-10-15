@@ -2144,3 +2144,118 @@ Notice two important details:
 One timing caveat: `vTaskDelayUntil()` does not guarantee that the task will always execute exactly on time. If the task takes longer than the intended period, or another task prevents it from running, it may wake late or find that its next scheduled wake time has already passed. It does not automatically skip all missed control cycles. Real motor-control applications should monitor execution time and ensure the control loop can meet its deadline.
 
 In summary: `lastWake` remembers the timing reference, `xTaskGetTickCount()` reads the current RTOS time, `pdMS_TO_TICKS()` converts your interval, and `vTaskDelayUntil()` schedules the next periodic execution.
+
+## updates `lastWake`
+
+The key point is that you do not need to call `xTaskGetTickCount()` again after every wake-up because `vTaskDelayUntil()` updates `lastWake` for you.
+
+Let's trace what happens.
+
+### 1. Who updates lastWake?
+
+Your code:
+
+```cpp
+TickType_t lastWake = xTaskGetTickCount();
+
+for (;;) {
+  vTaskDelayUntil(
+    &lastWake,
+    pdMS_TO_TICKS(SAMPLE_PERIOD_MS)
+  );
+
+  // Perform task operations
+}
+```
+
+The variable is initialized only once, before entering the loop. During each call, `vTaskDelayUntil()` receives the address of `lastWake` through `&lastWake` and updates the variable internally.
+
+Conceptually, its operation is similar to this simplified pseudocode:
+
+```cpp
+// Simplified explanation, not the actual FreeRTOS implementation
+lastWake = lastWake + period;
+
+waitUntil(lastWake);
+```
+
+The real FreeRTOS function also handles tick timing and determines whether a delay is required.
+
+### 2. Step-by-step example
+
+Assume:
+
+```cpp
+#define SAMPLE_PERIOD_MS 100
+```
+
+And the RTOS tick rate is 1000 Hz, so one tick equals 1 ms.
+
+#### 50,000 — Initialization, once only
+
+```cpp
+lastWake = xTaskGetTickCount();
+```
+
+`lastWake` becomes 50,000.
+
+#### 50,100 — First loop iteration
+
+```cpp
+vTaskDelayUntil(&lastWake, 100);
+```
+
+FreeRTOS advances `lastWake` to 50,100 and delays the task until that scheduled time.
+
+#### 50,200 — Second loop iteration
+
+The same function is called again. It uses the existing value, 50,100, advances it to 50,200, and waits until the next scheduled time.
+
+### 50,300 — Third loop iteration
+
+The function advances the timing reference to 50,300. The process continues for every iteration.
+
+### 3. Why does &lastWake matter?
+
+Compare these two expressions:
+
+- `lastWake` — This passes the current value of the variable.
+- `&lastWake` — This passes the memory address of the variable.
+
+Because `vTaskDelayUntil()` receives the address, it can modify the original variable in your task. If you passed only the value, the function would not have the reference it needs to update your `lastWake` variable.
+
+### 4. Why not simply write this?
+
+You might think of writing:
+
+```cpp
+for (;;) {
+  lastWake = xTaskGetTickCount();
+
+  vTaskDelayUntil(
+    &lastWake,
+    pdMS_TO_TICKS(SAMPLE_PERIOD_MS)
+  );
+
+  // Task operations
+}
+```
+
+Do **not** do this when you want a stable periodic schedule. Resetting `lastWake` to the current time on every iteration discards the previous scheduled wake time. The delay then becomes relative to the current time, defeating the main timing advantage of `vTaskDelayUntil()`.
+
+The correct pattern is:
+
+```cpp
+TickType_t lastWake = xTaskGetTickCount();
+
+for (;;) {
+  vTaskDelayUntil(
+    &lastWake,
+    pdMS_TO_TICKS(SAMPLE_PERIOD_MS)
+  );
+
+  // Perform the task's work.
+}
+```
+
+Remember: initialize `lastWake` once; let `vTaskDelayUntil()` advance it on every iteration.
