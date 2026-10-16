@@ -738,6 +738,201 @@ Expected observations
 
 To determine the location of a general `malloc()` allocation, use the heap-capability APIs or inspect the pointer with the relevant ESP-IDF memory-region facilities. The label `malloc` does not by itself prove that the allocation came from internal RAM.
 
+
+#### Lab A Result: ESP32-S3 N16R8 PSRAM Allocation Analysis
+
+```text
+ESP32-S3 N16R8 memory lab
+
+--- START ---
+Flash:           16777216 bytes
+PSRAM detected:  YES
+PSRAM total:     8388608 bytes
+Internal free:   355952 bytes
+Internal largest:294900 bytes
+PSRAM free:      8384788 bytes
+PSRAM largest:   8257524 bytes
+Default free:    355952 bytes
+Default max alloc:294900 bytes
+PSRAM max alloc: 8257524 bytes
+malloc 1024 bytes: SUCCESS
+malloc at 0x3fcec4ac: INTERNAL RAM
+
+--- malloc ---
+Flash:           16777216 bytes
+PSRAM detected:  YES
+PSRAM total:     8388608 bytes
+Internal free:   354860 bytes
+Internal largest:294900 bytes
+PSRAM free:      8384788 bytes
+PSRAM largest:   8257524 bytes
+Default free:    354860 bytes
+Default max alloc:294900 bytes
+PSRAM max alloc: 8257524 bytes
+malloc 102400 bytes: SUCCESS
+malloc at 0x3c040eec: EXTERNAL RAM (PSRAM)
+
+:
+:
+
+--- ps_malloc ---
+Flash:           16777216 bytes
+PSRAM detected:  YES
+PSRAM total:     8388608 bytes
+Internal free:   354860 bytes
+Internal largest:294900 bytes
+PSRAM free:      1686748 bytes
+PSRAM largest:   1671156 bytes
+Default free:    354860 bytes
+Default max alloc:294900 bytes
+PSRAM max alloc: 1671156 bytes
+
+All tests finished. Allocations retained.
+```
+
+
+
+Your Lab A result is correct and very useful. It demonstrates that your ESP32-S3 N16R8 is successfully using PSRAM for large allocations, including ordinary `malloc()` calls.
+
+The key evidence is that `malloc(4 MB)` succeeds while internal free RAM stays at approximately 355 KB, and PSRAM free memory drops by approximately 4.3 MB. Your Core 3.x heap configuration is allowing ordinary `malloc()` to allocate from PSRAM.
+
+##### 1. Why Internal RAM Stays Almost Unchanged
+
+Your initial memory readings are:
+
+| Measurement | Before allocation |
+|---|---:|
+| Internal free heap | 355,952 bytes |
+| Largest internal free block | 294,900 bytes |
+| Free PSRAM | 8,384,788 bytes |
+| Largest PSRAM block | 8,257,524 bytes |
+
+When you allocate 1 MB using `malloc()`:
+
+| Measurement | Before | After | Change |
+|---|---:|---:|---:|
+| Internal free heap | 355,952 | 354,860 | -1,092 |
+| Free PSRAM | 8,384,788 | 8,280,336 | -104,452 |
+
+The 1 MB request reduces PSRAM by 104,452 bytes in this particular snapshot, not 1 MB. This is because the 100 KB allocation immediately before it already consumed approximately 102 KB of PSRAM. The additional decrease is approximately 1 MB, as expected.
+
+The pattern continues with your 4 MB allocation:
+
+- Internal free heap remains at 354,860 bytes.
+- PSRAM free memory drops from 7,198,988 to 2,873,608 bytes.
+- The decrease is 4,325,380 bytes, approximately 4.13 MiB.
+- The allocation itself requests 4,194,304 bytes. The extra reduction reflects allocator metadata, alignment and heap accounting effects, together with the fact that these measurements report the entire matching heap region.
+
+**Conclusion:** The ordinary `malloc()` allocator is using PSRAM for these large allocations. This is expected when external RAM has been added to the default `malloc` heap in your ESP32 Arduino configuration.
+
+##### 2. Why `malloc()` Uses Different Memory Sizes
+
+Your output suggests this allocation policy:
+
+```text
+malloc(1 KB)   -> Internal RAM
+malloc(100 KB) -> PSRAM
+malloc(1 MB)   -> PSRAM
+malloc(4 MB)   -> PSRAM
+```
+
+ESP-IDF supports a configurable threshold for ordinary allocations. Small allocations can prefer internal RAM, while larger allocations can be directed to PSRAM. The exact threshold and fallback behavior depend on the ESP-IDF configuration used by your Arduino-ESP32 Core 3.x build.
+
+This is a useful strategy: keep small, frequently used objects in fast internal memory and use PSRAM for large buffers.
+
+##### 3. Why `ps_malloc(4 MB)` Fails
+
+At that point, your successful allocations have already consumed most of the available PSRAM.
+
+| Measurement before the failed allocation | Value |
+|---|---:|
+| Free PSRAM | 1,686,748 bytes |
+| Largest contiguous PSRAM block | 1,671,156 bytes |
+| Requested allocation | 4,194,304 bytes |
+
+The request needs a contiguous block of 4 MB, but your largest available block is only about 1.59 MiB. The allocation must fail.
+
+This is not evidence of a faulty PSRAM chip. It is the expected result when the test deliberately retains earlier allocations.
+
+##### 4. Improve Lab A: Identify the Actual Memory Region
+
+Your current lab measures changes in the heaps, but it does not directly identify where each pointer resides. Add this diagnostic to the sketch:
+
+```cpp
+#include "esp_memory_utils.h"
+
+void reportPointer(const char *label, void *p) {
+  if (p == nullptr) {
+    Serial.printf("%s: NULL\n", label);
+    return;
+  }
+
+  Serial.printf("%s at %p: ", label, p);
+
+  if (esp_ptr_external_ram(p)) {
+    Serial.println("EXTERNAL RAM (PSRAM)");
+  } else if (esp_ptr_internal(p)) {
+    Serial.println("INTERNAL RAM");
+  } else {
+    Serial.println("OTHER MEMORY REGION");
+  }
+}
+```
+
+Then call it inside your existing `attempt()` function immediately after a successful allocation:
+
+```cpp
+void *p = usePsram ? ps_malloc(bytes) : malloc(bytes);
+
+Serial.printf("%s %u bytes: %s\n",
+              label, (unsigned)bytes,
+              p ? "SUCCESS" : "FAILED");
+
+reportPointer(label, p);
+```
+
+This lets you distinguish a small `malloc()` allocation in internal RAM from a large `malloc()` allocation in PSRAM. The `esp_memory_utils.h` header and these pointer-checking functions are provided by applicable ESP-IDF versions; if your installed Core 3.x package does not expose them, use the heap capability APIs instead.
+
+###### To Test Internal RAM Exclusively
+
+Use a capability-constrained allocation rather than ordinary `malloc()`:
+
+```cpp
+void *p = heap_caps_malloc(
+    100 * 1024,
+    MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT
+);
+
+if (p == nullptr) {
+  Serial.println("Internal RAM allocation failed");
+} else {
+  Serial.println("Internal RAM allocation succeeded");
+  free(p);
+}
+```
+
+A 100 KB request may fit in your initial internal heap, but remember that the largest reported block is only 294,900 bytes and other runtime activity can change it. Try 1 KB, 100 KB and 1 MB separately; the 1 MB internal allocation should fail with your current available internal heap.
+
+##### 5. One Important Refinement to Your Lab
+
+Your Lab A currently retains allocations from both tests. That is good for demonstrating memory exhaustion, but it means the PSRAM test starts with only about 2.87 MB free rather than the original 8.38 MB.
+
+For a clean comparison, run each allocation test after freeing all allocations or restart the board between tests. Otherwise, later results reflect the combined allocations, not just the allocation currently being tested.
+
+##### Bottom Line
+
+Your N16R8 is behaving as expected. You have verified:
+
+- 16 MB Flash
+- 8 MB OPI PSRAM
+- Automatic PSRAM use by large `malloc()` allocations
+- Allocation failure when the remaining contiguous PSRAM block is too small
+
+The next useful step is to add pointer-location diagnostics and explicitly compare `MALLOC_CAP_INTERNAL` with `MALLOC_CAP_SPIRAM`.
+
+
+
+
 ### Lab B — Measure internal RAM versus PSRAM copy speed
 
 The following test compares copying a 1 MB buffer in internal RAM against copying a 1 MB buffer in PSRAM. It uses `heap_caps_malloc()` to make placement explicit and a volatile checksum to keep the copied data observable.
