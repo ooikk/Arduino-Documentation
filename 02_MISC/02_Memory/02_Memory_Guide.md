@@ -1145,9 +1145,9 @@ Your Lab C result looks healthy. The worker task is running repeatedly, and its 
 | Serial output | Interpretation |
 |---|---|
 | `free internal heap: 351232 bytes` | Approximately 343 KiB of internal heap remains free. |
-| `3188 units` | At the first observation, the task had a large amount of unused stack remaining. |
-| `1908 units` | Later observations show a lower minimum-ever remaining stack space. |
-| Repeated `1908 units` | No additional stack usage beyond the previous minimum has been observed during these iterations. |
+| `3188 bytes` | At the first observation, the task had a large amount of unused stack remaining. |
+| `1908 bytes` | Later observations show a lower minimum-ever remaining stack space. |
+| Repeated `1908 bytes` | No additional stack usage beyond the previous minimum has been observed during these iterations. |
 
 ##### How Much Stack Has the Task Used?
 
@@ -1164,16 +1164,6 @@ xTaskCreate(
 );
 ```
 
-On the ESP32-S3 FreeRTOS port used by Arduino-ESP32, the stack depth passed to `xTaskCreate()` is specified in bytes, and `uxTaskGetStackHighWaterMark()` reports the remaining stack in `StackType_t` units. Since `StackType_t` is normally 4 bytes on this target, the approximate conversion is:
-
-| Observation | Remaining stack | Approximate minimum used |
-|---|---:|---:|
-| First | `3,188 × 4 = 12,752 bytes` | Not possible with a 4,096-byte stack |
-| Later | `1,908 × 4 = 7,632 bytes` | Not possible with a 4,096-byte stack |
-
-> **Important correction:** These values cannot be interpreted as 4-byte units for a 4,096-byte stack, because the calculated remaining stack exceeds the allocated stack. In your configuration, the returned high-water-mark unit is evidently not behaving according to that assumed conversion, or the reported stack depth/unit configuration differs from the assumption.
-
-For your actual build, verify the `uxTaskGetStackHighWaterMark()` implementation and `StackType_t` definition. In standard ESP-IDF FreeRTOS configurations for ESP32-S3, the high-water mark is commonly expressed in bytes, so the observed `1,908` would indicate approximately 1,908 bytes remaining and about 2,188 bytes used from a 4,096-byte stack. That is the more plausible interpretation of your output.
 
 #### 2. Why Did the High-Water Mark Change?
 
