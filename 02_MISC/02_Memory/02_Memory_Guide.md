@@ -292,7 +292,7 @@ Do not assume that every task stack grows in the same physical direction on ever
 
 #### Heap Memory
 
-In memory architecture, the **heap** is a region of a computer's [RAM](https://www.lenovo.com/us/en/glossary/heap/) used for **dynamic memory allocation at runtime**. Unlike the stack, which follows a strict Last-In, First-Out (LIFO) order for function calls and local variables, the heap provides a large, unstructured pool of memory where data can be allocated and freed in any arbitrary order. 
+In memory architecture, the **heap** is a region of a computer's RAM used for **dynamic memory allocation at runtime**. Unlike the stack, which follows a strict Last-In, First-Out (LIFO) order for function calls and local variables, the heap provides a large, unstructured pool of memory where data can be allocated and freed in any arbitrary order. 
 
 ##### Key Characteristics of Heap Memory
 
