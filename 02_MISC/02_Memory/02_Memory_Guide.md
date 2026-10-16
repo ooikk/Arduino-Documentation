@@ -1658,3 +1658,74 @@ After verifying the output, restore the 4 KiB setting.
 When you move to the real application, replace `sendBufferToSerial()` with an ESP-NOW sender. However, do not assume that one ESP-NOW packet can carry the entire 4 KiB buffer: the application must split it into smaller packets, or transmit multiple records per packet within the supported payload limit. Add a batch ID, packet sequence number, and receiver acknowledgement if reliable delivery matters.
 
 One other practical consideration: this example blocks while printing a full batch. That is acceptable for a learning exercise with a 10-second sampling interval, but a production sensor logger should separate acquisition from transmission if sending can delay sampling.
+
+
+## Understanding `randomSeed(esp_random())`
+
+`randomSeed(esp_random());` initializes the Arduino random-number generator with a seed obtained from the ESP32-S3's hardware random-number generator.
+
+### 1. How It Works
+
+```cpp
+randomSeed(esp_random());
+```
+
+This combines two functions:
+
+| Function | Purpose |
+|---|---|
+| `esp_random()` | Returns a 32-bit random value from the ESP32's hardware random-number generator. |
+| `randomSeed(value)` | Uses that value to initialize Arduino's pseudorandom-number generator. |
+
+The sequence is:
+
+```text
+ESP32-S3 hardware RNG
+        |
+        v
+   esp_random()
+        |
+        v
+Initialize Arduino random generator
+        |
+        v
+   randomSeed(seed)
+        |
+        v
+Generate simulated readings
+        |
+        v
+random(-100, 500) and random(200, 1000)
+```
+
+### 2. Why Do We Need It?
+
+Your simulated temperature function uses:
+
+```cpp
+float readSimulatedTemperature() {
+  return random(-100, 500) / 10.0f;
+}
+```
+
+This generates values from -10.0°C up to 49.9°C.
+
+**Without an explicit seed, the Arduino pseudorandom generator may produce the same sequence after each restart, depending on the core implementation and how it is initialized.**
+
+With:
+
+```cpp
+randomSeed(esp_random());
+```
+
+the generator starts from a hardware-generated seed, so successive runs are much less likely to produce the same sequence.
+
+### 3. Is This True Random or Pseudorandom?
+
+There are two stages:
+
+- `esp_random()` obtains a value from the ESP32's hardware RNG. Its output quality depends on the chip's RNG operating conditions; ESP-IDF documents conditions for obtaining true random data.
+- Arduino `random()` generates a pseudorandom sequence from its internal state. Once seeded, it is deterministic for a given generator implementation and seed.
+
+
+
