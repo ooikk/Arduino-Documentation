@@ -299,7 +299,14 @@ void printHelp() {
   Serial.println(" START     - Start motor speed control");
   Serial.println(" STOP      - Stop motor");
   Serial.println(" SET <rpm> - Set target RPM");
+#ifdef SIMULATION_MODE
+  Serial.println(" P <gain>  - Set P gain for PID controller");
+  Serial.println(" I <gain>  - Set I gain for PID controller");
+  Serial.println(" D <gain>  - Set D gain for PID controller");
+  Serial.println(" STATUS/PID- Request status report and PID gains");
+#else
   Serial.println(" STATUS    - Request status report");
+#endif
   Serial.println(" HELP      - Show this help");
 }
 
@@ -333,7 +340,9 @@ void serialTask(void *parameter) {
         } else if (strcmp(line, "STATUS") == 0) {
           MotorCommand cmd = { CMD_STATUS, 0.0f };
           xQueueSend(commandQueue, &cmd, 0);
-
+#ifdef SIMULATION_MODE
+          Serial.printf("Kp:%0.1f Ki:%0.1f Kd:%0.1f ", Kp, Ki, Kd);
+#endif
           Serial.println("Status is reported periodically.");
 
         } else if (strcmp(line, "HELP") == 0) {
@@ -434,9 +443,9 @@ void reportTask(void *parameter) {
     if (valid) {
 
 #ifdef SIMULATION_MODE
-      Serial.printf("Kp:%0.1f Ki:%0.1f Kd:%0.1f ", Kp, Ki, Kd);
+      //Serial.printf("Kp:%0.1f Ki:%0.1f Kd:%0.1f ", Kp, Ki, Kd);
 
-      Serial.printf(" err:%.1f int:%.1f der:%.1f ",
+      Serial.printf(" err:%6.1f int:%6.1f der:%5.1f ",
                     tempState.kState, tempState.iState, tempState.dstate);
 
 
