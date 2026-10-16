@@ -1035,7 +1035,15 @@ void loop() {}
 
 Interpret the result carefully: the two tests above use different buffer sizes, so they demonstrate real-world throughput at different scales, not a clean 1:1 speed ratio. For a fair comparison, set both sizes to 32 KB or another size that fits in internal RAM, then repeat with PSRAM. Large sequential copies can be several times slower in PSRAM depending on clock configuration, cache effects, compiler optimizations and contention. Treat “3–4× slower” as a possible measurement, not a hardware guarantee.
 
-### Lab A Result: Copy 64 KB
+### Lab B Result
+
+Test result of the 64KB memory transfer for Internal RAM and 1MB for PSRAM:   
+
+```text
+Copy speed test (placement is explicit)
+Internal 64 KB: 65536 bytes x 10, 1719 us, 381.24 MB/s, checksum=0
+PSRAM 1 MB: 1048576 bytes x 10, 468799 us, 22.37 MB/s, checksum=0
+```
 
 Test result of the 64KB memory transfer for both Internal RAM and PSRAM:    
 
