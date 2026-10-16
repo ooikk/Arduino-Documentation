@@ -1330,7 +1330,7 @@ The key design principle is to use internal SRAM for critical, latency-sensitive
 
 ---
 
-# ESP32-S3 N16R8 PSRAM Sensor Logger
+# PSRAM Sensor Logger
 
 We'll build this as a practical ESP32-S3 N16R8 PSRAM application, using a simulated temperature/humidity sensor now and leaving a clear replacement point for a future ESP-NOW transmitter.
 
