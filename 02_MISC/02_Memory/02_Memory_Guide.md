@@ -1114,6 +1114,92 @@ Expected output is a repeating high-water mark and free-heap reading. Exact numb
 
 Do not put a large array on a task stack just because the module has 8 MB PSRAM. The normal `xTaskCreate()` stack is allocated internally by default. Stack placement in PSRAM requires specific ESP-IDF configuration and has cache-disabled and low-power restrictions. For general Arduino sketches, keep task stacks internal and move large data buffers to PSRAM.
 
+### Lab C Result: FreeRTOS Task Stack Usage
+
+Serial port print out result:    
+```text
+[Loop] free internal heap: 351232 bytes
+[Worker] stack high-water mark: 3188 units
+[Worker] stack high-water mark: 1908 units
+[Loop] free internal heap: 351232 bytes
+[Worker] stack high-water mark: 1908 units
+[Worker] stack high-water mark: 1908 units
+[Loop] free internal heap: 351232 bytes
+[Worker] stack high-water mark: 1908 units
+[Loop] free internal heap: 351232 bytes
+[Worker] stack high-water mark: 1908 units
+[Worker] stack high-water mark: 1908 units
+[Loop] free internal heap: 351232 bytes
+[Worker] stack high-water mark: 1908 units
+[Loop] free internal heap: 351232 bytes
+[Worker] stack high-water mark: 1908 units
+[Worker] stack high-water mark: 1908 units
+```
+
+Your Lab C result looks healthy. The worker task is running repeatedly, and its stack high-water mark stabilizes at 1,908 units. Your internal free heap also remains stable at 351,232 bytes, suggesting no obvious continuing memory leak in this snapshot.
+
+#### 1. Interpret Your Results
+
+| Serial output | Interpretation |
+|---|---|
+| `free internal heap: 351232 bytes` | Approximately 343 KiB of internal heap remains free. |
+| `3188 units` | At the first observation, the task had a large amount of unused stack remaining. |
+| `1908 units` | Later observations show a lower minimum-ever remaining stack space. |
+| Repeated `1908 units` | No additional stack usage beyond the previous minimum has been observed during these iterations. |
+
+##### How Much Stack Has the Task Used?
+
+Your task was created with a stack size of 4,096 bytes:
+
+```cpp
+xTaskCreate(
+    workerTask,
+    "MemoryWorker",
+    4096,
+    nullptr,
+    1,
+    &workerHandle
+);
+```
+
+On the ESP32-S3 FreeRTOS port used by Arduino-ESP32, the stack depth passed to `xTaskCreate()` is specified in bytes, and `uxTaskGetStackHighWaterMark()` reports the remaining stack in `StackType_t` units. Since `StackType_t` is normally 4 bytes on this target, the approximate conversion is:
+
+| Observation | Remaining stack | Approximate minimum used |
+|---|---:|---:|
+| First | `3,188 × 4 = 12,752 bytes` | Not possible with a 4,096-byte stack |
+| Later | `1,908 × 4 = 7,632 bytes` | Not possible with a 4,096-byte stack |
+
+> **Important correction:** These values cannot be interpreted as 4-byte units for a 4,096-byte stack, because the calculated remaining stack exceeds the allocated stack. In your configuration, the returned high-water-mark unit is evidently not behaving according to that assumed conversion, or the reported stack depth/unit configuration differs from the assumption.
+
+For your actual build, verify the `uxTaskGetStackHighWaterMark()` implementation and `StackType_t` definition. In standard ESP-IDF FreeRTOS configurations for ESP32-S3, the high-water mark is commonly expressed in bytes, so the observed `1,908` would indicate approximately 1,908 bytes remaining and about 2,188 bytes used from a 4,096-byte stack. That is the more plausible interpretation of your output.
+
+#### 2. Why Did the High-Water Mark Change?
+
+The high-water mark records the minimum unused stack observed since the task started. It can decrease when the task reaches a deeper call path, invokes a function with a larger local stack frame, or encounters different logging/runtime overhead.
+
+Your task contains:
+
+```cpp
+volatile uint32_t scratch;
+```
+
+That array occupies 512 bytes, plus other local variables, function call frames and logging overhead. The first reading may have been taken before the task exercised its full stack usage.
+
+Once the minimum reached `1,908`, it stayed there because later iterations did not use more stack than that observed worst case.
+
+#### 3. What I Recommend Next
+
+To make the lab more reliable, print the configured stack depth and high-water mark alongside the minimum-ever reading, then test with your actual workload.
+
+- Keep the 4,096-byte stack for now if this is only a simple demonstration task.
+- Do not infer safety from one test; exercise worst-case function calls, logging, error paths and nested calls.
+- If you add large local arrays or complex processing, increase the stack allocation or move large buffers to PSRAM.
+- Remember that PSRAM does not automatically make the task's stack larger.
+
+The key lesson from Lab C is that stack usage and heap usage are separate: your worker can consume more of its task stack without causing a corresponding decrease in the reported free internal heap.
+
+
+
 ## 6. ESP-IDF configuration and allocation reference
 
 For an ESP-IDF project targeting the ESP32-S3 N16R8, enable Octal PSRAM and use a partition table sized for the 16 MB Flash device.
