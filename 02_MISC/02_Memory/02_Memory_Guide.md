@@ -1074,7 +1074,7 @@ void workerTask(void *parameter) {
       scratch[i] = (uint32_t)i * 3U;
     }
 
-    Serial.printf("[Worker] stack high-water mark: %u units\n",
+    Serial.printf("[Worker] Stack high-water mark: %u bytes remaining\n",
                   (unsigned)uxTaskGetStackHighWaterMark(nullptr));
 
     vTaskDelay(pdMS_TO_TICKS(2000));
@@ -1119,21 +1119,23 @@ Do not put a large array on a task stack just because the module has 8 MB PSRAM.
 Serial port print out result:    
 ```text
 [Loop] free internal heap: 351232 bytes
-[Worker] stack high-water mark: 3188 units
-[Worker] stack high-water mark: 1908 units
+[Worker] Stack high-water mark: 3188 bytes remaining
+[Worker] Stack high-water mark: 1908 bytes remaining
 [Loop] free internal heap: 351232 bytes
-[Worker] stack high-water mark: 1908 units
-[Worker] stack high-water mark: 1908 units
+[Worker] Stack high-water mark: 1908 bytes remaining
+[Worker] Stack high-water mark: 1908 bytes remaining
 [Loop] free internal heap: 351232 bytes
-[Worker] stack high-water mark: 1908 units
+[Worker] Stack high-water mark: 1908 bytes remaining
 [Loop] free internal heap: 351232 bytes
-[Worker] stack high-water mark: 1908 units
-[Worker] stack high-water mark: 1908 units
+[Worker] Stack high-water mark: 1908 bytes remaining
+[Worker] Stack high-water mark: 1908 bytes remaining
 [Loop] free internal heap: 351232 bytes
-[Worker] stack high-water mark: 1908 units
+[Worker] Stack high-water mark: 1908 bytes remaining
 [Loop] free internal heap: 351232 bytes
-[Worker] stack high-water mark: 1908 units
-[Worker] stack high-water mark: 1908 units
+[Worker] Stack high-water mark: 1908 bytes remaining
+[Worker] Stack high-water mark: 1908 bytes remaining
+[Loop] free internal heap: 351232 bytes
+[Worker] Stack high-water mark: 1908 bytes remaining
 ```
 
 Your Lab C result looks healthy. The worker task is running repeatedly, and its stack high-water mark stabilizes at 1,908 units. Your internal free heap also remains stable at 351,232 bytes, suggesting no obvious continuing memory leak in this snapshot.
