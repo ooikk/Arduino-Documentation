@@ -1,3 +1,4 @@
+**ESP32 S3 N16R8 Peripherals**     
 [![logo-color](https://img.shields.io/badge/Index-Bluetooth-DF301C?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Bluetooth/Bluetooth.md)
 [![logo-color](https://img.shields.io/badge/Index-Hardware_Timer-FF9100?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Hardware_Timer/Hardware_Timer.md)
 [![logo-color](https://img.shields.io/badge/Index-Interrupt-FFF1D1?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Interrupt/Interrupt.md)
@@ -6,7 +7,9 @@
 [![logo-color](https://img.shields.io/badge/Index-OTA_Update-DB9558?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/OTA_Update.md)
 [![logo-color](https://img.shields.io/badge/Index-CPU_Core-790D16?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_CPU_Core/CPU_Core.md)
 [![logo-color](https://img.shields.io/badge/Index-FreeRTOS-8ACFF8?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_FreeRTOS/FreeRTOS.md)
+[![logo-color](https://img.shields.io/badge/Index-Memory_Guide-578EF5?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Memory/02_Memory_Guide.md)
 
+**WiFi Functions**     
 [![logo-color](https://img.shields.io/badge/Index-WiFi-007DCC?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/WiFi.md)
 [![logo-color](https://img.shields.io/badge/Index-ESP_Now-FFB900?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/ESP_Now.md)
 [![logo-color](https://img.shields.io/badge/Index-MQTT-D10056?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md)
