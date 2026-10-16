@@ -774,6 +774,19 @@ malloc at 0x3c040eec: EXTERNAL RAM (PSRAM)
 
 :
 :
+--- ps_malloc ---
+Flash:           16777216 bytes
+PSRAM detected:  YES
+PSRAM total:     8388608 bytes
+Internal free:   354860 bytes
+Internal largest:294900 bytes
+PSRAM free:      1686748 bytes
+PSRAM largest:   1671156 bytes
+Default free:    354860 bytes
+Default max alloc:294900 bytes
+PSRAM max alloc: 1671156 bytes
+ps_malloc 4194304 bytes: FAILED
+ps_malloc: NULL
 
 --- ps_malloc ---
 Flash:           16777216 bytes
