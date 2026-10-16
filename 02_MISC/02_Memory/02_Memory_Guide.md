@@ -1328,4 +1328,333 @@ PSRAM is excellent for large data arrays, but not every driver, DMA operation, I
 
 The key design principle is to use internal SRAM for critical, latency-sensitive and capability-constrained operations; PSRAM for large runtime data; and Flash for firmware and persistent storage.
 
+---
 
+# ESP32-S3 N16R8 PSRAM Sensor Logger
+
+We'll build this as a practical ESP32-S3 N16R8 PSRAM application, using a simulated temperature/humidity sensor now and leaving a clear replacement point for a future ESP-NOW transmitter.
+
+The program will:
+
+- Generate simulated temperature and humidity readings every 10 seconds.
+- Assign each reading a monotonically increasing sample counter.
+- Store each record in a buffer allocated explicitly in PSRAM.
+- When the buffer is full, print every record to Serial, then reset the buffer index and reuse the memory.
+- Make the buffer capacity configurable in code, with a default of 4 KiB (4,096 bytes).
+- Report buffer usage and verify that the allocated buffer is in external RAM.
+
+For the learning exercise, the buffer uses a fixed-size record rather than `String` objects. This makes memory consumption predictable and avoids heap fragmentation from repeatedly creating dynamic strings.
+
+## Complete Arduino IDE Sketch
+
+Upload this to your ESP32-S3 with PSRAM enabled in the Arduino IDE board settings.
+
+```cpp
+#include <Arduino.h>
+#include "esp_heap_caps.h"
+#include "esp_memory_utils.h"
+#include "esp_system.h"
+
+// ============================================================
+// Configuration
+// ============================================================
+
+// Set to 4096 bytes (4 KiB) for the normal experiment.
+// For a faster test, try 160 bytes = 10 records.
+#define BUFFER_BYTES (4U * 1024U)
+
+#define SAMPLE_INTERVAL_MS 10000UL  // 10 seconds
+#define SERIAL_BAUD        115200
+
+// ============================================================
+// Sensor data record
+// ============================================================
+
+struct SensorRecord {
+  uint32_t sampleNo;       // Monotonically increasing counter
+  uint32_t elapsedMs;      // Time since boot, in milliseconds
+  float temperatureC;      // Simulated temperature
+  float humidityPct;       // Simulated relative humidity
+};
+
+static_assert(
+  BUFFER_BYTES >= sizeof(SensorRecord),
+  "BUFFER_BYTES must fit at least one SensorRecord"
+);
+
+constexpr size_t RECORD_CAPACITY =
+    BUFFER_BYTES / sizeof(SensorRecord);
+
+constexpr size_t ACTUAL_BUFFER_BYTES =
+    RECORD_CAPACITY * sizeof(SensorRecord);
+
+// ============================================================
+// Global state
+// ============================================================
+
+// Pointer to a buffer allocated explicitly from PSRAM.
+static SensorRecord *sensorBuffer = nullptr;
+
+static size_t recordsStored = 0;
+static uint32_t sampleCounter = 0;
+static uint32_t lastSampleMs = 0;
+
+// ============================================================
+// Simulated sensor
+// ============================================================
+
+float readSimulatedTemperature() {
+  // Range: -10.0 to +49.9 degrees C
+  return random(-100, 500) / 10.0f;
+}
+
+float readSimulatedHumidity() {
+  // Range: 20.0 to 99.9 percent RH
+  return random(200, 1000) / 10.0f;
+}
+
+// ============================================================
+// Buffer diagnostics
+// ============================================================
+
+void printMemoryStatus() {
+  Serial.printf("Configured buffer: %u bytes\n",
+                (unsigned)BUFFER_BYTES);
+
+  Serial.printf("Record size:       %u bytes\n",
+                (unsigned)sizeof(SensorRecord));
+
+  Serial.printf("Record capacity:   %u records\n",
+                (unsigned)RECORD_CAPACITY);
+
+  Serial.printf("Buffer storage:    %u bytes\n",
+                (unsigned)ACTUAL_BUFFER_BYTES);
+
+  Serial.printf("PSRAM free now:    %u bytes\n",
+                (unsigned)heap_caps_get_free_size(
+                  MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+
+  Serial.printf("Internal heap free:%u bytes\n",
+                (unsigned)heap_caps_get_free_size(
+                  MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+
+  Serial.printf("Buffer address:    %p\n",
+                (void *)sensorBuffer);
+
+  Serial.printf("In external RAM:   %s\n",
+                esp_ptr_external_ram(sensorBuffer)
+                  ? "YES" : "NO");
+}
+
+// ============================================================
+// Send full buffer to Serial
+// Later, replace this function with ESP-NOW transmission.
+// ============================================================
+
+void sendBufferToSerial() {
+  Serial.println();
+  Serial.println("========================================");
+  Serial.println("BUFFER FULL - SENDING RECORDS TO SERIAL");
+  Serial.printf("Records: %u\n", (unsigned)recordsStored);
+  Serial.println("No,Elapsed_ms,Temperature_C,Humidity_pct");
+
+  for (size_t i = 0; i < recordsStored; i++) {
+    const SensorRecord &r = sensorBuffer[i];
+
+    Serial.printf("%lu,%lu,%.1f,%.1f\n",
+                  (unsigned long)r.sampleNo,
+                  (unsigned long)r.elapsedMs,
+                  r.temperatureC,
+                  r.humidityPct);
+  }
+
+  Serial.println("END OF BUFFER");
+  Serial.println("Buffer will now be reused.");
+  Serial.println("========================================");
+
+  // Wait until the serial output has actually been transmitted.
+  Serial.flush();
+
+  // Reuse the same PSRAM allocation; do not allocate again.
+  recordsStored = 0;
+
+  Serial.println("Buffer cleared logically; PSRAM allocation retained.");
+}
+
+// ============================================================
+// Acquire one sample and store it in PSRAM
+// ============================================================
+
+void acquireAndStoreSample() {
+  if (recordsStored >= RECORD_CAPACITY) {
+    // Defensive check: do not write outside the buffer.
+    sendBufferToSerial();
+  }
+
+  SensorRecord &r = sensorBuffer[recordsStored];
+
+  r.sampleNo = ++sampleCounter;
+  r.elapsedMs = millis();
+  r.temperatureC = readSimulatedTemperature();
+  r.humidityPct = readSimulatedHumidity();
+
+  recordsStored++;
+
+  Serial.printf(
+    "[SAMPLE] No=%lu  Temp=%.1f C  Humidity=%.1f %%  "
+    "Buffer=%u/%u\n",
+    (unsigned long)r.sampleNo,
+    r.temperatureC,
+    r.humidityPct,
+    (unsigned)recordsStored,
+    (unsigned)RECORD_CAPACITY
+  );
+
+  // Send as soon as the buffer becomes full.
+  if (recordsStored >= RECORD_CAPACITY) {
+    sendBufferToSerial();
+  }
+}
+
+// ============================================================
+// Arduino setup
+// ============================================================
+
+void setup() {
+  Serial.begin(SERIAL_BAUD);
+  delay(1000);
+
+  Serial.println();
+  Serial.println("ESP32-S3 PSRAM Sensor Logger");
+  Serial.println("----------------------------------------");
+
+  Serial.printf("PSRAM detected: %s\n",
+                psramFound() ? "YES" : "NO");
+
+  if (!psramFound()) {
+    Serial.println("ERROR: PSRAM is unavailable.");
+    Serial.println("Check the Arduino IDE PSRAM setting.");
+    while (true) {
+      delay(1000);
+    }
+  }
+
+  // Allocate the entire buffer from external PSRAM.
+  sensorBuffer = (SensorRecord *)heap_caps_malloc(
+      BUFFER_BYTES,
+      MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT
+  );
+
+  if (sensorBuffer == nullptr) {
+    Serial.println("ERROR: Could not allocate PSRAM buffer.");
+    while (true) {
+      delay(1000);
+    }
+  }
+
+  if (!esp_ptr_external_ram(sensorBuffer)) {
+    Serial.println("ERROR: Buffer is not in external RAM.");
+    heap_caps_free(sensorBuffer);
+    sensorBuffer = nullptr;
+
+    while (true) {
+      delay(1000);
+    }
+  }
+
+  randomSeed(esp_random());
+
+  printMemoryStatus();
+
+  Serial.println("----------------------------------------");
+  Serial.printf("Sampling interval: %lu ms\n",
+                SAMPLE_INTERVAL_MS);
+  Serial.println("Waiting for first sample...");
+  Serial.println();
+
+  lastSampleMs = millis();
+}
+
+// ============================================================
+// Arduino loop
+// ============================================================
+
+void loop() {
+  uint32_t now = millis();
+
+  // Unsigned subtraction safely handles millis() rollover.
+  if ((uint32_t)(now - lastSampleMs) >= SAMPLE_INTERVAL_MS) {
+    // Schedule the next sample interval from this acquisition.
+    lastSampleMs = now;
+
+    acquireAndStoreSample();
+  }
+
+  delay(5);
+}
+```
+
+## 1. Understand the Memory Layout
+
+With the default 4 KiB buffer, each record contains four fields:
+
+| Field | Data type | Size |
+|---|---|---:|
+| Sample counter | `uint32_t` | 4 bytes |
+| Elapsed time | `uint32_t` | 4 bytes |
+| Temperature | `float` | 4 bytes |
+| Humidity | `float` | 4 bytes |
+| **Total per record** |  | **16 bytes** |
+
+Therefore:
+
+```text
+Capacity = 4096 / 16 = 256 records
+```
+
+| Item | Value |
+|---|---:|
+| 4 KiB PSRAM buffer | 4,096 bytes |
+| One PSRAM allocation | 256 records per batch |
+| Approximate fill time | 42 min 40 sec |
+
+The fill time assumes one sample every 10 seconds and no missed intervals: `256 × 10 = 2,560 seconds`.
+
+## 2. How the Application Works
+
+1. Wait 10 seconds.
+2. Check elapsed time with `millis()`.
+3. Generate simulated temperature and humidity readings.
+4. Write one record into PSRAM.
+5. Increment the counter and buffer index.
+6. Check whether the buffer is full.
+7. If not full, continue sampling.
+8. If full, print all records.
+9. Reset the record count.
+10. Reuse the same PSRAM buffer.
+
+The key memory-management detail is that `heap_caps_malloc()` allocates the buffer once in PSRAM during `setup()`. After transmission, the program resets `recordsStored` to zero but does not free or reallocate the memory. This avoids unnecessary allocation overhead and heap fragmentation.
+
+## 3. Test It Faster Before Waiting 43 Minutes
+
+Change this line:
+
+```cpp
+#define BUFFER_BYTES (4U * 1024U)
+```
+
+to:
+
+```cpp
+#define BUFFER_BYTES 160U
+```
+
+Since each record is 16 bytes, this test configuration stores 10 records. The program will print the first complete batch after approximately 100 seconds.
+
+After verifying the output, restore the 4 KiB setting.
+
+## 4. Prepare for ESP-NOW
+
+When you move to the real application, replace `sendBufferToSerial()` with an ESP-NOW sender. However, do not assume that one ESP-NOW packet can carry the entire 4 KiB buffer: the application must split it into smaller packets, or transmit multiple records per packet within the supported payload limit. Add a batch ID, packet sequence number, and receiver acknowledgement if reliable delivery matters.
+
+One other practical consideration: this example blocks while printing a full batch. That is acceptable for a learning exercise with a 10-second sampling interval, but a production sensor logger should separate acquisition from transmission if sending can delay sampling.
