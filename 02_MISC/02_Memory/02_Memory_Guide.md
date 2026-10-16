@@ -6,9 +6,17 @@ The most important architectural distinction is that 16 MB Flash stores firmware
 
 ## 1. N16R8 memory map
 
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/81796aa5-c3de-4f87-a128-10eecbb43fa8" />
+
 [ESP32 Flash/PSRAM & Memory Leaks: Understanding the Memory Map and Preventing Crashes | SunFounder](https://images.openai.com/static-rsc-4/8zeBjDYIpC27eOTBZbr9cEZ2YqbFUkc9X3WhWhK0AzpshnmLlHJgE6vLWx2sO3WTizuDRMzw71LlT4NBFglO0jNNBQ2ZXI_avH8fhtq2FrgSheUH8FrPfNaBj0x_Ky0MnWhpShjWfC9wSbN85bwmb5MCgy7KEbYvjxotf3NQQGg?purpose=inline)
 
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/d80aa500-7ac9-4712-bf27-7af8beae4d86" />
+
+
 [ESP32uesday: Pondering LCDs and Using Espressif DevKits w/Arduino IDE «  Adafruit Industries – Makers, hackers, artists, designers and engineers!](https://images.openai.com/static-rsc-4/wHxGKETs3owfY9JovpccUc5wmTn75IPNRW-xs5Yh5xs0-ahLX62mu6unPx1OrVpX-nG_MHS_3ThDtcdvIsFtFdT06cjCTJsiIHgFAxb-0d5C5J8vlXXIiBLvIevtAYAxP00ZqzT1UMc0or2PikrQ0qu-gRVL305GKUNF7Ob585U?purpose=inline)
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/c453ada9-251b-441a-9f7c-ece03316e2a6" />
+
 
 [Datasheets](https://images.openai.com/static-rsc-4/vyhAEoU0K8-GKxc1WgBZPBWOz9XX8AA-w9VTMRZyGj1P4jaeovR6auJaBPyaejQkhY7orHBo2Yj8GW5n46JAZouNbBUGwE570sSBrBBnGhG3uD0u-1eamTgoVS8qfmzuOgS_hFAqQLtHzO7Z5aRsrd2KbYUdgnZLyxKH1r1hk7E?purpose=inline)
 
@@ -21,9 +29,9 @@ The most important architectural distinction is that 16 MB Flash stores firmware
 │                                             │
 │  Internal SRAM: 512 KB nominal              │
 │  ┌───────────────────────────────────────┐  │
-│  │ IRAM: instruction-capable SRAM         │  │
-│  │ DRAM: data-capable SRAM                │  │
-│  │ Shared/reserved areas and system use   │  │
+│  │ IRAM: instruction-capable SRAM        │  │
+│  │ DRAM: data-capable SRAM               │  │
+│  │ Shared/reserved areas and system use  │  │
 │  └───────────────────────────────────────┘  │
 │                  │                          │
 │  ┌───────────────┴───────────────────────┐  │
@@ -121,14 +129,14 @@ The Flash chip's capacity and the maximum firmware size are two different things
          ├──────────────────────────┤
          │ OTADATA (if OTA enabled) │
          ├──────────────────────────┤
-         │ ota_0 / app0              │
-         │ Firmware image            │
+         │ ota_0 / app0             │
+         │ Firmware image           │
          ├──────────────────────────┤
          │ ota_1 / app1 (optional)  │
-         │ Second firmware image     │
+         │ Second firmware image    │
          ├──────────────────────────┤
          │ SPIFFS / LittleFS / FATFS│
-         │ Files, images, logs       │
+         │ Files, images, logs      │
          └──────────────────────────┘
 16 MB    End of Flash
 ```
@@ -865,15 +873,15 @@ Use `heap_caps_malloc()` when the memory type is a design requirement. Use ordin
 
 ## 7. Three common N16R8 mistakes
 
-Mistake 1 — Forgetting OPI PSRAM
+**Mistake 1 — Forgetting OPI PSRAM**
 
 The module physically contains 8 MB PSRAM, but the firmware must initialize it correctly. If `psramFound()` returns `false`, check the board definition, PSRAM mode and startup logs. Do not treat the physical capacity as proof that the runtime has initialized it.
 
-Mistake 2 — Using a 4 MB partition scheme
+**Mistake 2 — Using a 4 MB partition scheme**
 
 The 16 MB Flash device does not override the selected partition table. A 4 MB layout can limit the application slot and leave most of the physical Flash unavailable to your chosen app/filesystem layout. Select or define a compatible 16 MB partition table.
 
-Mistake 3 — Putting every buffer in PSRAM
+**Mistake 3 — Putting every buffer in PSRAM**
 
 PSRAM is excellent for large data arrays, but not every driver, DMA operation, ISR or cache-disabled execution path can use it. Allocate conservative DMA buffers with `MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA`; follow the specific ESP32-S3 peripheral driver's documented requirements.
 
@@ -881,55 +889,46 @@ PSRAM is excellent for large data arrays, but not every driver, DMA operation, I
 
 1\. What is the nominal internal SRAM capacity of the ESP32-S3 N16R8?
 
-16 MB
-
-8 MB
-
-512 KB
-
-24 MB
+- 16 MB
+- 8 MB
+- 512 KB
+- 24 MB
 
 2\. What determines the maximum firmware image size?
 
-The PSRAM capacity
-
-The selected application partition size
-
-The total Flash size alone
-
-The task stack size
+- The PSRAM capacity
+- The selected application partition size
+- The total Flash size alone
+- The task stack size
 
 3\. Which allocation is the conservative choice for a peripheral DMA buffer?
 
-ps_malloc(4096)
-
-A large local stack array
-
-heap_caps_malloc(4096, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA)
-
-A const array in Flash
+- ps_malloc(4096)
+- A large local stack array
+- heap_caps_malloc(4096, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA)
+- A const array in Flash
 
 4\. What does a largest-free-block measurement tell you?
 
-Total physical RAM capacity
-
-The largest single contiguous suitable allocation
-
-The Flash partition size
-
-The stack high-water mark
+- Total physical RAM capacity
+- The largest single contiguous suitable allocation
+- The Flash partition size
+- The stack high-water mark
 
 5\. What does psramFound() returning false mean?
 
-The module definitely has no PSRAM chip
+- The module definitely has no PSRAM chip
+- The Flash is full
+- PSRAM was not successfully detected or initialized
+- The internal SRAM is exhausted
 
-The Flash is full
+**Check answers**
+1. 512 KB
+2. The selected application partition size
+3. heap_caps_malloc(4096, MALLOC_CAP_INTERNAL | MALLOC_CAP_DMA)
+4. The largest single contiguous suitable allocation
+5. PSRAM was not successfully detected or initialized
 
-PSRAM was not successfully detected or initialized
-
-The internal SRAM is exhausted
-
-Check answers
 
 ## Final engineering checklist
 
