@@ -1035,6 +1035,16 @@ void loop() {}
 
 Interpret the result carefully: the two tests above use different buffer sizes, so they demonstrate real-world throughput at different scales, not a clean 1:1 speed ratio. For a fair comparison, set both sizes to 32 KB or another size that fits in internal RAM, then repeat with PSRAM. Large sequential copies can be several times slower in PSRAM depending on clock configuration, cache effects, compiler optimizations and contention. Treat “3–4× slower” as a possible measurement, not a hardware guarantee.
 
+### Lab A Result: Copy 64 KB
+
+Test result of the 64KB memory transfer for both Internal RAM and PSRAM:    
+
+```text
+Copy speed test (placement is explicit)
+Internal 64 KB: 65536 bytes x 10, 1719 us, 381.24 MB/s, checksum=0
+PSRAM 64 KB: 65536 bytes x 10, 29314 us, 22.36 MB/s, checksum=0
+```
+
 ### Lab C — Monitor FreeRTOS task stack usage
 
 The stack high-water mark reports the minimum remaining stack space observed by a task since it started. On ESP-IDF FreeRTOS, the returned value is in stack units; for ESP32-S3 the unit is normally bytes because `StackType_t` is 32 bits, but confirm the exact FreeRTOS port and version.
