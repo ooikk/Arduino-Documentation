@@ -245,6 +245,43 @@ The diagram shows conceptual allocations, not a guaranteed physical ordering.
 
 Do not assume that every task stack grows in the same physical direction on every architecture. On ESP32-S3 Xtensa, the normal stack grows down toward lower addresses. The heap allocator manages separate regions and does not simply grow upward until it collides with the stack.
 
+#### Heap Memory
+
+In memory architecture, the **heap** is a region of a computer's [RAM](https://www.lenovo.com/us/en/glossary/heap/) used for **dynamic memory allocation at runtime**. Unlike the stack, which follows a strict Last-In, First-Out (LIFO) order for function calls and local variables, the heap provides a large, unstructured pool of memory where data can be allocated and freed in any arbitrary order. 
+
+##### Key Characteristics of Heap Memory
+
+- **Dynamic Lifecycle:** The size of the data does not need to be known at compile time. Memory is requested on demand while the program is running.
+- **Global Lifetime:** Data stored on the heap persists beyond the scope of the function that created it. It remains alive until it is explicitly deleted or cleaned up by the system.
+- **Shared Across Threads:** In multi-threaded applications, the heap is shared among all threads, allowing them to share objects and data. This requires careful synchronization to avoid data races.
+- **Pointer-Based Access:** When memory is allocated on the heap, the operating system or runtime returns a pointer (a memory address). This pointer itself is typically stored on the stack.
+
+##### How the Heap Is Managed
+
+Because the heap does not automatically clean itself up when a function ends, it must be managed in one of two ways:
+
+- **Manual Management (e.g., C, C++):** Programmers explicitly request memory using functions like `malloc()` or operators like `new`, and must manually free it using `free()` or `delete`.
+- **Automatic Management (e.g., Java, Python, Go):** The language's runtime environment uses an automatic [Garbage Collector (GC)](https://muratakkan.medium.com/java-memory-management-101-heap-memory-ca4060b10685) to periodically scan the heap, find objects that are no longer referenced, and safely reclaim their memory.
+
+##### Stack vs. Heap Comparison
+
+| Feature | Stack Memory | Heap Memory |
+|---|---|---|
+| Allocation Type | Static / automatic (compile-time size) | Dynamic (runtime-determined size) |
+| Access Speed | Very fast (direct pointer manipulation) | Slower (requires pointer dereferencing) |
+| Data Structure | Linear / LIFO | Unstructured / random |
+| Size Limit | Small and fixed (OS dependent, e.g., 1–8 MB) | Large (limited only by system virtual memory) |
+| Common Risks | Stack overflow (running out of stack space) | Memory leaks and fragmentation |
+
+##### Common Heap Pitfalls
+
+- **Memory Leaks:** Occur when memory is allocated on the heap but the program loses the pointer to it without freeing it. This permanently consumes memory until the application closes.
+- **Fragmentation:** Over time, as memory blocks of various sizes are allocated and deleted randomly, the heap becomes fragmented. This leaves small gaps of unused memory, which can prevent the system from allocating a single large contiguous block later on.
+
+> **Note:** The memory-architecture **heap** should not be confused with the **heap data structure**, which is a specialized tree-based data structure used to implement priority queues.
+
+
+
 ### 3.2 Arduino-ESP32 Core 3.x memory APIs
 
 | API                                      | Meaning                                                                            |
