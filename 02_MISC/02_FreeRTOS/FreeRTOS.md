@@ -114,15 +114,35 @@ Tasks execute independently, but they often need to exchange data or share hardw
 
 **Queues — transfer data between tasks**
 
+A queue in a real-time operating system (RTOS) is a kernel object that is capable of passing information between tasks without incurring overwrites from other tasks or entering into a race condition. A queue is a first in, first out (FIFO) system where items are removed from the queue once read.
+
+A queue is a simple FIFO system with atomic reads and writes. “Atomic operations” are those that cannot be interrupted by other tasks during their execution. This ensures that another task cannot overwrite our data before it is read by the intended target.
+
+In this example, Task A writes some data to a queue. No other thread can interrupt Task A during that writing process. After, Task B can write some other piece of data to the queue. Task B’s data will appear behind Task A’s data, as the queue is a FIFO system.
+
+[FreeRTOS Queue](https://www.digikey.jp/en/maker/projects/introduction-to-rtos-solution-to-part-5-freertos-queue-example/72d2b361f7b94e0691d947c7c29a03c9)
+
 An acquisition task sends measured RPM to the control task. The receiving task can block until a measurement arrives, instead of polling continuously.
 
 **Mutexes — protect shared resources**
 
-A mutex (short for MUTual EXclusion) can protect a shared settings or status structure from simultaneous task access. It is also useful when multiple tasks need exclusive access to a resource.
+A mutex (short for MUTual EXclusion) is a flag or lock used to allow only one thread to access a section of code at a time. It blocks (or locks out) all other threads from accessing the code or resource. This ensures that anything executed in that critical section is thread-safe and information will not be corrupted by other threads.
+
+A mutex is like a single key sitting in a basket at a coffee shop. The key can be used to unlock a shared public restroom. A person takes the key when they wish to use the shared resource (restroom) and returns it when they are done. While they are in the restroom, no one else may enter. Other people (analogous to threads) must wait for the key. When it is returned, another person may take the key to use the restroom.
+
+[FreeRTOS Mutex](https://www.digikey.jp/en/maker/projects/introduction-to-rtos-solution-to-part-6-freertos-mutex-example/c6e3581aa2204f1380e83a9b4c3807a6)
+
+A mutex can protect a shared settings or status structure from simultaneous task access. It is also useful when multiple tasks need exclusive access to a resource.
 
 **Semaphores — signal events or manage resources**
 
+In programming, a semaphore is a variable used to control access to a common, shared resource that needs to be accessed by multiple threads or processes. It is similar to a mutex in that it can prevent other threads from accessing a shared resource or critical section.
+
+However, where a mutex implies a level of ownership of the lock (i.e. a single thread is said to have the lock while executing in a critical section), a semaphore is a counter that can allow multiple threads to enter a critical section.
+
 A binary semaphore can signal that an external event has occurred. A counting semaphore can represent multiple available resources or pending events.
+
+[FreeRTOS Semaphore](https://www.digikey.jp/en/maker/projects/introduction-to-rtos-solution-to-part-7-freertos-semaphore-example/51aa8660524c4daba38cba7c2f5baba7)
 
 **Task notifications — signal a particular task efficiently**
 
