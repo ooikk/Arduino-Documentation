@@ -118,7 +118,7 @@ An acquisition task sends measured RPM to the control task. The receiving task c
 
 **Mutexes — protect shared resources**
 
-A mutex can protect a shared settings or status structure from simultaneous task access. It is also useful when multiple tasks need exclusive access to a resource.
+A mutex (short for MUTual EXclusion) can protect a shared settings or status structure from simultaneous task access. It is also useful when multiple tasks need exclusive access to a resource.
 
 **Semaphores — signal events or manage resources**
 
