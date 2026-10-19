@@ -1582,3 +1582,551 @@ You've now covered all eight modules: security architecture, security properties
 My recommendation is to make the next step a hands-on hardening of your existing ESP32-S3 OTA updater, before attempting eFuse provisioning. Start by reviewing your current `downloadAndInstall()` flow and adding signed-manifest verification in a way that preserves your working TLS and OTA behavior.
 
 That gives you a practical path from a functioning update demo to a much stronger security design—while keeping your current development board recoverable.
+
+---
+
+# Hands-on lab: Harden your ESP32-S3 OTA updater
+
+We'll build on your working ESP32-S3 N16R8 setup: Arduino IDE 2.3.10, Arduino-ESP32 Core 3.3.12, `WiFiClientSecure`, `HTTPClient`, mbedTLS SHA-256 and `Update.h`.
+
+Your existing updater already downloads firmware over HTTPS and checks its SHA-256. We'll add the missing trust layer: a digitally signed manifest that authenticates the firmware release before the updater trusts its URL, version or hash.
+
+## 1. What we're going to implement
+
+| Step | Action |
+|---:|---|
+| 1 | **Download manifest and signature** — HTTPS with your trusted root CA |
+| 2 | **Verify publisher signature** — Reject an invalid or modified manifest |
+| 3 | **Validate release metadata** — Check product, version, URL and firmware size |
+| 4 | **Download firmware to inactive OTA slot** — Calculate SHA-256 as data arrives |
+| 5 | **Verify the complete firmware hash** — Abort the update if the hash or size is wrong |
+| 6 | **Finalize update** — Check `Update.end()`, then reboot only on success |
+
+We'll use a plain-text manifest rather than JSON for this first implementation. This keeps the code smaller and makes it easier to see exactly which bytes are signed. We can switch to JSON later without changing the security principle.
+
+## 2. Release file format
+
+Publish three files in the same GitHub repository directory:
+
+| File | Purpose |
+|---|---|
+| `version.txt` | Signed release metadata |
+| `version.sig` | RSA-2048 signature of the exact `version.txt` bytes |
+| `firmware.bin` | Compiled ESP32-S3 firmware |
+
+Example `version.txt` contents — the file should end with a newline:
+
+```text
+1.2.0
+0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+524288
+```
+
+The three lines are:
+
+1. Firmware version (`major.minor.patch`).
+2. SHA-256 of the exact `firmware.bin` file, as 64 hexadecimal characters.
+3. Firmware size in bytes.
+
+The values above are examples; replace the hash and size with those of your actual compiled firmware.
+
+The manifest signature authenticates all three lines. The firmware hash then binds the downloaded binary to that signed metadata.
+
+## 3. Generate the signing key and signature on your PC
+
+Use OpenSSL on your development PC. These commands create a lab key, not a production signing key.
+
+```bash
+# Generate a 2048-bit RSA private key.
+openssl genpkey -algorithm RSA \
+  -pkeyopt rsa_keygen_bits:2048 \
+  -out ota-private.pem
+
+# Export the public key for the ESP32.
+openssl pkey -in ota-private.pem \
+  -pubout -out ota-public.pem
+
+# Calculate the firmware hash.
+openssl dgst -sha256 firmware.bin
+
+# Obtain the firmware size in bytes.
+```
+
+Use the actual hash and file size to prepare `version.txt`. Then sign the exact file:
+
+```bash
+openssl dgst -sha256 \
+  -sign ota-private.pem \
+  -out version.sig version.txt
+```
+
+This command uses RSA with SHA-256 and PKCS#1 v1.5 padding. The ESP32 verifier below uses the matching algorithm. Keep `ota-private.pem` off the ESP32 and out of your public repository. Publish only the firmware, manifest, signature and public files you intend to distribute.
+
+## 4. Arduino implementation
+
+This sample includes the signature check, metadata validation, version check, download size checks and firmware hash verification. It assumes that Wi-Fi is already connected and the device clock has been synchronized, as in your existing updater.
+
+Before compiling:
+
+- Replace `OWNER`, `REPO` and `BRANCH` in the three URLs.
+- Reuse your existing `ROOT_CA` declaration containing the trusted CA certificates.
+- Replace the public-key placeholder with the complete contents of `ota-public.pem`.
+- Set `CURRENT_VERSION` to the version running on your board.
+- Publish `version.txt`, `version.sig` and `firmware.bin` at the specified raw GitHub URLs.
+
+The code uses the Arduino-ESP32 `Update.setSHA256()` feature to verify the firmware payload before finalizing the update. The Arduino Update API documents that the digest is checked when the update is completed.
+
+- [ESP32 Arduino Update Library](https://github.com/espressif/arduino-esp32/blob/master/libraries/Update/README.md)
+- [Update.h](https://github.com/espressif/arduino-esp32/blob/master/libraries/Update/src/Update.h)
+
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+#include <Update.h>
+
+#include <mbedtls/pk.h>
+#include <mbedtls/sha256.h>
+
+// Reuse the ROOT_CA declaration from your working OTA sketch.
+// Example expected declaration:
+// extern const char ROOT_CA[];
+
+// IMPORTANT: replace these URLs with your repository paths.
+// Redirects are intentionally disabled.
+static const char MANIFEST_URL[] =
+  "[https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.txt](https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.txt)";
+
+static const char SIGNATURE_URL[] =
+  "[https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.sig](https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.sig)";
+
+static const char FIRMWARE_URL[] =
+  "[https://raw.githubusercontent.com/OWNER/REPO/BRANCH/firmware.bin](https://raw.githubusercontent.com/OWNER/REPO/BRANCH/firmware.bin)";
+
+// Change this to the version currently running on the device.
+static const char CURRENT_VERSION[] = "1.0.0";
+
+// Adjust to your partition layout. Update.begin() also checks
+// whether the selected OTA partition has sufficient space.
+static constexpr size_t MAX_MANIFEST_SIZE = 512;
+static constexpr size_t MAX_FIRMWARE_SIZE = 4 * 1024 * 1024;
+static constexpr size_t RSA_SIGNATURE_SIZE = 256;
+
+// Paste the complete PEM public key exported from ota-public.pem.
+// This is public verification material, NOT the private key.
+static const char OTA_PUBLIC_KEY[] PROGMEM = R"KEY(
+-----BEGIN PUBLIC KEY-----
+REPLACE_WITH_YOUR_REAL_PUBLIC_KEY
+-----END PUBLIC KEY-----
+)KEY";
+
+// Download a small text response over validated HTTPS.
+// Requires a known Content-Length and enforces a size limit.
+bool fetchText(const char* url, String& output, size_t maxBytes) {
+  WiFiClientSecure client;
+  client.setCACert(ROOT_CA);
+  client.setHandshakeTimeout(15);
+
+  HTTPClient http;
+  http.setTimeout(15000);
+  http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+
+  if (!http.begin(client, url)) {
+    Serial.println("HTTPS begin failed");
+    return false;
+  }
+
+  int status = http.GET();
+  int length = http.getSize();
+
+  if (status != HTTP_CODE_OK ||
+      length <= 0 ||
+      (size_t)length > maxBytes) {
+    Serial.printf("Text download rejected: HTTP=%d size=%d\n",
+                  status, length);
+    http.end();
+    return false;
+  }
+
+  output = http.getString();
+  http.end();
+
+  if ((size_t)output.length() != (size_t)length) {
+    Serial.println("Text response length mismatch");
+    output = "";
+    return false;
+  }
+
+  return true;
+}
+
+// Fetch a raw RSA-2048 signature (256 binary bytes).
+bool fetchSignature(const char* url, uint8_t* signature,
+                    size_t expectedLength) {
+  WiFiClientSecure client;
+  client.setCACert(ROOT_CA);
+  client.setHandshakeTimeout(15);
+
+  HTTPClient http;
+  http.setTimeout(15000);
+  http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+
+  if (!http.begin(client, url)) {
+    Serial.println("Signature HTTPS begin failed");
+    return false;
+  }
+
+  int status = http.GET();
+  int length = http.getSize();
+
+  if (status != HTTP_CODE_OK ||
+      length != (int)expectedLength) {
+    Serial.printf("Signature response rejected: HTTP=%d size=%d\n",
+                  status, length);
+    http.end();
+    return false;
+  }
+
+  WiFiClient* stream = http.getStreamPtr();
+  stream->setTimeout(15000);
+
+  size_t received =
+    stream->readBytes((char*)signature, expectedLength);
+
+  http.end();
+
+  if (received != expectedLength) {
+    Serial.printf("Short signature: %u bytes\n",
+                  (unsigned)received);
+    return false;
+  }
+
+  return true;
+}
+
+// Verify RSA-2048 / SHA-256 / PKCS#1 v1.5 signature.
+// Signature covers the EXACT bytes in version.txt.
+bool verifyManifestSignature(const String& manifest,
+                             const uint8_t* signature,
+                             size_t signatureLength) {
+  mbedtls_pk_context publicKey;
+  mbedtls_pk_init(&publicKey);
+
+  int rc = mbedtls_pk_parse_public_key(
+    &publicKey,
+    (const unsigned char*)OTA_PUBLIC_KEY,
+    strlen(OTA_PUBLIC_KEY) + 1
+  );
+
+  if (rc != 0) {
+    Serial.printf("Public key parse failed: -0x%04X\n",
+                  (unsigned)(-rc));
+    mbedtls_pk_free(&publicKey);
+    return false;
+  }
+
+  uint8_t digest;
+
+  mbedtls_sha256(
+    (const unsigned char*)manifest.c_str(),
+    manifest.length(),
+    digest,
+    0  // SHA-256, not SHA-224
+  );
+
+  rc = mbedtls_pk_verify(
+    &publicKey,
+    MBEDTLS_MD_SHA256,
+    digest,
+    sizeof(digest),
+    signature,
+    signatureLength
+  );
+
+  mbedtls_pk_free(&publicKey);
+
+  if (rc != 0) {
+    Serial.printf("Manifest signature INVALID: -0x%04X\n",
+                  (unsigned)(-rc));
+    return false;
+  }
+
+  Serial.println("Manifest signature valid");
+  return true;
+}
+
+// Strictly parse a version like 1.2.3.
+bool parseVersion(const String& text,
+                  unsigned long& major,
+                  unsigned long& minor,
+                  unsigned long& patch) {
+  unsigned long a, b, c;
+  char extra;
+
+  if (sscanf(text.c_str(), "%lu.%lu.%lu%c",
+             &a, &b, &c, &extra) != 3) {
+    return false;
+  }
+
+  major = a;
+  minor = b;
+  patch = c;
+  return true;
+}
+
+bool isNewerVersion(const String& candidate,
+                    const char* current) {
+  unsigned long a, b, c, x, y, z;
+
+  if (!parseVersion(candidate, a, b, c) ||
+      !parseVersion(String(current), x, y, z)) {
+    return false;
+  }
+
+  if (a != x) return a > x;
+  if (b != y) return b > y;
+  return c > z;
+}
+
+bool isHexSHA256(const String& hash) {
+  if (hash.length() != 64) return false;
+
+  for (size_t i = 0; i < hash.length(); i++) {
+    char c = hash[i];
+    bool valid =
+      (c >= '0' && c <= '9') ||
+      (c >= 'a' && c <= 'f') ||
+      (c >= 'A' && c <= 'F');
+
+    if (!valid) return false;
+  }
+
+  return true;
+}
+
+// Expected manifest format:
+// version\n
+// 64-character SHA-256 hex digest\n
+// firmware size in decimal bytes\n
+//
+// This parser intentionally requires LF line endings and a
+// final newline, matching the exact file signed by OpenSSL.
+bool parseManifest(const String& manifest,
+                   String& version,
+                   String& hash,
+                   size_t& firmwareSize) {
+  if (manifest.indexOf('\r') >= 0) return false;
+
+  int p1 = manifest.indexOf('\n');
+  int p2 = manifest.indexOf('\n', p1 + 1);
+  int p3 = manifest.indexOf('\n', p2 + 1);
+
+  if (p1 <= 0 || p2 <= p1 ||
+      p3 <= p2 || p3 != (int)manifest.length() - 1) {
+    return false;
+  }
+
+  version = manifest.substring(0, p1);
+  hash = manifest.substring(p1 + 1, p2);
+  String sizeText = manifest.substring(p2 + 1, p3);
+
+  if (!isHexSHA256(hash)) return false;
+
+  if (sizeText.length() == 0 || sizeText.length() > 10)
+    return false;
+
+  for (size_t i = 0; i < sizeText.length(); i++) {
+    if (sizeText[i] < '0' || sizeText[i] > '9')
+      return false;
+  }
+
+  char* endPtr = nullptr;
+  unsigned long parsedSize =
+    strtoul(sizeText.c_str(), &endPtr, 10);
+
+  if (endPtr == sizeText.c_str() || *endPtr != '\0')
+    return false;
+
+  if (parsedSize == 0 ||
+      parsedSize > MAX_FIRMWARE_SIZE) {
+    return false;
+  }
+
+  firmwareSize = (size_t)parsedSize;
+  return true;
+}
+
+bool downloadAndInstall() {
+  Serial.println("\nStarting authenticated OTA");
+
+  // 1. Download the manifest.
+  String manifest;
+  if (!fetchText(MANIFEST_URL, manifest, MAX_MANIFEST_SIZE)) {
+    Serial.println("Manifest download failed");
+    return false;
+  }
+
+  // 2. Download its raw RSA-2048 signature.
+  uint8_t signature[RSA_SIGNATURE_SIZE];
+
+  if (!fetchSignature(SIGNATURE_URL, signature,
+                      sizeof(signature))) {
+    Serial.println("Signature download failed");
+    return false;
+  }
+
+  // 3. Authenticate the manifest BEFORE trusting its fields.
+  if (!verifyManifestSignature(
+        manifest, signature, sizeof(signature))) {
+    Serial.println("OTA rejected: invalid signature");
+    return false;
+  }
+
+  // 4. Parse and validate signed metadata.
+  String version, expectedHash;
+  size_t expectedSize = 0;
+
+  if (!parseManifest(manifest, version,
+                     expectedHash, expectedSize)) {
+    Serial.println("OTA rejected: malformed manifest");
+    return false;
+  }
+
+  Serial.printf("Release version: %s\n", version.c_str());
+  Serial.printf("Expected size: %u bytes\n",
+                (unsigned)expectedSize);
+
+  // Basic version policy: accept only a strictly newer version.
+  // This is not hardware-backed anti-rollback.
+  if (!isNewerVersion(version, CURRENT_VERSION)) {
+    Serial.println("OTA rejected: version is not newer");
+    return false;
+  }
+
+  // 5. Download firmware with TLS validation and no redirects.
+  WiFiClientSecure client;
+  client.setCACert(ROOT_CA);
+  client.setHandshakeTimeout(15);
+
+  HTTPClient http;
+  http.setTimeout(30000);
+  http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+
+  if (!http.begin(client, FIRMWARE_URL)) {
+    Serial.println("Firmware HTTPS begin failed");
+    return false;
+  }
+
+  int status = http.GET();
+  int contentLength = http.getSize();
+
+  if (status != HTTP_CODE_OK ||
+      contentLength < 0 ||
+      (size_t)contentLength != expectedSize) {
+    Serial.printf("Firmware rejected: HTTP=%d size=%d\n",
+                  status, contentLength);
+    http.end();
+    return false;
+  }
+
+  // 6. Prepare the inactive OTA partition.
+  if (!Update.begin(expectedSize, U_FLASH)) {
+    Serial.printf("Update.begin failed: %s\n",
+                  Update.errorString());
+    http.end();
+    return false;
+  }
+
+  // The Update library verifies SHA-256 at Update.end().
+  // Must be set after begin() and before writing any data.
+  if (!Update.setSHA256(expectedHash.c_str())) {
+    Serial.println("Could not configure firmware SHA-256");
+    Update.abort();
+    http.end();
+    return false;
+  }
+
+  Serial.println("Streaming firmware to OTA partition...");
+  WiFiClient* stream = http.getStreamPtr();
+
+  size_t written = Update.writeStream(*stream);
+  http.end();
+
+  if (written != expectedSize) {
+    Serial.printf("Incomplete firmware: %u of %u bytes\n",
+                  (unsigned)written,
+                  (unsigned)expectedSize);
+    Update.abort();
+    return false;
+  }
+
+  // 7. Finalize only if all data arrived and SHA-256 matches.
+  if (!Update.end()) {
+    Serial.printf("Update.end failed: %s\n",
+                  Update.errorString());
+    Update.abort();
+    return false;
+  }
+
+  Serial.println("Firmware hash verified; OTA finalized.");
+  Serial.println("Restarting into the new firmware...");
+  delay(500);
+  ESP.restart();
+
+  return true;  // Normally not reached.
+}
+```
+
+Call `downloadAndInstall()` from your existing OTA trigger after Wi-Fi and time synchronization are ready. Keep your existing Wi-Fi connection code and `ROOT_CA` declaration; don't create a second, conflicting CA definition.
+
+## 5. Prepare the release files correctly
+
+On Windows PowerShell, after compiling your firmware and saving the binary as `firmware.bin`, get the size:
+
+```powershell
+(Get-Item .\firmware.bin).Length
+```
+
+Get the SHA-256 digest:
+
+```powershell
+(Get-FileHash .\firmware.bin -Algorithm SHA256).Hash.ToLower()
+```
+
+Put those values in `version.txt`, then sign it again whenever any byte in the manifest changes:
+
+```powershell
+openssl dgst -sha256 -sign ota-private.pem `
+  -out version.sig version.txt
+```
+
+Upload all three files to the exact directory referenced by your URLs. Ensure that `version.txt` is saved with LF line endings and a final newline, as required by the sample parser.
+
+## 6. Test the security checks before trusting the updater
+
+Run these tests on your development board. Start with a known-good firmware image and keep your USB recovery method available.
+
+| Test | Change | Expected result |
+|---:|---|---|
+| 1 | Correct manifest, signature and firmware | Update succeeds |
+| 2 | Modify the manifest without regenerating the signature | Rejected at signature verification |
+| 3 | Replace the signature with a random 256-byte file | Rejected at signature verification |
+| 4 | Publish different firmware but keep the signed manifest unchanged | Rejected at the SHA-256 check |
+| 5 | Change the signed firmware size to an incorrect value and resign the manifest | Rejected when the download size doesn't match |
+| 6 | Publish a version equal to or lower than `CURRENT_VERSION` | Rejected by the sample's version policy |
+| 7 | Use an untrusted TLS certificate | Rejected before the response can be trusted |
+
+For the hash-mismatch test, restore the correct release files after testing. Do not deliberately interrupt power during your first trials.
+
+## 7. Three important limitations
+
+- **The manifest signature is not Secure Boot.** An attacker who can install arbitrary firmware through an unprotected boot chain may replace the verification code and public key. Secure Boot V2 provides the separate hardware-rooted boot verification layer.
+- **The version comparison is not hardware anti-rollback.** It helps with normal update policy, but a previously authorized older application might bypass this software check. Production anti-rollback requires a stronger enforced version policy.
+- **The example assumes a suitable OTA partition layout.** `Update.begin()` can fail if the inactive partition is too small. Your 16 MB flash capacity alone doesn't guarantee that the current partition table provides enough space.
+
+One further option worth evaluating: Arduino-ESP32 Core 3.3.12's Update library documents built-in RSA/ECDSA firmware signature verification behind the `UPDATE_SIGN` build option. That approach can authenticate the firmware image itself, rather than only authenticating a manifest and its hash. It requires the matching firmware-signing tool and signed-binary format.
+
+- [Welcome to ESP32 Arduino Core’s documentation](https://documentation.espressif.com/arduino-esp32/en/latest/index.html)
+
+> **My recommendation:** first compile this manifest-verification version with your existing CA certificate and test the seven cases above. If the compiler reports an API mismatch, share the exact error; we can adapt it to your installed Core 3.3.12 rather than changing your working OTA setup unnecessarily.
