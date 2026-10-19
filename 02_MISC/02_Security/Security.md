@@ -8,6 +8,9 @@ One important distinction throughout this course: a security feature being avail
 
 ## 1.1 — The ESP32-S3 security architecture
 
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/390242f2-9da5-42b0-aba1-03cbc2167c67" />
+
+
 [voltaat.com](https://www.voltaat.com/products/esp32-s3-devkitc-1-n16r8?utm_source=chatgpt.com)
 
 Your N16R8 configuration combines three different security domains:
@@ -51,6 +54,9 @@ The ESP32-S3 also has a hardware Key Manager associated with cryptographic key d
 
 ## 1.3 — Inside the ESP32-S3 security hardware
 
+<img width="977" height="966" alt="image" src="https://github.com/user-attachments/assets/d284f612-d299-4fd6-91e3-866f013d17d9" />
+
+
 [embeddedcomputing.com](https://embeddedcomputing.com/technology/ai-machine-learning/espressif-providing-support-for-the-aiot-market-with-its-dual-core-esp32-s3?utm_source=chatgpt.com)
 
 Think of the security hardware as several independent mechanisms rather than one master security switch.
@@ -64,12 +70,17 @@ Contains one-time-programmable fields and key blocks. These control security set
 The ESP32-S3 ROM bootloader and second-stage bootloader participate in a chain of trust. Secure Boot V2 uses RSA-3072 with RSA-PSS signatures; the trusted public-key digest is anchored in eFuse.
 
 — ESP-IDF Programming Guide latest documentation
+- [Secure Boot v2](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/security/secure-boot-v2.html)
+
 
 ### AES / XTS — flash and external-memory encryption
 
 Hardware transparently encrypts and decrypts supported memory accesses. Flash Encryption protects off-chip flash contents; S3 also supports external SPI RAM encryption through the memory cache.
 
 — ESP-IDF Programming Guide v6.1 documentation
+- [Flash Encryption](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/security/flash-encryption.html)
+- [Chapter 5 eFuse Controller](https://documentation.espressif.com/esp32-s3_technical_reference_manual_en.pdf)
+
 
 ### SHA and RSA accelerators — cryptographic operations
 
@@ -83,7 +94,7 @@ These provide hardware-assisted cryptographic operations for supported key confi
 
 Supports hardware-managed key derivation and related key operations on the S3. It is not a general-purpose vault into which Arduino applications can freely import arbitrary keys; its supported functions and configuration must be checked against the S3 documentation.
 
-**Reference:** [ESP32-S3 Technical Reference Manual](https://documentation.espressif.com/esp32-s3_technical_reference_manual_en.pdf?utm_source=chatgpt.com)
+**Reference:** [ESP32-S3 Technical Reference Manual](https://documentation.espressif.com/esp32-s3_technical_reference_manual_en.pdf)
 
 ### What does this mean for your firmware?
 
@@ -166,6 +177,1407 @@ Before we move into integrity, authenticity and TLS, consider these three questi
    - Secure Boot requires the correct bootloader, signed images and hardware trust configuration
    - The N16R8 does not support eFuse
 
-**Submit answers and continue**
+**Module 1 answers**
+- Q1: Flash Encryption: It protects the confidentiality of supported data stored in flash against offline inspection.
+- Q2: Secure Boot V2: It verifies firmware authenticity during boot using a trusted signature-verification chain.
+- Q3: Arduino upload: The complete boot and signing chain must be configured. A successful upload does not prove that Secure Boot, flash encryption, or eFuse protections are configured correctly. Secure Boot requires the correct bootloader, signed images and hardware trust configuration
 
-Ready to proceed? Our next practical milestone is **Lab 3: Valid vs Insecure TLS**, using `WiFiClientSecure` and `HTTPClient` on your ESP32-S3. Before the lab, we'll cover Module 2's trust model and Module 3's certificate validation, so you understand not only how to make the connection work, but also what each test proves.
+# Module 2 — Integrity vs authenticity vs confidentiality
+
+## 2.1 The three security properties
+
+These terms are related, but they solve different problems.
+
+### Integrity
+
+**Has the data been changed?**
+
+- **Example:** Calculate the firmware's SHA-256 hash and compare it with a trusted expected hash.
+- **ESP32-S3:** SHA hardware support or the mbedTLS SHA-256 implementation.
+
+### Authenticity
+
+**Who created or authorized the data?**
+
+- **Example:** Verify a firmware signature using a trusted publisher's public key before accepting an update.
+- **ESP32-S3:** Secure Boot V2 for boot-time firmware authentication; mbedTLS public-key verification for application-level update authorization.
+
+### Confidentiality
+
+**Can an unauthorized party read the data?**
+
+- **Example:** Protect stored Wi-Fi credentials from offline flash extraction.
+- **ESP32-S3:** Flash Encryption, appropriately configured NVS Encryption, and TLS for data in transit.
+
+These properties are independent. Encrypted firmware can still be unauthorized. Authentic firmware can contain a security vulnerability. A file can have a correct hash while being publicly readable.
+
+## 2.2 Why SHA-256 alone cannot authenticate firmware
+
+Imagine your OTA server hosts two files:
+
+```json
+// manifest.json
+{
+  "version": "2.0.0",
+  "firmware": "firmware.bin",
+  "sha256": "EXPECTED_FIRMWARE_HASH"
+}
+```
+
+```text
+// firmware.bin
+```
+
+Your ESP32 downloads both files and checks whether the calculated hash of the binary matches the manifest.
+
+That verifies consistency between the two downloaded files. But what happens if an attacker can replace both files?
+
+```text
+Original publisher
+Firmware A → SHA-256(A) → manifest A
+
+Attacker replaces both files
+Firmware B → SHA-256(B) → manifest B
+
+Device accepts the wrong firmware
+The hash comparison passes because the attacker supplied both the replacement firmware and its matching hash.
+```
+
+> **Critical principle:** SHA-256 is a cryptographic hash, not a digital signature. It does not identify the publisher or prove authorization.
+
+There is one important qualification: a hash can support authentication when the expected hash comes from an independently trusted source. The weakness is trusting an unauthenticated hash delivered alongside the file it is supposed to validate.
+
+## 2.3 — The fix: asymmetric digital signatures
+
+With digital signatures, the publisher holds a private signing key, while the ESP32 holds the corresponding trusted public key.
+
+### Publisher — private key
+
+1. Build the firmware.
+2. Calculate its SHA-256 hash.
+3. Sign the hash using the publisher's private key.
+4. Publish the firmware and signature.
+
+### ESP32-S3 — trusted public key
+
+1. Download the firmware and signature.
+2. Calculate the firmware's SHA-256 hash locally.
+3. Verify the signature using the trusted public key.
+4. Reject the update if verification fails.
+5. Only then proceed with the update process.
+
+For our later OTA lab, we will use an asymmetric signature scheme supported by mbedTLS. The publisher's private key must remain off the ESP32, preferably in a protected signing environment. The public key embedded in the device is not secret, but its integrity is critical.
+
+### Does a signature provide non-repudiation?
+
+Not automatically. A valid signature establishes that the data matches a signature generated by the corresponding private key, subject to the security of the algorithm and implementation. Strong non-repudiation also depends on key ownership, access controls, identity assurance and audit evidence.
+
+For an embedded OTA system, our immediate objectives are integrity and publisher authenticity, rather than legal non-repudiation.
+
+## 2.4 — Threat modelling with STRIDE
+
+Before writing security code, identify what an attacker might do and which control addresses it.
+
+| STRIDE threat | ESP32-S3 example | Relevant mitigation |
+|---|---|---|
+| **S — Spoofing** | Fake OTA server impersonates the publisher | TLS certificate validation; signed firmware |
+| **T — Tampering** | Firmware binary or configuration is modified | Signature verification; Secure Boot; suitable data protection |
+| **R — Repudiation** | A party denies authorizing an update | Protected signing keys and auditable signing records |
+| **I — Information disclosure** | Attacker extracts Wi-Fi credentials from flash | Flash Encryption, NVS Encryption, careful secret handling |
+| **D — Denial of service** | Attacker repeatedly disrupts downloads or exhausts resources | Timeouts, bounded buffers, retry limits, robust recovery |
+| **E — Elevation of privilege** | Malicious firmware gains control of the device | Secure Boot, least privilege, validated inputs, secure update policy |
+
+No single mechanism eliminates every threat. For example, Secure Boot can prevent execution of unauthorized firmware, but it does not prevent an attacker from jamming Wi-Fi or disconnecting the power supply.
+
+## 2.5 — Apply the model to your OTA pipeline
+
+Your current system already uses HTTPS, certificate validation, SHA-256 and `Update.h`. We will build on that rather than replace working components unnecessarily.
+
+### Transport trust
+
+`WiFiClientSecure::setCACert()` validates the server's certificate chain against a configured trust anchor, subject to hostname and certificate-validation behavior in the library.
+
+### Publisher trust
+
+An independently trusted public key verifies the signed manifest or firmware. A compromised web server should not be able to authorize its own malicious update.
+
+### Installation integrity
+
+Validate the image and metadata before committing to installation; handle interrupted downloads, boot validation and recovery deliberately.
+
+### Boot-time trust
+
+Secure Boot V2 independently verifies firmware at boot. Application-level signature verification and boot-time verification are complementary safeguards.
+
+One subtle but important implementation point: calling `Update.write()` is not the same as making the new firmware trusted. The update workflow should validate the publisher's signature before writing the image, check download length and hash, and only finalize the update after all applicable checks pass. Secure Boot then provides another verification layer at boot.
+
+## Module 2 quiz
+
+1. An attacker replaces both the firmware binary and the SHA-256 hash in an unsigned manifest. The hashes match. What can you conclude?
+   - The firmware is authentic because SHA-256 matches
+   - The binary matches the supplied hash, but publisher authenticity is unproven
+   - TLS would always detect the replacement
+
+2. Which key should the ESP32 use to verify a publisher's digital signature?
+   - The publisher's private signing key
+   - A public key obtained from the same untrusted manifest without validation
+   - A trusted publisher public key provisioned or authenticated independently
+
+3. Your device verifies the publisher's signature correctly, but an attacker can still interrupt every OTA download. Which STRIDE category best describes this attack?
+   - Denial of service
+   - Information disclosure
+   - Repudiation
+
+### Results
+
+- **Q1 = B:** Matching an attacker-supplied hash establishes consistency, not publisher authenticity.
+- **Q2 = C:** The ESP32 must trust the publisher's public key independently of the untrusted update package.
+- **Q3 = A:** Interrupting downloads is a denial-of-service attack.
+
+
+# Module 3 — TLS security on ESP32-S3
+
+**Arduino-ESP32 Core 3.x · Arduino IDE 2.x · WiFiClientSecure · HTTPClient**
+
+## 3.1 What TLS actually protects
+
+When your ESP32-S3 connects to an HTTPS server, TLS can provide three important protections:
+
+- **Confidentiality:** encrypts traffic between the device and server.
+- **Integrity:** detects unauthorized modification of protected traffic.
+- **Server authentication:** helps the device establish that it is communicating with a server presenting a certificate valid under its trust policy.
+
+However, HTTPS does not automatically prove that a downloaded firmware image was authorized by your firmware publisher. That is why we will add signed-manifest verification in Module 7.
+
+## 3.2 Compare the three connection modes
+
+### Mode A — `client.setInsecure()`
+
+**Not suitable for production trust**
+
+Encrypts the connection but disables normal server-certificate authentication. An attacker who can intercept the connection may impersonate the server and establish a separate encrypted connection to the device.
+
+### Mode B — `client.setCACert(rootCA)`
+
+**Recommended baseline**
+
+Configures a trusted CA certificate. The TLS implementation validates the server certificate chain against the configured trust anchor and performs applicable validity and hostname checks. This is the appropriate starting point for HTTPS OTA.
+
+### Mode C — Mutual TLS (mTLS)
+
+**Device and server authentication**
+
+The device validates the server, while the server also requests and validates a client certificate. The device proves possession of the corresponding private key during the TLS handshake.
+
+One practical distinction: a client certificate does not replace the server's CA trust configuration. In mTLS, the client normally needs both the server trust anchor and its own client certificate/private key.
+
+### What certificate validation checks
+
+A valid HTTPS connection requires more than finding a certificate with a familiar name.
+
+| Check | What it establishes | Typical failure |
+|---|---|---|
+| **Certificate chain** | The server certificate chains to a trusted CA | Unknown or untrusted issuer |
+| **Validity period** | Certificates are within their Not Before and Not After dates | Expired or not-yet-valid certificate |
+| **Hostname** | Certificate identity matches the requested hostname | Connecting to `example.com` but certificate identifies another host |
+| **Trust anchor** | The chain terminates at a trusted root | Wrong CA configured |
+| **TLS handshake** | Protocol negotiation and cryptographic checks succeed | Incompatible settings, peer rejection or network failure |
+
+ESP-IDF's TLS implementation supports CA-based verification and hostname validation. SNI also helps a server select the correct certificate when hosting multiple domains.
+
+> **Time matters.** The ESP32-S3 does not have a battery-backed real-time clock that automatically preserves accurate time across power loss. Synchronize its clock before validating certificate dates, and do not silently bypass certificate validation if NTP fails.
+
+## 3.3 Where should the root CA live?
+
+For a small Arduino project, a static PEM string is the simplest starting point. It can be stored in flash rather than copied into a temporary RAM buffer.
+
+```cpp
+#include <WiFiClientSecure.h>
+
+// Replace this with the actual, verified root CA PEM.
+// The complete certificate must remain available for the
+// lifetime of the WiFiClientSecure connection.
+static const char rootCA[] PROGMEM = R"PEM(
+-----BEGIN CERTIFICATE-----
+PASTE_VERIFIED_ROOT_CA_PEM_HERE
+-----END CERTIFICATE-----
+)PEM";
+
+WiFiClientSecure client;
+
+void configureTLS() {
+  client.setCACert(rootCA);
+}
+```
+
+The certificate text above is a placeholder, not a usable certificate.
+
+For a production device:
+
+- **Embedded root CA:** simple and protected against ordinary remote modification, but changing the trust anchor requires a firmware update.
+- **LittleFS:** useful when you need to update trust material, but a writable filesystem is not inherently trustworthy. Authenticate updates and protect against rollback.
+- **Certificate bundle:** useful when connecting to many public services; it increases flash usage but reduces the need to manage individual roots.
+- **Private client key:** treat it as a secret. A public root CA is not secret, but a client private key must be protected against extraction and unauthorized use.
+
+Also, `PROGMEM` is not a security boundary. It does not by itself encrypt the certificate or prevent an attacker from reading flash.
+
+## 3.4 — Mutual TLS in Arduino-ESP32 Core 3.x
+
+One API detail matters for your target: the official Arduino-ESP32 `WiFiClientSecure` interface uses `setCertificate()` and `setPrivateKey()` for the client identity, rather than relying on a `setClientCert()` method.
+
+- [NetworkClientSecure](https://github.com/espressif/arduino-esp32/blob/master/libraries/NetworkClientSecure/README.md)
+- [NetworkClientSecure.h](https://github.com/espressif/arduino-esp32/blob/master/libraries/NetworkClientSecure/src/NetworkClientSecure.h)
+
+
+```cpp
+#include <WiFiClientSecure.h>
+
+WiFiClientSecure client;
+
+extern const char serverRootCA[];
+extern const char deviceCertificate[];
+extern const char devicePrivateKey[];
+
+void configureMutualTLS() {
+  // Authenticate the server
+  client.setCACert(serverRootCA);
+
+  // Authenticate this device to the server
+  client.setCertificate(deviceCertificate);
+  client.setPrivateKey(devicePrivateKey);
+}
+```
+
+This configures the client side of mTLS. It does not make an arbitrary server enforce client authentication: the server must request and validate the device certificate, and normally associate it with an authorized device identity.
+
+For production, don't embed a long-lived device private key in an ordinary firmware image if physical extraction is in your threat model. We'll examine better credential protection in Module 4.
+
+# Lab 3 — Valid vs insecure TLS
+
+**Hardware:** ESP32-S3 N16R8 · **Serial Monitor:** 115200 baud
+
+We will run two separate sketches against [https://example.com/](https://example.com/).
+
+- **Lab A:** use `setInsecure()` to demonstrate that the request can succeed without authenticating the server.
+- **Lab B:** use `setCACert()` to validate the server's certificate chain.
+- **Negative tests:** configure the wrong CA, then test an expired certificate with an appropriate trust anchor.
+
+## Preparation
+
+1. In Arduino IDE, select your ESP32-S3 N16R8 board and its working USB serial port.
+2. Replace the Wi-Fi placeholders in each sketch with your test network credentials.
+3. In Lab B, obtain the correct root CA from the server's certificate chain using a trusted source. Verify that the chain terminates at that root. Do not paste the server's leaf certificate and call it a root CA.
+4. In **Tools → Core Debug Level**, select **Verbose** if that option is available for your selected board package.
+5. Open **Serial Monitor** at **115200 baud**.
+
+The official Arduino-ESP32 examples also synchronize the clock before TLS validation, because certificate validity dates depend on correct system time.
+
+## Lab A — Insecure TLS
+
+This is a deliberately insecure diagnostic sketch. Use it only on your test device, and do not reuse this TLS configuration in your OTA code.
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+
+const char* WIFI_SSID = "YOUR_WIFI_SSID";
+const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
+const char* TEST_URL  = "https://example.com";
+
+WiFiClientSecure client;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.setDebugOutput(true);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  Serial.print("Connecting to Wi-Fi");
+  unsigned long start = millis();
+
+  while (WiFi.status() != WL_CONNECTED &&
+         millis() - start < 20000) {
+    Serial.print(".");
+    delay(500);
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("\nWi-Fi connection failed.");
+    return;
+  }
+
+  Serial.printf("\nWi-Fi connected: %s\n",
+                WiFi.localIP().toString().c_str());
+
+  // LAB A ONLY: bypass server authentication.
+  client.setInsecure();
+
+  HTTPClient https;
+  https.setTimeout(15000);
+
+  Serial.printf("GET %s\n", TEST_URL);
+
+  if (!https.begin(client, TEST_URL)) {
+    Serial.println("HTTPClient begin failed.");
+    return;
+  }
+
+  int code = https.GET();
+
+  if (code > 0) {
+    Serial.printf("HTTP status: %d\n", code);
+    Serial.println("Request completed without CA validation.");
+  } else {
+    Serial.printf("Request failed: %s (%d)\n",
+                  HTTPClient::errorToString(code).c_str(),
+                  code);
+  }
+
+  https.end();
+  client.stop();
+}
+
+void loop() {}
+```
+
+### Expected result
+
+The request will typically succeed if the network and server are reachable. A `200` or another valid HTTP response shows that the server returned a response; it does not demonstrate that the server's identity was authenticated.
+
+## Lab B — Validated TLS
+
+Before compiling, replace the sample PEM with the complete, verified root CA certificate appropriate for `example.com`. The placeholder below deliberately cannot authenticate a real server.
+
+```cpp
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#include <HTTPClient.h>
+
+const char* WIFI_SSID = "YOUR_WIFI_SSID";
+const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";
+const char* TEST_URL  = "https://example.com/";
+
+// Replace with the real, verified root CA PEM.
+// Keep this buffer alive for the entire connection.
+static const char rootCA[] PROGMEM = R"PEM(
+-----BEGIN CERTIFICATE-----
+REPLACE_WITH_COMPLETE_VERIFIED_ROOT_CA_PEM
+-----END CERTIFICATE-----
+)PEM";
+
+WiFiClientSecure client;
+
+bool syncClock() {
+  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+
+  Serial.print("Synchronizing system time...");
+  unsigned long start = millis();
+
+  while (time(nullptr) < 1700000000 &&
+         millis() - start < 20000) {
+    Serial.print(".");
+    delay(500);
+  }
+
+  bool validTime = time(nullptr) >= 1700000000;
+  Serial.println(validTime ? "\nClock synchronized."
+                           : "\nClock synchronization failed.");
+  return validTime;
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.setDebugOutput(true);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+  Serial.print("Connecting to Wi-Fi...");
+  unsigned long start = millis();
+
+  while (WiFi.status() != WL_CONNECTED &&
+         millis() - start < 20000) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("\nWi-Fi connection failed.");
+    return;
+  }
+
+  Serial.println("\nWi-Fi connected.");
+
+  if (!syncClock()) {
+    Serial.println("FAIL CLOSED: refusing TLS without valid time.");
+    return;
+  }
+
+  // Authenticate the server using the trusted CA.
+  client.setCACert(rootCA);
+  client.setHandshakeTimeout(15);
+
+  HTTPClient https;
+  https.setTimeout(15000);
+
+  Serial.printf("Validated HTTPS GET: %s\n", TEST_URL);
+
+  if (!https.begin(client, TEST_URL)) {
+    Serial.println("HTTPClient begin failed.");
+    return;
+  }
+
+  int code = https.GET();
+
+  if (code > 0) {
+    Serial.printf("HTTP status: %d\n", code);
+    Serial.println("TLS connection succeeded with CA validation.");
+  } else {
+    Serial.printf("HTTPS failed: %s (%d)\n",
+                  HTTPClient::errorToString(code).c_str(),
+                  code);
+    Serial.println("Inspect verbose TLS logs for the cause.");
+  }
+
+  https.end();
+  client.stop();
+}
+
+void loop() {}
+```
+
+The clock check here is intentionally basic: it checks that the time is plausible, not that NTP itself is authenticated. For a production device, consider how the device establishes trustworthy time and recovers when time synchronization is unavailable.
+
+## 3.5 — Negative tests: prove that validation is working
+
+A successful connection is only half the lab. We also need to demonstrate that invalid certificates are rejected.
+
+### Test 1 — Correct root CA
+
+**Expected:** pass
+
+Use the actual trusted root CA for the server's certificate chain and a synchronized clock. The TLS handshake should succeed if the certificate, hostname and server configuration are valid.
+
+### Test 2 — Wrong root CA
+
+**Expected:** fail
+
+Replace `rootCA` with a valid but unrelated root certificate. The handshake should fail because the server's chain does not terminate at that trust anchor.
+
+### Test 3 — Expired server certificate
+
+**Expected:** fail
+
+Change the URL to [https://expired.badssl.com/](https://expired.badssl.com/) and configure the appropriate trusted root CA for its chain. The expired leaf certificate should be rejected. Confirm the current certificate dates and chain before running the test.
+
+## Reading the Serial Monitor
+
+With **Core Debug Level** set to **Verbose**, look for TLS messages indicating certificate verification errors or handshake failure. Exact messages and error codes depend on the Arduino-ESP32 core build and the failure.
+
+Common diagnostic categories include:
+
+- **Certificate verification failed:** wrong CA, expired certificate, not-yet-valid certificate or another chain-validation problem.
+- **Hostname mismatch:** the certificate does not identify the requested host.
+- **Connection or timeout failure:** potentially a network problem rather than a certificate failure.
+- **HTTP status code:** the HTTP exchange progressed far enough to receive an HTTP response; it is not, by itself, proof of secure configuration.
+
+For additional diagnostics, the official `NetworkClientSecure` implementation exposes `lastError()` on supported Core 3.x versions.
+
+## Common pitfalls to avoid
+
+- Don't pin a leaf certificate as though it were a root CA. Server certificates rotate and expire; choose the trust strategy deliberately.
+- Don't treat `setInsecure()` as a workaround for a certificate error. Diagnose the trust chain, hostname, time and certificate validity instead.
+- Don't assume HTTPS redirects are harmless. Check the destination host and trust policy if redirects are followed.
+- Don't confuse a valid certificate with an authorized firmware publisher. Module 7 will add signed-manifest verification.
+- Don't assume a verbose log proves a failed handshake was rejected for the correct reason. Verify the actual negative test and confirm that no HTTP response was received from the failed TLS connection.
+
+# Module 4 — Secure Credential Storage on ESP32-S3
+
+In this module, we’ll move from protecting data while it travels over the network (TLS) to protecting data stored inside the ESP32-S3.
+
+Your ESP32-S3 N16R8 has 16 MB of flash and 8 MB of PSRAM. For security, the critical distinction is that PSRAM is working memory, while flash is persistent storage. Wi-Fi credentials, API tokens, device configuration and other persistent values are commonly stored in flash-backed NVS or filesystems.
+
+## 4.1 What are we protecting?
+
+### 1. Device credentials
+
+<img width="750" height="750" alt="image" src="https://github.com/user-attachments/assets/72e1f41c-df7d-4aae-bb5d-d88ec14c1367" />
+
+Wi-Fi passwords, cloud API tokens, MQTT credentials and device identity keys. If extracted, these may let an attacker impersonate your device or access your services.
+
+### 2. Persistent storage
+
+<img width="1024" height="993" alt="image" src="https://github.com/user-attachments/assets/585c11a9-ae60-4c3c-9e4a-251bc0f70408" />
+
+NVS (Non-Volatile Storage), firmware partitions and filesystems such as LittleFS. Data may remain after power is removed.
+
+### 3. Runtime memory
+
+<img width="2048" height="1365" alt="image" src="https://github.com/user-attachments/assets/02b9ee9d-8f28-4a3f-ae50-a23da0b53c99" />
+
+
+Passwords and keys can also exist in RAM while your program uses them. Encrypting flash does not automatically protect secrets from compromised firmware or memory disclosure.
+
+## 4.2 The storage options
+
+| Method | What it provides | Main limitation |
+|---|---|---|
+| **Hard-coded secret in firmware** | Convenient for testing | Can be extracted from firmware; difficult to rotate safely |
+| **Ordinary NVS / Preferences** | Persistent key-value storage | Does not inherently encrypt stored values |
+| **NVS encryption** | Encrypts protected NVS entries | Requires correct key provisioning and configuration |
+| **Flash Encryption** | Encrypts flash contents using hardware-supported mechanisms | Does not replace access control, Secure Boot or safe key handling |
+| **Secure element / external key service** | Can isolate certain secrets and operations | Extra hardware, integration and provisioning complexity |
+
+> **Key idea:** Preferences is a storage API, not an encryption feature. Changing a hard-coded password to `prefs.putString()` does not, by itself, make the password confidential.
+
+## 4.3 NVS encryption versus Flash Encryption
+
+This is the most important technical distinction in Module 4.
+
+### NVS encryption
+
+Encrypts NVS data using an NVS-specific encryption scheme. The application can continue using the usual NVS read/write APIs after the encryption feature has been configured.
+
+### Flash Encryption
+
+Encrypts supported regions of the ESP32-S3's external flash. When the CPU reads mapped flash through the normal cache mechanism, the hardware transparently decrypts it. NVS data still needs its own encryption scheme.
+
+— ESP-IDF Programming Guide v5.5.6 documentation
+- [Flash Encryption](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/security/flash-encryption.html)
+
+One nuance for your ESP32-S3: Espressif supports different NVS key-protection schemes. The traditional scheme protects NVS encryption keys using Flash Encryption; supported chips can also use an HMAC-based scheme. Therefore, don't assume that enabling Flash Encryption automatically means NVS encryption is correctly configured for every ESP-IDF version and build.
+
+- [NVS Encryption](https://github.com/espressif/esp-idf/blob/master/docs/en/api-reference/storage/nvs_encryption.rst)
+- [Kconfig](https://github.com/espressif/esp-idf/blob/master/components/nvs_flash/Kconfig)
+- [ESP-IDF User Guide for ESP32-P4, SDK latest](https://documentation.espressif.com/projects/esp-idf/en/latest/esp32s3/migration-guides/release-5.x/5.2/storage.html?title=ESP-IDF+User+Guide+for+ESP32-P4,+SDK+latest)
+
+### What happens if someone reads the flash chip?
+
+| Configuration | Likely result of raw flash extraction |
+|---|---|
+| **Plain NVS, no Flash Encryption** | Stored NVS values may be recoverable |
+| **Flash Encryption only** | Application code and selected flash regions are encrypted, but ordinary NVS values are not automatically protected by NVS encryption |
+| **Flash Encryption + correctly configured NVS encryption** | Firmware and protected NVS data are encrypted at rest |
+
+These are simplified outcomes; the actual result depends on the partition table, encryption configuration and how the attacker obtains the data.
+
+## 4.4 Lab 4A — Store a credential using Preferences
+
+First, we'll examine what the Arduino API does. This is a demonstration of storage, not secure credential storage.
+
+The example stores a dummy token so you can test it without exposing a real password or API key.
+
+```cpp
+#include <Preferences.h>
+
+Preferences prefs;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  // Open a namespace for read/write access.
+  if (!prefs.begin("security", false)) {
+    Serial.println("Failed to open Preferences");
+    return;
+  }
+
+  // DEMO ONLY: this is not encrypted by Preferences.
+  prefs.putString("api_token", "DEMO-TOKEN-12345");
+
+  String token = prefs.getString("api_token", "");
+
+  Serial.print("Stored token: ");
+  Serial.println(token);
+
+  prefs.end();
+}
+
+void loop() {
+}
+```
+
+### What this lab demonstrates
+
+- `prefs.begin("security", false)` opens the `security` namespace for read/write access.
+- `putString()` writes the value to NVS.
+- `getString()` retrieves it.
+- The value persists across a restart, unlike a normal local variable.
+
+> **Security observation:** the namespace name `security` and the key name `api_token` are labels, not access controls. The API doesn't ask for a password before reading the value, and ordinary Preferences use doesn't imply encryption.
+
+**Do not substitute a real cloud token into this example.**
+
+## 4.5 Lab 4B — Design a safer storage architecture
+
+For a production IoT device, consider the following design:
+
+```text
+ESP32-S3 application
+Uses credentials only when needed
+
+Credential access layer
+Centralizes reading, validation, rotation and error handling
+
+Protected persistent storage
+NVS encryption configured for the selected ESP-IDF/core build
+
+Additional protection:
+Flash Encryption + Secure Boot, with carefully managed provisioning and recovery.
+```
+
+### Practical rules
+
+- **Separate configuration from secrets.** Brightness, thresholds and device names usually don't need confidentiality. Wi-Fi passwords and private keys do.
+- **Don't print secrets.** Avoid `Serial.println(token)` in production, even for debugging.
+- **Avoid unnecessary copies.** A secret retrieved into a `String` or buffer can remain in RAM; flash encryption doesn't protect it while the application is using it.
+- **Plan credential rotation.** Support changing or revoking cloud credentials without needing to rebuild the entire firmware.
+- **Protect the boot chain.** Storage encryption alone doesn't stop an attacker from running malicious firmware that reads secrets. Secure Boot helps prevent unauthorized firmware from booting.
+- **Treat provisioning as part of security.** A secure storage mechanism is only as strong as its key provisioning, recovery and device-access controls.
+
+Espressif cautions that Flash Encryption changes the firmware flashing and update workflow. We will study that separately before enabling any irreversible eFuse settings.
+
+— ESP-IDF Programming Guide v5.5.6 documentation
+
+## 4.6 Knowledge check
+
+1. You store an API token using `Preferences.putString()`. What can you conclude?
+   - The token is encrypted automatically
+   - The token is persistent, but encryption is not guaranteed
+   - Only the key name is stored
+
+   **Correct.** Preferences is an NVS access API. Encryption depends on the device's NVS security configuration.
+
+2. What is the key difference between Flash Encryption and NVS encryption?
+   - They are exactly the same feature
+   - Flash Encryption protects supported flash regions; NVS needs an appropriate NVS encryption scheme
+   - NVS encryption protects only data in PSRAM
+
+   **Correct.** Flash Encryption does not automatically encrypt ordinary NVS values in the way NVS encryption does.
+
+3. If an attacker can run malicious firmware on the device, is encrypted NVS alone sufficient?
+   - Yes, because the attacker can never read decrypted values
+   - No; running firmware may access secrets through normal application APIs
+   - Yes, provided the namespace is called `security`
+
+   **Correct.** Encryption at rest does not by itself defend against compromised firmware that can access decrypted data.
+
+# Module 5 — ESP32-S3 Secure Boot V2
+
+In Module 4, we looked at protecting secrets stored in flash. Now we move to a different security problem:
+
+> **How can your ESP32-S3 determine whether the firmware it is about to execute was authorized by you?**
+
+This is the purpose of Secure Boot. For your ESP32-S3 N16R8, Secure Boot V2 establishes a hardware-rooted chain of trust, helping prevent unauthorized or modified firmware from running.
+
+## 5.1 The threat: someone replaces your firmware
+
+Imagine you deploy an ESP32-S3 device that controls a motor, monitors sensors and connects to your cloud server.
+
+An attacker gets physical access to the device and attempts to install modified firmware that steals credentials or changes motor behavior.
+
+<img width="1043" height="552" alt="image" src="https://github.com/user-attachments/assets/99af6f40-4082-47d0-ba7e-7fbe4b32a59f" />
+
+
+| Scenario | Result |
+|---|---|
+| **Firmware image** | Your compiled application in flash |
+| **Tampering attempt** | An unauthorized image is written to flash |
+| **Secure Boot enabled** | Reject an image whose signature does not verify against the trusted key |
+| **No Secure Boot** | The chip lacks this signature-based boot enforcement |
+
+> **A crucial distinction:** Secure Boot is about authenticity and integrity of the boot chain, not keeping firmware confidential. Flash Encryption addresses confidentiality of supported flash contents.
+
+## 5.2 How Secure Boot V2 works
+
+The ESP32-S3 Secure Boot V2 mechanism uses RSA-3072 signatures with SHA-256 hashing and RSA-PSS signature verification. The chip uses a trusted public-key digest stored in eFuse to establish which signing key is authorized.
+
+1. **Developer signs firmware** — The release process uses a private signing key kept secret.
+2. **Signed image is installed** — USB flashing, OTA or another supported update mechanism.
+3. **Boot ROM establishes trust** — The hardware-rooted trust anchor is checked against the signature's public-key digest.
+4. **Image signature is verified** — A valid signature from an authorized key permits the boot chain to proceed.
+5. **Authorized firmware may boot** — Invalid or unauthorized signed images are rejected.
+
+The boot ROM is immutable code built into the chip. It establishes the first trust decision; subsequent boot stages must preserve the chain of trust.
+
+> The private signing key should never be embedded in your ESP32 firmware. The device needs the trusted verification material, not the publisher's private key.
+
+The verification sequence above follows Espressif's [Secure Boot V2 documentation for ESP32-S3](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/security/secure-boot-v2.html).
+
+— ESP-IDF Programming Guide v6.1 documentation
+- [Secure Boot v2](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/security/secure-boot-v2.html)
+
+## 5.3 What exactly is signed?
+
+The signature covers the firmware image, including the relevant image padding. A signature block contains the RSA public key, image digest and signature. The device checks both that the public key is authorized by the eFuse trust anchor and that the signature matches the image.
+
+Consider three scenarios:
+
+| Attack or change | Expected outcome |
+|---|---|
+| **Attacker modifies one byte of a signed firmware image** | Signature verification fails |
+| **Attacker creates a different image and signs it with their own key** | Verification fails because that key is not trusted by the device |
+| **You release a new image and sign it with your authorized private key** | Verification can succeed, provided the image and boot configuration are otherwise valid |
+
+A signature is not simply a password attached to a file. It is a cryptographic proof that the image matches a signing operation performed with the corresponding private key.
+
+## 5.4 Secure Boot is not the same as anti-rollback
+
+Suppose firmware version 1.0 has a security vulnerability. You release version 1.1 to fix it, and both versions are signed with your authorized key.
+
+Secure Boot can accept both versions because both have valid signatures. It does not, by itself, guarantee that version 1.0 is too old to run.
+
+| Mechanism | Question it answers |
+|---|---|
+| **Secure Boot** | Is this firmware authorized and intact? |
+| **Anti-rollback** | Is this firmware version permitted, or is it older than the minimum allowed security version? |
+| **Flash Encryption** | Can an attacker read or manipulate protected flash contents easily by extracting raw flash? |
+
+For a production device, these mechanisms complement one another. Secure Boot also does not prevent every denial-of-service attack or guarantee that authorized firmware is free of bugs.
+
+— ESP-IDF Programming Guide v6.1 documentation
+
+## 5.5 What this means for your Arduino IDE setup
+
+Your ESP32-S3 currently uses Arduino IDE 2.3.10 and Arduino-ESP32 core 3.3.12. Your existing OTA uploads work, but successful OTA upload does not prove that Secure Boot is enabled.
+
+The standard Arduino workflow does not automatically configure the complete Secure Boot V2 provisioning process. Enabling it involves a signed bootloader and application, key management, and eFuse configuration.
+
+> **Important for your learning board:** do not burn Secure Boot eFuses yet. eFuse changes can be irreversible, and enabling security features can change how USB flashing and recovery work. Plan the signing, provisioning and recovery process before making changes.
+
+— ESP-IDF Programming Guide v6.1 documentation
+- [Secure Boot v2](https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/security/secure-boot-v2.html)
+
+For now, we can learn and test the signing concepts without changing your board's security configuration.
+
+## 5.6 Knowledge check
+
+1. Where does the ESP32-S3 keep the trust anchor used by Secure Boot V2?
+   - In a public text file on LittleFS
+   - As a digest of an authorized RSA public key in eFuse
+   - In the Wi-Fi router
+
+   **Correct.** The eFuse key digest anchors trust in the signing public key.
+
+2. An attacker modifies one byte of a signed application image. What should happen?
+   - The signature verification should fail
+   - The ESP32 automatically repairs the byte
+   - The image is accepted if its filename is unchanged
+
+   **Correct.** Changing signed image content invalidates the signature.
+
+3. Both firmware 1.0 and 1.1 have valid signatures from your authorized key. Which feature prevents an obsolete vulnerable version from being accepted?
+   - TLS
+   - NVS encryption
+   - Anti-rollback enforcement
+
+   **Correct.** A valid signature proves authorization, not that the version is sufficiently recent.
+
+4. What should you do before enabling Secure Boot on your learning board?
+   - Burn the eFuses first and work out recovery later
+   - Plan signing, key storage, provisioning and recovery before changing eFuses
+   - Assume selecting ESP32-S3 in Arduino IDE enables it
+
+   **Correct.** Secure Boot requires a deliberate provisioning workflow; eFuse changes can be irreversible.
+
+# Module 6 — ESP32-S3 Flash Encryption
+
+In Module 5, we learned how Secure Boot V2 checks whether firmware is authorized to run. Now we’ll protect the confidentiality of data stored in your ESP32-S3 N16R8's flash.
+
+The central question is:
+
+> **If someone removes your ESP32-S3's flash chip or reads its contents using a programming tool, can they recover your firmware, configuration or stored data?**
+
+Flash Encryption is designed to make that much harder by encrypting supported flash contents using a hardware-managed key.
+
+## 6.1 Secure Boot versus Flash Encryption
+
+### Secure Boot V2 — authenticity
+
+Checks whether firmware was signed by an authorized publisher and has not been modified in a way that invalidates its signature.
+
+### Flash Encryption — confidentiality at rest
+
+Encrypts supported regions of external flash so that raw flash extraction does not ordinarily reveal the plaintext contents.
+
+Neither feature replaces the other. An encrypted firmware image could still be unauthorized if boot authentication were not enforced. Conversely, a correctly signed image can remain readable if flash encryption is not enabled.
+
+## 6.2 How encryption works on your ESP32-S3
+
+Your N16R8 board has 16 MB of external flash and 8 MB of PSRAM. Flash Encryption applies to supported external flash regions, not to PSRAM as a general-purpose memory-protection mechanism.
+
+```text
+Application writes data
+Firmware, encrypted-partition data or other supported flash contents
+
+Flash Encryption hardware
+Encrypts writes and decrypts reads through supported flash-access paths
+
+External flash
+Encrypted representation stored on the chip
+
+Authorized runtime reads can access plaintext through the normal supported hardware path.
+```
+
+The ESP32-S3 uses AES-XTS-based Flash Encryption. The encryption key is protected through eFuse-backed hardware mechanisms; it is not meant to be stored as an ordinary application string. The exact key-generation and provisioning procedure depends on the selected security configuration.
+
+— ESP-IDF Programming Guide v5.5.6 documentation
+- [Flash Encryption](https://docs.espressif.com/projects/esp-idf/en/v6.1/esp32s3/security/flash-encryption.html)
+
+## 6.3 Which flash partitions are encrypted?
+
+Flash Encryption does not mean that every byte in every partition is automatically encrypted in the same way. The bootloader's configuration and partition table matter.
+
+For ESP32-S3, the documented default encrypted regions include the second-stage bootloader, partition table, NVS key partition, OTA selection data (`otadata`) and application partitions. Other data partitions can be encrypted when marked with the `encrypted` flag in the partition table.
+
+— ESP-IDF Programming Guide v5.5.6 documentation
+
+| Partition or data | Typical treatment with Flash Encryption enabled |
+|---|---|
+| **Application firmware** | Encrypted |
+| **Second-stage bootloader** | Encrypted |
+| **Partition table** | Encrypted |
+| **NVS encryption key partition** | Encrypted |
+| **Ordinary NVS data partition** | Requires attention to the NVS encryption configuration |
+| **LittleFS / custom data partition** | Depends on partition configuration and access method |
+| **PSRAM contents** | Not protected by external-flash encryption |
+
+This is why you should not assume that storing a password in a LittleFS file makes it confidential. The partition's configuration and how the data is written matter.
+
+## 6.4 Development mode versus Release mode
+
+Espressif provides two main Flash Encryption modes. This distinction is especially important for your Arduino OTA workflow.
+
+### Development mode
+
+**For controlled development**
+
+- Allows more flexibility for flashing and testing.
+- The ROM download path may encrypt plaintext images on the device.
+- Provides weaker protection against physical reflashing attacks than Release mode.
+- Is not the recommended configuration for production devices.
+
+### Release mode
+
+**For production provisioning**
+
+- Restricts flash-encryption operations through the ROM download interface.
+- Requires a planned process for future firmware updates and recovery.
+- Commonly relies on OTA or correctly pre-encrypted images for later updates, depending on the locked-down configuration.
+- Should be deployed only after testing the complete provisioning and recovery process.
+
+> The word **development** can be misleading: it does not mean the device is fully protected from an attacker with physical access. Release mode adds restrictions, but the overall security depends on the other eFuse settings and boot protections too.
+
+— ESP-IDF Programming Guide v5.3 documentation
+- [Flash Encryption](https://docs.espressif.com/projects/esp-idf/en/v6.1/esp32s3/security/flash-encryption.html)
+
+## 6.5 What happens to your OTA updates?
+
+You previously got OTA working with `ArduinoOTA` on your ESP32-S3. Flash Encryption changes the requirements for firmware deployment, but it does not mean that OTA becomes impossible.
+
+The important sequence is:
+
+1. Your build system creates a firmware image.
+2. The update mechanism transfers the image to the device.
+3. The device writes the image to the appropriate OTA partition through a supported flash-writing path.
+4. With Flash Encryption correctly configured, supported writes to encrypted partitions are stored encrypted.
+5. On reboot, the bootloader reads the image through the hardware decryption path. If Secure Boot is also enabled, the boot chain verifies the firmware's signature.
+
+Espressif documents automatic encryption of OTA writes through supported partition-writing APIs. However, do not assume that every Arduino upload tool, custom flashing script or third-party OTA library will handle every production configuration correctly. The exact workflow must be validated against the core, bootloader, partition table and eFuse configuration.
+
+— ESP-IDF Programming Guide v5.5.6 documentation
+
+A useful security stack for your eventual OTA project is:
+
+- **TLS:** protects the connection to the update server.
+- **Signed firmware / Secure Boot:** establishes that the firmware is authorized.
+- **Flash Encryption:** protects supported flash contents at rest.
+- **Anti-rollback:** prevents booting firmware below an enforced security version, when configured.
+
+These mechanisms solve different problems.
+
+## 6.6 Safe lab — Inspect before you enable
+
+For this lesson, we will inspect your board only. **Do not burn eFuses or enable Flash Encryption as an experiment on your current working board.**
+
+If Espressif's `espefuse` utility is installed and available in your terminal, connect your board through its USB serial port (for example, `COM7`) and run:
+
+```bash
+espefuse --chip esp32s3 --port COM7 summary
+```
+
+This is intended to read and display eFuse information. If your installed version uses a different command syntax, check `espefuse --help`.
+
+Look for information relating to:
+
+- `SPI_BOOT_CRYPT_CNT` — the counter associated with Flash Encryption state.
+- Flash-encryption key blocks and their protection status.
+- Secure Boot-related eFuse fields.
+- Download-mode and debug-access restrictions.
+
+The precise field names and output depend on the utility version and chip configuration. Do not share secret key material; a summary of status fields is enough.
+
+> **Stop here if you are unsure.** Reading the summary is the exercise. Do not run `burn-efuse`, `write-protect-efuse`, or any command that changes security eFuses.
+
+## 6.7 Knowledge check
+
+1. What is the primary purpose of Flash Encryption?
+   - Prove the firmware was signed by the authorized publisher
+   - Protect supported flash contents from being recovered through raw flash extraction
+   - Encrypt all network traffic automatically
+
+   **Correct.** Flash Encryption protects supported external flash contents at rest. TLS protects network traffic, and Secure Boot verifies firmware authenticity.
+
+2. What is the main security weakness of Development mode?
+   - It cannot run encrypted firmware
+   - It always disables OTA
+   - The ROM download interface retains encryption capabilities that can weaken protection against physical reflashing attacks
+
+   **Correct.** Development mode retains capabilities useful for testing that should be restricted for production.
+
+3. Does Flash Encryption automatically encrypt every LittleFS data file?
+   - Yes, every byte of every partition is always encrypted
+   - No; the partition configuration and supported write path matter
+   - Only if the file is named `secret.txt`
+
+   **Correct.** Data partitions must be configured appropriately; do not assume filesystem data is automatically protected.
+
+4. Why combine Secure Boot with Flash Encryption?
+   - They provide complementary protections: authorized firmware verification and confidentiality of flash contents
+   - Flash Encryption makes Secure Boot unnecessary
+   - Secure Boot encrypts all user data
+
+   **Correct.** One protects the boot trust chain; the other protects supported flash contents at rest.
+
+# Module 7 — Secure OTA: Hashes versus Digital Signatures
+
+You already have HTTPS firmware downloading and OTA installation working on your ESP32-S3 N16R8. In this module, we'll strengthen that design so your device can verify who authorized a firmware release, not merely whether the downloaded file matches a hash.
+
+We'll keep this practical and build on your existing Arduino-ESP32 Core 3.3.12 setup. We won't enable Secure Boot or burn eFuses during this lesson.
+
+## 7.1 The security problem with a hash-only manifest
+
+Imagine your ESP32 downloads two files from a cloud repository:
+
+- `manifest.json` — firmware version, download URL and SHA-256 hash.
+- `firmware.bin` — the actual firmware image.
+
+Your device computes the SHA-256 hash of the downloaded firmware and compares it with the hash in the manifest.
+
+<img width="1021" height="560" alt="image" src="https://github.com/user-attachments/assets/112575e3-16d8-428a-aac1-68424ee5a771" />
+
+
+```text
+Cloud repository
+manifest.json + firmware.bin
+
+ESP32-S3 downloads both files
+Computes SHA-256 of firmware.bin
+
+Compare calculated hash with manifest hash
+Do the two values match?
+
+Match → File matches the supplied hash
+Mismatch → Reject the downloaded file
+```
+
+The weakness is subtle: what if an attacker replaces both the firmware and the manifest?
+
+The modified firmware has a different hash, but the attacker also changes the manifest to contain that new hash. The comparison still passes.
+
+HTTPS helps protect the connection to the server, but it doesn't fully solve every supply-chain problem. For example, a compromised server, compromised account, malicious publishing pipeline or incorrectly trusted endpoint could distribute both files together.
+
+## 7.2 Three levels of OTA verification
+
+| Mechanism | What it verifies | What it does not establish by itself |
+|---|---|---|
+| **SHA-256 hash** | File matches a known digest | Who authorized the file |
+| **HTTPS/TLS** | Secure connection to an authenticated server, subject to correct validation | Independent authorization of a firmware release |
+| **Digital signature** | Release was signed by the holder of an authorized private key, and signed content matches | That the signed firmware is bug-free or safe |
+
+A robust OTA system often uses all three.
+
+The important difference is the trust anchor: a hash is useful for integrity when its expected value is trusted; a digital signature lets the device verify the publisher using a public key provisioned independently of the update files.
+
+## 7.3 The solution: digitally sign the manifest
+
+We'll use a detached signature: keep the manifest and signature in separate files.
+
+### Publisher — private key
+
+The release system signs the exact bytes of `manifest.json`. The private key stays on your development/release machine or a protected signing service; it is never uploaded to the ESP32.
+
+### Update repository
+
+Publishes `manifest.json`, `manifest.sig` and `firmware.bin`. The signature is separate from the manifest, avoiding ambiguity about which JSON fields were signed.
+
+### ESP32 — trusted public key
+
+Verifies the signature against the manifest bytes using a public key embedded in, or otherwise securely provisioned to, the device. Only after successful verification does it trust the manifest's fields.
+
+The manifest could contain:
+
+```json
+{
+  "product": "esp32s3-n16r8",
+  "version": "1.2.0",
+  "firmware_url": "[https://example.com/firmware.bin](https://example.com/firmware.bin)",
+  "size": 524288,
+  "sha256": "REPLACE_WITH_64_HEX_CHARACTERS"
+}
+```
+
+These values are illustrative. The URL, version and size must match your actual release.
+
+The signature covers the exact bytes of the JSON file, including whitespace and line endings. If you reformat the JSON after signing it, signature verification should fail. That is intentional: the device verifies the precise document the publisher signed.
+
+## 7.4 The correct verification order
+
+For your ESP32-S3 OTA updater, use this sequence:
+
+| Step | Action |
+|---:|---|
+| 1 | **Download manifest and detached signature** — Use TLS with proper CA and hostname validation. |
+| 2 | **Verify manifest signature** — Reject the update immediately if verification fails. |
+| 3 | **Parse and validate manifest** — Check product identity, version policy, size limits and HTTPS URL. |
+| 4 | **Download firmware** — Enforce the expected size and handle download errors. |
+| 5 | **Verify firmware SHA-256** — Compare the actual firmware digest with the signed manifest value. |
+| 6 | **Install and reboot** — Only install after all checks pass; validate the new boot and recovery strategy. |
+
+Why verify the manifest signature before downloading firmware? Because the signed manifest determines which firmware URL, size and hash are authorized. Downloading the firmware first can waste bandwidth, although it must never be installed before all verification succeeds.
+
+A signed manifest still needs policy checks. A validly signed release might have the wrong product identifier, an unsupported version or an unsafe size. The device should reject those too.
+
+## 7.5 Lab 7A — Demonstrate why a hash alone is insufficient
+
+This first experiment runs on your Windows PC, so it won't alter your ESP32 or eFuses. It uses OpenSSL to demonstrate the trust difference.
+
+### Step 1 — Create a test signing key
+
+In a terminal with OpenSSL available:
+
+```bash
+openssl genpkey -algorithm RSA \
+  -pkeyopt rsa_keygen_bits:2048 \
+  -out test-private.pem
+
+openssl pkey -in test-private.pem \
+  -pubout -out test-public.pem
+```
+
+These are disposable lab keys. Do not use them for production releases. Keep `test-private.pem` private; the public key is what the device needs.
+
+### Step 2 — Create and hash a manifest
+
+Save the JSON manifest from Section 7.3 as `manifest.json`, then run:
+
+```bash
+openssl dgst -sha256 manifest.json
+```
+
+Record the resulting digest.
+
+Now change the manifest's version or firmware URL and hash it again. The digest changes, as expected.
+
+### Step 3 — Sign the manifest
+
+Sign the original manifest:
+
+```bash
+openssl dgst -sha256 \
+  -sign test-private.pem \
+  -out manifest.sig manifest.json
+```
+
+Verify the signature:
+
+```bash
+openssl dgst -sha256 \
+  -verify test-public.pem \
+  -signature manifest.sig manifest.json
+```
+
+Expected output:
+
+```text
+Verified OK
+```
+
+Now modify `manifest.json` without generating a new signature, then run the verification command again. It should report that verification failed.
+
+Restore the original manifest before continuing.
+
+### Step 4 — Simulate a compromised repository
+
+Imagine an attacker replaces the manifest with a different version and recalculates its SHA-256 hash. A hash-only client that trusts the replacement manifest can still accept the matching hash.
+
+But the attacker cannot create a valid signature for the replacement manifest without the authorized private key. Signature verification fails.
+
+> **Lab result:** a hash can detect an accidental or unauthorized change only when the expected hash itself is trusted. A digital signature provides a way to authenticate the publisher's signed content.
+
+## 7.6 How this connects to your Arduino OTA implementation
+
+Your existing updater already uses `WiFiClientSecure`, `HTTPClient` and `Update.h`. You don't need to replace the entire updater. You need to add a verification stage before trusting the manifest.
+
+For an Arduino-ESP32 implementation, the main functions would be separated like this:
+
+```cpp
+bool verifyManifestSignature(
+    const uint8_t* manifest,
+    size_t manifestLength,
+    const uint8_t* signature,
+    size_t signatureLength);
+
+bool parseAndValidateManifest(
+    const uint8_t* manifest,
+    size_t manifestLength);
+
+bool verifyFirmwareSHA256(
+    const uint8_t* expectedHash,
+    const uint8_t* actualHash,
+    size_t hashLength);
+```
+
+The signature-verification function uses mbedTLS public-key verification with the trusted public key and the signature algorithm used by your signing tool. For example, the OpenSSL commands above produce an RSA/SHA-256 signature using PKCS#1 v1.5 padding. The device verifier must use compatible settings; that is different from Secure Boot V2's RSA-PSS signature scheme.
+
+The exact Arduino implementation should be built and tested against the mbedTLS API included in your installed ESP32 core. Keep these rules:
+
+- Verify the signature over the exact downloaded manifest bytes, before trusting parsed values.
+- Reject malformed signatures, manifests that exceed a fixed size limit, invalid URLs and oversized firmware.
+- Compare SHA-256 over the actual firmware bytes, not the manifest or a filename.
+- Don't call `Update.begin()` and write firmware until all required checks have passed.
+- Check the final update result and design a safe rollback/recovery process.
+
+For a streaming firmware download, you can compute SHA-256 incrementally rather than storing the entire firmware image in RAM. You must ensure that verification finishes before the device commits to running the new image. A suitable dual-OTA partition layout and boot-selection strategy are important here.
+
+## 7.7 Production considerations
+
+Before treating this as a production-ready OTA system, there are three additional issues to solve.
+
+- **Anti-rollback:** a valid signature alone does not prevent reinstalling an older, vulnerable release. Enforce a version policy and, for stronger hardware-backed enforcement, evaluate ESP32-S3 anti-rollback support.
+- **Signing-key protection:** if an attacker steals your release private key, they may be able to sign malicious firmware that passes your manifest check. Protect backups, restrict signing access and plan key rotation.
+- **Firmware authenticity at boot:** signed-manifest verification is an application-level check. It does not replace Secure Boot V2, which independently verifies firmware at boot.
+
+## 7.8 Knowledge check
+
+1. An attacker replaces both `firmware.bin` and `manifest.json`, including the SHA-256 hash. What can happen with a hash-only updater?
+   - It must reject the firmware
+   - It can accept the replacement if the new firmware matches the untrusted hash
+   - The hash automatically identifies the publisher
+
+   **Correct.** The attacker controls both the data and the expected hash, so the comparison alone doesn't authenticate the release.
+
+2. Which key should the ESP32 use to verify a signed manifest?
+   - The publisher's private signing key
+   - A public key trusted independently of the downloaded update files
+   - A key supplied only inside the same unsigned manifest
+
+   **Correct.** The device verifies with a trusted public key; the private signing key must remain protected.
+
+3. Why sign the manifest before trusting its URL and firmware hash?
+   - The signature authenticates the manifest's contents, including the URL and expected digest
+   - It makes TLS unnecessary
+   - It encrypts the firmware automatically
+
+   **Correct.** The signed manifest authenticates the release metadata. TLS is still useful, and firmware encryption is a separate concern.
+
+4. If an old firmware image has a valid signature, what additional protection may be needed?
+   - A longer manifest filename
+   - Anti-rollback enforcement
+   - Disabling SHA-256
+
+   **Correct.** A valid signature doesn't by itself prove that the release is recent enough.
+
+# Module 8 — Design a Secure ESP32-S3 IoT Device
+
+This final module brings together everything you've learned and applies it to your ESP32-S3 N16R8 development board.
+
+We'll use a realistic project: an ESP32-S3 device that reads sensors, controls a DC motor, connects to Wi-Fi, reports telemetry to a cloud service and installs firmware updates over the air.
+
+The objective is not simply to enable every security feature. It is to identify each threat, select the right protection, and deploy it without losing the ability to update or recover the device.
+
+## 8.1 The complete security architecture
+
+<img width="787" height="649" alt="image" src="https://github.com/user-attachments/assets/e7b26a86-d14f-4216-a105-5cd0f838813a" />
+
+
+
+```text
+Cloud service and firmware repository
+TLS endpoint · Signed manifest · Firmware releases
+
+Authenticated communications
+TLS certificate and hostname validation · Optional mutual TLS
+
+ESP32-S3 N16R8
+Secure Boot V2
+Authorized firmware
+
+Flash Encryption
+Flash confidentiality
+
+NVS Encryption
+Protected stored secrets
+
+Secure OTA
+Signed metadata and hash checks
+
+Application and peripherals
+FreeRTOS tasks · Motor control · Sensors · GPIO
+```
+
+These protections operate at different layers. TLS protects network communication; signed manifests authenticate release metadata; Secure Boot verifies the firmware boot chain; Flash Encryption protects supported flash contents at rest; and NVS Encryption protects appropriately configured stored values.
+
+For production, also consider debug/download access restrictions, anti-rollback, secure manufacturing, key rotation, fault handling and physical tampering.
+
+## 8.2 Threat model: what can go wrong?
+
+A threat model helps us prioritize the protections instead of enabling features blindly.
+
+| Threat | Example | Primary mitigation |
+|---|---|---|
+| **Network interception** | Attacker intercepts telemetry or update traffic | TLS with certificate and hostname validation |
+| **Malicious firmware update** | Repository serves an unauthorized release | Signed manifest and firmware verification; Secure Boot V2 |
+| **Flash extraction** | Attacker reads stored firmware or data | Flash Encryption; NVS Encryption where appropriate |
+| **Credential theft** | Wi-Fi or cloud token is exposed | Protected storage, restricted logging, credential rotation |
+| **Firmware downgrade** | Device reinstalls a vulnerable signed release | Enforced anti-rollback policy |
+| **Unauthorized physical access** | Attacker uses debug or download interfaces | Appropriate eFuse configuration and interface restrictions |
+| **Compromised signing key** | Attacker signs malicious releases | Protected signing infrastructure, restricted access, key rotation and revocation strategy |
+| **Failed update** | Power is lost during installation or new firmware crashes | Dual OTA slots, validation and recovery/rollback design |
+
+No single mechanism eliminates every threat. For example, Secure Boot cannot make a vulnerable but correctly signed application safe, and TLS cannot protect secrets from malicious firmware already running on the device.
+
+## 8.3 A realistic deployment plan
+
+For your existing Arduino OTA project, I recommend the following staged approach.
+
+### Stage 1 — Harden the current software
+
+- Keep TLS certificate and hostname validation enabled.
+- Ensure system time is set before certificate date checks.
+- Remove production use of `setInsecure()`.
+- Never print Wi-Fi passwords, tokens or private keys.
+- Add explicit update size limits and clear error handling.
+
+### Stage 2 — Authenticate software releases
+
+- Create a release manifest with product ID, version, size and SHA-256.
+- Sign the exact manifest bytes with a protected publisher private key.
+- Verify the signature on the ESP32 using a trusted public key.
+- Verify the firmware's SHA-256 before accepting the update.
+
+### Stage 3 — Validate update and recovery behavior
+
+- Confirm that the partition table has suitable OTA slots.
+- Test interrupted downloads, wrong hashes and invalid signatures.
+- Test what happens if the new application fails during boot.
+- Keep a documented recovery route while developing.
+
+### Stage 4 — Protect persistent secrets
+
+- Identify which NVS values are actually confidential.
+- Configure and test NVS Encryption using a supported ESP-IDF-based build and provisioning workflow.
+- Confirm how the encryption keys are protected and recovered.
+
+### Stage 5 — Provision hardware security
+
+- Integrate Secure Boot V2 and Flash Encryption.
+- Test signing, first boot, OTA updates and recovery on dedicated test hardware.
+- Verify eFuse settings and debug/download restrictions.
+- Only then define a production provisioning procedure.
+
+> **Important:** Stage 5 is not just a Tools-menu setting. With your Arduino-ESP32 Core 3.3.12 setup, first verify the exact supported build and signing workflow, bootloader configuration, partition table and provisioning procedure. Do not experiment with irreversible eFuse changes on your working development board.
+
+## 8.4 Design decision: where should the trust anchor live?
+
+For signed OTA, the device needs a trusted public key that an attacker cannot simply replace alongside the manifest.
+
+There are several approaches:
+
+### Option A — Public key embedded in the application
+
+Simple to prototype. However, replacing the application could also replace its embedded verification key if the boot chain does not prevent unauthorized firmware.
+
+### Option B — Public key protected by the secure boot chain
+
+Stronger when the firmware containing the key is itself authenticated by Secure Boot. Key updates and rotation still require a planned trust strategy.
+
+### Option C — Hardware-rooted trust and controlled key management
+
+For higher-assurance designs, use the ESP32-S3 security features and a carefully designed signing-key lifecycle. Keep release private keys off the device and protect them in the release environment.
+
+The public key is not secret. Its authenticity and resistance to unauthorized replacement are what matter.
+
+## 8.5 Final project — Secure OTA acceptance test
+
+Use this as your capstone checklist before considering your ESP32-S3 update mechanism secure.
+
+### Acceptance checklist
+
+**0 of 10**
+
+- [ ] HTTPS works with the correct CA and hostname, and rejects an untrusted certificate.
+- [ ] The manifest signature is checked before its fields are trusted.
+- [ ] A modified manifest is rejected even if the attacker recalculates its SHA-256 field.
+- [ ] A firmware image with a wrong hash is never installed.
+- [ ] Wrong product IDs, invalid URLs, excessive image sizes and disallowed versions are rejected.
+- [ ] Interrupted downloads do not corrupt the currently working firmware.
+- [ ] The device has a tested recovery path after a failed update.
+- [ ] Production logs contain no passwords, private keys or access tokens.
+- [ ] NVS Encryption, Secure Boot and Flash Encryption are configured only after testing their exact provisioning workflows.
+- [ ] Key rotation, anti-rollback and production recovery requirements are documented.
+
+**Copy checklist**
+
+> This checklist is a design and testing aid, not a certification. Passing it does not prove that the whole product is free from vulnerabilities.
+
+## 8.6 Final assessment
+
+1. Your updater uses HTTPS and validates the server certificate. Does that alone establish that a firmware release was authorized by your publisher?
+   - Yes, always
+   - No; verify a trusted publisher signature as well
+   - Only when the filename ends in `.bin`
+
+   **Correct.** TLS authenticates the server connection. Signed release metadata independently authenticates the publisher's authorized content.
+
+2. What does Secure Boot add to a signed-manifest OTA system?
+   - It independently checks firmware authenticity in the boot chain
+   - It replaces TLS certificate validation
+   - It automatically encrypts every NVS value
+
+   **Correct.** Secure Boot verifies the boot chain, providing protection even if an update path has a flaw.
+
+3. Why should Flash Encryption and Secure Boot be tested together before production provisioning?
+   - They use exactly the same key and do the same thing
+   - Their configuration affects flashing, booting, updates and recovery, and eFuse changes may be irreversible
+   - They are enabled automatically by selecting the ESP32-S3 board
+
+   **Correct.** Production security depends on the complete build and provisioning workflow, not just an individual feature.
+
+4. What should happen if the firmware's SHA-256 does not match the value in a verified signed manifest?
+   - Install it and log a warning
+   - Install it if TLS succeeded
+   - Reject the firmware and do not install it
+
+   **Correct.** A mismatch means the downloaded image does not match the signed release metadata.
+
+5. Which is the strongest overall design among these choices?
+   - HTTPS only
+   - Flash Encryption only
+   - Validated TLS, signed update metadata, firmware hash verification, Secure Boot, protected secrets and tested recovery
+
+   **Correct.** A layered design addresses different threats; no individual control covers all of them.
+
+## Where you go from here
+
+You've now covered all eight modules: security architecture, security properties, TLS, credential storage, Secure Boot V2, Flash Encryption, signed OTA, and system-level design.
+
+My recommendation is to make the next step a hands-on hardening of your existing ESP32-S3 OTA updater, before attempting eFuse provisioning. Start by reviewing your current `downloadAndInstall()` flow and adding signed-manifest verification in a way that preserves your working TLS and OTA behavior.
+
+That gives you a practical path from a functioning update demo to a much stronger security design—while keeping your current development board recoverable.
