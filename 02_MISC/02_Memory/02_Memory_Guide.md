@@ -479,6 +479,7 @@ For authoritative restrictions and capability details, see the Espressif documen
 
 <img width="3200" height="2300" alt="image" src="https://github.com/user-attachments/assets/e1011369-3a0d-4b07-acce-2ba4e780c574" />
 
+<img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/e21e1f28-c24d-4186-81d2-1b7f51d79510" />
 
 
 ### 4.2 `PROGMEM` on ESP32-S3
