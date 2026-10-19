@@ -464,6 +464,18 @@ For authoritative restrictions and capability details, see the Espressif documen
 | `new` / `delete`                                                | C++ default allocation policy                                     | Objects; placement depends on heap configuration                                              |
 | `uint8_t buf[1024]` inside a function                           | Current task's stack                                              | Small, short-lived local buffer                                                               |
 
+#### Memory Map & Variable Declarations
+
+| Memory Region | Primary Function | Declaration Syntax Example | Lifetime / Behavior |
+|---|---|---|---|
+| **DRAM** (Data RAM) | RAM accessible by data bus. Stores standard variables and heap. | `int global_var = 10;`<br>`static int local_static;` | Volatile. Reset on power-off, deep sleep, or system restarts. |
+| **IRAM** (Instruction RAM) | Executable RAM. Used for timing-critical code and interrupt handlers. | `void IRAM_ATTR my_isr() { ... }` | Code runs directly from RAM instead of Flash for maximum speed. |
+| **DROM** (Data ROM / Flash) | Constants mapped directly from External SPI Flash via the cache MMU. | `const char single_msg[] = "Hello";`<br>`const int lookup_table[5] = {1,2,3,4,5};` | Non-volatile. Stored permanently in flash; read-only at runtime. |
+| **EXT_RAM (PSRAM)** (External RAM) | Optional external pseudo-static RAM for massive arrays or buffers. | `EXT_RAM_BSS_ATTR uint8_t large_buffer[1024];` | Volatile. Must be explicitly enabled in `menuconfig`. |
+| **RTC Fast Memory** | Fast RTC RAM used for code/data executed right after a deep-sleep wake. | `RTC_DATA_ATTR int wake_counter = 0;` | Survives Deep Sleep. Reset during hard reboots or power loss. |
+| **RTC Slow Memory** | Slower RTC RAM utilized primarily for storing deep-sleep state data. | `RTC_NOINIT_ATTR int sleep_state;` | Survives Deep Sleep. Variables are not reinitialized to `0` on boot. |
+
+
 ### 4.2 `PROGMEM` on ESP32-S3
 
 For normal ESP32-S3 Arduino builds, `PROGMEM` is primarily a compatibility convention. Flash-mapped constants are accessed through the memory map; the AVR model of requiring special Flash-read instructions does not generally apply.
