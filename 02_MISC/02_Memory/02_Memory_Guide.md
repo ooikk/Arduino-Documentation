@@ -475,6 +475,8 @@ For authoritative restrictions and capability details, see the Espressif documen
 | **RTC Fast Memory** | Fast RTC RAM used for code/data executed right after a deep-sleep wake. | `RTC_DATA_ATTR int wake_counter = 0;` | Survives Deep Sleep. Reset during hard reboots or power loss. |
 | **RTC Slow Memory** | Slower RTC RAM utilized primarily for storing deep-sleep state data. | `RTC_NOINIT_ATTR int sleep_state;` | Survives Deep Sleep. Variables are not reinitialized to `0` on boot. |
 
+<img width="1600" height="1150" alt="image" src="https://github.com/user-attachments/assets/362a27dc-e52e-459d-af02-038397b67c69" />
+
 
 ### 4.2 `PROGMEM` on ESP32-S3
 
