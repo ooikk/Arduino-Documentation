@@ -475,9 +475,9 @@ For authoritative restrictions and capability details, see the Espressif documen
 | **RTC Fast Memory** | Fast RTC RAM used for code/data executed right after a deep-sleep wake. | `RTC_DATA_ATTR int wake_counter = 0;` | Survives Deep Sleep. Reset during hard reboots or power loss. |
 | **RTC Slow Memory** | Slower RTC RAM utilized primarily for storing deep-sleep state data. | `RTC_NOINIT_ATTR int sleep_state;` | Survives Deep Sleep. Variables are not reinitialized to `0` on boot. |
 
-<img width="1600" height="1150" alt="image" src="https://github.com/user-attachments/assets/362a27dc-e52e-459d-af02-038397b67c69" />
 
-<img width="3200" height="2300" alt="image" src="https://github.com/user-attachments/assets/e1011369-3a0d-4b07-acce-2ba4e780c574" />
+<img width="3200" height="2300" alt="image" src="https://github.com/user-attachments/assets/00935d3c-2e4a-4ff4-8525-7c217f7c2940" />
+
 
 <img width="3840" height="2160" alt="image" src="https://github.com/user-attachments/assets/e21e1f28-c24d-4186-81d2-1b7f51d79510" />
 
