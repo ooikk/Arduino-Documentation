@@ -1,4 +1,5 @@
-# ESP32-S3 Security Engineering — Module 1
+# Module 1 — ESP32-S3 Security Engineering
+
 
 **Target:** ESP32-S3 DevKitC-1 · N16R8 · Arduino IDE 2.x · Espressif Arduino-ESP32 Core 3.x
 
