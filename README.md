@@ -960,6 +960,10 @@ https://www.youtube.com/watch?v=_HzG5FjH_6g
 
 https://www.calculator.net/resistor-calculator.html
 
+## 30 Type of Sensors
+
+<img width="1024" height="1536" alt="FB_IMG_1792229865174" src="https://github.com/user-attachments/assets/89dea962-4950-4d07-b4c5-8332dea4560b" />
+
 
 ## Circuit Simulators
 
