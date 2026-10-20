@@ -473,6 +473,13 @@ We will run two separate sketches against [https://example.com/](https://example
 
 The official Arduino-ESP32 examples also synchronize the clock before TLS validation, because certificate validity dates depend on correct system time.
 
+**Documents about location CA**
+
+[Locating and Exporting the Root CA Certificate](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#locating-and-exporting-the-root-ca-certificate)
+
+[Obtaining the ThingsBoard Root CA Certificate](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Thingsboard.md#obtaining-the-thingsboard-root-ca-certificate)
+
+
 ## Lab A — Insecure TLS
 
 This is a deliberately insecure diagnostic sketch. Use it only on your test device, and do not reuse this TLS configuration in your OTA code.
