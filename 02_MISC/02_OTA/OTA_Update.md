@@ -3594,7 +3594,7 @@ I would choose **Cloudflare R2 with a small Cloudflare Worker**.
 
 This adds some initial setup, but it gives you a clean separation between private firmware storage, download authorization, and firmware authenticity.
 
-One practical detail will help determine the simplest implementation: **will the ESP32 download updates only for your own devices during development, or will you eventually distribute devices to paying customers?**
+
 
 
 ---
