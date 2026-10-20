@@ -3501,6 +3501,102 @@ One final security point: a publicly accessible firmware URL is effectively a pu
 
 If you'd like to experiment next, I suggest trying Google Drive first. You can retain your current `downloadAndInstall()` implementation and change the URL constants initially, then inspect the ESP32's HTTP status and TLS diagnostics to determine whether additional redirect handling is necessary.
 
+# Other Free Repository Hosts
+
+For your ESP32-S3 OTA project, I would look for a cloud service that lets the device download `firmware.bin` over HTTPS with simple authentication, while keeping your firmware repository private.
+
+The important distinction is between **authentication of the download** and **protection of your intellectual property**. A private cloud store controls who can download the file; signed firmware and device licensing address whether the downloaded firmware is authentic and authorized to run.
+
+I'll compare options based on four practical requirements:
+
+- A free tier suitable for a small firmware repository.
+- HTTPS downloads supported by `WiFiClientSecure` and `HTTPClient`.
+- Authentication that does not require a full browser-based login on the ESP32.
+- Straightforward integration with your existing `downloadAndInstall()` function.
+
+## 1. Best options to consider
+
+### 1. Cloudflare R2 — best for firmware files
+
+<img width="900" height="500" alt="image" src="https://github.com/user-attachments/assets/7f7760ab-fa32-42a5-be85-5f46e31eea41" />
+
+[Cloudflare R2](https://developers.cloudflare.com/r2)
+
+**My first choice**
+
+- **Free allowance:** 10 GB storage, 1 million Class A operations and 10 million Class B operations monthly; no egress fees for standard R2 storage.
+
+R2 is object storage, rather than a source-code repository. You can store `firmware.bin`, `version.txt`, and `version.sig` in a private bucket. A small Cloudflare Worker can authorize requests and provide access to the file without embedding storage credentials in your ESP32.
+
+[R2 documentation](https://developers.cloudflare.com/r2/) · [Presigned URL guide](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
+
+### 2. Supabase Storage — good if you want private files and an API
+
+<img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/546c5d0f-da1b-4e2c-8a8d-4be7c1083460" />
+
+[Supabase Storage](https://supabase.com/docs/guides/storage)
+
+- **Free allowance:** 1 GB storage and 5 GB egress monthly, plus 500,000 Edge Function invocations.
+
+Private buckets require authorization. Your backend can create a temporary signed download URL, which the ESP32 then uses to download the firmware.
+
+This is a reasonable choice, but it introduces more backend configuration than a simple static file host.
+
+[Storage documentation](https://supabase.com/docs/guides/storage) · [Edge Functions documentation](https://supabase.com/docs/guides/functions)
+
+### 3. GitLab — easiest migration from GitHub
+
+<img width="1200" height="1200" alt="image" src="https://github.com/user-attachments/assets/248f5ba1-73db-45a4-9f57-7dd193b4c2b0" />
+
+[GitLab](https://about.gitlab.com/)
+
+GitLab's Free tier supports private repositories and its Repository Files API provides authenticated raw-file downloads. A personal access token can use the `read_repository` scope.
+
+This is closest to your existing GitHub workflow. The drawback is that storing the access token in firmware makes the token extractable; it is not a good long-term secret for a commercial product.
+
+[Repository Files API](https://docs.gitlab.com/api/repository_files/)
+
+## 2. What about Google Drive and OneDrive?
+
+Both can store firmware files, but I would not choose them first for an embedded OTA system.
+
+| Service | Main complication for ESP32 OTA |
+|---|---|
+| Google Drive | Private-file downloads generally require Google API authentication and OAuth-related setup. |
+| Microsoft OneDrive | Microsoft Graph downloads can redirect to a temporary, preauthenticated download URL. Your updater must handle the redirect and its URL lifetime. |
+
+Links: [Google Drive download documentation](https://developers.google.com/drive/api/guides/manage-downloads) · [Microsoft Graph download documentation](https://learn.microsoft.com/en-us/graph/api/driveitem-get-content)
+
+## 3. The authentication design matters more than the storage provider
+
+There are three practical patterns:
+
+- **Pattern A — Put a token in the ESP32**  
+  Simple to implement, but someone who extracts `firmware.bin` may also extract the token. Avoid using a broad account token.
+
+- **Pattern B — Use a temporary signed URL**  
+  Your backend generates a URL that grants access to a particular file for a limited time. The ESP32 downloads it over HTTPS. Anyone who obtains the URL can use it until it expires, so treat it like a temporary bearer credential.
+
+- **Pattern C — Use a small authorization service**  
+  The ESP32 authenticates to your service, which authorizes the download and returns a short-lived URL or streams the file. This avoids embedding your cloud-storage master credentials in firmware and gives you better control over access.
+
+A critical limitation: if you place a fixed token or fixed signed URL inside the firmware, it can be extracted along with the binary. A temporary URL only helps if it is obtained securely when needed, rather than permanently embedded in the firmware.
+
+## 4. My recommendation for your project
+
+I would choose **Cloudflare R2 with a small Cloudflare Worker**.
+
+- Keep the firmware files in a private R2 bucket.
+- Have the Worker authorize download requests and issue a short-lived URL or stream the file.
+- Keep R2 access credentials in the Worker, never in the ESP32.
+- Retain your existing TLS certificate validation, signed manifest, and SHA-256 checks.
+- If you later add offline device licensing, treat that as a separate control; cloud authentication alone does not prevent someone from running a firmware binary they already copied.
+
+This adds some initial setup, but it gives you a clean separation between private firmware storage, download authorization, and firmware authenticity.
+
+One practical detail will help determine the simplest implementation: **will the ESP32 download updates only for your own devices during development, or will you eventually distribute devices to paying customers?**
+
+
 ---
 # Reference & Other Resources
 
