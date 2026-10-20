@@ -3518,7 +3518,7 @@ I'll compare options based on four practical requirements:
 
 ### 1. Cloudflare R2 — best for firmware files
 
-<img width="900" height="500" alt="image" src="https://github.com/user-attachments/assets/7f7760ab-fa32-42a5-be85-5f46e31eea41" />
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/7f7760ab-fa32-42a5-be85-5f46e31eea41" />
 
 [Cloudflare R2](https://developers.cloudflare.com/r2)
 
@@ -3532,7 +3532,7 @@ R2 is object storage, rather than a source-code repository. You can store `firmw
 
 ### 2. Supabase Storage — good if you want private files and an API
 
-<img width="512" height="512" alt="image" src="https://github.com/user-attachments/assets/546c5d0f-da1b-4e2c-8a8d-4be7c1083460" />
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/546c5d0f-da1b-4e2c-8a8d-4be7c1083460" />
 
 [Supabase Storage](https://supabase.com/docs/guides/storage)
 
@@ -3546,7 +3546,7 @@ This is a reasonable choice, but it introduces more backend configuration than a
 
 ### 3. GitLab — easiest migration from GitHub
 
-<img width="1200" height="1200" alt="image" src="https://github.com/user-attachments/assets/248f5ba1-73db-45a4-9f57-7dd193b4c2b0" />
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/248f5ba1-73db-45a4-9f57-7dd193b4c2b0" />
 
 [GitLab](https://about.gitlab.com/)
 
