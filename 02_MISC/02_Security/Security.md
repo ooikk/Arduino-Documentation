@@ -2130,3 +2130,111 @@ One further option worth evaluating: Arduino-ESP32 Core 3.3.12's Update library 
 - [Welcome to ESP32 Arduino Core’s documentation](https://documentation.espressif.com/arduino-esp32/en/latest/index.html)
 
 > **My recommendation:** first compile this manifest-verification version with your existing CA certificate and test the seven cases above. If the compiler reports an API mismatch, share the exact error; we can adapt it to your installed Core 3.3.12 rather than changing your working OTA setup unnecessarily.
+
+---
+
+# Protecting an OTA update is not the same as protecting your intellectual property (IP)
+
+Your current ESP32-S3 OTA security work can help ensure that devices receive authentic firmware. However, it does not automatically prevent someone who obtains `firmware.bin` from copying your product, studying your implementation, or building a competing device.
+
+Let's examine your two scenarios and the practical protections available on your ESP32-S3 N16R8.
+
+## 1. Scenario A — Someone flashes your firmware.bin onto their own ESP32-S3
+
+Suppose you sell a product containing an ESP32-S3, a display, sensors, and your proprietary application. Someone obtains the same firmware binary and buys compatible hardware.
+
+| Protection mechanism | Can it stop this? | Explanation |
+|---|---|---|
+| HTTPS / TLS | No | Protects the download connection, not the downloaded file after release. |
+| SHA-256 checksum | No | Detects a mismatch against a trusted digest; it does not prevent copying. |
+| Signed OTA manifest | No, by itself | Authenticates the release metadata, but does not restrict who can run the firmware. |
+| Secure Boot V2 | No, by itself | Enforces firmware-signing rules at boot. If the copied firmware is validly signed, another compatible device may accept it. |
+| Flash Encryption | Sometimes helps | Makes flash contents harder to extract from a device, but does not prevent someone from using a firmware binary they already possess. |
+| Device-bound authorization | Yes, if designed properly | Firmware can require proof that it is running on an authorized device before enabling protected features. |
+
+The key point is that a valid signature answers **“Was this firmware authorized by the publisher?”** It does not answer **“Is this device licensed to run it?”**
+
+## 2. Scenario B — Someone reverse-engineers firmware.bin
+
+This is also possible. A compiled ESP32 application is machine code, not the original Arduino C++ source, but it can still reveal substantial implementation details.
+
+| What an attacker does | What they may learn |
+|---|---|
+| Extract readable strings | API endpoints, debug messages, configuration names, sometimes credentials |
+| Disassemble the binary | Machine instructions, function calls, control flow |
+| Use a decompiler such as Ghidra | Approximate C-like pseudocode and application logic |
+| Inspect constants and lookup tables | Algorithms, thresholds, calibration values, protocol details |
+| Examine hardware interactions | Sensor interfaces, GPIO assignments, timing, communication protocols |
+
+They generally will not recover your exact original source code, comments, variable names, or project structure unless additional debugging information is available. However, a sufficiently skilled engineer may reconstruct important algorithms and reproduce much of the product's behaviour.
+
+### What can reduce this risk?
+
+- Strip debugging information and avoid shipping debug builds. This removes helpful clues, although it does not prevent disassembly.
+- Obfuscate selected logic. This can increase reverse-engineering effort, but obfuscation is not a security boundary.
+- Keep your most valuable algorithms or decision-making on a server, if the product can tolerate the network dependency.
+- Enable Flash Encryption in production mode to protect firmware stored in the device's external flash against straightforward physical readout. Espressif recommends combining it with Secure Boot; it does not protect a plaintext `.bin` that you have already distributed.
+
+## 3. A stronger design: make the firmware both authentic and licensed
+
+For a commercial ESP32-S3 product, I would separate the controls into three objectives:
+
+### Objective A — Prevent unauthorized firmware
+
+Enable Secure Boot V2 and sign your production firmware. Only software authorized by your signing key should be allowed to boot on a properly configured device.
+
+### Objective B — Make firmware extraction harder
+
+Use Flash Encryption in release mode, with appropriate production eFuse and debug-interface configuration. Keep signing keys and device provisioning secrets protected. This protects firmware stored on the device, not a binary already obtained by an attacker.
+
+### Objective C — Restrict use to authorized products
+
+Add device licensing or device-bound authorization. A copied firmware image should not automatically grant access to your paid product's protected functionality.
+
+These are complementary controls, not interchangeable ones. Espressif's guidance recommends combining Secure Boot and Flash Encryption for production devices.
+
+### How device-bound authorization could work
+
+For example, imagine you manufacture 1,000 ESP32-S3 devices.
+
+1. **Provision each device**  
+   Assign a unique device identity and, where appropriate, a unique cryptographic key.
+
+2. **Boot verified firmware**  
+   Secure Boot checks that the firmware was signed by an authorized publisher.
+
+3. **Verify the device's license**  
+   The application authenticates with your licensing service or validates a device-specific authorization.
+
+4. **Enable licensed features**  
+   Unauthorized devices cannot automatically obtain the credentials or authorization needed for protected functions.
+
+A few important details:
+
+- Do not put one shared licensing secret into every firmware image. If extracted, that single secret could compromise the whole product line.
+- For online licensing, authenticate devices using unique credentials or cryptographic keys and have your server issue authorization.
+- For offline products, use device-specific signed licenses or cryptographic provisioning. These can make cloning harder, but offline enforcement is more difficult to defeat if an attacker can modify or emulate the application.
+- Protect the license-checking code with Secure Boot and appropriate flash/debug protections. Otherwise, an attacker may patch the check to always return “licensed.”
+
+## 4. What I would do for your current project
+
+Since you are developing with Arduino IDE and the ESP32-S3 N16R8, I would take this approach in stages:
+
+| Stage | Action | Primary benefit |
+|---|---|---|
+| 1 | Keep TLS, signed manifest and SHA-256 verification | Authentic OTA releases |
+| 2 | Sign firmware and plan for Secure Boot V2 | Prevent unauthorized firmware from booting on properly provisioned devices |
+| 3 | Test Flash Encryption on a separate development board | Reduce physical firmware extraction |
+| 4 | Add unique device identities and a licensing mechanism | Deter unauthorized use and mass cloning |
+| 5 | Move especially valuable algorithms to a server, where practical | Reduce the amount of valuable logic exposed in the binary |
+
+**Important:** do not enable release-mode Flash Encryption or burn security eFuses on your current working development board just to experiment. These operations can permanently restrict flashing, debugging and recovery. Validate the full production and recovery process on a separate board first.
+
+## 5. The fundamental limitation
+
+If an attacker obtains your plaintext `firmware.bin`, you cannot guarantee that they will be unable to study it. Nor can Secure Boot alone prevent someone from using a validly signed firmware image on another compatible device.
+
+The realistic objective is to make copying harder, less useful, and more costly through layered protections, device-specific authorization, and appropriate legal IP protection. Copyright, patents, trade secrets and licensing agreements address different aspects of unauthorized copying; the right combination depends on the product and jurisdiction.
+
+For your next design decision, the most important question is: **must your product operate completely offline, or can it connect to the internet periodically to verify its license?** That determines how robustly you can restrict unauthorized devices without compromising the user experience.
+
