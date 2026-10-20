@@ -2216,6 +2216,80 @@ A few important details:
 - For offline products, use device-specific signed licenses or cryptographic provisioning. These can make cloning harder, but offline enforcement is more difficult to defeat if an attacker can modify or emulate the application.
 - Protect the license-checking code with Secure Boot and appropriate flash/debug protections. Otherwise, an attacker may patch the check to always return “licensed.”
 
+#### Device-bound licensing design
+
+If your ESP32-S3 product must operate completely offline, I recommend a **device-bound licensing design** rather than modifying the SHA-256 hash. You can make a copied `firmware.bin` much less useful on unauthorized hardware, although no purely software-based offline scheme can guarantee protection against a determined reverse engineer.
+
+##### 1. Recommended design for your ESP32-S3 N16R8
+
+- **Production firmware:** Secure Boot V2 + signed firmware + license verification
+- **Device-specific license:** Contains the authorized device identity and a digital signature from your licensing private key
+- **Offline verification at startup:** The ESP32 verifies the license signature and checks that it matches this device
+- **Enable or deny protected features**
+
+##### 2. How the licensing process works
+
+For example, suppose you manufacture three products.
+
+| Device | Device identity | License |
+|---|---|---|
+| Product A | `DEVICE-001` | Valid for A |
+| Product B | `DEVICE-002` | Valid for B |
+| Product C | `DEVICE-003` | Valid for C |
+
+Your licensing tool generates a license for each product and signs it with a private key kept on your PC, not in the ESP32.
+
+The firmware contains only the corresponding public key. At startup, it verifies the license signature and checks the device identity. Copying Product A's license to Product B should fail the identity check.
+
+The license could contain fields such as:
+
+```text
+device_id = DEVICE-001
+product_id = MY_PRODUCT
+features = FULL
+license_version = 1
+```
+
+The private key signs these fields. The ESP32 verifies that signature offline.
+
+##### 3. Where should the device identity be stored?
+
+You have three practical choices.
+
+###### Option A — NVS / ordinary flash
+
+Easy to implement, but the identity may be copied or modified by an attacker who can rewrite flash. Suitable for prototypes, not strong anti-cloning protection.
+
+###### Option B — ESP32-S3 eFuse-backed identity
+
+You can use an appropriately provisioned, device-specific eFuse value as part of the identity. eFuses are one-time-programmable, so plan and test provisioning carefully. A public identifier alone does not prove device authenticity; the design also needs a protected secret or another unforgeable property.
+
+###### Option C — External secure element
+
+A secure element can keep a unique private key inside dedicated hardware and perform cryptographic operations without exposing that key to the ESP32. This is generally the stronger choice when resistance to cloning and physical extraction is important, at additional hardware and integration cost.
+
+
+##### 4. What happens if someone copies your firmware?
+
+| Attacker's action | Expected result with the proposed design |
+|---|---|
+| Copies `firmware.bin` to another ESP32-S3 | Firmware may boot if correctly signed, but its license check should fail. |
+| Copies the original device's license file | The device identity mismatch should cause rejection. |
+| Changes the license fields | Digital signature verification should fail. |
+| Reverse-engineers the binary | They may discover the verification logic; Secure Boot and Flash Encryption raise the difficulty but do not make reverse engineering impossible. |
+| Patches the license check | A determined attacker may succeed unless the design includes stronger hardware-backed enforcement and protects the boot chain. |
+
+**Important:** Secure Boot authenticates firmware; it does not enforce licensing by itself. Flash Encryption protects flash contents, not a firmware binary already obtained by an attacker.
+
+##### 5. My recommendation
+
+For your offline product, start with device-specific signed licenses, then decide whether the value of your IP justifies an external secure element. Do not use one shared secret embedded in every firmware image, and do not rely on a modified SHA-256 hash as the licensing mechanism.
+
+Before choosing the implementation, one key question:
+
+
+
+
 ## 4. What I would do for your current project
 
 Since you are developing with Arduino IDE and the ESP32-S3 N16R8, I would take this approach in stages:
