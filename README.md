@@ -296,6 +296,10 @@ Think of the ESP32-S3 flash memory as a computer hard drive. Just as a hard driv
 - Over-the-Air (OTA) updates.
 - Debugging information.
 
+**Further Reading:** [Partition Scheme
+](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Memory/02_Memory_Guide.md#2-partition-schemes-for-16-mb-flash)
+
+
 ## 1. Why Is the Partition Scheme Important?
 
 ESP32-S3 boards commonly include 4 MB, 8 MB, or 16 MB of flash memory. However, the Arduino compiler does not automatically know how that memory should be used.
@@ -356,6 +360,8 @@ A file system used to store:
 - JSON configuration files.
 - Sensor logs.
 - Other user data.
+
+Further Reading: [SPIFFS, LittleFS, and FATFS on ESP32-S3](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Memory/02_Memory_Guide.md#spiffs-littlefs-and-fatfs-on-esp32-s3)
 
 ### Core Dump and PHY Initialization
 
@@ -470,6 +476,8 @@ Therefore:
 - **OTA enabled:** Less space per application, but wireless firmware updates are possible.
 
 For production ESP RainMaker devices, use an OTA-capable partition scheme if the firmware fits. If the application is too large, you may need to reduce the firmware size, use a larger flash device, or choose a different OTA layout.
+
+Further Reading: [Over-the-Air Updating](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/OTA_Update.md)
 
 ## 6. How to Change the Partition Scheme
 
