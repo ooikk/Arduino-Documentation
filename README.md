@@ -22,7 +22,7 @@ Frequent used:
 
 ---
 
-## Install and Setup Arduino IDE
+# Install and Setup Arduino IDE
 1. Get the latest Arduino IDE here: https://www.arduino.cc/en/software/
 2. Open IDE, go to: **File > Preferences**, under **Settings > Additional Boards Manager URLs**. Add this:
    https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
@@ -58,9 +58,9 @@ https://www.aliexpress.com/item/1005009523697481.html?
 **Espressif LLM Chat**      
 https://chat.espressif.com/
 
-## ESP32-S3 Pins Assignment
+# ESP32-S3 Pins Assignment
 
-### Pins to Avoid
+## Pins to Avoid
 
 While most pins are available, you should generally avoid these pins to prevent system crashes or interference: <br>  
 **GPIO 43 & 44:** Reserved for UART0 (Serial Debugging). GPIO 43 is U0TXD and GPIO 44 is U0RXD. <br>
@@ -83,12 +83,12 @@ While most pins are available, you should generally avoid these pins to prevent 
 
 <br>
 
-## ESP32 S3 Board
+# ESP32 S3 Board
 
 <img width="605" height="491" alt="ESP32-S3-PCBA" src="https://github.com/user-attachments/assets/ec73d7da-acef-4d03-a89f-68f72a6ce86f" />
 
 
-### Buttons
+## Buttons
 **1. The RST (Reset) Button**  
 What it does: It restarts the microcontroller.   
 How it works: It temporarily pulls the EN (Enable) pin to a low state, which cuts power to the chip's core and immediately restarts it.   
@@ -117,7 +117,7 @@ Once you do this, you will usually see a message in the Arduino IDE Serial Monit
 *Boot:* "Get ready to receive a new program."   
 *Boot + RST:* "Force the board into the mode required to upload a new program."   
 
-### USB Ports     
+## USB Ports     
 
 ESP32-S3 development boards typically feature two USB ports to accommodate the chip's dual-path communication capabilities: a USB-to-UART bridge and a Native USB (OTG) interface.     
 According to the sources, the ESP32-S3 is one of the few chips in the family that natively supports both USB OTG and USB Serial through the Arduino Core.    
@@ -146,12 +146,12 @@ Since you are using the UART bridge chip, you should ensure your Arduino IDE Too
 If **USB CDC On Boot**: ```Enabled``` (Using Native USB)     
 You can use the ESP32-S3's advanced native USB features (like making it act as a USB Keyboard/Mouse, USB MIDI, or USB Mass Storage).      
 
-## Voltage Regulator
+# Voltage Regulator
 
 LM1117 Linear low drop 3.3V 800mA voltage regulator:   
 <img alt="image" style="width: 50%; height: auto;" src="https://github.com/user-attachments/assets/353ebae9-632c-4b28-ae44-4cfbb53b6d1c" />
 
-## Schematics
+# Schematics
 
 <img width="702" height="594" alt="image" src="https://github.com/user-attachments/assets/3eb0e614-0a6a-4577-8973-cc6ed4ea199a" />
 
@@ -159,7 +159,7 @@ LM1117 Linear low drop 3.3V 800mA voltage regulator:
 
 <img width="627" height="611" alt="image" src="https://github.com/user-attachments/assets/ed28a01f-c33a-4fa7-aed1-7380aa46385e" />
 
-## ESP32-S3 Hardware Information      
+# ESP32-S3 Hardware Information      
 Here is the complete Arduino code to extract and print all available hardware information from your ESP32-S3.     
 This script uses the built-in esp32-hal library functions to read the chip's physical properties, memory allocations, and unique identifiers.     
 ```cpp
@@ -221,7 +221,7 @@ void loop() {
   // We only need to run the hardware check once on boot.
 }
 ```
-### Troubleshooting / Notes:     
+## Troubleshooting / Notes:     
 1. PSRAM shows 0 bytes? If PSRAM Total Size prints 0 MB, it means PSRAM is not enabled in your IDE. In the Arduino IDE, go to Tools > PSRAM and change it to OPI PSRAM (since the R8 variant uses Octal SPI, not Quad SPI).
 2. Flash Size shows 4MB or 8MB? If the physical flash size prints lower than 16MB, your IDE is restricting it. Go to Tools > Flash Size and ensure it is set to 16MB (128Mb).
 3. Internal RAM: The ESP32-S3 has roughly 512KB of internal SRAM. You will see it fluctuates slightly based on what the core initializes on boot.
@@ -247,7 +247,7 @@ Free Sketch Space: 1310720 bytes
 Chip ID (eFuse MAC): 303ED6F61B44
 ==================================================
 ```
-### What is the suffix N16R8       
+## What is the suffix N16R8       
 For the ESP32-S3, the suffix N16R8 indicates the memory configuration of the module.     
 ```
 Suffix     Meaning
@@ -279,11 +279,11 @@ R8         8 MB PSRAM (Octal SPI/OPI on most ESP32-S3 modules)
   Serial.printf("Free PSRAM : %u KB\n", ESP.getFreePsram() / 1024);
   ```
 
-### Link to more esp.h API:       
+## Link to more esp.h API:       
 https://github.com/espressif/arduino-esp32/blob/master/cores/esp32/Esp.h?
 
 
-## ESP32-S3 Partition Scheme
+# ESP32-S3 Partition Scheme
 
 In Arduino IDE, a **Partition Scheme**, also called a **Partition Table**, determines how the physical flash memory on the ESP32-S3 is divided into logical sections.
 
@@ -296,35 +296,35 @@ Think of the ESP32-S3 flash memory as a computer hard drive. Just as a hard driv
 - Over-the-Air (OTA) updates.
 - Debugging information.
 
-### 1. Why Is the Partition Scheme Important?
+## 1. Why Is the Partition Scheme Important?
 
 ESP32-S3 boards commonly include 4 MB, 8 MB, or 16 MB of flash memory. However, the Arduino compiler does not automatically know how that memory should be used.
 
 If the wrong partition scheme is selected, several problems may occur.
 
-#### `Sketch too big` Error
+### `Sketch too big` Error
 
 Your application, such as one using ESP RainMaker, may be larger than the space allocated to the application partition.
 
-#### Boot Loops or Crashes
+### Boot Loops or Crashes
 
 The ESP32 may try to read Wi-Fi credentials, non-volatile storage, or file-system data from a memory address that is not valid for the selected partition scheme.
 
-#### OTA Failures
+### OTA Failures
 
 An OTA update generally requires a second application partition. The new firmware is downloaded to the unused application partition while the current firmware continues running.
 
 If no second application partition exists, OTA updates cannot work in the normal way.
 
-### 2. Anatomy of an ESP32 Partition Table
+## 2. Anatomy of an ESP32 Partition Table
 
 A standard partition table may include the following sections.
 
-#### Bootloader
+### Bootloader
 
 A small protected section that initializes the chip and determines which application should run.
 
-#### NVS
+### NVS
 
 **NVS**, or Non-Volatile Storage, stores data that must survive a reboot, such as:
 
@@ -334,7 +334,7 @@ A small protected section that initializes the chip and determines which applica
 - Calibration data.
 - Other persistent settings.
 
-#### Application
+### Application
 
 The application partition stores the compiled Arduino C++ firmware.
 
@@ -347,7 +347,7 @@ App1
 
 One partition runs the current firmware while the other receives the new firmware.
 
-#### SPIFFS or LittleFS
+### SPIFFS or LittleFS
 
 A file system used to store:
 
@@ -357,7 +357,7 @@ A file system used to store:
 - Sensor logs.
 - Other user data.
 
-#### Core Dump and PHY Initialization
+### Core Dump and PHY Initialization
 
 Reserved areas may be used for:
 
@@ -365,7 +365,7 @@ Reserved areas may be used for:
 - Core dumps.
 - Wi-Fi and Bluetooth radio initialization data.
 
-### 3. Common Arduino IDE Partition Schemes
+## 3. Common Arduino IDE Partition Schemes
 
 Open:
 
@@ -386,7 +386,7 @@ You may see options similar to the following:
 
 The exact names and sizes may vary according to the ESP32 Arduino core version and board package.
 
-### 4. Which Scheme Should You Use for ESP RainMaker?
+## 4. Which Scheme Should You Use for ESP RainMaker?
 
 ESP RainMaker is a relatively large framework. It may include:
 
@@ -401,7 +401,7 @@ ESP RainMaker is a relatively large framework. It may include:
 
 A compiled ESP RainMaker sketch can consume a significant amount of flash space.
 
-#### ESP32-S3 with 4 MB Flash
+### ESP32-S3 with 4 MB Flash
 
 For a board with 4 MB of flash, select:
 
@@ -417,7 +417,7 @@ Sketch too big
 
 The firmware may also fail to boot if the application or required data cannot fit into the selected partitions.
 
-#### ESP32-S3 with 8 MB or 16 MB Flash
+### ESP32-S3 with 8 MB or 16 MB Flash
 
 For an ESP32-S3 board with 8 MB or 16 MB of flash, select the corresponding scheme if it is available in your Arduino core version:
 
@@ -441,7 +441,7 @@ These schemes provide approximately 3 MB for the application, along with additio
 
 > **Note:** No-OTA schemes, such as `Huge APP`, provide more application space but sacrifice the normal dual-partition OTA layout. You will usually need to connect the ESP32-S3 to a computer through USB to upload new firmware.
 
-### 5. OTA Considerations
+## 5. OTA Considerations
 
 A no-OTA partition scheme typically contains only one large application partition:
 
@@ -471,7 +471,7 @@ Therefore:
 
 For production ESP RainMaker devices, use an OTA-capable partition scheme if the firmware fits. If the application is too large, you may need to reduce the firmware size, use a larger flash device, or choose a different OTA layout.
 
-### 6. How to Change the Partition Scheme
+## 6. How to Change the Partition Scheme
 
 1. Open the sketch in Arduino IDE.
 2. Select the correct board:
@@ -497,7 +497,7 @@ For production ESP RainMaker devices, use an OTA-capable partition scheme if the
 5. Compile the sketch.
 6. Upload the firmware.
 
-### 7. Erase Flash When Changing Schemes
+## 7. Erase Flash When Changing Schemes
 
 When changing partition schemes, it is often best to erase the existing flash contents.
 
@@ -519,9 +519,9 @@ This removes old:
 
 > **Warning:** Erasing the flash removes stored Wi-Fi credentials, RainMaker provisioning information, and files. The device will need to be provisioned again.
 
-### 8. Troubleshooting Partition Problems
+## 8. Troubleshooting Partition Problems
 
-#### `Sketch too big`
+### `Sketch too big`
 
 The application does not fit in the selected application partition.
 
@@ -548,7 +548,7 @@ Try:
 
 4. Compile and upload again.
 
-#### Guru Meditation Error or Core Panic During Boot
+### Guru Meditation Error or Core Panic During Boot
 
 This may occur when the partition scheme was changed but old flash data remains.
 
@@ -563,7 +563,7 @@ Try:
 2. Upload the firmware again.
 3. Provision the ESP32-S3 again.
 
-#### RainMaker Provisioning Fails
+### RainMaker Provisioning Fails
 
 If RainMaker cannot save Wi-Fi credentials, the NVS partition may be missing, corrupted, or incompatible with the new partition layout.
 
@@ -574,7 +574,7 @@ Try:
 3. Open the Serial Monitor.
 4. Start provisioning from the ESP RainMaker application.
 
-#### Wi-Fi Credentials Are Lost After Reboot
+### Wi-Fi Credentials Are Lost After Reboot
 
 Check that:
 
@@ -583,7 +583,7 @@ Check that:
 - The firmware is not explicitly clearing NVS at startup.
 - The partition table matches the flash size of the board.
 
-### 9. Practical Recommendations
+## 9. Practical Recommendations
 
 | Project Requirement | Recommended Approach |
 |---|---|
@@ -595,7 +595,7 @@ Check that:
 | Local web server plus RainMaker | Larger flash device and a scheme with sufficient app and file-system space |
 | Frequent wireless firmware updates | OTA-capable partition scheme |
 
-### 10. Summary
+## 10. Summary
 
 The partition scheme determines how the ESP32-S3 allocates flash memory for:
 
@@ -618,11 +618,11 @@ For ESP RainMaker:
 - Verify the selected flash size and partition scheme match the physical ESP32-S3 board.
 
 
-## Partition Schemes Options and Custom Partitions
+# Partition Schemes Options and Custom Partitions
 
 These questions come down to understanding that every entry in the Arduino IDE partition menu is a fixed, pre-written CSV file—a partition table—not a layout that automatically adapts to your chip.
 
-### 1. Why Does `Huge APP` Stop at 3 MB?
+## 1. Why Does `Huge APP` Stop at 3 MB?
 
 The following entry was designed for boards with 4 MB of flash:
 
@@ -674,7 +674,7 @@ OTA:
   Two smaller application partitions
 ```
 
-### Recommended Settings for an N16R8
+## Recommended Settings for an N16R8
 
 For an ESP32-S3 N16R8, which generally has 16 MB of flash and 8 MB of PSRAM, use:
 
@@ -688,13 +688,13 @@ The predefined 16 MB scheme may still keep the application partition at approxim
 
 For most projects, 3 MB is already sufficient. A complete RainMaker build commonly fits within approximately 1.4–2 MB, depending on the selected features and libraries.
 
-### 2. What Is the `Custom` Partition Scheme?
+## 2. What Is the `Custom` Partition Scheme?
 
 The `Custom` option allows you to write your own partition CSV instead of using one of Espressif's predefined layouts.
 
 This is the solution if you need an application partition larger than 3 MB.
 
-#### How Custom Partitions Work in Arduino IDE
+### How Custom Partitions Work in Arduino IDE
 
 1. Create a file named:
 
@@ -711,7 +711,7 @@ This is the solution if you need an application partition larger than 3 MB.
 
 4. The Arduino build system will use your custom CSV file instead of a preset partition table.
 
-### 3. Partition CSV Format
+## 3. Partition CSV Format
 
 The CSV format is based on the ESP-IDF partition-table format:
 
@@ -725,7 +725,7 @@ spiffs,     data, spiffs,  0x610000, 0x9F0000,
 
 The exact offsets and sizes must be calculated so that the partitions do not overlap and fit within the selected flash size.
 
-### 4. CSV Column Meanings
+## 4. CSV Column Meanings
 
 | Column | Meaning |
 |---|---|
@@ -736,9 +736,9 @@ The exact offsets and sizes must be calculated so that the partitions do not ove
 | `Size` | Partition size, specified in hexadecimal or using `K` and `M`, such as `0x6000`, `6M`, or `512K`. |
 | `Flags` | Usually left empty. |
 
-### 5. Important Partition Rules
+## 5. Important Partition Rules
 
-#### Keep NVS
+### Keep NVS
 
 The NVS partition stores important persistent information, including:
 
@@ -749,7 +749,7 @@ The NVS partition stores important persistent information, including:
 
 Without a valid NVS partition, Wi-Fi and RainMaker provisioning may not work correctly.
 
-#### Keep PHY Initialization Data
+### Keep PHY Initialization Data
 
 The PHY initialization partition stores radio calibration data used by Wi-Fi and Bluetooth.
 
@@ -759,7 +759,7 @@ A typical entry is:
 phy_init, data, phy, 0xf000, 0x1000,
 ```
 
-#### Start the First Application at `0x10000`
+### Start the First Application at `0x10000`
 
 Application partitions must use a 64 KB-aligned address.
 
@@ -769,7 +769,7 @@ A typical starting offset is:
 0x10000
 ```
 
-#### Keep the First Data Partition Near `0x9000`
+### Keep the First Data Partition Near `0x9000`
 
 A common partition layout begins with:
 
@@ -780,7 +780,7 @@ phy_init, data, phy,  0xf000, 0x1000
 
 The space before `0x9000` is reserved for the bootloader and partition table.
 
-#### Stay Within the Flash Size
+### Stay Within the Flash Size
 
 For a 16 MB flash device:
 
@@ -794,7 +794,7 @@ The total size of all partitions must not exceed:
 0x1000000
 ```
 
-#### OTA Layouts Require Two Application Partitions
+### OTA Layouts Require Two Application Partitions
 
 If OTA is required, replace a single `factory` partition with two application partitions:
 
@@ -818,7 +818,7 @@ spiffs,     data, spiffs,  0x610000, 9.9M,
 
 The exact values must be adjusted so that all partitions fit within the physical flash.
 
-### 6. Example Large-Application Layout
+## 6. Example Large-Application Layout
 
 If you later need a large application—for example, because you add TensorFlow Lite, audio processing, or a large local web interface—you could create a layout with a larger application partition.
 
@@ -841,9 +841,9 @@ Data storage: approximately 9.9 MB
 
 The actual layout must be calculated carefully to avoid overlapping partitions and to remain within the 16 MB flash limit.
 
-### 7. Practical Tips
+## 7. Practical Tips
 
-#### Erase Flash After Changing the Partition Scheme
+### Erase Flash After Changing the Partition Scheme
 
 After changing from a preset to another preset or to a custom partition table, perform one upload with:
 
@@ -861,7 +861,7 @@ Old NVS data at incompatible offsets can cause:
 
 > **Warning:** Erasing all flash removes stored Wi-Fi credentials, RainMaker provisioning data, and file-system contents.
 
-#### Fixing `Sketch too big`
+### Fixing `Sketch too big`
 
 The `Sketch too big` error means the compiled firmware is larger than the application partition in the selected scheme.
 
@@ -878,7 +878,7 @@ To fix it:
 4. Erase the flash.
 5. Compile and upload again.
 
-#### RainMaker Presets
+### RainMaker Presets
 
 The RainMaker 4 MB and RainMaker 8 MB entries are tuned layouts for boards with those flash sizes.
 
@@ -892,7 +892,7 @@ For an N16R8, use either:
 
 or a custom CSV layout.
 
-### 8. Bottom Line
+## 8. Bottom Line
 
 The 3 MB application limit in `Huge APP` is a preset-layout choice, not a limitation of the ESP32-S3 chip.
 
@@ -917,7 +917,7 @@ or another size that fits within the 16 MB flash device.
 
 The essential requirement is that all partitions—including NVS, PHY initialization, application storage, OTA data, and file storage—fit within the selected flash size without overlapping.
 
-## ESP32-S3 References
+# ESP32-S3 References
 
 https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 
@@ -929,15 +929,15 @@ https://github.com/espressif
 
 https://github.com/espressif/arduino-esp32?
 
-### Official IoT Development Framework     
+## Official IoT Development Framework     
 https://www.espressif.com/en/products/sdks/esp-idf     
 
-### ESP-IDF    
+## ESP-IDF    
 https://developer.espressif.com/tags/esp-idf/
 
 https://github.com/espressif/esp-idf
 
-### Up to date technical documents:      
+## Up to date technical documents:      
 Copy and paste below link on brower:   
 *https://www.espressif.com/en/support/documents/technical-documents*   
 
@@ -946,26 +946,26 @@ https://docs.espressif.com/projects/esp-hardware-design-guidelines/en/latest/esp
 
 https://mischianti.org/vcc-gnd-studio-yd-esp32-s3-devkitc-1-clone-high-resolution-pinout-and-specs/
 
+---
 
-
-## 10 ESP32 Pro Features: Take your Projects to the Next Level!
+# 10 ESP32 Pro Features: Take your Projects to the Next Level!
 https://www.youtube.com/watch?v=_HzG5FjH_6g
 
 
-## Resistor Color Band
+# Resistor Color Band
 
 <img width="635" height="682" alt="image" src="https://github.com/user-attachments/assets/fa5e2931-75d9-4af8-9c2f-e70d87138844" />
 
-### Resistor Calculator   
+## Resistor Calculator   
 
 https://www.calculator.net/resistor-calculator.html
 
-## 30 Type of Sensors
+# 30 Type of Sensors
 
 <img width="1024" height="1536" alt="FB_IMG_1792229865174" src="https://github.com/user-attachments/assets/89dea962-4950-4d07-b4c5-8332dea4560b" />
 
-
-## Circuit Simulators
+---
+# Circuit Simulators
 
 ✔️ Cirkit Designer:
 https://app.cirkitdesigner.com/
