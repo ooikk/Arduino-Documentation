@@ -1431,7 +1431,7 @@ The manifest could contain:
 {
   "product": "esp32s3-n16r8",
   "version": "1.2.0",
-  "firmware_url": "[https://example.com/firmware.bin](https://example.com/firmware.bin)",
+  "firmware_url": "https://example.com/firmware.bin",
   "size": 524288,
   "sha256": "REPLACE_WITH_64_HEX_CHARACTERS"
 }
