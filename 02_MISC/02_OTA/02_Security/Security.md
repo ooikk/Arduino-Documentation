@@ -1462,7 +1462,7 @@ A signed manifest still needs policy checks. A validly signed release might have
 
 This first experiment runs on your Windows PC, so it won't alter your ESP32 or eFuses. It uses OpenSSL to demonstrate the trust difference.
 
-Refere to: [Install OpenSSL](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#note-install-openssl)
+Refer to: [Install OpenSSL](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#note-install-openssl)
 
 ### Step 1 — Create a test signing key
 
