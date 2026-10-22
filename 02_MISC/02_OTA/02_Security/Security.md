@@ -2515,3 +2515,71 @@ The realistic objective is to make copying harder, less useful, and more costly 
 
 For your next design decision, the most important question is: **must your product operate completely offline, or can it connect to the internet periodically to verify its license?** That determines how robustly you can restrict unauthorized devices without compromising the user experience.
 
+---
+# Note: Install OpenSSL
+
+For your ESP32-S3 OTA signing exercise, you need OpenSSL to generate an RSA private/public key pair and sign your manifest. Here are two ways to fix it.
+
+## Option 1 — Install OpenSSL on Windows (recommended)
+
+1. Visit the official OpenSSL project website: [OpenSSL.org](https://www.openssl.org/).
+2. Open the Windows installation guidance or download page and choose a reputable Windows build. OpenSSL's project site provides links to third-party Windows distributions.
+3. Run the installer. Note the installation folder, which may be similar to:
+
+   ```text
+   C:\Program Files\OpenSSL-Win64\bin
+   ```
+
+4. Add that `bin` folder to your Windows `PATH`:
+
+   - Open the Windows Start menu and search for **Edit the system environment variables**.
+   - Select **Environment Variables**.
+   - Under your user variables, select **Path** → **Edit** → **New**.
+   - Add the actual folder containing `openssl.exe`.
+   - Click **OK** to close the dialogs.
+   - Close and reopen Command Prompt.
+
+5. Verify the installation in a new Command Prompt:
+
+   ```cmd
+   openssl version
+   ```
+
+   You should see a version string, for example `OpenSSL 3.x.x` or newer.
+
+OpenSSL's Windows installer has a `PATH` adjustment option, so if you use that installer, enable it during installation.
+
+## Option 2 — Use OpenSSL already included with Git for Windows
+
+If you have Git installed, try this in Command Prompt:
+
+```cmd
+"C:\Program Files\Git\usr\bin\openssl.exe" version
+```
+
+If that works, you can run your key-generation command using the full executable path:
+
+```cmd
+"C:\Program Files\Git\usr\bin\openssl.exe" genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out test-private.pem
+```
+
+If Windows says the file cannot be found, use Option 1.
+
+## Next: generate your OTA signing keys
+
+Once OpenSSL works, run these commands from your intended working directory:
+
+```cmd
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out test-private.pem
+```
+
+```cmd
+openssl pkey -in test-private.pem -pubout -out test-public.pem
+```
+
+This creates:
+
+- `test-private.pem` — keep this private; use it to sign release manifests.
+- `test-public.pem` — embed its public key in your ESP32 firmware for signature verification.
+
+For your initial test, use a dedicated test key pair. Never commit the private key to GitHub, even if the repository is private.
