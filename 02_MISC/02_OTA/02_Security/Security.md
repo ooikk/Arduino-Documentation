@@ -1469,12 +1469,9 @@ Refer to: [Install OpenSSL](https://github.com/ooikk/Arduino-Documentation/blob/
 In a terminal with OpenSSL available:
 
 ```bash
-openssl genpkey -algorithm RSA \
-  -pkeyopt rsa_keygen_bits:2048 \
-  -out test-private.pem
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out test-private.pem
 
-openssl pkey -in test-private.pem \
-  -pubout -out test-public.pem
+openssl pkey -in test-private.pem -pubout -out test-public.pem
 ```
 
 These are disposable lab keys. Do not use them for production releases. Keep `test-private.pem` private; the public key is what the device needs.
