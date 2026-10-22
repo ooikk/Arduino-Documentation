@@ -1473,6 +1473,53 @@ openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out test-private.p
 
 openssl pkey -in test-private.pem -pubout -out test-public.pem
 ```
+Example of the output key: `test-private.pem`
+
+```text
+-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQD2LtLduyPQJ4b4
+8OCjKFmN93O63D32Bn2sY+xw8cj7CIdB4sBTMCiBFrdMLnAMw11euJljKGlN3qiD
+ZgPywNT1eUC7MHpHydTle9htnIEmU2ExXIIK3Neo9as5niPiiYf3bruoZ90YAL19
+NI2lMPYY/wVEArCL9ldNZCBl1YdhslG0RE3PkpVAZ0vBkBxFkaq1XDBzKOWTJo0D
+kMZucM16KbT/shzPH8WP1nPPhF8+M8YrjnVJ2+nQf77BRoA4SHt/GmqKMmo3cSYt
+9DTiF8riZ7qTrB40CO9cB4YzfNarVPaRVMletaHt9MmyqK02HnUJJRBaUbRWEWEf
+or1nKBJPAgMBAAECggEAGi0CXhx+2KwgmCmXM7dKRmO673G+44DvLeb2Bfr/bAm3
+xVP52nPdaqm4AFFTuAJcftd79Q91RZgDgkJ/mvkmlkSNPcS6y7/0c24b+2j6USaT
+yAQruOygavusIr/jgDvatClsVKID39XRpWrIFiTC61zPpNqbBlbBaPODf7BuPlSF
+IpHHzA1zCD84OJKcEtug6dETki88JWyLLk7AAwY/5bcUmIcZGC9QLpbtobdislcU
+HWFel4lb0s+U0a2r5c8z1HK8ZE/Rp8nR7BlLaMsUR9qXSyPyWClD+HWk5djN/JiQ
+TSbnNsYec5sYu67yObNxEDaqGzLjBTheBt/dj6IBCQKBgQD+qpNF2DnB5BD5mrYp
+Noq/1MOphRTjzJuykTLDa8pLy1E3ozjx4DvqxcRM+MMpxFRSLiJO8QWMj5CzYYiW
+jp6lXT/MkCgSpprMSI5VAn5qKpeBVqg6qIEXOSVUZo5MHMgx1qb5N0T4xdLob3D0
+KivWY400gPYqz3qtx7S9AbLnXQKBgQD3eN/7B0g0ceSWqa4ljkXIseo3oNzgSIsy
+zmKhA9EArItUSmwBSWvLfE44yso06RxC+jI9dVwc284BpCddg/qsJ2rUlE5hny8r
+OuQDSQfIrPsBWIXZR270sQX54UudsdWinEPS6LRZAWDloVOlk5IeXyo40yMNGo23
+Gzf2ft8hmwKBgBKy25VpRvRhlo19OprUEmP7b1JnHx2KzHPUDXIj2/qstw3qwieg
+W0Xlt4AfU9UhQT+3e3VoZQvpDqrdInZLioKB0klm3EpiSUNuoGTFhhqtfepVPozw
+Cmp2G7OSxCf6hQiDxkbONBZAEDhY1mZXIljffmK4hVqnWU6hNzgZg9VRAoGBAPCO
+5VsFdyDT3Zq/EnObWyZ+G+k7S7oRio42pRVTumTnVQD43whZMJm7GeaG6gyI1Voe
+D5xCaun6mMRrp4B1/MRABM7j41VuAdIKCv9OjGx8CfsC7AmMMMVXFzIR2QlPhxXs
+xNlOL5Gdj21oZwE68/zmEQrv4tCoET3/DWVlas0lAoGAY74afiJEYqf4eibkNvGl
+FO1iVwWTboJLy/WCPa38XjvZtUUCgEv6vwvNCSQ1LKWGyJ3JrYhMl80cArBdHWkv
+c3k9U055uoHv+gj9/SCcu57t/MzkecVRLENXJXODEWTHmiUM4IP5uaTU9a5zMVsk
+Izo4JlWFiIWBQZgphPdbwgc=
+-----END PRIVATE KEY-----
+```
+
+Example of the output key: `test-public.pem`
+
+```text
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6B0VjJa/Y3DtK2Qbtszj
+TQxFNDq9hkiUwU4iNh8ikUtpExot4auZnzvqORVVI+0FBCrrL2w7gfPGVyS+EETS
+/3P3QsD5pKs1RvOhubQpgWY4I4wPLdeA5LlD3EL6ojaZA8KVpKJR1ZPKQ4DYC5qG
+14+gcl4cAs4lidNwRpfg7GiN+zk0c4coieFUQ7VIKAmP49rbdufWwYbZ0rWav/Tw
+29QGKX3OPFaF4eQ9RqmKjMskZQc7LuWg5rw3yuWqg9wVnVhZP4TK3Uy5Z6Pwzkla
+L1f6h6P+8Fn7m9PfyuRnlSRtbAne68aYH1uJT2r2hc89jW5e0/E+UMBVtTsMSTaC
+nQIDAQAB
+-----END PUBLIC KEY-----
+```
+
 
 These are disposable lab keys. Do not use them for production releases. Keep `test-private.pem` private; the public key is what the device needs.
 
