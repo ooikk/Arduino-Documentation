@@ -1,0 +1,7 @@
+{
+  "product": "esp32s3-n16r8",
+  "version": "1.2.1",
+  "firmware_url": "https://example.com/firmware.bin",
+  "size": 988288,
+  "sha256": "E6F751322490BCCAA0EC67150573DC13FE8078649B1CB509058C139B0C711913"
+}
