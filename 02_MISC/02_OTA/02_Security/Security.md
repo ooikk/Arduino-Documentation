@@ -2525,14 +2525,15 @@ For your ESP32-S3 OTA signing exercise, you need OpenSSL to generate an RSA priv
 ## Option 1 — Install OpenSSL on Windows (recommended)
 
 1. Visit the official OpenSSL project website: [OpenSSL.org](https://www.openssl.org/).
-2. Open the Windows installation guidance or download page and choose a reputable Windows build. OpenSSL's project site provides links to third-party Windows distributions.
-3. Run the installer. Note the installation folder, which may be similar to:
+- Built Releases: https://slproweb.com/products/Win32OpenSSL.html
+3. Open the Windows installation guidance or download page and choose a reputable Windows build. OpenSSL's project site provides links to third-party Windows distributions.
+4. Run the installer. Note the installation folder, which may be similar to:
 
    ```text
    C:\Program Files\OpenSSL-Win64\bin
    ```
 
-4. Add that `bin` folder to your Windows `PATH`:
+5. Add that `bin` folder to your Windows `PATH`:
 
    - Open the Windows Start menu and search for **Edit the system environment variables**.
    - Select **Environment Variables**.
@@ -2541,7 +2542,7 @@ For your ESP32-S3 OTA signing exercise, you need OpenSSL to generate an RSA priv
    - Click **OK** to close the dialogs.
    - Close and reopen Command Prompt.
 
-5. Verify the installation in a new Command Prompt:
+6. Verify the installation in a new Command Prompt:
 
    ```cmd
    openssl version
