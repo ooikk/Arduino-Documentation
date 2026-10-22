@@ -1464,6 +1464,8 @@ This first experiment runs on your Windows PC, so it won't alter your ESP32 or e
 
 Refer to: [Install OpenSSL](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#note-install-openssl)
 
+>Note: Build a firmware.bin and take note of the SHA256 for use in this experiment. Run openssl in the same folder where firmware.bin is located.
+
 ### Step 1 — Create a test signing key
 
 In a terminal with OpenSSL available:
