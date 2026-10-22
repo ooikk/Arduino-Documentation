@@ -188,6 +188,57 @@ https://github.com/espressif/esp-idf/blob/master/components/esp_wifi/include/esp
 | `esp_wifi_set_vendor_ie_cb(esp_vendor_ie_cb_t cb, void *ctx)` | Registers callback to handle incoming vendor-specific Information Elements. |
 
 
+## MAC address
+
+The ESP32-S3 has a factory-programmed base MAC address stored in eFuse, which is intended to be unique to that chip. It is useful for identifying a device, but there is an important security distinction: a MAC address is an identifier, not a secret or proof of authenticity.
+
+### 1. What is stored in eFuse?
+
+For your ESP32-S3 N16R8, the factory-programmed base MAC address is stored in the eFuse MAC-related fields. You can read it using Arduino IDE:
+
+```cpp
+#include <WiFi.h>
+#include <esp_mac.h>
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  uint8_t mac;
+  esp_read_mac(mac, ESP_MAC_BASE);
+
+  Serial.printf(
+    "Base MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
+    mac, mac, mac,
+    mac, mac, mac
+  );
+}
+
+void loop() {}
+```
+
+`ESP_MAC_BASE` reads the chip's base MAC address. Wi-Fi station, Wi-Fi access point and Bluetooth interfaces can use related addresses derived from that base address, so their addresses may differ.
+
+### 2. Is it unique to each ESP32-S3?
+
+Yes, under normal Espressif factory provisioning: the base MAC is assigned to identify the chip uniquely.
+
+- It is not a secret: it can be read by software and may be visible in network traffic.
+- It is not strong authentication: an attacker can copy the MAC address into another device or potentially spoof it.
+
+### 3. Can you use it to protect your offline product?
+
+For your firmware-copying scenario, the MAC address is useful as a device identifier, but it is not sufficient on its own.
+
+| Design | Protection |
+|---|---|
+| Firmware checks a hard-coded MAC address | Weak; the check may be patched, and the address can be spoofed. |
+| Signed license contains the authorized MAC address | Better against casual copying, but still vulnerable to a patched firmware check. |
+| License verification plus Secure Boot V2 | Stronger protection against unauthorized firmware modifications. |
+| Unique cryptographic key protected by hardware, plus signed licensing | Better basis for device-bound authorization and anti-cloning. |
+
+**My recommendation:** use the base MAC as the device's public ID when generating a device-specific offline license, but don't treat the MAC itself as a cryptographic secret. If you need meaningful resistance to cloning, consider a device-specific private key protected by a secure element or an appropriately designed hardware-backed key scheme.
+
 
 ## Application Examples
 
