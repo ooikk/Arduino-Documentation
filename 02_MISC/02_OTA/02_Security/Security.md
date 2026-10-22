@@ -1496,17 +1496,13 @@ Now change the manifest's version or firmware URL and hash it again. The digest 
 Sign the original manifest:
 
 ```bash
-openssl dgst -sha256 \
-  -sign test-private.pem \
-  -out manifest.sig manifest.json
+openssl dgst -sha256 -sign test-private.pem -out manifest.sig manifest.json
 ```
 
 Verify the signature:
 
 ```bash
-openssl dgst -sha256 \
-  -verify test-public.pem \
-  -signature manifest.sig manifest.json
+openssl dgst -sha256 -verify test-public.pem -signature manifest.sig manifest.json
 ```
 
 Expected output:
@@ -1843,13 +1839,10 @@ Use OpenSSL on your development PC. These commands create a lab key, not a produ
 
 ```bash
 # Generate a 2048-bit RSA private key.
-openssl genpkey -algorithm RSA \
-  -pkeyopt rsa_keygen_bits:2048 \
-  -out ota-private.pem
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out ota-private.pem
 
 # Export the public key for the ESP32.
-openssl pkey -in ota-private.pem \
-  -pubout -out ota-public.pem
+openssl pkey -in ota-private.pem -pubout -out ota-public.pem
 
 # Calculate the firmware hash.
 openssl dgst -sha256 firmware.bin
@@ -1860,9 +1853,7 @@ openssl dgst -sha256 firmware.bin
 Use the actual hash and file size to prepare `version.txt`. Then sign the exact file:
 
 ```bash
-openssl dgst -sha256 \
-  -sign ota-private.pem \
-  -out version.sig version.txt
+openssl dgst -sha256 -sign ota-private.pem -out version.sig version.txt
 ```
 
 This command uses RSA with SHA-256 and PKCS#1 v1.5 padding. The ESP32 verifier below uses the matching algorithm. Keep `ota-private.pem` off the ESP32 and out of your public repository. Publish only the firmware, manifest, signature and public files you intend to distribute.
@@ -1901,13 +1892,13 @@ The code uses the Arduino-ESP32 `Update.setSHA256()` feature to verify the firmw
 // IMPORTANT: replace these URLs with your repository paths.
 // Redirects are intentionally disabled.
 static const char MANIFEST_URL[] =
-  "[https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.txt](https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.txt)";
+  "https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.txt";
 
 static const char SIGNATURE_URL[] =
-  "[https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.sig](https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.sig)";
+  "https://raw.githubusercontent.com/OWNER/REPO/BRANCH/version.sig";
 
 static const char FIRMWARE_URL[] =
-  "[https://raw.githubusercontent.com/OWNER/REPO/BRANCH/firmware.bin](https://raw.githubusercontent.com/OWNER/REPO/BRANCH/firmware.bin)";
+  "https://raw.githubusercontent.com/OWNER/REPO/BRANCH/firmware.bin";
 
 // Change this to the version currently running on the device.
 static const char CURRENT_VERSION[] = "1.0.0";
