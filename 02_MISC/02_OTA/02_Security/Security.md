@@ -2832,3 +2832,1168 @@ This creates:
 - `test-public.pem` — embed its public key in your ESP32 firmware for signature verification.
 
 For your initial test, use a dedicated test key pair. Never commit the private key to GitHub, even if the repository is private.
+
+---
+
+# Secure OTA Migration: GitHub → Cloudflare R2
+
+I reviewed your attached OTA sketch. The good news is that **you do not need to rewrite your OTA updater**. Your existing code already has the important building blocks: validated HTTPS connections, RSA-2048/SHA-256 manifest verification, semantic version comparison, firmware-size checks, streaming to the inactive OTA partition, and firmware SHA-256 verification. Pasted text Pasted text Pasted text
+
+The migration should primarily change **how the ESP32 obtains the update metadata and firmware URL**. We will retain your existing signature-verification and installation functions wherever possible.
+
+One important detail from your sketch: `FIRMWARE_VERSION` is currently hard-coded as `1.0.3`, your RSA public key is embedded in the firmware, and your signed manifest contains the version, SHA-256 hash, image size and optional release notes. Pasted text Pasted text
+
+## 1. Recommended architecture
+
+I recommend **Cloudflare Worker authentication + a short-lived R2 presigned GET URL + your existing RSA-signed manifest**.
+
+### Architecture diagram
+
+```text
+              DEVELOPER / RELEASE PROCESS
+              ───────────────────────────
+              1. Build firmware.bin
+              2. Calculate firmware SHA-256
+              3. Create version.txt
+              4. Sign version.txt with RSA private key
+                 (private key remains offline)
+                          │
+                          ▼
+              ┌─────────────────────────┐
+              │ Cloudflare R2           │
+              │                         │
+              │ firmware.bin            │
+              │ version.txt             │
+              │ version.sig             │
+              └────────────┬────────────┘
+                           │
+                           │ Private R2 access
+                           ▼
+┌──────────────────┐  HTTPS  ┌──────────────────────────┐
+│ ESP32-S3 N16R8   │ ──────► │ Cloudflare Worker        │
+│                  │         │                          │
+│ Device ID/token  │         │ 1. Authenticate device   │
+│ Root CA trust    │         │ 2. Read signed manifest  │
+│ RSA public key   │         │ 3. Generate presigned GET│
+└────────┬─────────┘         └────────────┬─────────────┘
+         │                                │
+         │◄──── JSON response ────────────┘
+         │      • version.txt contents
+         │      • RSA signature (Base64)
+         │      • presigned firmware URL
+         │
+         ▼
+  ESP32 verifies RSA signature
+  over the EXACT manifest bytes
+         │
+         ▼
+  Parse version, SHA-256, size
+  Reject invalid or non-newer release
+         │
+         ▼
+  HTTPS GET to presigned R2 URL
+         │
+         ▼
+  Existing Update.writeStream()
+  and Update.setSHA256()
+         │
+         ▼
+  Verify complete image and finalize
+         │
+         ▼
+  Reboot into new firmware
+```
+
+### Why this is better than putting R2 credentials on the ESP32
+
+Cloudflare R2 supports AWS Signature Version 4 presigned URLs. A presigned URL grants access to a specific object and operation for a limited time. It contains the authorization signature, so the ESP32 does not need the R2 access key or secret key. [Cloudflare Docs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
+
+The Worker authenticates the device before issuing the URL. The Worker holds the R2 credentials in its server-side secret store; the ESP32 receives only the short-lived download URL.
+
+There are two distinct authentication decisions:
+
+- **Worker authentication:** Is this device authorized to request an update?
+- **Firmware authentication:** Was this release manifest signed by the publisher whose public key is embedded in the firmware?
+
+Both are necessary. A presigned URL controls access to the file, but it does not prove that the firmware is an authentic release from you.
+
+## 2. Threat model: what each security mechanism protects
+
+| Mechanism | What it protects | What it does not guarantee |
+|---|---|---|
+| HTTPS with CA validation | Confidentiality and integrity in transit; authenticates the HTTPS server | That the server is publishing firmware you intended to release |
+| Worker device authentication | Prevents unauthenticated clients from obtaining new presigned URLs | That a stolen device credential cannot be reused |
+| R2 presigned GET URL | Authorizes a specific object download until expiry | That the downloaded binary is authentic or safe |
+| RSA signature on `version.txt` | Authenticates the publisher's signed metadata | That the firmware itself has no vulnerabilities |
+| SHA-256 hash in the signed manifest | Binds the firmware image to authenticated metadata | Publisher authenticity if the hash is not authenticated |
+| Version comparison | Prevents ordinary accidental downgrades | Hardware-enforced anti-rollback |
+
+Cloudflare explicitly warns that presigned URLs are bearer tokens: anyone who obtains the URL can use it for the authorized operation until it expires. [Cloudflare Docs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
+
+### Why keep your RSA manifest signature?
+
+Suppose an attacker obtains access to your R2 account or compromises the Worker. The attacker might replace `firmware.bin`, or manipulate the metadata response.
+
+If the ESP32 trusts only a SHA-256 hash supplied in the Worker JSON, the attacker could replace both the firmware and its hash.
+
+Your current design prevents this: the ESP32 verifies the manifest using the embedded RSA public key before trusting its version, hash and size. The attacker cannot generate a valid signature for modified metadata without the corresponding private key.
+
+**Keep your RSA private key offline. Never place it in the Worker or ESP32.** The Worker needs the R2 credentials to generate download URLs, but it does not need the RSA signing key.
+
+### Important distinction about firmware verification
+
+Your existing implementation calls `Update.setSHA256(expectedHash.c_str())` before streaming the firmware. It writes to the inactive OTA partition, then finalizes the update only if the expected number of bytes arrived and the hash check succeeds. Pasted text
+
+That is a reasonable authenticated-OTA design: the *expected* hash is authenticated before the download, and the image is checked before the update is finalized.
+
+It is not the same as downloading the entire firmware and verifying a separate signature over the binary before writing any bytes. We can retain your existing approach without buffering a roughly 1 MB firmware image in PSRAM.
+
+---
+
+## 3. Cloudflare R2 setup: step by step
+
+### Step 1 — Create a private R2 bucket
+
+1. Sign in to the [Cloudflare](https://www.cloudflare.com/) dashboard.
+2. Open **Storage & databases → R2 Object Storage**.
+3. Select **Create bucket**.
+4. Choose a name, for example `esp32-firmware`.
+5. Choose an appropriate location and create the bucket.
+6. Keep it **private**. Do not enable public access merely to make downloads work.
+
+Cloudflare's bucket creation documentation is available here: [Create an R2 bucket](https://developers.cloudflare.com/r2/buckets/create-buckets/).
+
+### Step 2 — Upload the release files
+
+Upload these objects to the bucket:
+
+```text
+esp32-firmware/
+├── firmware.bin
+├── version.txt
+└── version.sig
+```
+
+The `version.txt` format should remain compatible with your existing parser:
+
+```text
+1.0.4
+<64-character SHA-256 hash>
+1039536
+Release notes:
+- Fix release-note display.
+- Improve OTA handling.
+```
+
+Your signature must cover the **exact bytes of `version.txt`**, including newline characters. If you change the file, regenerate `version.sig`.
+
+For the current sketch, the signature is a raw 256-byte RSA-2048 signature. The Worker below converts it to Base64 for transport inside JSON; the ESP32 decodes it back to binary before calling your existing verification function.
+
+### Step 3 — Create an R2 S3 API token
+
+The Worker will use the AWS SDK to generate a presigned GET URL.
+
+1. In the Cloudflare dashboard, open **R2 Object Storage → Overview**.
+2. Under **Account Details**, select **Manage** beside API Tokens.
+3. Create an R2 API token.
+4. Choose **Object Read only**.
+5. Scope it to the `esp32-firmware` bucket if the interface offers that option.
+6. Create the token.
+7. Copy the **Access Key ID** and **Secret Access Key** into a secure password manager.
+
+Do not paste these credentials into Arduino code, commit them to GitHub, or include them in the Worker source file. Cloudflare's official instructions describe the token permissions and S3 endpoint. [Cloudflare Docs](https://developers.cloudflare.com/r2/api/tokens/)
+
+### Step 4 — Configure a five-minute presigned URL
+
+Use an expiry of **300 seconds** initially.
+
+Five minutes is a reasonable starting point for a device that requests the URL and immediately begins downloading a roughly 1 MB image. The expiry applies to when requests can be authorized; it is not a guarantee that a download already in progress will be forcibly terminated at the five-minute mark.
+
+If your network is slow, test this value and increase it if necessary. The ESP32 should request a fresh URL after an expiry-related HTTP error.
+
+The URL will look roughly like this:
+
+```text
+https://<bucket>.<account-id>.r2.cloudflarestorage.com/firmware.bin
+    ?X-Amz-Algorithm=AWS4-HMAC-SHA256
+    &X-Amz-Credential=...
+    &X-Amz-Date=...
+    &X-Amz-Expires=300
+    &X-Amz-Signature=...
+```
+
+Use the URL exactly as returned by the Worker. Do not trim it, decode its query parameters, or rebuild it manually.
+
+**Do not use an R2 custom domain for this presigned URL.** Cloudflare documents that presigned URLs work with the S3 API endpoint and not with custom domains. You can use a custom domain for your Worker API if desired, but the signed R2 download URL should use the S3 API domain. [Cloudflare Docs](https://developers.cloudflare.com/r2/api/s3/presigned-urls/)
+
+### Step 5 — CORS configuration
+
+For a native ESP32 using `HTTPClient`, **CORS is not required**. CORS is a browser-enforced policy; it does not provide authentication for your ESP32.
+
+If you also plan to download firmware from a browser-based dashboard, configure CORS for that web application's exact origin and the required methods. See [Cloudflare's R2 CORS documentation](https://developers.cloudflare.com/r2/buckets/cors/?ref=arabroot.io).
+
+---
+
+## 4. Backend: Cloudflare Worker
+
+We'll implement a Worker that:
+
+1. Accepts an HTTPS POST from an ESP32.
+2. Validates its device ID and bearer token.
+3. Reads `version.txt` and `version.sig` from the private R2 bucket using a Worker R2 binding.
+4. Validates the metadata's basic structure.
+5. Generates a five-minute presigned GET URL for `firmware.bin`.
+6. Returns the URL, exact manifest text, signature in Base64, and convenient metadata fields.
+
+**Why return the signed manifest as well as the URL?** Your ESP32 must authenticate the release metadata before it trusts the hash, version and size. Returning only `sha256` and `version` in JSON would not authenticate those values.
+
+### 4.1 Create the Worker project
+
+Install Node.js if needed, then open a terminal and run:
+
+```bash
+npm create cloudflare@latest esp32-ota-auth
+```
+
+Choose a Worker project using TypeScript. Inside the project directory, install the required packages:
+
+```bash
+cd esp32-ota-auth
+npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+```
+
+The correct package for presigned GET URLs is `@aws-sdk/s3-request-presigner`. The `@aws-sdk/s3-presigned-post` package is for presigned POST form uploads, not this GET-download workflow. [AWS Documentation](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-s3-request-presigner/)
+
+### 4.2 Configure the Worker
+
+In `wrangler.jsonc`, configure the Worker and bind the private bucket. Adapt the configuration generated by your installed Wrangler version if its schema differs.
+
+```jsonc
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "esp32-ota-auth",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-23",
+  "compatibility_flags": ["nodejs_compat"],
+  "r2_buckets": [
+    {
+      "binding": "OTA_BUCKET",
+      "bucket_name": "esp32-firmware"
+    }
+  ]
+}
+```
+
+The `OTA_BUCKET` binding lets the Worker read the release metadata from R2 without making the bucket public. The AWS SDK credentials are used separately to generate the presigned URL.
+
+### 4.3 Store the secrets
+
+Set these secrets from the terminal:
+
+```bash
+npx wrangler secret put R2_ACCOUNT_ID
+npx wrangler secret put R2_ACCESS_KEY_ID
+npx wrangler secret put R2_SECRET_ACCESS_KEY
+npx wrangler secret put DEVICE_TOKENS_JSON
+```
+
+For the last secret, enter JSON mapping device IDs to individual bearer tokens, for example:
+
+```json
+{
+  "esp32-lab-001": "REPLACE_WITH_A_LONG_RANDOM_DEVICE_TOKEN",
+  "esp32-lab-002": "REPLACE_WITH_ANOTHER_LONG_RANDOM_TOKEN"
+}
+```
+
+Use different random tokens for different devices. These are example values; generate your own.
+
+Cloudflare Workers secrets are encrypted and exposed to the Worker through its environment. Do not put sensitive values in the ordinary `vars` section or commit them to source control. [Cloudflare Docs](https://developers.cloudflare.com/workers/configuration/secrets/)
+
+For a production fleet, prefer a proper per-device credential lifecycle, with revocation, rotation and device provisioning. A bearer token embedded in ESP32 firmware can be extracted by someone with physical access to the device; it is better than exposing R2 credentials, but it is not equivalent to hardware-backed device identity.
+
+### 4.4 Complete Worker implementation
+
+Replace `src/index.ts` with the following example. It uses a fixed firmware object name so the device cannot ask the Worker to sign arbitrary R2 object paths.
+
+```typescript
+import {
+  S3Client,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+interface Env {
+  OTA_BUCKET: R2Bucket;
+
+  R2_ACCOUNT_ID: string;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
+
+  // JSON object mapping device ID -> unique bearer token.
+  DEVICE_TOKENS_JSON: string;
+}
+
+const BUCKET_NAME = "esp32-firmware";
+const MANIFEST_KEY = "version.txt";
+const SIGNATURE_KEY = "version.sig";
+const FIRMWARE_KEY = "firmware.bin";
+
+const URL_EXPIRY_SECONDS = 300;
+const MAX_MANIFEST_BYTES = 512;
+const RSA_SIGNATURE_BYTES = 256;
+
+function jsonResponse(
+  data: unknown,
+  status = 200,
+): Response {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Pragma": "no-cache",
+    },
+  });
+}
+
+// Compare token bytes without returning at the first mismatch.
+function constantTimeEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const aa = encoder.encode(a);
+  const bb = encoder.encode(b);
+
+  let difference = aa.length ^ bb.length;
+  const length = Math.max(aa.length, bb.length);
+
+  for (let i = 0; i < length; i++) {
+    difference |= (aa[i] ?? 0) ^ (bb[i] ?? 0);
+  }
+
+  return difference === 0;
+}
+
+function validateManifest(manifest: string) {
+  // This sample expects LF line endings and a newline after the
+  // size field, as required by the existing RELEASE_LOG parser.
+  if (manifest.includes("\r")) {
+    throw new Error("Manifest must use LF line endings");
+  }
+
+  if (new TextEncoder().encode(manifest).length > MAX_MANIFEST_BYTES) {
+    throw new Error("Manifest too large");
+  }
+
+  const p1 = manifest.indexOf("\n");
+  const p2 = p1 >= 0 ? manifest.indexOf("\n", p1 + 1) : -1;
+  const p3 = p2 >= 0 ? manifest.indexOf("\n", p2 + 1) : -1;
+
+  if (p1 <= 0 || p2 <= p1 || p3 <= p2) {
+    throw new Error("Malformed manifest");
+  }
+
+  const version = manifest.slice(0, p1);
+  const sha256 = manifest.slice(p1 + 1, p2);
+  const sizeText = manifest.slice(p2 + 1, p3);
+
+  if (!/^\d+\.\d+\.\d+$/.test(version)) {
+    throw new Error("Invalid version");
+  }
+
+  if (!/^[0-9a-fA-F]{64}$/.test(sha256)) {
+    throw new Error("Invalid SHA-256");
+  }
+
+  if (!/^\d+$/.test(sizeText)) {
+    throw new Error("Invalid firmware size");
+  }
+
+  const size = Number(sizeText);
+
+  // Keep aligned with the ESP32 MAX_FIRMWARE_SIZE and partition.
+  if (!Number.isSafeInteger(size) || size <= 0 || size > 4 * 1024 * 1024) {
+    throw new Error("Firmware size out of range");
+  }
+
+  return {
+    version,
+    sha256: sha256.toLowerCase(),
+    size,
+  };
+}
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    if (request.method !== "POST") {
+      return jsonResponse({ error: "POST required" }, 405);
+    }
+
+    const url = new URL(request.url);
+
+    if (url.pathname !== "/v1/ota") {
+      return jsonResponse({ error: "Not found" }, 404);
+    }
+
+    // 1. Authenticate the device.
+    const authorization = request.headers.get("Authorization") ?? "";
+    const match = authorization.match(/^Bearer (.+)$/);
+
+    if (!match) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    let requestBody: { deviceId?: string };
+
+    try {
+      requestBody = await request.json() as { deviceId?: string };
+    } catch {
+      return jsonResponse({ error: "Invalid JSON" }, 400);
+    }
+
+    const deviceId = requestBody.deviceId;
+
+    if (
+      typeof deviceId !== "string" ||
+      !/^[a-zA-Z0-9_-]{1,64}$/.test(deviceId)
+    ) {
+      return jsonResponse({ error: "Invalid device ID" }, 400);
+    }
+
+    let deviceTokens: Record<string, string>;
+
+    try {
+      deviceTokens = JSON.parse(env.DEVICE_TOKENS_JSON);
+    } catch {
+      return jsonResponse({ error: "Server configuration error" }, 500);
+    }
+
+    const expectedToken = deviceTokens[deviceId];
+
+    if (
+      typeof expectedToken !== "string" ||
+      !constantTimeEqual(match[1], expectedToken)
+    ) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    try {
+      // 2. Read the exact manifest bytes from private R2.
+      const manifestObject = await env.OTA_BUCKET.get(MANIFEST_KEY);
+      const signatureObject = await env.OTA_BUCKET.get(SIGNATURE_KEY);
+
+      if (!manifestObject || !signatureObject) {
+        return jsonResponse({ error: "Release metadata unavailable" }, 503);
+      }
+
+      const manifestBytes = await manifestObject.arrayBuffer();
+      const signatureBytes = await signatureObject.arrayBuffer();
+
+      if (
+        manifestBytes.byteLength === 0 ||
+        manifestBytes.byteLength > MAX_MANIFEST_BYTES
+      ) {
+        return jsonResponse({ error: "Manifest size invalid" }, 500);
+      }
+
+      if (signatureBytes.byteLength !== RSA_SIGNATURE_BYTES) {
+        return jsonResponse({ error: "Signature size invalid" }, 500);
+      }
+
+      const manifest = new TextDecoder("utf-8", { fatal: true })
+        .decode(manifestBytes);
+
+      // Check basic syntax only. The ESP32 verifies the RSA signature.
+      const metadata = validateManifest(manifest);
+
+      // 3. Generate a GET URL for this fixed object only.
+      const s3 = new S3Client({
+        region: "auto",
+        endpoint:
+          `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+        credentials: {
+          accessKeyId: env.R2_ACCESS_KEY_ID,
+          secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+        },
+      });
+
+      const firmwareUrl = await getSignedUrl(
+        s3,
+        new GetObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: FIRMWARE_KEY,
+        }),
+        { expiresIn: URL_EXPIRY_SECONDS },
+      );
+
+      // 4. Encode the raw 256-byte signature for JSON transport.
+      const bytes = new Uint8Array(signatureBytes);
+      let binary = "";
+
+      for (const byte of bytes) {
+        binary += String.fromCharCode(byte);
+      }
+
+      const signatureB64 = btoa(binary);
+
+      return jsonResponse({
+        deviceId,
+        url: firmwareUrl,
+        manifest,
+        signatureB64,
+        version: metadata.version,
+        sha256: metadata.sha256,
+        size: metadata.size,
+        expiresIn: URL_EXPIRY_SECONDS,
+      });
+    } catch (error) {
+      console.error("OTA authorization error", error);
+      return jsonResponse({ error: "Unable to prepare OTA release" }, 500);
+    }
+  },
+};
+```
+
+**Important implementation notes**
+
+- The Worker validates manifest syntax but does not replace the ESP32's RSA verification. The device remains the final authority on whether the signed metadata is trusted.
+- The Worker signs a URL for `firmware.bin` only. It does not accept an arbitrary bucket or object key from the client.
+- The example uses a read-only R2 token and does not publish the bucket.
+- The code assumes `version.txt` follows the LF-only format expected by your existing `RELEASE_LOG` parser, including a newline after the firmware size.
+- The sample's 4 MiB size limit matches your current `MAX_FIRMWARE_SIZE`; keep it aligned with the actual OTA partition.
+- The code uses the AWS SDK in a Worker. If your generated project has trouble bundling the SDK, check the Wrangler compatibility configuration and the Cloudflare/AWS SDK versions rather than replacing the firmware OTA logic.
+
+### 4.5 Deploy the Worker
+
+After adding the code and secrets:
+
+```bash
+npx wrangler deploy
+```
+
+The deployment output will show a Worker URL similar to:
+
+```text
+https://esp32-ota-auth.<your-subdomain>.workers.dev
+```
+
+Your ESP32 will call that URL at the `/v1/ota` path. You can later configure a custom domain for the Worker endpoint if you own a domain and want a stable API hostname.
+
+---
+
+## 5. ESP32-S3 integration: minimal changes to your existing sketch
+
+We'll keep the following functions from your current code:
+
+- `verifyManifestSignature()`
+- `parseManifest()`
+- `isNewerVersion()`
+- The existing OTA streaming, SHA-256 verification, and `Update` finalization logic
+
+The main change is that `checkForFirmwareUpdate()` will call the Worker to obtain authenticated release metadata and a presigned firmware URL, rather than fetching three separate files from GitHub.
+
+### 5.1 Add the ArduinoJson and Base64 includes
+
+Add these beside your existing includes:
+
+```cpp
+#include <ArduinoJson.h>
+#include <mbedtls/base64.h>
+```
+
+Your sketch already includes the mbedTLS public-key and SHA-256 headers needed by the RSA verification function. Pasted text
+
+### 5.2 Add the Worker configuration
+
+Add these to your user configuration:
+
+```cpp
+static const char OTA_AUTH_URL[] =
+    "https://esp32-ota-auth.YOUR-SUBDOMAIN.workers.dev/v1/ota";
+
+static const char DEVICE_ID[] = "esp32-lab-001";
+
+// A unique random token issued for this device.
+// This is NOT an R2 access key or R2 secret key.
+static const char DEVICE_TOKEN[] =
+    "REPLACE_WITH_THIS_DEVICE_RANDOM_TOKEN";
+```
+
+The device token must match the token registered for `esp32-lab-001` in the Worker's `DEVICE_TOKENS_JSON` secret.
+
+**Do not use your R2 Secret Access Key as `DEVICE_TOKEN`.**
+
+For a production fleet, provision a unique token per device and make it revocable. A static bearer token is a practical starting point for your lab, but a person who extracts it from a device can reuse it until it is revoked.
+
+### 5.3 Configure CA certificates for both HTTPS endpoints
+
+Your current sketch's `ROOT_CA` comment says DigiCert Global Root G2, but the PEM content in the attached file is actually **ISRG Root X1**. Do not assume that certificate is the correct trust anchor for your new Worker and R2 endpoints. Pasted text
+
+Inspect the actual certificate chains presented by:
+
+1. Your Worker hostname.
+2. The R2 S3 endpoint returned in the presigned URL.
+
+Use a verified root CA or CA bundle that validates each hostname's current certificate chain. If they require different roots, define separate CA constants. Do not simply copy an arbitrary server certificate and treat it as a root CA.
+
+For clarity, the code below uses two separate names:
+
+```cpp
+// Replace these placeholders with verified PEM root CA material
+// for the actual TLS chains used by your Worker and R2 endpoint.
+static const char WORKER_ROOT_CA[] PROGMEM = R"PEM(
+-----BEGIN CERTIFICATE-----
+PASTE_VERIFIED_WORKER_ROOT_CA_HERE
+-----END CERTIFICATE-----
+)PEM";
+
+static const char R2_ROOT_CA[] PROGMEM = R"PEM(
+-----BEGIN CERTIFICATE-----
+PASTE_VERIFIED_R2_ROOT_CA_HERE
+-----END CERTIFICATE-----
+)PEM";
+```
+
+These are **placeholders, not usable certificates**. Replace them before compiling. If both chains can be validated by the same trusted CA material, you can use one shared constant instead.
+
+Keep using `WiFiClientSecure::setCACert()`; do not use `setInsecure()`.
+
+### 5.4 Add storage for authenticated metadata
+
+Your current OTA function receives `expectedHash` and `expectedSize` as parameters. We'll preserve that design and use output parameters to transfer the validated values from the Worker response.
+
+Add these declarations in the secure-OTA section:
+
+```cpp
+String otaExpectedHash;
+size_t otaExpectedSize = 0;
+String otaReleaseVersion;
+```
+
+### 5.5 Implement `getSecureR2DownloadUrl()`
+
+You requested a function returning the presigned URL. It will also verify the signed manifest and populate the expected hash, size and version variables.
+
+That is intentional: **the function must not return a usable download URL to the OTA flow until the release metadata has passed signature and version validation.**
+
+This implementation uses your existing `verifyManifestSignature()`, `parseManifest()` and `isNewerVersion()` functions.
+
+```cpp
+String getSecureR2DownloadUrl() {
+  otaExpectedHash = "";
+  otaExpectedSize = 0;
+  otaReleaseVersion = "";
+
+  WiFiClientSecure client;
+  client.setCACert(WORKER_ROOT_CA);
+  client.setHandshakeTimeout(15);
+
+  HTTPClient http;
+  http.setTimeout(15000);
+  http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+
+  if (!http.begin(client, OTA_AUTH_URL)) {
+    Serial.println("Worker HTTPS begin failed");
+    return "";
+  }
+
+  http.addHeader("Content-Type", "application/json");
+  http.addHeader(
+      "Authorization",
+      String("Bearer ") + DEVICE_TOKEN);
+
+  // The device ID selects the corresponding per-device token entry.
+  String requestBody =
+      String("{\"deviceId\":\"") + DEVICE_ID + "\"}";
+
+  Serial.println("Requesting authenticated OTA metadata...");
+
+  int status = http.POST(requestBody);
+
+  if (status != HTTP_CODE_OK) {
+    Serial.printf("Worker request failed: HTTP=%d\n", status);
+    http.end();
+    return "";
+  }
+
+  int responseLength = http.getSize();
+
+  // Bound JSON response size. A manifest is small; the firmware is
+  // downloaded separately and is not buffered in this JSON response.
+  if (responseLength > 4096) {
+    Serial.println("Worker JSON response too large");
+    http.end();
+    return "";
+  }
+
+  String response = http.getString();
+  http.end();
+
+  if (response.length() == 0 || response.length() > 4096) {
+    Serial.println("Invalid Worker response length");
+    return "";
+  }
+
+  // ArduinoJson 6-compatible declaration; ArduinoJson 7 also supports
+  // DynamicJsonDocument for compatibility.
+  DynamicJsonDocument doc(4096);
+
+  DeserializationError jsonError = deserializeJson(doc, response);
+
+  if (jsonError) {
+    Serial.printf("Worker JSON parse failed: %s\n",
+                  jsonError.c_str());
+    return "";
+  }
+
+  const char* manifestText = doc["manifest"];
+  const char* signatureB64 = doc["signatureB64"];
+  const char* firmwareUrl = doc["url"];
+
+  if (manifestText == nullptr ||
+      signatureB64 == nullptr ||
+      firmwareUrl == nullptr) {
+    Serial.println("Worker response missing required fields");
+    return "";
+  }
+
+  String manifest = manifestText;
+  String encodedSignature = signatureB64;
+  String url = firmwareUrl;
+
+  // Accept only the intended HTTPS R2 S3 endpoint and object path.
+  // The exact presigned query string is retained unchanged.
+  if (!url.startsWith("https://") ||
+      url.indexOf(".r2.cloudflarestorage.com/firmware.bin?") < 0) {
+    Serial.println("Rejected unexpected firmware URL");
+    return "";
+  }
+
+  // Decode the raw RSA-2048 signature from Base64.
+  uint8_t signature[RSA_SIGNATURE_SIZE];
+  size_t decodedLength = 0;
+
+  int rc = mbedtls_base64_decode(
+      signature,
+      sizeof(signature),
+      &decodedLength,
+      (const unsigned char*)encodedSignature.c_str(),
+      encodedSignature.length());
+
+  if (rc != 0 || decodedLength != RSA_SIGNATURE_SIZE) {
+    Serial.println("Invalid Base64 RSA signature");
+    return "";
+  }
+
+  // Authenticate the exact manifest bytes before trusting its fields.
+  Serial.println("Verifying signed release manifest...");
+
+  if (!verifyManifestSignature(
+          manifest, signature, decodedLength)) {
+    Serial.println("Rejected: manifest signature invalid");
+    return "";
+  }
+
+  String version;
+  String hash;
+  size_t firmwareSize = 0;
+
+#ifdef RELEASE_LOG
+  String releaseNotes;
+
+  if (!parseManifest(
+          manifest, version, hash, firmwareSize, releaseNotes)) {
+#else
+  if (!parseManifest(
+          manifest, version, hash, firmwareSize)) {
+#endif
+    Serial.println("Rejected: malformed signed manifest");
+    return "";
+  }
+
+  // The release version must be strictly newer than the firmware
+  // currently running on this device.
+  if (!isNewerVersion(version, FIRMWARE_VERSION)) {
+    Serial.println("No newer firmware release");
+    return "";
+  }
+
+  // Cross-check the convenience fields returned by the Worker.
+  // The signed manifest remains the authoritative source.
+  const char* jsonVersion = doc["version"];
+  const char* jsonHash = doc["sha256"];
+  size_t jsonSize = doc["size"] | (size_t)0;
+
+  if (jsonVersion == nullptr ||
+      jsonHash == nullptr ||
+      version != jsonVersion ||
+      !hash.equalsIgnoreCase(jsonHash) ||
+      firmwareSize != jsonSize) {
+    Serial.println("Worker metadata does not match signed manifest");
+    return "";
+  }
+
+#ifdef RELEASE_LOG
+  Serial.printf("Release notes:\n%s\n", releaseNotes.c_str());
+#endif
+
+  otaReleaseVersion = version;
+  otaExpectedHash = hash;
+  otaExpectedSize = firmwareSize;
+
+  Serial.printf("Authenticated release: %s\n",
+                otaReleaseVersion.c_str());
+  Serial.printf("Expected size: %u bytes\n",
+                (unsigned)otaExpectedSize);
+
+  return url;
+}
+```
+
+#### Why verify before using the URL?
+
+The URL itself is not proof of firmware authenticity. The device validates the RSA signature on the exact manifest before accepting the signed version, hash and size. It then checks that the convenience metadata in the JSON agrees with the signed fields.
+
+The firmware URL is accepted only if it points to the intended HTTPS R2 S3 endpoint and `firmware.bin` path. This prevents the Worker response from silently redirecting the existing OTA logic to an arbitrary HTTPS host.
+
+**Do not print the complete presigned URL to Serial in production.** Its query string is a temporary bearer credential.
+
+#### One parser detail
+
+Your current `RELEASE_LOG` version of `parseManifest()` requires the third newline and extracts the firmware size between the second and third newlines. Keep the manifest format consistent with that parser. Pasted text
+
+### 5.6 Minimal change to your existing `downloadAndInstall()`
+
+Your current function hard-codes `FIRMWARE_URL`. We only need to pass the newly obtained URL as a parameter.
+
+**Before:**
+
+```cpp
+bool downloadAndInstall(const String& expectedHash,
+                        size_t expectedSize) {
+```
+
+**After:**
+
+```cpp
+bool downloadAndInstall(const String& firmwareUrl,
+                        const String& expectedHash,
+                        size_t expectedSize) {
+```
+
+Inside this function, use the R2 CA material and supplied URL.
+
+**Before:**
+
+```cpp
+WiFiClientSecure client;
+client.setCACert(ROOT_CA);
+client.setHandshakeTimeout(15);
+```
+
+**After:**
+
+```cpp
+WiFiClientSecure client;
+client.setCACert(R2_ROOT_CA);
+client.setHandshakeTimeout(15);
+```
+
+**Before:**
+
+```cpp
+if (!http.begin(client, FIRMWARE_URL)) {
+```
+
+**After:**
+
+```cpp
+if (!http.begin(client, firmwareUrl)) {
+```
+
+Everything else in `downloadAndInstall()` can remain unchanged initially, including:
+
+```cpp
+if (status != HTTP_CODE_OK ||
+    contentLength < 0 ||
+    (size_t)contentLength != expectedSize) {
+  Serial.printf("Firmware rejected: HTTP=%d size=%d\n",
+                status, contentLength);
+  http.end();
+  return false;
+}
+
+if (!Update.begin(expectedSize, U_FLASH)) {
+  Serial.printf("Update.begin failed: %s\n",
+                Update.errorString());
+  http.end();
+  return false;
+}
+
+if (!Update.setSHA256(expectedHash.c_str())) {
+  Serial.println("Could not configure firmware SHA-256");
+  Update.abort();
+  http.end();
+  return false;
+}
+```
+
+Your existing `Update.writeStream()`, written-byte count check, `Update.end()` and reboot logic should also remain in place. These are the core installation checks we want to preserve. Pasted text
+
+### 5.7 Replace the metadata-fetching part of `checkForFirmwareUpdate()`
+
+Currently, `checkForFirmwareUpdate()` fetches the manifest and signature from separate URLs, verifies the signature, parses the manifest and then calls `downloadAndInstall()`. Pasted text
+
+Replace that metadata-fetching sequence with this:
+
+```cpp
+void checkForFirmwareUpdate() {
+  if (otaInProgress) return;
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("OTA check skipped: Wi-Fi disconnected");
+    return;
+  }
+
+  otaInProgress = true;
+
+  Serial.println("\nStarting authenticated OTA");
+
+  // 1. Authenticate to Worker, verify signed metadata,
+  //    and obtain the short-lived R2 URL.
+  String firmwareUrl = getSecureR2DownloadUrl();
+
+  if (firmwareUrl.isEmpty()) {
+    Serial.println("OTA check failed or no newer release");
+    otaInProgress = false;
+    return;
+  }
+
+  // 2. Download the firmware using the existing OTA logic.
+  //    The URL is temporary; the hash and size came from the
+  //    authenticated manifest.
+  bool success = downloadAndInstall(
+      firmwareUrl,
+      otaExpectedHash,
+      otaExpectedSize);
+
+  if (!success) {
+    Serial.println("OTA installation failed; current firmware retained");
+  }
+
+  // A successful installation normally restarts the device.
+  otaInProgress = false;
+}
+```
+
+This is the central migration: **one authenticated metadata request, followed by one firmware download**.
+
+Remove the old manifest/signature fetching code from this function once the replacement compiles and passes testing. You can retain the old functions temporarily for comparison during development.
+
+---
+
+## 6. Test the Worker before testing the ESP32
+
+Testing with `curl` helps separate Worker authentication issues from TLS and parsing issues on the device.
+
+### Test A — Request update metadata
+
+Run the following in a terminal, replacing the URL and token:
+
+```bash
+curl -i \
+  -X POST \
+  "https://esp32-ota-auth.YOUR-SUBDOMAIN.workers.dev/v1/ota" \
+  -H "Authorization: Bearer YOUR_DEVICE_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"deviceId":"esp32-lab-001"}'
+```
+
+Expected result: HTTP `200` and JSON containing fields similar to:
+
+```json
+{
+  "deviceId": "esp32-lab-001",
+  "url": "https://YOUR-BUCKET.YOUR-ACCOUNT.r2.cloudflarestorage.com/firmware.bin?...",
+  "manifest": "1.0.4\n...",
+  "signatureB64": "...",
+  "version": "1.0.4",
+  "sha256": "...",
+  "size": 1039536,
+  "expiresIn": 300
+}
+```
+
+The displayed values are illustrative, not real credentials or a valid presigned URL.
+
+Test the failure cases too:
+
+| Test | Expected result |
+|---|---|
+| No bearer token | HTTP 401 |
+| Incorrect token | HTTP 401 |
+| Unknown device ID | HTTP 401 |
+| Missing metadata in R2 | HTTP 503 |
+| Invalid manifest format | HTTP 500 |
+| Valid device and release | HTTP 200 |
+
+### Test B — Download using the presigned URL
+
+Save the successful response as `response.json`, then extract the URL using `jq`:
+
+```bash
+URL=$(jq -r '.url' response.json)
+
+curl --fail --show-error \
+  "$URL" \
+  -o firmware.bin
+```
+
+Verify the downloaded size and SHA-256 hash against the manifest. For example, on Windows PowerShell:
+
+```powershell
+(Get-Item .\firmware.bin).Length
+
+Get-FileHash .\firmware.bin -Algorithm SHA256
+```
+
+The hash must match the signed manifest's SHA-256 field.
+
+Do not share the output JSON or complete presigned URL publicly. Anyone who obtains a valid URL can use it until it expires.
+
+### Test C — Test URL expiry
+
+1. Request a new URL from the Worker.
+2. Download the file immediately.
+3. Request another URL and wait more than five minutes.
+4. Try downloading through the expired URL.
+5. Confirm that the expired request is rejected, then request a fresh URL.
+
+Cloudflare documents expired presigned URL requests as returning an authorization error. [Cloudflare Docs](https://developers.cloudflare.com/r2/buckets/cors/?ref=arabroot.io\&utm_source=chatgpt.com)
+
+---
+
+## 7. ESP32 integration test sequence
+
+Once the `curl` tests pass, upload the updated sketch over USB or your existing working OTA method.
+
+Watch for this sequence:
+
+```text
+Starting authenticated OTA
+Requesting authenticated OTA metadata...
+Verifying signed release manifest...
+Manifest signature valid
+Authenticated release: 1.0.4
+Expected size: 1039536 bytes
+Streaming firmware to OTA partition...
+Firmware hash verified; OTA finalized.
+Restarting into the new firmware...
+```
+
+The exact output depends on the diagnostics in your existing code and the updated helper function.
+
+After the reboot, confirm:
+
+1. The device reports firmware version `1.0.4`.
+2. Wi-Fi reconnects.
+3. The next OTA check does not reinstall `1.0.4`.
+4. A modified manifest with the old signature is rejected.
+5. A modified firmware binary fails its SHA-256 check and is not finalized.
+6. A Worker request with invalid credentials is rejected.
+7. An expired presigned URL is not silently replaced by an unauthenticated or insecure download.
+
+**One operational detail:** your current sketch checks for updates every two minutes, not every six hours, because the two-minute `OTA_CHECK_INTERVAL_MS` definition is active. Increase the interval after testing to reduce unnecessary authentication requests and avoid repeatedly checking the same release. Pasted text
+
+---
+
+## 8. Optional: configure a custom domain for the Worker
+
+A custom domain is useful for a stable authentication API, such as `ota.example.com`. It is **not required** for presigned R2 downloads.
+
+If you own a domain managed by Cloudflare:
+
+1. Open **Workers & Pages** in the Cloudflare dashboard.
+2. Select your `esp32-ota-auth` Worker.
+3. Open its **Settings** or **Domains & Routes** section; the exact navigation can vary with the dashboard version.
+4. Add a custom domain, such as `ota.example.com`.
+5. Follow the DNS and certificate setup prompts.
+6. Confirm that HTTPS works.
+7. Change `OTA_AUTH_URL` in your ESP32 sketch to:
+
+```cpp
+static const char OTA_AUTH_URL[] =
+    "https://ota.example.com/v1/ota";
+```
+
+8. Validate the domain's certificate chain and configure the appropriate root CA on the ESP32.
+
+Keep the firmware download URL generated by the Worker pointing to the R2 S3 API endpoint. Do not replace it with the custom domain.
+
+---
+
+## 9. Before versus after: migration summary
+
+| Component | Before: GitHub | After: Cloudflare R2 |
+|---|---|---|
+| Device authentication | No separate device-authentication endpoint | Worker validates device credentials |
+| Manifest retrieval | `MANIFEST_URL` | Manifest returned by Worker |
+| RSA signature retrieval | `SIGNATURE_URL` | Signature returned as Base64 JSON |
+| Firmware URL | Hard-coded `FIRMWARE_URL` | Short-lived presigned GET URL |
+| R2 credentials | Not applicable | Worker secrets only |
+| TLS | Existing CA validation | CA validation for Worker and R2 |
+| Manifest verification | Existing RSA verification | **Unchanged** |
+| Version comparison | Existing version logic | **Unchanged** |
+| Firmware download | `HTTPClient` streaming | Same streaming logic, supplied URL |
+| Firmware hash check | `Update.setSHA256()` | **Unchanged** |
+| OTA partition and reboot | Existing `Update` logic | **Unchanged** |
+
+### What not to change
+
+Do not remove or weaken these protections while migrating:
+
+- `WiFiClientSecure` with `setCACert()`.
+- RSA signature verification before trusting the manifest.
+- Strict version and metadata validation.
+- Firmware size and OTA partition capacity checks.
+- `Update.setSHA256()` before writing the firmware stream.
+- The check that the expected number of firmware bytes was written.
+- Successful finalization before reboot.
+
+Also keep the RSA private key offline and do not expose the R2 Secret Access Key to the device.
+
+### One improvement I recommend after the first successful migration
+
+Your current RSA-signed manifest design is already useful, but the next hardening step should be **anti-rollback protection**.
+
+Your `isNewerVersion()` comparison prevents an ordinary downgrade relative to the version hard-coded into the currently running firmware. It does not provide a hardware-backed version floor. A production device may need a protected monotonic version counter or another trusted anti-rollback mechanism, depending on its threat model.
+
+---
+
+## 10. Migration checklist
+
+Work through these items in order.
+
+- [ ] Create a private `esp32-firmware` R2 bucket.
+- [ ] Upload `firmware.bin`, `version.txt` and `version.sig`.
+- [ ] Confirm the RSA signature verifies against the exact manifest bytes.
+- [ ] Create an R2 Object Read only API token, scoped to the bucket.
+- [ ] Configure the Worker R2 binding.
+- [ ] Store R2 credentials and device tokens in Worker secrets.
+- [ ] Deploy the Worker.
+- [ ] Verify valid and invalid authentication using `curl`.
+- [ ] Confirm the Worker returns the correct manifest and signature.
+- [ ] Confirm the presigned URL downloads the expected firmware.
+- [ ] Verify the URL expires as expected.
+- [ ] Configure the correct CA trust for the Worker and R2 endpoints.
+- [ ] Add the ArduinoJson and Base64 includes.
+- [ ] Add `getSecureR2DownloadUrl()`.
+- [ ] Change `downloadAndInstall()` to accept the supplied URL.
+- [ ] Replace the old metadata-fetching sequence in `checkForFirmwareUpdate()`.
+- [ ] Test a valid update.
+- [ ] Test a tampered manifest and a tampered firmware image.
+- [ ] Confirm the device boots into the new firmware and does not repeatedly reinstall the same release.
+
+**My recommendation:** implement the Worker first and get the `curl` tests passing. Then make the three small ESP32 changes: add the authenticated metadata helper, parameterize `downloadAndInstall()`, and replace the metadata-fetching section of `checkForFirmwareUpdate()`.
+
+This preserves your existing OTA implementation while adding authenticated device access and temporary R2 download authorization.
