@@ -4185,7 +4185,7 @@ Assume:
 
 ### Step 1: Upload the three release files
 
-Run these commands from a terminal in the directory containing your release files:
+Run these **Bash syntax** commands from a terminal in the directory containing your release files:
 
 ```bash
 export GITLAB_PROJECT_ID="12345678"
@@ -4209,6 +4209,123 @@ curl --fail-with-body \
   --upload-file version.sig \
   "${PACKAGE_URL}/version.sig"
 ```
+
+Or follow below using **Windows PowerShell**:
+
+
+
+- PowerShell uses `Env:VariableName` to set environment variables, not `export`.
+- In PowerShell, `curl` is commonly an alias for `Invoke-WebRequest`, so it doesn't necessarily accept normal curl options such as `--header` and `--upload-file`.
+
+First, an important security step: your message contains what appears to be a GitLab Deploy Token. Treat it as exposed. Revoke it in GitLab and create a replacement token with only `read_package_registry` before continuing. Don't reuse the exposed token.
+
+#### Step A — Set your variables in PowerShell
+
+Open PowerShell in the directory containing `firmware.bin`, `version.txt`, and `version.sig`.
+
+Use these commands:
+
+```powershell
+$env:GITLAB_PROJECT_ID = "88009717"
+$env:GITLAB_DEPLOY_TOKEN = "PASTE_YOUR_NEW_DEPLOY_TOKEN_HERE"
+$env:OTA_VERSION = "1.0.2"
+
+$env:PACKAGE_URL = "[https://gitlab.com/api/v4/projects/$](https://gitlab.com/api/v4/projects/$)($env:GITLAB_PROJECT_ID)/packages/generic/firmware/$($env:OTA_VERSION)"
+```
+
+Check the package URL:
+
+```powershell
+Write-Output $env:PACKAGE_URL
+```
+
+Expected output:
+
+```text
+[https://gitlab.com/api/v4/projects/88009717/packages/generic/firmware/1.0.2](https://gitlab.com/api/v4/projects/88009717/packages/generic/firmware/1.0.2)
+```
+
+#### Step B — Verify the files exist
+
+Run:
+
+```powershell
+Get-Item .\firmware.bin
+Get-Item .\version.txt
+Get-Item .\version.sig
+```
+
+If PowerShell cannot find a file, change to the directory containing the files using `Set-Location`.
+
+#### Step C — Upload using the actual curl executable
+
+On modern Windows installations, invoke `curl.exe` explicitly to avoid the PowerShell alias.
+
+##### Upload firmware
+
+```powershell
+curl.exe --fail-with-body `
+  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
+  --upload-file ".\firmware.bin" `
+  "$env:PACKAGE_URL/firmware.bin"
+```
+
+##### Upload manifest
+
+```powershell
+curl.exe --fail-with-body `
+  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
+  --upload-file ".\version.txt" `
+  "$env:PACKAGE_URL/version.txt"
+```
+
+##### Upload signature
+
+```powershell
+curl.exe --fail-with-body `
+  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
+  --upload-file ".\version.sig" `
+  "$env:PACKAGE_URL/version.sig"
+```
+
+**PowerShell tip:** The backtick `` ` `` at the end of each line continues the command onto the next line. Do not put spaces after the backtick.
+
+A successful package upload normally returns HTTP `201 Created`.
+
+**Important:** These commands upload the files to the versioned package path. They do not yet publish the stable discovery files under `firmware-index/stable/` that your ESP32 will need to discover the latest version. We should configure that after confirming the three uploads work.
+
+#### Step D — Verify the uploaded firmware
+
+Download the package using your new token:
+
+```powershell
+curl.exe --fail-with-body `
+  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
+  --output ".\firmware-test.bin" `
+  "$env:PACKAGE_URL/firmware.bin"
+```
+
+Compare the hashes:
+
+```powershell
+Get-FileHash .\firmware.bin -Algorithm SHA256
+Get-FileHash .\firmware-test.bin -Algorithm SHA256
+```
+
+The SHA-256 values must match.
+
+#### Step E — Clean up the temporary token
+
+When you finish testing, remove the token from the current PowerShell session:
+
+```powershell
+Remove-Item Env:GITLAB_DEPLOY_TOKEN
+```
+
+This removes the environment variable from that session; it does not revoke the token in GitLab.
+
+
+
 
 GitLab's Generic Package Registry supports `curl --upload-file` and the `DEPLOY-TOKEN` header for Deploy Tokens. A successful package upload normally returns HTTP `201 Created`. [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
 
