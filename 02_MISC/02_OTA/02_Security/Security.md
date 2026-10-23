@@ -3997,3 +3997,629 @@ Work through these items in order.
 **My recommendation:** implement the Worker first and get the `curl` tests passing. Then make the three small ESP32 changes: add the authenticated metadata helper, parameterize `downloadAndInstall()`, and replace the metadata-fetching section of `checkForFirmwareUpdate()`.
 
 This preserves your existing OTA implementation while adding authenticated device access and temporary R2 download authorization.
+
+---
+
+# Secure OTA Migration: GitHub → GitLab Generic Package Registry
+
+I’ve inspected your pasted sketch. The good news is that your existing `SECURE_SIGN` implementation already has most of the security controls needed. We can preserve the RSA manifest verification, semantic-version check, TLS validation, streaming download, and `Update` workflow while changing the hosting URLs and adding GitLab authentication.
+
+Your current code already:
+
+- Uses `WiFiClientSecure` with `setCACert(ROOT_CA)` in the `SECURE_SIGN` branch.
+- Downloads a manifest and a raw 256-byte RSA-2048 signature.
+- Verifies the signature over the exact manifest bytes before trusting the manifest fields.
+- Checks the version, firmware size, and SHA-256, then streams the firmware to the OTA partition.
+- Uses `Update.setSHA256()` and `Update.end()` to validate the downloaded image hash.
+
+There are two important details in your existing sketch:
+
+- Keep `SECURE_SIGN` enabled. The legacy `#else` branch contains a `setInsecure()` path when `GITHUB_RELEASE_URL` is defined. Do not enable that path for this migration. Your secure branch is the right starting point.
+- Your `ROOT_CA` PEM is **ISRG Root X1**, despite the comments identifying it as DigiCert Global Root G2. The PEM's subject identifies ISRG Root X1. Rename the comment so it accurately describes the certificate; don't replace a working CA certificate without checking the actual TLS certificate chain.
+
+## 1. Choose the GitLab architecture
+
+### Option A — Generic Package Registry (recommended)
+
+Store each release as a versioned package:
+
+```text
+GitLab project
+└── Generic Package Registry
+    └── firmware
+        └── 1.0.2
+            ├── firmware.bin
+            ├── manifest.json
+            └── manifest.sig
+```
+
+The package API URL follows this pattern:
+
+```text
+https://gitlab.com/api/v4/projects/<PROJECT_ID>/packages/generic/firmware/<VERSION>/<FILE>
+```
+
+For example:
+
+```text
+https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2/firmware.bin
+```
+
+Why I recommend this for your OTA project:
+
+- Each firmware version has an explicit, stable location.
+- The firmware and signed metadata can be uploaded as separate package files.
+- Downloads can be authenticated using GitLab-supported tokens.
+- Your existing ESP32 HTTPS download code can remain largely unchanged.
+- You can keep the signing private key offline and upload only the signed release files.
+
+GitLab may use object storage behind the package service, but the ESP32 should use the documented GitLab Package Registry API, not assume that it can access an underlying storage bucket directly.
+
+### Option B — GitLab Releases with Release Asset Links
+
+A GitLab Release can provide a human-friendly release page and links to downloadable assets.
+
+This is useful when you want release notes and a convenient release overview. However, the download behavior depends on the asset link and access configuration. Release asset links are not automatically equivalent to a private, authenticated package download endpoint.
+
+For your existing updater, I would start with Option A, and optionally create a GitLab Release for each published firmware version as a separate release-management step.
+
+## 2. GitLab authentication: choose the correct token
+
+For an ESP32 that only downloads firmware, a project Deploy Token with `read_package_registry` is my first choice. GitLab documents Deploy Tokens specifically for external systems that consume packages. [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
+
+There is an important correction to your proposed scope combination: a Deploy Token does not need `read_api`; its package permission is `read_package_registry`. A Project Access Token is different: GitLab's Generic Package Registry documentation specifies the `api` scope and a Developer, Maintainer, or Owner role for that token type. A Guest Project Access Token with only `read_api` is therefore not the configuration I recommend for this registry workflow. [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
+
+| Token type | Minimum practical configuration for this task | Recommendation |
+|---|---|---|
+| Deploy Token | `read_package_registry` | Preferred for the ESP32 |
+| Project Access Token | `api` scope; Developer or higher for Generic Package Registry access | Alternative, but broader access |
+| Personal Access Token | `api` scope for this registry workflow | Avoid for a device fleet if possible |
+| `CI_JOB_TOKEN` | Use within an authorized GitLab CI/CD job | Good for automated publishing; generally not suitable as a permanent device credential |
+
+GitLab's supported Generic Package Registry authentication methods and scopes are documented here: [GitLab Generic Package Registry authentication](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token).
+
+### Authentication header matters
+
+Use the header that matches the token type:
+
+```cpp
+// Deploy Token:
+https.addHeader("DEPLOY-TOKEN", gitlab_token);
+
+// Personal Access Token or Project Access Token:
+https.addHeader("PRIVATE-TOKEN", gitlab_token);
+```
+
+For a Deploy Token, GitLab also supports HTTP Basic authentication using its generated username and token as the password. Do not assume that `PRIVATE-TOKEN` is the correct header for every token type. [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
+
+**Security boundary:** the token authorizes access to packages. It does not authenticate the firmware publisher cryptographically. We will retain your existing RSA signature verification for that.
+
+## 3. GitLab setup — click by click
+
+### Step 1: Create the project
+
+1. Sign in to [GitLab.com](https://gitlab.com/).
+2. Select **New project**.
+3. Choose **Create blank project**.
+4. Enter a name, such as `esp32-firmware`.
+5. Set the project visibility to **Private**.
+6. Create the project.
+
+Keep this project separate from your source-code project if you want to reduce the number of people and automation jobs that can publish firmware.
+
+### Step 2: Find the Project ID
+
+1. Open the new project.
+2. On its main project page, locate the **Project ID**. GitLab normally displays it in the project details area.
+3. Copy the numeric ID.
+
+For example, if the ID is `12345678`, the package URL becomes:
+
+```text
+https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2/firmware.bin
+```
+
+Use your actual ID in the sketch. The example ID above is only illustrative.
+
+### Step 3: Check the Package Registry setting
+
+1. Open the project.
+2. Go to **Settings**.
+3. Look for the package-registry controls under **Packages & Registries** or the relevant project feature settings in your current GitLab UI.
+4. Ensure the Package Registry is enabled.
+
+GitLab notes that disabling the package registry prevents registry operations even if the credentials are otherwise valid. [GitLab Docs](https://docs.gitlab.com/user/packages/package_registry/supported_functionality/)
+
+### Step 4: Create a read-only Deploy Token
+
+1. In the project, open **Settings → Repository**.
+2. Expand **Deploy tokens**.
+3. Select **Add token**.
+4. Enter a name, for example `esp32-ota-read`.
+5. Set an expiry date appropriate to your maintenance plan.
+6. Select only `read_package_registry`.
+7. Create the token.
+8. Save the generated username and token in a secure password manager.
+
+GitLab displays the token when it is created; record it then. Do not put it into your sketch source or commit it to Git. [GitLab Docs](https://docs.gitlab.com/user/project/deploy_tokens/)
+
+The Deploy Token's username often resembles `gitlab+deploy-token-123`, but use the actual username GitLab provides.
+
+### Step 5: Keep the release format compatible with your current parser
+
+Your current secure branch expects a text manifest with this structure:
+
+```text
+1.0.2
+<64-character SHA-256 hex digest>
+<firmware size in bytes>
+<optional release notes>
+```
+
+It verifies the RSA signature over the exact manifest bytes and then parses those fields.
+
+For a minimal migration, keep that format and keep the filenames rather than switching immediately to JSON:
+
+```text
+firmware/
+└── 1.0.2/
+    ├── firmware.bin
+    ├── version.txt
+    └── version.sig
+```
+
+This preserves your current `parseManifest()` and `verifyManifestSignature()` functions. You can migrate to `manifest.json` later, but that would require a deliberate parser and signature-format change. It is not necessary to change the hosting service.
+
+## 4. Upload a release to GitLab
+
+For this first migration, use the existing manifest filenames. Your release process should generate and sign the manifest before uploading anything.
+
+Assume:
+
+- Project ID: `12345678`
+- Release version: `1.0.2`
+- Package name: `firmware`
+- Deploy Token: `YOUR_DEPLOY_TOKEN`
+
+### Step 1: Upload the three release files
+
+Run these commands from a terminal in the directory containing your release files:
+
+```bash
+export GITLAB_PROJECT_ID="12345678"
+export GITLAB_DEPLOY_TOKEN="YOUR_DEPLOY_TOKEN"
+export OTA_VERSION="1.0.2"
+
+export PACKAGE_URL="https://gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/packages/generic/firmware/${OTA_VERSION}"
+
+curl --fail-with-body \
+  --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
+  --upload-file firmware.bin \
+  "${PACKAGE_URL}/firmware.bin"
+
+curl --fail-with-body \
+  --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
+  --upload-file version.txt \
+  "${PACKAGE_URL}/version.txt"
+
+curl --fail-with-body \
+  --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
+  --upload-file version.sig \
+  "${PACKAGE_URL}/version.sig"
+```
+
+GitLab's Generic Package Registry supports `curl --upload-file` and the `DEPLOY-TOKEN` header for Deploy Tokens. A successful package upload normally returns HTTP `201 Created`. [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
+
+**Important:** don't regenerate `version.txt` or reformat it after signing. Your signature covers the exact bytes. Upload the exact `version.txt` and `version.sig` files that you verified locally.
+
+You can upload `manifest.json` and `manifest.sig` instead if you deliberately change the manifest format and the firmware parser. For this minimal-diff migration, retain `version.txt` and `version.sig`.
+
+### Step 2: Test an authenticated download with curl
+
+First, test the firmware file independently of the ESP32.
+
+```bash
+curl --fail-with-body \
+  --header "DEPLOY-TOKEN: YOUR_DEPLOY_TOKEN" \
+  --output firmware-test.bin \
+  "https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2/firmware.bin"
+```
+
+Then compare the downloaded file with the release artifact:
+
+```bash
+sha256sum firmware.bin firmware-test.bin
+```
+
+On Windows PowerShell, use:
+
+```powershell
+Get-FileHash .\firmware.bin -Algorithm SHA256
+Get-FileHash .\firmware-test.bin -Algorithm SHA256
+```
+
+The hashes should match.
+
+The firmware hash comparison is a useful transport test, but it is not a substitute for verifying your signed manifest on the ESP32.
+
+### Step 3: Understand the version-discovery problem
+
+Your existing sketch has a stable `MANIFEST_URL` that points to the latest manifest. A versioned Generic Package Registry URL, by contrast, requires a package version in the path. You need a small, stable discovery location.
+
+For minimal changes, publish the current manifest and signature at a fixed package version, for example:
+
+```text
+firmware-index/stable/version.txt
+firmware-index/stable/version.sig
+```
+
+Then publish the actual firmware at its signed version:
+
+```text
+firmware/1.0.2/firmware.bin
+firmware/1.0.2/version.txt
+firmware/1.0.2/version.sig
+```
+
+The stable index tells the ESP32 which version is available. The firmware download URL is constructed only after the manifest's RSA signature is valid and the parsed version passes your existing version policy.
+
+This avoids relying on a mutable `latest` URL that the Generic Package Registry does not provide as a universal alias. You should also treat a release as immutable operationally: don't overwrite a published version with different firmware bytes.
+
+## 5. Minimal Arduino changes to your existing sketch
+
+We'll keep the code in your `#ifdef SECURE_SIGN` branch and make only the changes needed for GitLab.
+
+### Change A — Add Preferences and GitLab configuration
+
+Add this include near the top:
+
+```cpp
+#include <Preferences.h>
+```
+
+Replace the three GitHub URL definitions in your `SECURE_SIGN` configuration with GitLab URLs. Use your actual numeric Project ID:
+
+```cpp
+// GitLab Generic Package Registry.
+// Replace 12345678 with your actual GitLab Project ID.
+
+static const char MANIFEST_URL[] =
+  "https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware-index/stable/version.txt";
+
+static const char SIGNATURE_URL[] =
+  "https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware-index/stable/version.sig";
+```
+
+Keep your existing `FIRMWARE_VERSION`, `MAX_MANIFEST_SIZE`, `MAX_FIRMWARE_SIZE`, `RSA_SIGNATURE_SIZE`, and `OTA_PUBLIC_KEY` declarations.
+
+The firmware URL will be built dynamically from the verified manifest version, rather than hard-coded.
+
+### Change B — Load the Deploy Token from NVS
+
+Add this global variable alongside your existing OTA state variables:
+
+```cpp
+String gitlabToken;
+```
+
+Add this function:
+
+```cpp
+bool loadGitLabToken() {
+  Preferences prefs;
+
+  if (!prefs.begin("ota", true)) {  // Read-only NVS access
+    Serial.println("OTA token: failed to open Preferences");
+    return false;
+  }
+
+  gitlabToken = prefs.getString("gitlab_token", "");
+  prefs.end();
+
+  if (gitlabToken.length() == 0) {
+    Serial.println("OTA token missing from NVS");
+    return false;
+  }
+
+  Serial.println("OTA token loaded from NVS");
+  return true;
+}
+```
+
+Call it in `setup()` after `Serial.begin()` and before you attempt an OTA check:
+
+```cpp
+if (!loadGitLabToken()) {
+  Serial.println("Authenticated OTA is unavailable until a token is provisioned");
+}
+```
+
+**Important security limitation:** Preferences does not automatically encrypt its contents. This code keeps the token out of your `.ino` source and Git repository, but by itself it does not protect the token against physical extraction from the device. For production, configure and validate ESP32 flash encryption and NVS encryption, and consider secure boot. Those protections require security configuration beyond simply calling `Preferences`.
+
+Also, don't print the token to Serial.
+
+You'll need a separate provisioning step to write `gitlab_token` into the `ota` NVS namespace. Do that with a controlled one-time provisioning sketch or another trusted provisioning method; don't put the real token in your main sketch.
+
+### Change C — Add the Deploy Token header to manifest downloads
+
+In your existing `fetchText()` function, find:
+
+```cpp
+int status = http.GET();
+```
+
+Insert this immediately before it:
+
+```cpp
+if (gitlabToken.length() == 0) {
+  Serial.println("GitLab token is unavailable");
+  http.end();
+  return false;
+}
+
+http.addHeader("DEPLOY-TOKEN", gitlabToken);
+```
+
+The resulting section should be:
+
+```cpp
+if (!http.begin(client, url)) {
+  Serial.println("HTTPS begin failed");
+  return false;
+}
+
+if (gitlabToken.length() == 0) {
+  Serial.println("GitLab token is unavailable");
+  http.end();
+  return false;
+}
+
+http.addHeader("DEPLOY-TOKEN", gitlabToken);
+
+int status = http.GET();
+int length = http.getSize();
+```
+
+Leave the existing TLS validation, HTTP status checks, content-length checks, and response-size limits unchanged.
+
+### Change D — Add authentication to the signature download
+
+Make the same change in `fetchSignature()` immediately before its `http.GET()` call:
+
+```cpp
+if (gitlabToken.length() == 0) {
+  Serial.println("GitLab token is unavailable");
+  http.end();
+  return false;
+}
+
+http.addHeader("DEPLOY-TOKEN", gitlabToken);
+
+int status = http.GET();
+```
+
+This matters because your manifest and signature are now private package files too. Adding authentication only to the firmware request would not be enough.
+
+### Change E — Pass the firmware URL into `downloadAndInstall()`
+
+Your current secure function is:
+
+```cpp
+bool downloadAndInstall(const String& expectedHash, size_t expectedSize)
+```
+
+Change its declaration to:
+
+```cpp
+bool downloadAndInstall(const String& firmwareUrl,
+                        const String& expectedHash,
+                        size_t expectedSize)
+```
+
+Inside the function, keep:
+
+```cpp
+WiFiClientSecure client;
+client.setCACert(ROOT_CA);
+client.setHandshakeTimeout(15);
+```
+
+Keep the existing redirect policy:
+
+```cpp
+http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+```
+
+Replace:
+
+```cpp
+if (!http.begin(client, FIRMWARE_URL)) {
+```
+
+with:
+
+```cpp
+if (!http.begin(client, firmwareUrl)) {
+```
+
+Immediately before the firmware `http.GET()`, add the same Deploy Token check and header:
+
+```cpp
+if (gitlabToken.length() == 0) {
+  Serial.println("GitLab token is unavailable");
+  http.end();
+  return false;
+}
+
+http.addHeader("DEPLOY-TOKEN", gitlabToken);
+
+int status = http.GET();
+```
+
+Do not change the existing `Update.begin()`, `Update.setSHA256()`, `Update.writeStream()`, byte-count check, or `Update.end()` logic. Your existing function already performs those operations in the right general sequence.
+
+### Change F — Construct the firmware URL after signature verification
+
+In `checkForFirmwareUpdate()`, keep the existing sequence:
+
+1. Download the manifest.
+2. Download the raw RSA signature.
+3. Verify the signature.
+4. Parse the signed metadata.
+5. Reject a version that is not newer.
+6. Download the firmware.
+
+Your existing code already implements the first five steps. After the version check succeeds, replace the current call:
+
+```cpp
+downloadAndInstall(expectedHash, expectedSize);
+```
+
+with:
+
+```cpp
+String firmwareUrl =
+  "[https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/](https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/)"
+  + version
+  + "/firmware.bin";
+
+Serial.printf("GitLab firmware URL: %s\n", firmwareUrl.c_str());
+
+bool success =
+  downloadAndInstall(firmwareUrl, expectedHash, expectedSize);
+
+if (!success) {
+  Serial.println("OTA installation failed; current firmware retained");
+}
+```
+
+Replace `12345678` with your actual Project ID.
+
+The URL is constructed only after the signed manifest has been verified and parsed. Your existing `isNewerVersion()` check also needs to succeed before the firmware download begins.
+
+For this scheme, publish the discovery manifest and signature under `firmware-index/stable/`, and publish each firmware binary under `firmware/<version>/`. The discovery manifest's version must correspond to the versioned firmware package you uploaded.
+
+### Before vs. after: the core changes
+
+| Component | Before | After |
+|---|---|---|
+| Manifest URL | GitHub raw URL | GitLab `firmware-index/stable/version.txt` |
+| Signature URL | GitHub raw URL | GitLab `firmware-index/stable/version.sig` |
+| Firmware URL | Fixed `FIRMWARE_URL` | Constructed from the verified version |
+| Authentication | None for public GitHub files | `DEPLOY-TOKEN` header on every private package GET |
+| TLS | `setCACert(ROOT_CA)` | Keep `setCACert(ROOT_CA)` |
+| Manifest signature | RSA-2048/SHA-256 | Unchanged |
+| Firmware integrity | `Update.setSHA256()` | Unchanged |
+| OTA partition handling | `Update.begin()` and `Update.end()` | Unchanged |
+
+## 6. TLS validation for gitlab.com
+
+Your current `ROOT_CA` PEM is ISRG Root X1, even though its comments say DigiCert Global Root G2. Correct the comment to avoid future confusion.
+
+Keep this line in all three download functions:
+
+```cpp
+client.setCACert(ROOT_CA);
+```
+
+And keep redirects disabled while testing:
+
+```cpp
+http.setFollowRedirects(HTTPC_DISABLE_FOLLOW_REDIRECTS);
+```
+
+GitLab's documented package endpoint is on `gitlab.com`, so you should not need to follow a redirect for the normal Generic Package Registry download flow. If your test receives a redirect, inspect the response and determine why before enabling redirects. Do not blindly follow it while sending authentication headers.
+
+The existing PEM is a plausible trust anchor for the relevant certificate chain, but validate the actual chain on your device before assuming it will work indefinitely. If GitLab's certificate chain changes, update the trust configuration based on verified certificate information—not by disabling TLS validation.
+
+## 7. Critical security lesson: authentication is not firmware authenticity
+
+There are two separate questions:
+
+1. **May this device download the package?**  
+   GitLab checks the Deploy Token and its `read_package_registry` permission.
+
+2. **Was this firmware authorized by your firmware publisher?**  
+   Your ESP32 verifies the RSA signature on the manifest using the public key embedded in the firmware.
+
+The second check is essential even when GitLab authentication works perfectly.
+
+Imagine an attacker gains write access to your GitLab project and replaces `firmware.bin`. If the attacker also changes the manifest's SHA-256 hash, a device that trusts only the unsigned hash could accept the malicious binary. The Deploy Token does not prevent this.
+
+Your existing design avoids that failure when used correctly:
+
+- The manifest contains the version, firmware SHA-256 and firmware size.
+- An offline private key signs the exact manifest bytes.
+- The ESP32 holds the corresponding public key.
+- The ESP32 verifies the signature before trusting the manifest fields.
+- The firmware's received size and SHA-256 are checked before OTA finalization.
+
+Your current `verifyManifestSignature()` and `Update.setSHA256()` workflow should therefore remain in place.
+
+Never put the RSA private signing key in the ESP32 or in a location that the OTA hosting service can expose. Keep it offline or in a suitably protected signing system.
+
+## 8. Testing and migration checklist
+
+### Test 1 — Verify the package independently
+
+Use `curl` with your Deploy Token and confirm that the expected binary downloads. Compare its SHA-256 hash with the release artifact.
+
+### Test 2 — Verify the ESP32 authentication flow
+
+Open Serial Monitor at your configured baud rate. Look for:
+
+- Wi-Fi connection success.
+- Successful manifest download.
+- Successful signature download.
+- Manifest signature valid.
+- A valid release version and expected firmware size.
+- Successful firmware HTTP response.
+- Complete byte count and successful `Update.end()`.
+
+You should see HTTP `200` for a successful download.
+
+### Test 3 — Check failure behavior
+
+| Test | Expected result |
+|---|---|
+| Valid token and existing package | HTTP 200; download proceeds |
+| Missing or invalid token | Usually HTTP 401 or 403, depending on the request and access configuration |
+| Incorrect project ID or nonexistent package | Often HTTP 404 |
+| Invalid manifest signature | OTA rejected before trusting the manifest |
+| Firmware hash mismatch | OTA finalization fails |
+| Firmware too large for the target partition | Update rejected |
+| Token expired or revoked | Authenticated download fails; current firmware remains running |
+
+A 404 can also hide inaccessible resources, so don't assume every 404 means that the file is missing. Check the Project ID, package path, version, token permissions, and registry visibility.
+
+### Test 4 — Roll back safely
+
+- Do not remove the existing working GitHub release until the GitLab path has passed your tests.
+- Keep a known-good firmware image and the corresponding signed manifest.
+- Test GitLab using a newer version, for example `1.0.5`, while the device runs `1.0.4`.
+- If authentication fails, retain the existing firmware and correct the token or package configuration.
+- If the token must be rotated, create a replacement Deploy Token, provision the new value to the device, test it, and then revoke the old token.
+- If a token expires while devices are deployed, they will not be able to download private packages until valid credentials are provisioned. Plan a secure token-update mechanism before deploying to devices you cannot physically access.
+
+Your current `FIRMWARE_VERSION` is hard-coded, so remember to update it for each firmware build. Also, your configured OTA polling interval is currently two minutes, not six hours.
+
+## 9. ESP32-S3 N16R8 considerations
+
+- **PSRAM:** Your 8 MB PSRAM does not need to hold the entire firmware. Your current `Update.writeStream()` approach streams directly to the OTA partition, which avoids a firmware-sized RAM buffer.
+- **Partition layout:** The target OTA partition must be large enough for the complete binary. Your code already checks the target partition and calls `Update.begin()` with the expected size.
+- **Token storage:** Preferences keeps the token out of source control but does not encrypt it automatically. Treat the device as a potential credential-extraction target unless you implement and verify suitable device security.
+- **Authentication scope:** Use only `read_package_registry` for the ESP32's Deploy Token. Uploading should be performed by a separate trusted workstation or CI job with write permission.
+- **Manifest format:** Retain your existing signed text format for this migration. Switching to JSON is a separate change and should not be combined with the hosting migration unless necessary.
+
+## My recommended implementation order
+
+1. Create the private GitLab project and read-only Deploy Token.
+2. Upload `firmware.bin`, `version.txt`, and `version.sig` for a test version.
+3. Upload the discovery `version.txt` and `version.sig` to the stable index path.
+4. Test the package download using `curl`.
+5. Add the token-loading function and authentication headers.
+6. Change `downloadAndInstall()` to accept the constructed firmware URL.
+7. Test the complete signed OTA flow on the ESP32-S3.
+8. Only then plan token provisioning, encryption, rotation, and deployment to other devices.
+
+Official references: [GitLab Generic Package Registry](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token), [Deploy Tokens](https://docs.gitlab.com/user/project/deploy_tokens/), and [Package Registry settings](https://docs.gitlab.com/user/packages/package_registry/).
