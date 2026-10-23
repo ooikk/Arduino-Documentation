@@ -1947,7 +1947,7 @@ static const char FIRMWARE_URL[] =
   "https://raw.githubusercontent.com/OWNER/REPO/BRANCH/firmware.bin";
 
 // Change this to the version currently running on the device.
-static const char CURRENT_VERSION[] = "1.0.0";
+static const char FIRMWARE_VERSION[] = "1.0.0";
 
 // Adjust to your partition layout. Update.begin() also checks
 // whether the selected OTA partition has sufficient space.
@@ -2068,7 +2068,7 @@ bool verifyManifestSignature(const String& manifest,
     return false;
   }
 
-  uint8_t digest;
+  uint8_t digest[32];
 
   mbedtls_sha256(
     (const unsigned char*)manifest.c_str(),
@@ -2077,6 +2077,21 @@ bool verifyManifestSignature(const String& manifest,
     0  // SHA-256, not SHA-224
   );
 
+  if (rc != 0) {
+    Serial.printf("SHA-256 calculation failed: -0x%04X\n",
+                  (unsigned)(-rc));
+    mbedtls_pk_free(&publicKey);
+    return false;
+  }
+
+// Optional check the signature length
+  if (signatureLength != 256) {
+    Serial.println("Invalid signature length");
+    mbedtls_pk_free(&publicKey);
+    return false;
+  }
+
+// Verify RSA-2048 / SHA-256 / PKCS#1 v1.5 signature.
   rc = mbedtls_pk_verify(
     &publicKey,
     MBEDTLS_MD_SHA256,
@@ -2241,7 +2256,7 @@ bool downloadAndInstall() {
 
   // Basic version policy: accept only a strictly newer version.
   // This is not hardware-backed anti-rollback.
-  if (!isNewerVersion(version, CURRENT_VERSION)) {
+  if (!isNewerVersion(version, FIRMWARE_VERSION)) {
     Serial.println("OTA rejected: version is not newer");
     return false;
   }
@@ -2322,7 +2337,31 @@ bool downloadAndInstall() {
 
 Call `downloadAndInstall()` from your existing OTA trigger after Wi-Fi and time synchronization are ready. Keep your existing Wi-Fi connection code and `ROOT_CA` declaration; don't create a second, conflicting CA definition.
 
-## 5. Prepare the release files correctly
+## 5. Create a signing key
+
+In a terminal with OpenSSL available, create ota-private.pem:
+
+```powershell
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out ota-private.pem
+```
+
+create ota-publicc.pem:
+
+```powershell
+openssl pkey -in ota-private.pem -pubout -out ota-public.pem
+```
+
+Replace your public key in the code:
+
+```cpp
+static const char OTA_PUBLIC_KEY[] PROGMEM = R"KEY(
+-----BEGIN PUBLIC KEY-----
+REPLACE_WITH_YOUR_REAL_PUBLIC_KEY
+-----END PUBLIC KEY-----
+)KEY";
+```
+
+## 6. Prepare the release files correctly
 
 On Windows PowerShell, after compiling your firmware and saving the binary as `firmware.bin`, get the size:
 
@@ -2339,13 +2378,12 @@ Get the SHA-256 digest:
 Put those values in `version.txt`, then sign it again whenever any byte in the manifest changes:
 
 ```powershell
-openssl dgst -sha256 -sign ota-private.pem `
-  -out version.sig version.txt
+openssl dgst -sha256 -sign ota-private.pem -out version.sig version.txt
 ```
 
 Upload all three files to the exact directory referenced by your URLs. Ensure that `version.txt` is saved with LF line endings and a final newline, as required by the sample parser.
 
-## 6. Test the security checks before trusting the updater
+## 7. Test the security checks before trusting the updater
 
 Run these tests on your development board. Start with a known-good firmware image and keep your USB recovery method available.
 
@@ -2361,7 +2399,7 @@ Run these tests on your development board. Start with a known-good firmware imag
 
 For the hash-mismatch test, restore the correct release files after testing. Do not deliberately interrupt power during your first trials.
 
-## 7. Three important limitations
+## 8. Three important limitations
 
 - **The manifest signature is not Secure Boot.** An attacker who can install arbitrary firmware through an unprotected boot chain may replace the verification code and public key. Secure Boot V2 provides the separate hardware-rooted boot verification layer.
 - **The version comparison is not hardware anti-rollback.** It helps with normal update policy, but a previously authorized older application might bypass this software check. Production anti-rollback requires a stronger enforced version policy.
