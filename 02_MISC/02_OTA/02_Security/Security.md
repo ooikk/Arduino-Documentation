@@ -2345,7 +2345,7 @@ In a terminal with OpenSSL available, create ota-private.pem:
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out ota-private.pem
 ```
 
-create ota-publicc.pem:
+create ota-public.pem:
 
 ```powershell
 openssl pkey -in ota-private.pem -pubout -out ota-public.pem
