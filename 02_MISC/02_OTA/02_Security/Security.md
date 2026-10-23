@@ -4308,9 +4308,23 @@ A successful package upload normally returns HTTP `201 Created`.
 
 **Important:** These commands upload the files to the versioned package path. They do not yet publish the stable discovery files under `firmware-index/stable/` that your ESP32 will need to discover the latest version. We should configure that after confirming the three uploads work.
 
-#### Step D — Verify the uploaded firmware
 
-Download the package using your new token:
+**Important:** don't regenerate `version.txt` or reformat it after signing. Your signature covers the exact bytes. Upload the exact `version.txt` and `version.sig` files that you verified locally.
+
+You can upload `manifest.json` and `manifest.sig` instead if you deliberately change the manifest format and the firmware parser. For this minimal-diff migration, retain `version.txt` and `version.sig`.
+
+### Step 2: Test an authenticated download with curl
+
+First, test the firmware file independently of the ESP32. Download the package using your new token:
+
+```bash
+curl --fail-with-body \
+  --header "DEPLOY-TOKEN: YOUR_DEPLOY_TOKEN" \
+  --output firmware-test.bin \
+  "https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2/firmware.bin"
+```
+
+On Windows PowerShell, use:
 
 ```powershell
 curl.exe --fail-with-body `
@@ -4319,43 +4333,6 @@ curl.exe --fail-with-body `
   "$env:PACKAGE_URL/firmware.bin"
 ```
 
-Compare the hashes:
-
-```powershell
-Get-FileHash .\firmware.bin -Algorithm SHA256
-Get-FileHash .\firmware-test.bin -Algorithm SHA256
-```
-
-The SHA-256 values must match.
-
-#### Step E — Clean up the temporary token
-
-When you finish testing, remove the token from the current PowerShell session:
-
-```powershell
-Remove-Item Env:GITLAB_DEPLOY_TOKEN
-```
-
-This removes the environment variable from that session; it does not revoke the token in GitLab.
-
-
-
-
-
-**Important:** don't regenerate `version.txt` or reformat it after signing. Your signature covers the exact bytes. Upload the exact `version.txt` and `version.sig` files that you verified locally.
-
-You can upload `manifest.json` and `manifest.sig` instead if you deliberately change the manifest format and the firmware parser. For this minimal-diff migration, retain `version.txt` and `version.sig`.
-
-### Step 2: Test an authenticated download with curl
-
-First, test the firmware file independently of the ESP32.
-
-```bash
-curl --fail-with-body \
-  --header "DEPLOY-TOKEN: YOUR_DEPLOY_TOKEN" \
-  --output firmware-test.bin \
-  "https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2/firmware.bin"
-```
 
 Then compare the downloaded file with the release artifact:
 
@@ -4373,6 +4350,15 @@ Get-FileHash .\firmware-test.bin -Algorithm SHA256
 The hashes should match.
 
 The firmware hash comparison is a useful transport test, but it is not a substitute for verifying your signed manifest on the ESP32.
+
+When you finish testing, remove the token from the current PowerShell session:
+
+```powershell
+Remove-Item Env:GITLAB_DEPLOY_TOKEN
+```
+
+This removes the environment variable from that session; it does not revoke the token in GitLab.
+
 
 ### Step 3: Understand the version-discovery problem
 
