@@ -2381,6 +2381,19 @@ Put those values in `version.txt`, then sign it again whenever any byte in the m
 openssl dgst -sha256 -sign ota-private.pem -out version.sig version.txt
 ```
 
+Verify the signature against the local manifest:
+
+```powershell
+openssl dgst -sha256 -verify ota-public.pem -signature version.sig version.txt
+```
+
+Expected output:
+
+```powershell
+Verified OK
+```
+
+
 Upload all three files to the exact directory referenced by your URLs. Ensure that `version.txt` is saved with LF line endings and a final newline, as required by the sample parser.
 
 ## 7. Test the security checks before trusting the updater
