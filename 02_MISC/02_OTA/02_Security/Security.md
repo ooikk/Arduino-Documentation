@@ -4239,7 +4239,7 @@ Open PowerShell in the directory containing `firmware.bin`, `version.txt`, and `
 Use these commands:
 
 ```powershell
-$env:GITLAB_PROJECT_ID = "88009717"
+$env:GITLAB_PROJECT_ID = "12345678"
 $env:GITLAB_DEPLOY_TOKEN = "PASTE_YOUR_DEPLOY_WRITE_TOKEN_HERE"
 $env:OTA_VERSION = "1.0.2"
 
@@ -4256,7 +4256,7 @@ Write-Output $env:PACKAGE_URL
 Expected output:
 
 ```text
-https://gitlab.com/api/v4/projects/88009717/packages/generic/firmware/1.0.2
+https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2
 ```
 
 #### Step B — Verify the files exist
