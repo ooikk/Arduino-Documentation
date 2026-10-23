@@ -4217,8 +4217,6 @@ Or follow below using **Windows PowerShell**:
 - PowerShell uses `Env:VariableName` to set environment variables, not `export`.
 - In PowerShell, `curl` is commonly an alias for `Invoke-WebRequest`, so it doesn't necessarily accept normal curl options such as `--header` and `--upload-file`.
 
-First, an important security step: your message contains what appears to be a GitLab Deploy Token. Treat it as exposed. Revoke it in GitLab and create a replacement token with only `read_package_registry` before continuing. Don't reuse the exposed token.
-
 #### Step A — Set your variables in PowerShell
 
 Open PowerShell in the directory containing `firmware.bin`, `version.txt`, and `version.sig`.
