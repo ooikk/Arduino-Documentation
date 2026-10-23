@@ -1,7 +1,8 @@
-1.0.3
-2d3e091dc56606fdd6da374681554d24e042bcf0263e4b0b4721d9a24179bee8
+1.0.4
+55bb5aa4848a65e480526f2b775e40289f4435f8a5fef201f43fd981b8a22a44
 1039536
 - Add release note in version.txt
 - Fix Release note print out
 - Change version number
 - To confirm release note print out is fixed
+- Another version
