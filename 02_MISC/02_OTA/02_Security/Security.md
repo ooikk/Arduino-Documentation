@@ -2942,7 +2942,7 @@ Your current design prevents this: the ESP32 verifies the manifest using the emb
 
 ### Important distinction about firmware verification
 
-Your existing implementation calls `Update.setSHA256(expectedHash.c_str())` before streaming the firmware. It writes to the inactive OTA partition, then finalizes the update only if the expected number of bytes arrived and the hash check succeeds. Pasted text
+Your existing implementation calls `Update.setSHA256(expectedHash.c_str())` before streaming the firmware. It writes to the inactive OTA partition, then finalizes the update only if the expected number of bytes arrived and the hash check succeeds. 
 
 That is a reasonable authenticated-OTA design: the *expected* hash is authenticated before the download, and the image is checked before the update is finalized.
 
@@ -2954,7 +2954,7 @@ It is not the same as downloading the entire firmware and verifying a separate s
 
 ### Step 1 — Create a private R2 bucket
 
-1. Sign in to the [Cloudflare](https://www.cloudflare.com/) dashboard.
+1. Sign in to the [Cloudflare](https://dash.cloudflare.com/login) dashboard.
 2. Open **Storage & databases → R2 Object Storage**.
 3. Select **Create bucket**.
 4. Choose a name, for example `esp32-firmware`.
