@@ -4147,7 +4147,19 @@ GitLab displays the token when it is created; record it then. Do not put it into
 
 The Deploy Token's username often resembles `gitlab+deploy-token-123`, but use the actual username GitLab provides.
 
-### Step 5: Keep the release format compatible with your current parser
+### Step 5: Create a write-only Deploy Token
+
+1. In the project, open **Settings → Repository**.
+2. Expand **Deploy tokens**.
+3. Select **Add token**.
+4. Enter a name, for example `esp32-ota-write`.
+5. Set an expiry date appropriate to your maintenance plan.
+6. Select only `write_package_registry`.
+7. Create the token.
+8. Save the generated username and token in a secure password manager.
+
+
+### Step 6: Keep the release format compatible with your current parser
 
 Your current secure branch expects a text manifest with this structure:
 
@@ -4189,7 +4201,7 @@ Run these **Bash syntax** commands from a terminal in the directory containing y
 
 ```bash
 export GITLAB_PROJECT_ID="12345678"
-export GITLAB_DEPLOY_TOKEN="YOUR_DEPLOY_TOKEN"
+export GITLAB_DEPLOY_TOKEN="YOUR_DEPLOY_WRITE_TOKEN"
 export OTA_VERSION="1.0.2"
 
 export PACKAGE_URL="https://gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/packages/generic/firmware/${OTA_VERSION}"
@@ -4225,7 +4237,7 @@ Use these commands:
 
 ```powershell
 $env:GITLAB_PROJECT_ID = "88009717"
-$env:GITLAB_DEPLOY_TOKEN = "PASTE_YOUR_NEW_DEPLOY_TOKEN_HERE"
+$env:GITLAB_DEPLOY_TOKEN = "PASTE_YOUR_DEPLOY_WRITE_TOKEN_HERE"
 $env:OTA_VERSION = "1.0.2"
 
 $env:PACKAGE_URL = "https://gitlab.com/api/v4/projects/$($env:GITLAB_PROJECT_ID)/packages/generic/firmware/$($env:OTA_VERSION)"
