@@ -2173,20 +2173,24 @@ bool parseManifest(const String& manifest,
                    String& version,
                    String& hash,
                    size_t& firmwareSize) {
-  if (manifest.indexOf('\r') >= 0) return false;
+ // if (manifest.indexOf('\r') >= 0) return false;
 
   int p1 = manifest.indexOf('\n');
   int p2 = manifest.indexOf('\n', p1 + 1);
-  int p3 = manifest.indexOf('\n', p2 + 1);
 
-  if (p1 <= 0 || p2 <= p1 ||
-      p3 <= p2 || p3 != (int)manifest.length() - 1) {
+  if (p1 < 0 || p2 < 0) {
+    Serial.println("Malformed manifest: missing field separator");
     return false;
   }
 
   version = manifest.substring(0, p1);
   hash = manifest.substring(p1 + 1, p2);
-  String sizeText = manifest.substring(p2 + 1, p3);
+  String sizeText = manifest.substring(p2 + 1);
+
+// remove any none print characters such as '\r'
+  version.trim();
+  hash.trim();
+  sizeText.trim();
 
   if (!isHexSHA256(hash)) return false;
 
