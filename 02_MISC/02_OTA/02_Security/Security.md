@@ -4110,8 +4110,10 @@ Keep this project separate from your source-code project if you want to reduce t
 ### Step 2: Find the Project ID
 
 1. Open the new project.
-2. On its main project page, locate the **Project ID**. GitLab normally displays it in the project details area.
+2. Open your project's **Settings → General** and look for **Project ID** under the project details.
 3. Copy the numeric ID.
+
+To confirm, open your project's Settings → General and look for Project ID under the project details.
 
 For example, if the ID is `12345678`, the package URL becomes:
 
