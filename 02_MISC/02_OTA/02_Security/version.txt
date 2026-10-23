@@ -1,5 +1,6 @@
-1.0.1
-3441103ede292eee2f6401dea42a66fa10979136767a0da073492aa3cecb9587
+1.0.2
+da171e8cdc64f6293d0d2a7cc092ae938ebe2a5453c3161848157c4e1f5cfc7d
 1039536
--Add release note in version.txt
--Change version number
+- Add release note in version.txt
+- Fix Release note print out
+- Change version number
