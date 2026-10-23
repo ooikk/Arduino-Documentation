@@ -1,3 +1,5 @@
 1.0.1
-0e0f36dd53de84e0ef253ebd811e17aabe66467af27738f88379bb9cbf288a16
-1039296
+3441103ede292eee2f6401dea42a66fa10979136767a0da073492aa3cecb9587
+1039536
+-Add release note in version.txt
+-Change version number
