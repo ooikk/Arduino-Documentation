@@ -2411,6 +2411,160 @@ One further option worth evaluating: Arduino-ESP32 Core 3.3.12's Update library 
 
 > **My recommendation:** first compile this manifest-verification version with your existing CA certificate and test the seven cases above. If the compiler reports an API mismatch, share the exact error; we can adapt it to your installed Core 3.3.12 rather than changing your working OTA setup unnecessarily.
 
+## 9. Append a release log / release notes
+
+You can append a release log / release notes section to the end of `version.txt` and display it on the ESP32-S3 Serial Monitor only after confirming that a newer firmware version is available.
+
+There is one important change: your current `parseManifest()` expects exactly three lines. You must update it to accept the additional release notes, while keeping the digital signature verification over the entire original `version.txt` file.
+
+### 1. Suggested `version.txt` format
+
+For example, your manifest could become:
+
+```text
+1.2.0
+0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+988288
+Release notes:
+- Added signed manifest verification.
+- Improved OTA download error handling.
+- Fixed a Wi-Fi reconnection issue.
+```
+
+The fields are:
+
+| Line(s) | Content | Validation |
+|---|---|---|
+| 1 | Firmware version | Valid version format |
+| 2 | SHA-256 firmware hash | Exactly 64 hexadecimal characters |
+| 3 | Firmware size | Valid decimal integer within the permitted range |
+| 4 onward | Release notes | Optional human-readable text |
+
+The hash above is illustrative. Use the actual SHA-256 digest of your firmware binary.
+
+**Important:** After adding or changing release notes, you must regenerate `version.sig`, because the signature covers the complete manifest, including the release notes.
+
+### 2. Update `parseManifest()`
+
+I recommend adding a `releaseNotes` output parameter:
+
+```cpp
+bool parseManifest(
+    const String& manifest,
+    String& version,
+    String& expectedHash,
+    size_t& expectedSize,
+    String& releaseNotes
+);
+```
+
+The parser should:
+
+- Extract and validate the first three lines as before.
+- Extract everything after the third newline into `releaseNotes`.
+- Permit an empty release-notes section if you want it to be optional.
+- Reject malformed required fields as before.
+
+The key extraction logic is:
+
+```cpp
+int firstNewline = manifest.indexOf('\n');
+int secondNewline = manifest.indexOf('\n', firstNewline + 1);
+int thirdNewline = manifest.indexOf('\n', secondNewline + 1);
+
+if (firstNewline < 0 ||
+    secondNewline < 0 ||
+    thirdNewline < 0) {
+    return false;
+}
+
+// Extract the first three fields using your existing validation.
+version = manifest.substring(0, firstNewline);
+
+expectedHash = manifest.substring(
+    firstNewline + 1, secondNewline
+);
+
+// Parse and validate the size field from the third line.
+String sizeText = manifest.substring(
+    secondNewline + 1, thirdNewline
+);
+
+// Keep your existing strict size validation here.
+
+// Everything after the third newline is the release notes.
+releaseNotes = manifest.substring(thirdNewline + 1);
+```
+
+This is the core extraction logic, not a complete replacement for your existing parser. In particular, check each newline position before using it to calculate a later search index. Keep your existing strict hash, size and line-ending validation.
+
+### 3. Display release notes only when an update is available
+
+Add the `releaseNotes` variable to your existing flow:
+
+```cpp
+String version, expectedHash, releaseNotes;
+size_t expectedSize = 0;
+
+// Verify the signature first.
+if (!verifyManifestSignature(
+        manifest, signature, sizeof(signature))) {
+    Serial.println("OTA rejected: invalid signature");
+    otaInProgress = false;
+    return;
+}
+
+// Parse the signed metadata.
+if (!parseManifest(manifest, version,
+                   expectedHash, expectedSize,
+                   releaseNotes)) {
+    Serial.println("OTA rejected: malformed manifest");
+    otaInProgress = false;
+    return;
+}
+
+// Check whether the downloaded version is newer.
+if (!isNewerVersion(version, currentVersion)) {
+    Serial.println("No newer firmware available");
+    otaInProgress = false;
+    return;
+}
+
+// Only display release notes for a newer release.
+Serial.println();
+Serial.println("================================");
+Serial.println(" New firmware update available");
+Serial.printf(" Current version: %s\n", currentVersion.c_str());
+Serial.printf(" New version:     %s\n", version.c_str());
+Serial.println("--------------------------------");
+Serial.println(" Release notes:");
+
+if (releaseNotes.length() > 0) {
+    Serial.println(releaseNotes);
+} else {
+    Serial.println("(No release notes provided)");
+}
+
+Serial.println("================================");
+```
+
+Here, `isNewerVersion()` represents your existing firmware-version comparison logic. Keep your actual function name and logic if they differ.
+
+This placement ensures that the release notes are displayed only after:
+
+- The manifest signature is valid.
+- The metadata has passed validation.
+- The firmware version is confirmed to be newer.
+
+You can then continue to your existing firmware download and installation steps.
+
+### 4. Two security details to preserve
+
+- **Sign the release notes:** The signature must cover every byte in `version.txt`, including the release notes and newline characters. Sign the final file after all edits.
+- **Limit manifest size:** Release notes increase the manifest size. Keep a reasonable maximum, such as your existing `MAX_MANIFEST_SIZE`, and reject oversized responses before processing them. Consider also limiting the release-notes length and filtering control characters if the notes are printed to the Serial Monitor.
+
+**My recommendation:** keep the existing three required fields unchanged and append release notes after them. This minimizes changes to your working OTA implementation while allowing you to provide useful firmware update information.
+
 ---
 
 # Protecting an OTA update is not the same as protecting your intellectual property (IP)
