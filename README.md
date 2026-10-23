@@ -929,6 +929,8 @@ The essential requirement is that all partitions—including NVS, PHY initializa
 
 https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
 
+https://docs.espressif.com/projects/esp-techpedia/en/latest/chip-comparator-web/ESP32_Chip_Comparator_Portable.html
+
 https://documentation.espressif.com/arduino-esp32/en/latest/index.html
 
 https://documentation.espressif.com/en/home
@@ -936,6 +938,10 @@ https://documentation.espressif.com/en/home
 https://github.com/espressif
 
 https://github.com/espressif/arduino-esp32?
+
+https://developer.espressif.com/
+
+https://products.espressif.com/en/product-selector
 
 ## Official IoT Development Framework     
 https://www.espressif.com/en/products/sdks/esp-idf     
