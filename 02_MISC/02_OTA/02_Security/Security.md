@@ -2837,11 +2837,11 @@ For your initial test, use a dedicated test key pair. Never commit the private k
 
 # Secure OTA Migration: GitHub → Cloudflare R2
 
-I reviewed your attached OTA sketch. The good news is that **you do not need to rewrite your OTA updater**. Your existing code already has the important building blocks: validated HTTPS connections, RSA-2048/SHA-256 manifest verification, semantic version comparison, firmware-size checks, streaming to the inactive OTA partition, and firmware SHA-256 verification. Pasted text Pasted text Pasted text
+I reviewed your attached OTA sketch. The good news is that **you do not need to rewrite your OTA updater**. Your existing code already has the important building blocks: validated HTTPS connections, RSA-2048/SHA-256 manifest verification, semantic version comparison, firmware-size checks, streaming to the inactive OTA partition, and firmware SHA-256 verification. 
 
 The migration should primarily change **how the ESP32 obtains the update metadata and firmware URL**. We will retain your existing signature-verification and installation functions wherever possible.
 
-One important detail from your sketch: `FIRMWARE_VERSION` is currently hard-coded as `1.0.3`, your RSA public key is embedded in the firmware, and your signed manifest contains the version, SHA-256 hash, image size and optional release notes. Pasted text Pasted text
+One important detail from your sketch: `FIRMWARE_VERSION` is currently hard-coded as `1.0.3`, your RSA public key is embedded in the firmware, and your signed manifest contains the version, SHA-256 hash, image size and optional release notes. 
 
 ## 1. Recommended architecture
 
