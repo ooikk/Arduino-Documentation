@@ -4222,6 +4222,9 @@ curl --fail-with-body \
   "${PACKAGE_URL}/version.sig"
 ```
 
+GitLab's Generic Package Registry supports `curl --upload-file` and the `DEPLOY-TOKEN` header for Deploy Tokens. A successful package upload normally returns HTTP `201 Created`. [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
+
+
 Or follow below using **Windows PowerShell**:
 
 
@@ -4338,7 +4341,6 @@ This removes the environment variable from that session; it does not revoke the 
 
 
 
-GitLab's Generic Package Registry supports `curl --upload-file` and the `DEPLOY-TOKEN` header for Deploy Tokens. A successful package upload normally returns HTTP `201 Created`. [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
 
 **Important:** don't regenerate `version.txt` or reformat it after signing. Your signature covers the exact bytes. Upload the exact `version.txt` and `version.sig` files that you verified locally.
 
