@@ -1,3 +1,7 @@
+[![logo-color](https://img.shields.io/badge/Index-CA_Cert1-006199?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/OTA_Update.md#4-tls-certificate-configuration) 
+[![logo-color](https://img.shields.io/badge/Index-CA_Cert2-8ACFF8?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/MQTT.md#locating-and-exporting-the-root-ca-certificate)
+[![logo-color](https://img.shields.io/badge/Index-CA_Cert3-FFD444?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Thingsboard.md#obtaining-the-thingsboard-root-ca-certificate)
+
 # ESP32-S3 Over-the-Air Updating
 
 OTA—Over-the-Air updating—lets you replace the ESP32-S3 firmware through Wi-Fi after the first USB upload.
