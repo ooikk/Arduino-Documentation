@@ -5283,7 +5283,7 @@ Open the file with any text editor such as `notepad`.
 -----END CERTIFICATE-----
 ```
 
-Cpoy the text string into your sketch.
+Copy the text string into your sketch.
 
 ```cpp
 static const char ROOT_CA[] PROGMEM = R"PEM(
