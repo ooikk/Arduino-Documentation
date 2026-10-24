@@ -4193,7 +4193,7 @@ Assume:
 - Project ID: `12345678`
 - Release version: `1.0.2`
 - Package name: `firmware`
-- Deploy Token: `YOUR_DEPLOY_TOKEN`
+- Deploy Token: `YOUR_WRITE_DEPLOY_TOKEN`
 
 ### ESP32-S3 OTA Release Publishing to GitLab
 
