@@ -4416,63 +4416,6 @@ Get-FileHash .\stable-version-test.txt -Algorithm SHA256
 ```
 
 > **Final consideration:** If you intend to update `stable` repeatedly, confirm that duplicate package files are permitted or establish a cleanup/replacement procedure. Otherwise, an old manifest could remain accessible, and you should not assume a repeated upload always replaces the existing file.
-> **
-># Check GitLab Generic Package Duplicate Settings
-
-You can check this in GitLab's group-level settings. According to the official documentation, Generic Package Registry duplicates are allowed by default, but the setting can be changed.
-
-[GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token&utm_source=chatgpt.com)
-
-## Step 1 — Open your GitLab group
-
-1. Sign in to [GitLab](https://gitlab.com/?utm_source=chatgpt.com).
-2. Navigate to your `esp32-firmware` project.
-3. Identify the group or namespace that owns the project.
-4. Open that group's settings.
-
-## Step 2 — Check the duplicate package setting
-
-Navigate to:
-
-```text
-Group → Settings → Packages and registries
-```
-
-Find the **Duplicate packages** table and locate the **Generic** row.
-
-Check the **Allow duplicates** toggle:
-
-| Setting | Meaning for your OTA project |
-|---|---|
-| **ON** | GitLab permits duplicate files under the same package name and version. |
-| **OFF** | GitLab rejects duplicate files, unless an exception rule permits them. |
-
-GitLab saves changes automatically. You generally need the **Owner** role to change this setting.
-
-[GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token&utm_source=chatgpt.com)
-
-## Step 3 — What should you choose?
-
-For your stable OTA manifest, I recommend allowing duplicates initially, provided your group settings permit it.
-
-For example, you may repeatedly upload:
-
-```text
-firmware-index/stable/version.txt
-```
-
-and
-
-```text
-firmware-index/stable/version.sig
-```
-
-When duplicate uploads are allowed, GitLab retains multiple revisions of a file. A package download normally retrieves the latest uploaded matching file, while older revisions can remain accessible.
-
-[GitLab](https://gitlab.com/gitlab-org/gitlab/-/blob/690fa3deb4c03fe121895ef0ae739862a975bf29/doc/user/packages/generic_packages/index.md?utm_source=chatgpt.com)
-
-> **Important:** This does not make uploading the manifest and signature atomic. Your ESP32 might briefly retrieve a new manifest with the previous signature between the two uploads. Your existing RSA signature verification should reject that mismatched pair, preventing installation, but the update check may fail temporarily.
-
 
 Your ESP32 can then use the fixed stable URLs to retrieve the manifest and signature, verify the RSA signature, and download the versioned firmware when an update is available.
 
@@ -4483,6 +4426,7 @@ Remove-Item Env:GITLAB_DEPLOY_TOKEN
 ```
 
 This removes the environment variable from that session; it does not revoke the token in GitLab.
+
 
 ### Check GitLab Generic Package Duplicate Settings
 
