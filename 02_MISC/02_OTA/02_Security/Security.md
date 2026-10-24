@@ -4272,7 +4272,7 @@ Expected output:
 
 ```text
 https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2
-https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/firmware-index/stable
+https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware-index/stable
 ```
 
 #### 2.0 — Verify the files exist
