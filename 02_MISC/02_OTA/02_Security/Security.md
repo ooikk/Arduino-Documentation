@@ -5054,6 +5054,9 @@ void checkToken() {
     Serial.println("A token exists in NVS.");
     Serial.printf("Stored token length: %u characters\n",
                   (unsigned)token.length());
+    Serial.printf("First 4 characters of token: %s\n",
+                   token.substring(0, min((unsigned int)4,
+                   (unsigned int)token.length())).c_str());
   } else {
     Serial.println("No token found in NVS.");
   }
