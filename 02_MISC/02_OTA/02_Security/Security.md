@@ -1,5 +1,15 @@
-# Module 1 — ESP32-S3 Security Engineering
+**Quikc References:**
 
+- [Locating and Exporting the Root CA Certificate](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/OTA_Update.md)
+- [Step-by-step: Create a GitHub Release for ESP32-S3 automatic OTA](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/OTA_Update.md#6-step-by-step-create-a-github-release-for-esp32-s3-automatic-ota)
+
+Secure with private keys at Gitlab
+- [Create OTA private/public keys](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#5-create-a-signing-key)
+- [Prepare and sign the version release files](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#6-prepare-the-release-files-correctly)
+- [Upload release to Gitlab](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#4-upload-a-release-to-gitlab)
+
+
+# Module 1 — ESP32-S3 Security Engineering
 
 **Target:** ESP32-S3 DevKitC-1 · N16R8 · Arduino IDE 2.x · Espressif Arduino-ESP32 Core 3.x
 
