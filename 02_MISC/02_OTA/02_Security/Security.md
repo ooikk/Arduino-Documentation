@@ -4186,6 +4186,10 @@ This preserves your current `parseManifest()` and `verifyManifestSignature()` fu
 
 ## 4. Upload a release to GitLab
 
+For your ESP32-S3 OTA system, the goal is to publish the current manifest and its RSA signature to a stable `latest` location, while keeping the actual firmware in a versioned package.
+
+This allows your ESP32 to check one fixed URL on every update check, without needing to know the latest firmware version in advance.
+
 For this first migration, use the existing manifest filenames. Your release process should generate and sign the manifest before uploading anything.
 
 Assume:
@@ -4195,13 +4199,7 @@ Assume:
 - Package name: `firmware`
 - Deploy Token: `YOUR_WRITE_DEPLOY_TOKEN`
 
-### ESP32-S3 OTA Release Publishing to GitLab
-
-For your ESP32-S3 OTA system, the goal is to publish the current manifest and its RSA signature to a stable `latest` location, while keeping the actual firmware in a versioned package.
-
-This allows your ESP32 to check one fixed URL on every update check, without needing to know the latest firmware version in advance.
-
-#### 1. Recommended GitLab package layout
+### Recommended GitLab package layout
 
 Using your GitLab project ID `12345678`, organise the Generic Package Registry like this:
 
@@ -4215,7 +4213,7 @@ Using your GitLab project ID `12345678`, organise the Generic Package Registry l
 
 The URLs would be:
 
-##### Versioned release (`1.0.2`)
+### Versioned release (`1.0.2`)
 
 ```text
 https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2/firmware.bin
@@ -4223,7 +4221,7 @@ https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2/vers
 https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2/version.sig
 ```
 
-##### Stable update index
+### Stable update index
 
 ```text
 https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware-index/stable/version.txt
@@ -4234,15 +4232,19 @@ The stable package is your fixed discovery location. Each time you release a new
 
 This preserves your existing manifest format and signature-verification design.
 
-#### 2. Prepare the PowerShell variables
 
-Open PowerShell in your project directory:
+### Step 1: Upload the three release files
+
+
+#### 1.0 — Set your variables in PowerShell
+
+Open PowerShell in the directory containing `firmware.bin`, `version.txt`, and `version.sig`. Example:
 
 ```powershell
 C:\Users\ooikk\Documents\Arduino\02_Security_OTA_Gitlab
 ```
 
-Set the upload token and package variables. Use your new write-enabled Deploy Token, not the token previously exposed in chat.
+Set the upload token and package variables. Use your new write-enabled Deploy Token, not the read-enable token.
 
 ```powershell
 $env:GITLAB_DEPLOY_TOKEN = "YOUR_NEW_WRITE_TOKEN"
@@ -4254,16 +4256,42 @@ $env:RELEASE_URL = "https://gitlab.com/api/v4/projects/$($env:PROJECT_ID)/packag
 $env:STABLE_URL = "https://gitlab.com/api/v4/projects/$($env:PROJECT_ID)/packages/generic/firmware-index/stable"
 ```
 
-Check that your files exist:
+These must be the current manifest and its matching signature, generated using your existing signing process.
+
+- PowerShell uses `Env:VariableName` to set environment variables, not `export`.
+- In PowerShell, `curl` is commonly an alias for `Invoke-WebRequest`, so it doesn't necessarily accept normal curl options such as `--header` and `--upload-file`.
+
+Check the package URL:
 
 ```powershell
+Write-Output $env:RELEASE_URL
+Write-Output $env:STABLE_URL
+```
+
+Expected output:
+
+```text
+https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2
+https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/firmware-index/stable
+```
+
+#### 2.0 — Verify the files exist
+
+Run:
+
+```powershell
+Get-Item .\firmware.bin
 Get-Item .\version.txt
 Get-Item .\version.sig
 ```
 
-These must be the current manifest and its matching signature, generated using your existing signing process.
+If PowerShell cannot find a file, change to the directory containing the files using `Set-Location`.
 
-#### 3. Upload the manifest and signature to the versioned release
+#### 3.0 — Upload using the actual curl executable
+
+On modern Windows installations, invoke `curl.exe` explicitly to avoid the PowerShell alias.
+
+##### Upload the manifest and signature to the versioned release
 
 First, publish both files under version `1.0.2`:
 
@@ -4283,13 +4311,23 @@ curl.exe --fail-with-body `
   "$env:RELEASE_URL/version.sig"
 ```
 
+
+##### Upload the firmware to the versioned release
+
+```powershell
+curl.exe --fail-with-body `
+  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
+  --upload-file ".\firmware.bin" `
+  "$env:RELEASE_URL/firmware.bin"
+```
 These commands publish the files sequentially, which GitLab recommends when uploading multiple files to the same package version.
 
 [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
 
 > **Important:** Make sure the manifest's firmware version, SHA-256 hash, and file size match the actual `firmware.bin` uploaded to version `1.0.2`. Do not publish a manifest that points to firmware you haven't uploaded.
 
-#### 4. Publish the same manifest and signature to stable
+
+##### Publish the same manifest and signature to stable
 
 Once the versioned release files are in place, publish the manifest to the stable index:
 
@@ -4309,6 +4347,8 @@ curl.exe --fail-with-body `
   "$env:STABLE_URL/version.sig"
 ```
 
+
+  
 GitLab's Generic Package Registry permits multiple uploads under the same package name and version. However, duplicate files may be retained, and downloads retrieve the most recently published matching file. If duplicate packages or files are disallowed in your project, check those settings before publishing.
 
 [GitLab](https://gitlab.com/gitlab-org/gitlab/-/blob/5244c0f78042ee24d1fe5e0352d88274c22fc884/doc/user/packages/generic_packages/index.md)
@@ -4317,9 +4357,42 @@ Publishing order matters: upload `stable/version.txt` first and `stable/version.
 
 For a production deployment, consider using a versioned manifest and signature plus a small atomic pointer or release process to avoid this window.
 
-#### 5. Verify the stable files
 
-Download both files into temporary local copies:
+**PowerShell tip:** The backtick `` ` `` at the end of each line continues the command onto the next line. Do not put spaces after the backtick.
+
+
+GitLab's Generic Package Registry supports `curl --upload-file` and the `DEPLOY-TOKEN` header for Deploy Tokens. A successful package upload normally returns HTTP `201 Created`. [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
+
+
+>**Important:** don't regenerate `version.txt` or reformat it after signing. Your signature covers the exact bytes. Upload the exact `version.txt` and `version.sig` files that you verified locally.
+>You can upload `manifest.json` and `manifest.sig` instead if you deliberately change the manifest format and the firmware parser. For this minimal-diff migration, retain `version.txt` and `version.sig`.
+
+
+### Step 2: Test an authenticated download with curl
+
+First, test the firmware file independently of the ESP32. Download the package using your new token, you may use READ Token for the testing:
+
+> If you change WRITE TOKEN to READ TOKEN, don't forget to set the environment for new TOKEN
+
+On Windows PowerShell, use:
+
+```powershell
+curl.exe --fail-with-body `
+  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
+  --output ".\firmware-test.bin" `
+  "$env:RELEASE_URL/firmware.bin"
+```
+
+Then compare the downloaded file with the release artifact:
+
+```powershell
+Get-FileHash .\firmware.bin -Algorithm SHA256
+Get-FileHash .\firmware-test.bin -Algorithm SHA256
+```
+
+The hashes should match.
+
+The compare version files:
 
 ```powershell
 curl.exe --fail-with-body `
@@ -4342,178 +4415,9 @@ Get-FileHash .\version.txt -Algorithm SHA256
 Get-FileHash .\stable-version-test.txt -Algorithm SHA256
 ```
 
-The hashes should match.
-
-Your ESP32 can then use the fixed stable URLs to retrieve the manifest and signature, verify the RSA signature, and download the versioned firmware when an update is available.
-
 > **Final consideration:** If you intend to update `stable` repeatedly, confirm that duplicate package files are permitted or establish a cleanup/replacement procedure. Otherwise, an old manifest could remain accessible, and you should not assume a repeated upload always replaces the existing file.
 
-When you finish testing, remove the token from the current PowerShell session:
-
-```powershell
-Remove-Item Env:GITLAB_DEPLOY_TOKEN
-```
-
-This removes the environment variable from that session; it does not revoke the token in GitLab.
-
-
----
-
-### Step 1: Upload the three release files
-
-Run these **Bash syntax** commands from a terminal in the directory containing your release files:
-
-```bash
-export GITLAB_PROJECT_ID="12345678"
-export GITLAB_DEPLOY_TOKEN="YOUR_DEPLOY_WRITE_TOKEN"
-export OTA_VERSION="1.0.2"
-
-export PACKAGE_URL="https://gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/packages/generic/firmware/${OTA_VERSION}"
-
-curl --fail-with-body \
-  --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
-  --upload-file firmware.bin \
-  "${PACKAGE_URL}/firmware.bin"
-
-curl --fail-with-body \
-  --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
-  --upload-file version.txt \
-  "${PACKAGE_URL}/version.txt"
-
-curl --fail-with-body \
-  --header "DEPLOY-TOKEN: ${GITLAB_DEPLOY_TOKEN}" \
-  --upload-file version.sig \
-  "${PACKAGE_URL}/version.sig"
-```
-
-GitLab's Generic Package Registry supports `curl --upload-file` and the `DEPLOY-TOKEN` header for Deploy Tokens. A successful package upload normally returns HTTP `201 Created`. [GitLab Docs](https://docs.gitlab.com/user/packages/generic_packages/?tab=CI%2FCD+job+token)
-
-
-Or follow below using **Windows PowerShell**:
-
-
-
-- PowerShell uses `Env:VariableName` to set environment variables, not `export`.
-- In PowerShell, `curl` is commonly an alias for `Invoke-WebRequest`, so it doesn't necessarily accept normal curl options such as `--header` and `--upload-file`.
-
-#### Step A — Set your variables in PowerShell
-
-Open PowerShell in the directory containing `firmware.bin`, `version.txt`, and `version.sig`.
-
-Use these commands:
-
-```powershell
-$env:GITLAB_PROJECT_ID = "12345678"
-$env:GITLAB_DEPLOY_TOKEN = "PASTE_YOUR_DEPLOY_WRITE_TOKEN_HERE"
-$env:OTA_VERSION = "1.0.2"
-
-$env:PACKAGE_URL = "https://gitlab.com/api/v4/projects/$($env:GITLAB_PROJECT_ID)/packages/generic/firmware/$($env:OTA_VERSION)"
-```
-
-
-Check the package URL:
-
-```powershell
-Write-Output $env:PACKAGE_URL
-```
-
-Expected output:
-
-```text
-https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2
-```
-
-#### Step B — Verify the files exist
-
-Run:
-
-```powershell
-Get-Item .\firmware.bin
-Get-Item .\version.txt
-Get-Item .\version.sig
-```
-
-If PowerShell cannot find a file, change to the directory containing the files using `Set-Location`.
-
-#### Step C — Upload using the actual curl executable
-
-On modern Windows installations, invoke `curl.exe` explicitly to avoid the PowerShell alias.
-
-##### Upload firmware
-
-```powershell
-curl.exe --fail-with-body `
-  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
-  --upload-file ".\firmware.bin" `
-  "$env:PACKAGE_URL/firmware.bin"
-```
-
-##### Upload manifest
-
-```powershell
-curl.exe --fail-with-body `
-  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
-  --upload-file ".\version.txt" `
-  "$env:PACKAGE_URL/version.txt"
-```
-
-##### Upload signature
-
-```powershell
-curl.exe --fail-with-body `
-  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
-  --upload-file ".\version.sig" `
-  "$env:PACKAGE_URL/version.sig"
-```
-
-**PowerShell tip:** The backtick `` ` `` at the end of each line continues the command onto the next line. Do not put spaces after the backtick.
-
-A successful package upload normally returns HTTP `201 Created`.
-
-**Important:** These commands upload the files to the versioned package path. They do not yet publish the stable discovery files under `firmware-index/stable/` that your ESP32 will need to discover the latest version. We should configure that after confirming the three uploads work.
-
-
-**Important:** don't regenerate `version.txt` or reformat it after signing. Your signature covers the exact bytes. Upload the exact `version.txt` and `version.sig` files that you verified locally.
-
-You can upload `manifest.json` and `manifest.sig` instead if you deliberately change the manifest format and the firmware parser. For this minimal-diff migration, retain `version.txt` and `version.sig`.
-
-### Step 2: Test an authenticated download with curl
-
-First, test the firmware file independently of the ESP32. Download the package using your new token:
-
-```bash
-curl --fail-with-body \
-  --header "DEPLOY-TOKEN: YOUR_DEPLOY_TOKEN" \
-  --output firmware-test.bin \
-  "https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/1.0.2/firmware.bin"
-```
-
-On Windows PowerShell, use:
-
-```powershell
-curl.exe --fail-with-body `
-  --header "DEPLOY-TOKEN: $env:GITLAB_DEPLOY_TOKEN" `
-  --output ".\firmware-test.bin" `
-  "$env:PACKAGE_URL/firmware.bin"
-```
-
-
-Then compare the downloaded file with the release artifact:
-
-```bash
-sha256sum firmware.bin firmware-test.bin
-```
-
-On Windows PowerShell, use:
-
-```powershell
-Get-FileHash .\firmware.bin -Algorithm SHA256
-Get-FileHash .\firmware-test.bin -Algorithm SHA256
-```
-
-The hashes should match.
-
-The firmware hash comparison is a useful transport test, but it is not a substitute for verifying your signed manifest on the ESP32.
+Your ESP32 can then use the fixed stable URLs to retrieve the manifest and signature, verify the RSA signature, and download the versioned firmware when an update is available.
 
 When you finish testing, remove the token from the current PowerShell session:
 
