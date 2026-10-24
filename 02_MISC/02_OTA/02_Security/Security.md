@@ -4234,7 +4234,7 @@ The stable package is your fixed discovery location. Each time you release a new
 
 This preserves your existing manifest format and signature-verification design.
 
-## 2. Prepare the PowerShell variables
+#### 2. Prepare the PowerShell variables
 
 Open PowerShell in your project directory:
 
