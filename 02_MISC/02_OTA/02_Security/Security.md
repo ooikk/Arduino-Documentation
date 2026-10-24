@@ -4235,6 +4235,9 @@ This preserves your existing manifest format and signature-verification design.
 
 ### Step 1: Upload the three release files
 
+Refer to the link to create a sign copy of signed files with your private key: 
+
+[Create a signing key](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#5-create-a-signing-key)
 
 #### 1.0 — Set your variables in PowerShell
 
