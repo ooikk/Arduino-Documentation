@@ -4755,7 +4755,10 @@ For this scheme, publish the discovery manifest and signature under `firmware-in
 
 ## 6. TLS validation for gitlab.com
 
-Your current `ROOT_CA` PEM is ISRG Root X1, even though its comments say DigiCert Global Root G2. Correct the comment to avoid future confusion.
+Your current `ROOT_CA` PEM is ISRG Root X1, need to replace with **Sectigo Public Server Authentication Root R46**. 
+
+Refer to this link for instructions: Export that certificate from Edge
+
 
 Keep this line in all three download functions:
 
@@ -5234,7 +5237,74 @@ This removes the `gitlab_token` key, not the entire NVS namespace.
 
 Once the token is provisioned, the next test is to run your existing OTA sketch and confirm that it can authenticate to GitLab and retrieve the stable manifest.
 
+## Export Sectigo Root CA for ESP32-S3 OTA
 
+Export the root CA certificate directly from the browser.
+
+Since your certificate path shows **Sectigo Public Server Authentication Root R46**, you can export that certificate from Edge and use it in your ESP32-S3 OTA sketch.
+
+### Step-by-step: Export from Microsoft Edge
+
+#### 1. Select the root certificate
+
+In **Certificate Viewer**, open **Certificate Hierarchy** and select the top entry:
+
+```text
+Sectigo Public Server Authentication Root R46
+```
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/93d7587e-4048-45ca-ac64-885a70bade14" />
+
+
+#### 2. Export the certificate
+
+Open the **Details** tab and click **Copy to File…** if that button is available.
+
+Follow the **Certificate Export Wizard**.
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9eaca8c5-db62-4115-a6fc-16919830830e" />
+
+
+#### 3. Choose the export format
+
+Select:
+
+```text
+Base-64 encoded X.509 (.CER)
+```
+
+Save it as:
+
+```text
+sectigo_root_r46.cer
+```
+
+Then finish the wizard.
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/170bffe4-f64f-4200-b8f3-b85706580071" />
+
+
+### Convert it to PEM for Arduino
+
+If you exported **Base-64 encoded X.509**, the file is already PEM-compatible if it contains:
+
+```text
+-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----
+```
+
+You can rename `.cer` to `.pem` if you wish; renaming alone does not convert the contents.
+
+If you exported **DER** format instead, it needs conversion.
+
+### Before putting it into your sketch
+
+- Verify the certificate's identity and fingerprint against Sectigo's official published certificate information. Exporting from a browser alone does not independently establish trust.
+- Add it as a new `GITLAB_ROOT_CA` constant rather than replacing `ROOT_CA` if the latter is still needed for other HTTPS hosts.
+- Use `client.setCACert(GITLAB_ROOT_CA)` for the GitLab connection and keep TLS verification enabled.
+
+> **Important:** The browser's certificate hierarchy identifies the chain Windows selected, but the ESP32 may receive a different chain. After exporting, test the ESP32 TLS connection again and inspect its detailed error before changing the rest of the OTA code.
 
 ## My recommended implementation order
 
