@@ -4710,7 +4710,7 @@ with:
 
 ```cpp
 String firmwareUrl =
-  "[https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/](https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/)"
+  "https://gitlab.com/api/v4/projects/12345678/packages/generic/firmware/"
   + version
   + "/firmware.bin";
 
