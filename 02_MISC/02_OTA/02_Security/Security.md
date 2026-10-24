@@ -4207,7 +4207,7 @@ Using your GitLab project ID `12345678`, organise the Generic Package Registry l
 
 | Purpose | Package version | File |
 |---|---|---|
-| Versioned firmware release | `1.0.2 | `firmware.bin` |
+| Versioned firmware release | `1.0.2` | `firmware.bin` |
 | Versioned firmware release | `1.0.2` | `version.txt` |
 | Versioned firmware release | `1.0.2` | `version.sig` |
 | Stable update index | `stable` | `version.txt` |
