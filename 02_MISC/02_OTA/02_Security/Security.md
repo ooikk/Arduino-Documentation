@@ -5241,52 +5241,41 @@ Once the token is provisioned, the next test is to run your existing OTA sketch 
 
 Export the root CA certificate directly from the browser.
 
-Since your certificate path shows **Sectigo Public Server Authentication Root R46**, you can export that certificate from Edge and use it in your ESP32-S3 OTA sketch.
+Since your certificate path shows **Sectigo Public Server Authentication Root R46**, you can export that certificate from Edge/Chrome and use it in your ESP32-S3 OTA sketch.
 
-### Step-by-step: Export from Microsoft Edge
+### Step-by-step: Export from Microsoft Edge/ Chrome
 
 #### 1. Select the root certificate
 
-In **Certificate Viewer**, open **Certificate Hierarchy** and select the top entry:
+Visit [Gitlab](https://gitlab.com/gitlab-org/gitlab) site and click on top left of address bar **View site information**. Select **Connection is secure**, and **Certificate is valid**. This will bring you to **Certificate Viewer**.
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/f46142eb-e01c-4fce-86d2-e0691d9230d5" />
+
+
+In **Certificate Viewer\Details**, open **Certificate Hierarchy** and select the top entry:
 
 ```text
 Sectigo Public Server Authentication Root R46
 ```
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/93d7587e-4048-45ca-ac64-885a70bade14" />
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/d3bb3a28-a164-43c1-b12a-24915e52fd6f" />
 
 
 #### 2. Export the certificate
 
-Open the **Details** tab and click **Copy to File…** if that button is available.
+Open the **Details** tab and click **Export**.
 
-Follow the **Certificate Export Wizard**.
-
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9eaca8c5-db62-4115-a6fc-16919830830e" />
-
-
-#### 3. Choose the export format
-
-Select:
-
-```text
-Base-64 encoded X.509 (.CER)
-```
+#### 3. Save the export file
 
 Save it as:
 
 ```text
-sectigo_root_r46.cer
+Sectigo Public Server Authentication Root R46.crt
 ```
 
-Then finish the wizard.
+### Copy for Arduino
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/170bffe4-f64f-4200-b8f3-b85706580071" />
-
-
-### Convert it to PEM for Arduino
-
-If you exported **Base-64 encoded X.509**, the file is already PEM-compatible if it contains:
+Open the file with any text editor such as `notepad`.
 
 ```text
 -----BEGIN CERTIFICATE-----
@@ -5294,9 +5283,19 @@ If you exported **Base-64 encoded X.509**, the file is already PEM-compatible if
 -----END CERTIFICATE-----
 ```
 
-You can rename `.cer` to `.pem` if you wish; renaming alone does not convert the contents.
+Cpoy the text string into your sketch.
 
-If you exported **DER** format instead, it needs conversion.
+```cpp
+static const char ROOT_CA[] PROGMEM = R"PEM(
+-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+:
+:
+emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
+-----END CERTIFICATE-----
+)PEM";
+```
+
 
 ### Before putting it into your sketch
 
@@ -5305,6 +5304,9 @@ If you exported **DER** format instead, it needs conversion.
 - Use `client.setCACert(GITLAB_ROOT_CA)` for the GitLab connection and keep TLS verification enabled.
 
 > **Important:** The browser's certificate hierarchy identifies the chain Windows selected, but the ESP32 may receive a different chain. After exporting, test the ESP32 TLS connection again and inspect its detailed error before changing the rest of the OTA code.
+
+[Sectigo Root CA](https://www.sectigo.com/knowledge-base/detail/Sectigo-Root-Certificates)
+
 
 ## My recommended implementation order
 
