@@ -4847,9 +4847,11 @@ Your current `FIRMWARE_VERSION` is hard-coded, so remember to update it for each
 
 Your `loadGitLabToken()` function already reads the token from ESP32-S3 NVS using the Arduino `Preferences` library. You need to store the token once before running your OTA update code.
 
+### Option 1: Store a GitLab Deploy Token in ESP32-S3 NVS
+
 I recommend using a temporary provisioning sketch, uploading it through USB, and then restoring your OTA sketch.
 
-### Step 1 — Create a temporary token-storage sketch
+#### Step 1 — Create a temporary token-storage sketch
 
 In Arduino IDE, create a new sketch and paste this code.
 
@@ -4886,7 +4888,7 @@ void loop() {
 
 Replace `YOUR_READ_ONLY_DEPLOY_TOKEN` with the new read-only token you created in GitLab. Do not use your write-enabled upload token.
 
-### Step 2 — Upload and execute it
+#### Step 2 — Upload and execute it
 
 1. Connect your ESP32-S3 to your computer using USB.
 2. In Arduino IDE, select your ESP32-S3 board and its USB COM port.
@@ -4910,7 +4912,7 @@ The token is stored under:
 
 The call `prefs.begin("ota", false)` opens the namespace in read/write mode. Your existing loader uses `prefs.begin("ota", true)`, which opens the same namespace in read-only mode.
 
-### Step 3 — Restore your OTA sketch
+#### Step 3 — Restore your OTA sketch
 
 1. Reopen your original OTA sketch.
 2. Upload it to the ESP32-S3.
@@ -4927,7 +4929,7 @@ It will then use the value in `gitlabToken` for authenticated GitLab requests.
 
 You do not need to store the token again unless you erase NVS, change the token, or want to replace it.
 
-### Step 4 — Verify that the token works
+#### Step 4 — Verify that the token works
 
 Your OTA HTTP requests should include the token as a GitLab Deploy Token header:
 
@@ -4939,7 +4941,7 @@ Use this header on requests to the private Generic Package Registry, including t
 
 If GitLab returns `401` or `403`, check the token's expiry, the `read_package_registry` scope, project access, and the requested URL.
 
-### Important security notes
+#### Important security notes
 
 - Never print the token itself to Serial Monitor.
 - NVS storage does not automatically encrypt the token. Someone with sufficient physical or firmware access may be able to recover it.
@@ -4947,6 +4949,277 @@ If GitLab returns `401` or `403`, check the token's expiry, the `read_package_re
 - Keep the write-enabled token on your development computer only.
 
 One useful improvement for later is to make a small provisioning command that accepts a token over USB Serial without embedding it in the temporary sketch. That avoids leaving the secret in your Arduino source files.
+
+### Option 2: Token Provisioning Sketch
+
+Below is a standalone ESP32-S3 N16R8 GitLab token provisioning sketch for Arduino IDE 2.x.
+
+It lets you enter your GitLab read-only Deploy Token through USB Serial, stores it in NVS using the same namespace and key as your OTA module, and never embeds the actual token in the source code.
+
+It is compatible with your existing loader:
+
+```cpp
+prefs.begin("ota", true);
+gitlabToken = prefs.getString("gitlab_token", "");
+```
+
+#### How it works
+
+1. Upload the provisioning sketch to your ESP32-S3 over USB.
+2. Open Serial Monitor at `115200` baud.
+3. Enter `SET_TOKEN` and press Enter.
+4. Paste your read-only GitLab Deploy Token and press Enter.
+5. The sketch saves it to NVS and confirms success without echoing the token.
+6. Re-upload your normal OTA sketch. It can read the stored token as before.
+
+#### Complete Arduino sketch
+
+```cpp
+#include <Arduino.h>
+#include <Preferences.h>
+
+// Must match the namespace and key used by your OTA module.
+static const char* NVS_NAMESPACE = "ota";
+static const char* TOKEN_KEY     = "gitlab_token";
+
+static const size_t MAX_TOKEN_LENGTH = 256;
+
+String readSerialLine() {
+  // Read one line; the token is never printed by this sketch.
+  String line = Serial.readStringUntil('\n');
+
+  // Remove the CR from CR/LF line endings.
+  if (line.endsWith("\r")) {
+    line.remove(line.length() - 1);
+  }
+
+  return line;
+}
+
+void printMenu() {
+  Serial.println();
+  Serial.println("=== ESP32-S3 OTA Token Provisioner ===");
+  Serial.println("Commands:");
+  Serial.println("  SET_TOKEN    Store/replace the GitLab read token");
+  Serial.println("  CHECK_TOKEN  Check whether a token exists");
+  Serial.println("  DELETE_TOKEN Delete the stored token");
+  Serial.println("  HELP         Show commands");
+  Serial.println();
+  Serial.print("> ");
+}
+
+bool storeToken(const String& token) {
+  if (token.length() == 0 || token.length() > MAX_TOKEN_LENGTH) {
+    Serial.println("Invalid token length.");
+    return false;
+  }
+
+  Preferences prefs;
+
+  if (!prefs.begin(NVS_NAMESPACE, false)) {
+    Serial.println("ERROR: Failed to open NVS.");
+    return false;
+  }
+
+  size_t bytesWritten = prefs.putString(TOKEN_KEY, token);
+
+  // Verify that the stored value matches the submitted token.
+  String savedToken = prefs.getString(TOKEN_KEY, "");
+  bool success =
+      bytesWritten > 0 && savedToken == token;
+
+  prefs.end();
+
+  if (success) {
+    Serial.println("SUCCESS: Token stored and verified in NVS.");
+  } else {
+    Serial.println("ERROR: Token storage or verification failed.");
+  }
+
+  return success;
+}
+
+void checkToken() {
+  Preferences prefs;
+
+  if (!prefs.begin(NVS_NAMESPACE, true)) {
+    Serial.println("ERROR: Failed to open NVS.");
+    return;
+  }
+
+  String token = prefs.getString(TOKEN_KEY, "");
+  prefs.end();
+
+  if (token.length() > 0) {
+    Serial.println("A token exists in NVS.");
+    Serial.printf("Stored token length: %u characters\n",
+                  (unsigned)token.length());
+  } else {
+    Serial.println("No token found in NVS.");
+  }
+
+  token = "";
+}
+
+void deleteToken() {
+  Preferences prefs;
+
+  if (!prefs.begin(NVS_NAMESPACE, false)) {
+    Serial.println("ERROR: Failed to open NVS.");
+    return;
+  }
+
+  bool success = prefs.remove(TOKEN_KEY);
+  prefs.end();
+
+  if (success) {
+    Serial.println("Stored token deleted.");
+  } else {
+    Serial.println("Token was not deleted; it may not exist.");
+  }
+}
+
+void processCommand(String command) {
+  command.trim();
+
+  if (command.equalsIgnoreCase("SET_TOKEN")) {
+    Serial.println();
+    Serial.println("Paste your GitLab READ-ONLY Deploy Token.");
+    Serial.println("Input is not echoed by this sketch.");
+    Serial.println("Press Enter when finished.");
+    Serial.print("Token: ");
+
+    String token = readSerialLine();
+
+    if (token.length() > MAX_TOKEN_LENGTH) {
+      Serial.println();
+      Serial.println("ERROR: Token is too long.");
+      token = "";
+      return;
+    }
+
+    Serial.println();
+    storeToken(token);
+
+    // Best-effort clearing of the temporary RAM string.
+    token = "";
+  }
+  else if (command.equalsIgnoreCase("CHECK_TOKEN")) {
+    checkToken();
+  }
+  else if (command.equalsIgnoreCase("DELETE_TOKEN")) {
+    deleteToken();
+  }
+  else if (command.equalsIgnoreCase("HELP")) {
+    printMenu();
+    return;
+  }
+  else {
+    Serial.println("Unknown command. Enter HELP.");
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // Allow time for USB Serial Monitor to connect.
+  delay(1500);
+
+  // Prevent a partial input line from waiting indefinitely.
+  Serial.setTimeout(60000);
+
+  Serial.println();
+  Serial.println("ESP32-S3 OTA Token Provisioner ready.");
+  Serial.println("Open Serial Monitor at 115200 baud.");
+  Serial.println("Use SET_TOKEN to provision credentials.");
+
+  printMenu();
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    String command = readSerialLine();
+    processCommand(command);
+    printMenu();
+  }
+}
+```
+
+#### Step-by-step usage
+
+##### 1. Upload the provisioning sketch
+
+In Arduino IDE:
+
+1. Open a new sketch and paste the code.
+2. Select your ESP32-S3 board and its USB serial port.
+3. Upload the sketch.
+4. Open Serial Monitor and select `115200` baud.
+5. Set the line ending to `Newline` or `Both NL & CR`.
+
+##### 2. Store the token
+
+Enter this command:
+
+```text
+SET_TOKEN
+```
+
+The board prompts you for the token. Paste your read-only GitLab Deploy Token and press Enter.
+
+Expected response:
+
+```text
+Paste your GitLab READ-ONLY Deploy Token.
+Input is not echoed by this sketch.
+Press Enter when finished.
+Token:
+SUCCESS: Token stored and verified in NVS.
+```
+
+The sketch does not print the token. However, your computer's Serial Monitor or terminal may locally display text you paste, depending on its settings, so avoid screen sharing while entering the secret.
+
+##### 3. Check the stored token
+
+Enter:
+
+```text
+CHECK_TOKEN
+```
+
+Expected response:
+
+```text
+A token exists in NVS.
+Stored token length: 30 characters
+```
+
+The length shown above is only an example.
+
+##### 4. Restore your OTA firmware
+
+Upload your normal OTA sketch. Its existing `loadGitLabToken()` function should read the value from the same NVS namespace and key.
+
+You do not need to change that function.
+
+##### 5. Optional: delete the stored token
+
+If you need to remove the token, upload the provisioning sketch again and enter:
+
+```text
+DELETE_TOKEN
+```
+
+This removes the `gitlab_token` key, not the entire NVS namespace.
+
+#### Important security notes
+
+- Use a read-only token on the ESP32, never your upload token.
+- This sketch does not encrypt the token. NVS stores it as ordinary data unless you configure additional flash/NVS protections.
+- Clearing a `String` is only best-effort; it does not guarantee that every copy of the token has been erased from RAM.
+- Anyone with suitable physical or firmware access may be able to extract an unprotected token.
+
+Once the token is provisioned, the next test is to run your existing OTA sketch and confirm that it can authenticate to GitLab and retrieve the stable manifest.
 
 
 
