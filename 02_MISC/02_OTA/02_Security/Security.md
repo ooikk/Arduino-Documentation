@@ -4757,7 +4757,7 @@ For this scheme, publish the discovery manifest and signature under `firmware-in
 
 Your current `ROOT_CA` PEM is ISRG Root X1, need to replace with **Sectigo Public Server Authentication Root R46**. 
 
-Refer to this link for instructions: Export that certificate from Edge
+Refer to this link for instructions: [Export that certificate from Edge](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#export-sectigo-root-ca-for-esp32-s3-ota)
 
 
 Keep this line in all three download functions:
