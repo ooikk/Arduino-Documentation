@@ -4842,6 +4842,114 @@ Your current `FIRMWARE_VERSION` is hard-coded, so remember to update it for each
 - **Authentication scope:** Use only `read_package_registry` for the ESP32's Deploy Token. Uploading should be performed by a separate trusted workstation or CI job with write permission.
 - **Manifest format:** Retain your existing signed text format for this migration. Switching to JSON is a separate change and should not be combined with the hosting migration unless necessary.
 
+
+## 10. Store a GitLab Deploy Token in ESP32-S3 NVS
+
+Your `loadGitLabToken()` function already reads the token from ESP32-S3 NVS using the Arduino `Preferences` library. You need to store the token once before running your OTA update code.
+
+I recommend using a temporary provisioning sketch, uploading it through USB, and then restoring your OTA sketch.
+
+### Step 1 — Create a temporary token-storage sketch
+
+In Arduino IDE, create a new sketch and paste this code.
+
+```cpp
+#include <Preferences.h>
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  // Paste your READ-only GitLab Deploy Token here.
+  const char* gitlabToken = "YOUR_READ_ONLY_DEPLOY_TOKEN";
+
+  Preferences prefs;
+
+  if (!prefs.begin("ota", false)) {
+    Serial.println("Failed to open NVS for writing");
+    return;
+  }
+
+  size_t bytesWritten = prefs.putString("gitlab_token", gitlabToken);
+  prefs.end();
+
+  if (bytesWritten > 0) {
+    Serial.println("GitLab token stored in NVS successfully");
+  } else {
+    Serial.println("Failed to store GitLab token");
+  }
+}
+
+void loop() {
+}
+```
+
+Replace `YOUR_READ_ONLY_DEPLOY_TOKEN` with the new read-only token you created in GitLab. Do not use your write-enabled upload token.
+
+### Step 2 — Upload and execute it
+
+1. Connect your ESP32-S3 to your computer using USB.
+2. In Arduino IDE, select your ESP32-S3 board and its USB COM port.
+3. Upload the temporary sketch.
+4. Open Serial Monitor at `115200` baud.
+5. Press `EN`/`RESET` if necessary.
+
+You should see:
+
+```text
+GitLab token stored in NVS successfully
+```
+
+The token is stored under:
+
+| NVS field | Value |
+|---|---|
+| Namespace | `ota` |
+| Key | `gitlab_token` |
+| Value | Your read-only GitLab Deploy Token |
+
+The call `prefs.begin("ota", false)` opens the namespace in read/write mode. Your existing loader uses `prefs.begin("ota", true)`, which opens the same namespace in read-only mode.
+
+### Step 3 — Restore your OTA sketch
+
+1. Reopen your original OTA sketch.
+2. Upload it to the ESP32-S3.
+3. Open Serial Monitor.
+4. Run your OTA check.
+
+Your existing function should report:
+
+```text
+OTA token loaded from NVS
+```
+
+It will then use the value in `gitlabToken` for authenticated GitLab requests.
+
+You do not need to store the token again unless you erase NVS, change the token, or want to replace it.
+
+### Step 4 — Verify that the token works
+
+Your OTA HTTP requests should include the token as a GitLab Deploy Token header:
+
+```cpp
+http.addHeader("DEPLOY-TOKEN", gitlabToken);
+```
+
+Use this header on requests to the private Generic Package Registry, including the stable manifest, signature, and firmware downloads.
+
+If GitLab returns `401` or `403`, check the token's expiry, the `read_package_registry` scope, project access, and the requested URL.
+
+### Important security notes
+
+- Never print the token itself to Serial Monitor.
+- NVS storage does not automatically encrypt the token. Someone with sufficient physical or firmware access may be able to recover it.
+- If you later enable ESP32 Secure Boot and Flash Encryption, assess whether your configuration protects the NVS data and device credentials appropriately.
+- Keep the write-enabled token on your development computer only.
+
+One useful improvement for later is to make a small provisioning command that accepts a token over USB Serial without embedding it in the temporary sketch. That avoids leaving the secret in your Arduino source files.
+
+
+
 ## My recommended implementation order
 
 1. Create the private GitLab project and read-only Deploy Token.
