@@ -739,7 +739,7 @@ The main limitation of the Deploy Token is important: it cannot authenticate to 
 
 ## 2. What is Deploy Token can do
 
-Your screenshot shows a token named `file-repository-main` with these scopes:
+The deploy token shows a token named `file-repository-main` with these scopes:
 
 - `read_package_registry`
 - `write_package_registry`
