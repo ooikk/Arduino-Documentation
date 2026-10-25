@@ -69,3 +69,45 @@ This sketch does not enable NVS encryption. For production:
 
 ## Integrity vs authenticity
 TLS validates the server's certificate chain and hostname; it does not guarantee a file is the expected release. For firmware or safety-relevant assets, compare the downloaded bytes against a SHA-256 digest delivered through a trusted authenticated manifest, or verify a digital signature whose public key is pinned in firmware. A digest fetched from the same compromised source is not a sufficient authenticity check by itself.
+
+
+## Remote repository file writes (fine-grained token)
+
+The `GitlabClient` now supports the GitLab Repository Files API operations:
+
+- `uploadNewFile(path, data, length, commitMessage)` uses `POST` and creates a new remote file.
+- `updateFile(path, data, length, commitMessage)` uses `PUT` and updates an existing remote file.
+- `deleteRemoteFile(path, commitMessage)` uses `DELETE` and deletes a remote file.
+
+The calls send `PRIVATE-TOKEN` and use HTTPS with the configured CA certificate. The fine-grained token must be scoped to the `file-repository/main-file` project and grant Repository Create, Read, Update, and Delete permissions. The token's account/project role and GitLab's fine-grained endpoint support must also permit the requested operation.
+
+### Serial commands
+
+- `UPLOAD remote/path /localfile` — create a new remote file using a file already present in LittleFS.
+- `UPDATE remote/path /localfile` — update an existing remote file using a file already present in LittleFS.
+- `RM remote/path` — delete a remote repository file.
+- `DEL token` — delete the locally stored token from NVS only; it does not delete a GitLab file.
+
+Example:
+
+```text
+UPLOAD documents/hello.txt /hello.txt
+UPDATE documents/hello.txt /hello.txt
+RM documents/hello.txt
+```
+
+The local source file must already exist in LittleFS. The current serial interface does not provide a host-PC-to-LittleFS file transfer command. You can call the public `GitlabClient` methods directly from another sketch or add a LittleFS file transfer mechanism if needed.
+
+### Upload memory limit
+
+The current implementation limits file uploads to **256 KiB** to control memory usage. Binary data is Base64-encoded for the Repository Files API; this temporarily requires additional RAM beyond the original file buffer. Test with small text files first, then increase the limit only after measuring internal heap headroom on the target board.
+
+### Recommended validation order
+
+1. List files and download a known file.
+2. Upload a new small test file to a dedicated test path.
+3. Confirm it appears in GitLab.
+4. Update that file and confirm its content changed.
+5. Delete only the test file and confirm it is gone.
+
+GitLab creates a commit for each successful create, update, or delete operation. Use a test branch/repository first; remote deletion is a repository change, not a local cleanup operation.

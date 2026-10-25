@@ -3,7 +3,6 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <vector>
-#include <WiFi.h> 
 
 struct GitlabConfig {
   String gitlabUrl = "https://gitlab.com";
@@ -26,6 +25,15 @@ public:
                            uint8_t** outBuffer,
                            size_t* outLen);
 
+  // Upload a new file (POST) or update an existing file (PUT).
+  // Binary payload is Base64-encoded for GitLab's Repository Files API.
+  bool uploadNewFile(const String& repoFilePath, const uint8_t* data, size_t len,
+                     const String& commitMessage = "Upload file from ESP32-S3");
+  bool updateFile(const String& repoFilePath, const uint8_t* data, size_t len,
+                  const String& commitMessage = "Update file from ESP32-S3");
+  bool deleteRemoteFile(const String& repoFilePath,
+                        const String& commitMessage = "Delete file from ESP32-S3");
+
   String lastError() const { return _lastError; }
 
 private:
@@ -39,5 +47,8 @@ private:
   String encodeQuery(const String& input) const;
   String encodePathForFileEndpoint(const String& input) const;
   bool requestJsonPage(const String& url, String& response, int& statusCode);
+  bool writeFileRequest(const char* method, const String& repoFilePath,
+                        const uint8_t* data, size_t len, const String& commitMessage);
+  bool deleteFileRequest(const String& repoFilePath, const String& commitMessage);
   void setError(const String& message);
 };
