@@ -725,7 +725,7 @@ Your screenshot shows the [**Deploy tokens**](https://github.com/ooikk/Arduino-D
 
 ## 1. Compare the three token types
 
-| Feature | Personal Access Token (PAT): Legacy Token| PAT: Fine-grained Personal Access Token | Deploy Token |
+| Feature | Personal Access Token (PAT): Legacy Token| Personal Access Token (PAT): Fine-grained | Deploy Token |
 |---|---|---|---|
 | Associated with | Your GitLab user | Your GitLab user, with restricted resource access | A project or group |
 | Restrict to one project | Not inherently; depends on token type and configuration | Yes, as configured in your screenshot | Yes, if created at project level |
@@ -737,7 +737,7 @@ Your screenshot shows the [**Deploy tokens**](https://github.com/ooikk/Arduino-D
 
 The main limitation of the Deploy Token is important: it cannot authenticate to the GitLab REST API. Its `read_repository` permission supports repository cloning/pulling, while `write_repository` is not a Deploy Token scope. The `write_repository` scope belongs to personal, group, and project access tokens. [GitLab Docs](https://docs.gitlab.com/user/project/deploy_tokens/)
 
-## 2. What your screenshot's Deploy Token can do
+## 2. What is Deploy Token can do
 
 Your screenshot shows a token named `file-repository-main` with these scopes:
 
