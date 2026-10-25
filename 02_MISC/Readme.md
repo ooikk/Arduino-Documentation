@@ -9,6 +9,8 @@
 [![logo-color](https://img.shields.io/badge/Index-FreeRTOS-8ACFF8?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_FreeRTOS/FreeRTOS.md)
 [![logo-color](https://img.shields.io/badge/Index-Memory_Guide-578EF5?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Memory/02_Memory_Guide.md)
 [![logo-color](https://img.shields.io/badge/Index-Security-F70063?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md)
+[![logo-color](https://img.shields.io/badge/Index-Gitlab_File_Access-66A3BF?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/Gitlab_FileAccess.md)
+
 
 **WiFi Functions**     
 [![logo-color](https://img.shields.io/badge/Index-WiFi-007DCC?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/WiFi.md)
