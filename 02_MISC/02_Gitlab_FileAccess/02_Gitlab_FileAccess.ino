@@ -10,10 +10,10 @@
 
 // Demo convenience only: for a real/public repository, move these to a local
 // secrets header excluded from source control. Never put the GitLab PAT here.
-static const char* WIFI_SSID = "Nightingale_IoT";
-static const char* WIFI_PASSWORD = "1122334455";
+static const char* WIFI_SSID = "YOUR_WIFI_SSID";
+static const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
-static const char* PROJECT_ID = "88068597"; //"88009717";
+static const char* PROJECT_ID = "PUT_YOUR_PROJECT_ID_OR_group%2Fproject_HERE";
 static const char* BRANCH = "main";
 
 WiFiClientSecure tlsClient;
