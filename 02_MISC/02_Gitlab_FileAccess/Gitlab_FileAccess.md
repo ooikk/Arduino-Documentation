@@ -280,7 +280,7 @@ Its configuration is:
 ```cpp
 GitlabConfig cfg;
 
-cfg.gitlabUrl = "[https://gitlab.com](https://gitlab.com)";
+cfg.gitlabUrl = "https://gitlab.com";
 cfg.projectId = "12345678";
 cfg.branch = "main";
 cfg.rootCA = String(GITLAB_ROOT_CA);
