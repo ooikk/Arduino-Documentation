@@ -99,7 +99,7 @@ The source files are already separated into Arduino IDE tabs/files, so you can r
 Open **File → Preferences** and add:
 
 ```text
-[https://espressif.github.io/arduino-esp32/package_esp32_index.json](https://espressif.github.io/arduino-esp32/package_esp32_index.json)
+https://espressif.github.io/arduino-esp32/package_esp32_index.json
 ```
 
 Then open **Boards Manager**, search for `esp32`, and install **esp32 by Espressif Systems**, version 3.x.
