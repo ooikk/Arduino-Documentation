@@ -619,77 +619,99 @@ Since your ESP32 will store the token in NVS:
 
 **One important detail:** the token grants permission to make API requests, but the GitLab account or token's assigned project role must also have sufficient permission to modify the repository.
 
-# Create a GitLab Personal Access Token with `api` Scope
 
-Below are the steps to create a GitLab Personal Access Token with the `api` scope for your ESP32-S3 GitLab File Access project. This token will let your ESP32 authenticate with GitLab's REST API to download and upload repository files, provided your GitLab account has sufficient project permissions.
+# Create a GitLab Fine-Grained Personal Access Token
 
-## Step 1 — Open GitLab Access Tokens
+## 1. Objective
+
+Create a GitLab token that grants the ESP32-S3 permission to list, download, upload, update, and delete files in a specific private repository.
+
+- **GitLab group:** `file-repository`
+- **GitLab project:** `main-file`
+- **Token type:** Fine-grained Personal Access Token
+- **Token description:** `write read access`
+- **Expiration date:** Choose a suitable date
+- **Repository access:** Restricted to `file-repository/main-file`
+
+## 2. Open Personal Access Tokens
 
 1. Sign in to your GitLab account.
-2. Open the official access token settings page:  
-   [GitLab Personal Access Tokens](https://gitlab.com/-/user_settings/personal_access_tokens)
-3. Find the section for creating a new personal access token.
+2. Open the [GitLab Personal Access Tokens page](https://gitlab.com/-/user_settings/personal_access_tokens).
+3. Choose the option to create a new token.
+4. Select **Fine-grained token** if GitLab presents a choice of token types.
 
-## Step 2 — Enter the token details
+## 3. Configure the token
 
-On the token creation page, enter the following:
+Enter the following details:
 
-| Field | What to enter |
+| Setting | Value |
 |---|---|
-| Token name | `ESP32S3-FileAccess` |
-| Token description (if shown) | `ESP32-S3 repository file download and upload` |
-| Expiration date | Choose an appropriate date, such as 90 days from creation |
-| Scopes | Select `api` only |
+| Token type | Fine-grained token |
+| Description | `write read access` |
+| Expiration | Select an appropriate expiry date |
+| Group and project access | Only specific groups or projects I have access to |
+| Selected project | `file-repository/main-file` |
 
-GitLab may present a **Generate token** dropdown. If so, choose **Legacy token** for the standard token with the `api` scope. The interface can vary with GitLab updates. [GitLab Docs](https://docs.gitlab.com/user/profile/personal_access_tokens/)
+Do not grant access to unrelated projects.
 
-## Step 3 — Select the `api` scope
+## 4. Configure repository permissions
 
-In the scopes section, locate the checkbox labelled:
+Under **Group and project permissions**, configure the **Repository** permissions as follows:
 
-```text
-api — Grants read-write access to the GitLab API.
-```
+| Permission | Required | Purpose |
+|---|---|---|
+| Create | Yes | Create new repository files |
+| Read | Yes | List and download repository files |
+| Update | Yes | Modify existing repository files |
+| Delete | Yes | Delete repository files |
 
-Tick `api` only for the current ESP32 implementation. You do not need to tick `read_api`, `read_repository`, or `write_repository` separately when using the `api` scope. [GitLab Docs](https://docs.gitlab.com/user/profile/personal_access_tokens/)
+Select only the permissions required by the application. The four permissions above match the configuration shown in the GitLab token details screenshot.
 
-## Step 4 — Generate the token
+**Note:** Fine-grained tokens use specific resource permissions rather than the traditional broad `api` scope. Therefore, the `api` checkbox may not be available.
 
-1. Review the token name, expiry date, and scope.
-2. Click **Generate token** or **Create personal access token**, depending on the interface.
-3. GitLab will display your new token.
+## 5. Create and save the token
 
-The token will look like a long string of letters, numbers, and possibly other characters. Its exact format may vary.
+1. Review the token type, expiry date, project restriction, and permissions.
+2. Click the button to create or generate the token.
+3. Copy the token immediately and store it securely.
 
-**Important:** Copy it immediately and store it somewhere secure. GitLab does not show the complete token again after you leave or refresh the page. [GitLab Docs](https://docs.gitlab.com/user/profile/personal_access_tokens/)
+GitLab may display the complete token only once. Do not include the actual token in source code, documentation, screenshots, or public repositories.
 
-## Step 5 — Store the token securely
+## 6. Configure the ESP32-S3
 
-For your ESP32 project:
+1. Open the ESP32-S3 GitLab File Access project in Arduino IDE.
+2. Configure the GitLab URL as `https://gitlab.com`.
+3. Set the project ID to the numeric ID shown on the `main-file` project page.
+4. Use the existing `NvsTokenManager` to provision the token into NVS.
+5. Keep TLS certificate validation enabled with a verified root CA.
 
-- Keep the token in a secure location on your computer temporarily.
-- Upload your sketch without placing the token directly in the source code.
-- Use the project's existing `NvsTokenManager` to enter the token through the Serial Monitor.
-- Confirm that the token is saved in NVS and that the sketch can retrieve it.
-
-**Security note:** NVS storage alone does not guarantee that the token is encrypted. Avoid sharing Serial Monitor logs that contain the token, and never commit the token to GitLab.
-
-## Step 6 — Confirm that the token works
-
-Once you have saved the token, the ESP32 should use it in the HTTP request header:
+The token should be sent in the HTTP request header expected by the GitLab API implementation, for example:
 
 ```http
-PRIVATE-TOKEN: <your_access_token>
+PRIVATE-TOKEN: <your_token>
 ```
 
-For example, the sketch's GitLab client should send this header when requesting repository files. Do not paste your actual token into this chat.
+Do not print the token to the Serial Monitor.
 
-If the token is valid but the request still fails, check:
+## 7. Test the permissions
 
-- **401 Unauthorized:** The token may be invalid, expired, or incorrectly supplied.
-- **403 Forbidden:** The account may lack the required project permissions.
-- **404 Not Found:** The project ID or file path may be incorrect, or the private project may not be accessible to the token.
+After provisioning the token, test each operation using a non-critical test file:
 
-For more details, see the official [GitLab Personal Access Token documentation](https://docs.gitlab.com/user/profile/personal_access_tokens/).
+1. List files in the repository.
+2. Download an existing file.
+3. Upload a new test file.
+4. Update the test file.
+5. Delete the test file.
 
-**Next step:** Once you have created the token, we can configure your ESP32-S3 project to test repository listing and file downloads first, then implement uploads.
+Check the HTTP response codes and confirm the changes in GitLab. Fine-grained permissions must support the exact API endpoints used by the ESP32 application, so verify all five operations rather than assuming that selecting the permissions guarantees every endpoint will work.
+
+## 8. Security considerations
+
+- Restrict the token to `file-repository/main-file`.
+- Set an expiration date and renew the token when necessary.
+- Store the token in NVS instead of hardcoding it in the sketch.
+- Remember that NVS storage alone does not guarantee encryption.
+- Never disable TLS certificate validation to work around authentication or connection errors.
+- Revoke the token if it is exposed or no longer required.
+
+**Expected result:** The ESP32-S3 has a dedicated token configured for the private `file-repository/main-file` project, with repository permissions intended for file read/write management.
