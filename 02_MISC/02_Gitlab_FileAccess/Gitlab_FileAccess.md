@@ -233,7 +233,7 @@ The sketch saves it through Preferences and does not print the token's value.
 
 **References:**
 - [Token Permission](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/Gitlab_FileAccess.md#token-permissions)
-- [Create Token](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#step-4-create-a-read-only-deploy-token)
+- [Create Token](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/Gitlab_FileAccess.md#create-a-gitlab-fine-grained-personal-access-token)
 
 ## 4. How the modules work
 
