@@ -3,6 +3,9 @@
 [![logo-color](https://img.shields.io/badge/Index-CA_Cert3-FFD444?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_WiFi/Thingsboard.md#obtaining-the-thingsboard-root-ca-certificate)
 [![logo-color](https://img.shields.io/badge/Index-CA_Cert4-DB9558?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#export-sectigo-root-ca-for-esp32-s3-ota)
 
+
+[![logo-color](https://img.shields.io/badge/Index-Github_OTA-E76F51?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/OTA_Update.md#automatic-pull-ota-for-esp32-s3--arduino-ide-2310)
+
 # ESP32-S3 Over-the-Air Updating
 
 OTA—Over-the-Air updating—lets you replace the ESP32-S3 firmware through Wi-Fi after the first USB upload.
