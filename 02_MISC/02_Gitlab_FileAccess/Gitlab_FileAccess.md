@@ -721,11 +721,11 @@ Check the HTTP response codes and confirm the changes in GitLab. Fine-grained pe
 
 The two tokens serve different purposes in GitLab. For your ESP32-S3 project, the key difference is which resources the token can access, what it can do, and which account or project it is tied to.
 
-Your screenshot shows the **Deploy tokens** section under `file-repository/main-file → Settings → Repository`. That is a third token type, separate from both Personal Access Tokens and the fine-grained token you created earlier.
+Your screenshot shows the [**Deploy tokens**](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#step-4-create-a-read-only-deploy-token) section under `file-repository/main-file → Settings → Repository`. That is a third token type, separate from both Personal Access Tokens and the fine-grained token you created earlier.
 
 ## 1. Compare the three token types
 
-| Feature | Personal Access Token (PAT) | Fine-grained Personal Access Token | Deploy Token (your screenshot) |
+| Feature | Personal Access Token (PAT) | Fine-grained Personal Access Token | Deploy Token |
 |---|---|---|---|
 | Associated with | Your GitLab user | Your GitLab user, with restricted resource access | A project or group |
 | Restrict to one project | Not inherently; depends on token type and configuration | Yes, as configured in your screenshot | Yes, if created at project level |
