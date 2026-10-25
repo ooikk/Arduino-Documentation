@@ -231,6 +231,10 @@ The sketch saves it through Preferences and does not print the token's value.
 
 **Security limitation:** Preferences stores the token in NVS, but the code does not enable NVS encryption. Someone with sufficient physical access and the ability to read the flash may be able to recover it. See the project's `README_SETUP.md` for the next steps toward NVS encryption, flash encryption and Secure Boot.
 
+**References:**
+- [Token Permission](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/Gitlab_FileAccess.md#token-permissions)
+- [Create Token](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#step-4-create-a-read-only-deploy-token)
+
 ## 4. How the modules work
 
 ### 4.1 NvsTokenManager
