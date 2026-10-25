@@ -9,8 +9,9 @@ Secure with private keys at Gitlab:
 - [Upload release to Gitlab](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#4-upload-a-release-to-gitlab)
 
 
-[![logo-color](https://img.shields.io/badge/Index-Github_OTA-249D8F?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#hands-on-lab-harden-your-esp32-s3-ota-updater)
-[![logo-color](https://img.shields.io/badge/Index-Gitlab_OTA-E9C46A?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#secure-ota-migration-github--gitlab-generic-package-registry)
+[![logo-color](https://img.shields.io/badge/Index-Github_OTA_SecureSign-249D8F?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#hands-on-lab-harden-your-esp32-s3-ota-updater)
+[![logo-color](https://img.shields.io/badge/Index-Gitlab_OTA_SecureSign_Authentication-E9C46A?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#secure-ota-migration-github--gitlab-generic-package-registry)
+
 ![logo-color](https://img.shields.io/badge/Index-Badges-DA6556?logo=github&logoColor=white&labelColor=5B7E3C)
 
 # Module 1 — ESP32-S3 Security Engineering
