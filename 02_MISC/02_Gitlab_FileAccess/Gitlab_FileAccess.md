@@ -229,7 +229,7 @@ Enter the token followed by `Enter`.
 
 The sketch saves it through Preferences and does not print the token's value.
 
-**Security limitation:** Preferences stores the token in NVS, but the code does not enable NVS encryption. Someone with sufficient physical access and the ability to read the flash may be able to recover it. See the project's `README_SETUP.md` for the next steps toward NVS encryption, flash encryption and Secure Boot.
+**Security limitation:** Preferences stores the token in NVS, but the code does not enable NVS encryption. Someone with sufficient physical access and the ability to read the flash may be able to recover it. See the project's [README_SETUP.md](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/README_SETUP.md) for the next steps toward NVS encryption, flash encryption and Secure Boot.
 
 **References:**
 - [Create a GitLab Personal Access Token: Fine-Grained](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/Gitlab_FileAccess.md#create-a-gitlab-fine-grained-personal-access-token)
