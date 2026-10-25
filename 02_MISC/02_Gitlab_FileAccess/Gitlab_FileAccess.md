@@ -715,3 +715,43 @@ Check the HTTP response codes and confirm the changes in GitLab. Fine-grained pe
 - Revoke the token if it is exposed or no longer required.
 
 **Expected result:** The ESP32-S3 has a dedicated token configured for the private `file-repository/main-file` project, with repository permissions intended for file read/write management.
+
+
+# GitLab Token Types
+
+The two tokens serve different purposes in GitLab. For your ESP32-S3 project, the key difference is which resources the token can access, what it can do, and which account or project it is tied to.
+
+Your screenshot shows the **Deploy tokens** section under `file-repository/main-file → Settings → Repository`. That is a third token type, separate from both Personal Access Tokens and the fine-grained token you created earlier.
+
+## 1. Compare the three token types
+
+| Feature | Personal Access Token (PAT) | Fine-grained Personal Access Token | Deploy Token (your screenshot) |
+|---|---|---|---|
+| Associated with | Your GitLab user | Your GitLab user, with restricted resource access | A project or group |
+| Restrict to one project | Not inherently; depends on token type and configuration | Yes, as configured in your screenshot | Yes, if created at project level |
+| Download repository files | Yes, with appropriate permissions | Yes, with appropriate permissions | Yes, with `read_repository` scope |
+| Upload through REST API | Yes, with suitable API scope and role | Depends on supported API permissions | No — deploy tokens do not provide general Repository Files API write access |
+| Git push over HTTPS | Possible with appropriate permissions | Depends on supported permissions | Yes, with `write_repository` scope |
+| Uses your personal identity | Yes | Yes | No; uses a generated deploy-token username |
+| Best use | General API development | Narrowly scoped API access | Automated repository or package access |
+
+The main limitation of the Deploy Token is important: it cannot authenticate to the GitLab REST API. Its `read_repository` permission supports repository cloning/pulling, while `write_repository` is not a Deploy Token scope. The `write_repository` scope belongs to personal, group, and project access tokens. [GitLab Docs](https://docs.gitlab.com/user/project/deploy_tokens/)
+
+## 2. What your screenshot's Deploy Token can do
+
+Your screenshot shows a token named `file-repository-main` with these scopes:
+
+- `read_package_registry`
+- `write_package_registry`
+
+These permissions are for the package registry, not for repository files. They will not authorize your ESP32 sketch's current GitLab file API calls. [GitLab Docs](https://docs.gitlab.com/user/project/deploy_tokens/)
+
+## 3. Which token should you use for the ESP32?
+
+For your current design, which uses `HTTPClient` and GitLab REST API endpoints to list, download, upload, and delete files, I recommend:
+
+Use the **fine-grained Personal Access Token** you created earlier, provided its selected repository permissions authorize the exact endpoints your sketch uses. Your screenshot showed it restricted to `file-repository/main-file` with Repository **Create**, **Read**, **Update**, and **Delete** permissions.
+
+That is a closer match to your goal than the Deploy Token. Fine-grained tokens are designed to limit access to selected resources and API permissions. [GitLab Docs](https://docs.gitlab.com/security/tokens/)
+
+If an operation fails, check its HTTP response and the fine-grained permission mapping before changing the token.
