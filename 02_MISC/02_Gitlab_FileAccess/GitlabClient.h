@@ -3,6 +3,7 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <vector>
+#include <WiFi.h> 
 
 struct GitlabConfig {
   String gitlabUrl = "https://gitlab.com";
