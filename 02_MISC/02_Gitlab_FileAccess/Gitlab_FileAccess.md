@@ -232,8 +232,7 @@ The sketch saves it through Preferences and does not print the token's value.
 **Security limitation:** Preferences stores the token in NVS, but the code does not enable NVS encryption. Someone with sufficient physical access and the ability to read the flash may be able to recover it. See the project's `README_SETUP.md` for the next steps toward NVS encryption, flash encryption and Secure Boot.
 
 **References:**
-- [Token Permission](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/Gitlab_FileAccess.md#token-permissions)
-- [Create Token](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/Gitlab_FileAccess.md#create-a-gitlab-fine-grained-personal-access-token)
+- [Create a GitLab Personal Access Token: Fine-Grained](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/Gitlab_FileAccess.md#create-a-gitlab-fine-grained-personal-access-token)
 
 ## 4. How the modules work
 
@@ -571,56 +570,7 @@ The key architectural benefit is that `GitlabClient` can now serve as a reusable
 
 ---
 
-# Token Permissions
-
-For your ESP32-S3 GitLab File Access project, create a GitLab Personal Access Token (PAT) with permissions to both download and upload files in your repository.
-
-## 1. Which token options should you select?
-
-On GitLab, go to **User Settings → Access Tokens** (or use the official [GitLab access tokens page](https://gitlab.com/-/user_settings/personal_access_tokens)).
-
-Use these settings:
-
-| Setting | Recommended value | Reason |
-|---|---|---|
-| Token name | `ESP32S3-FileAccess` | Identifies the device's purpose |
-| Expiration date | Choose a suitable expiry date | Limits how long a stolen token can be used |
-| Token type | Personal Access Token | Suitable for the GitLab API used by your sketch |
-| Scope: `read_repository` | Select | Allows reading repository files |
-| Scope: `write_repository` | Select | Allows Git-over-HTTP repository access, but is not sufficient by itself for all REST API upload operations |
-| Scope: `api` | Select if using the GitLab REST API to upload files | Allows API operations, including creating or updating repository files |
-
-For your current design, if the ESP32 downloads files using the repository API and uploads files using GitLab's Repository Files API, select `api`. It is broader than read-only access, so keep the token private and use it only for this project. You generally do not need to select every scope.
-
-## 2. Why not select only `read_repository` and `write_repository`?
-
-GitLab distinguishes between API access and Git-over-HTTP access:
-
-| Scope | Download via API | Upload via Repository Files API |
-|---|---|---|
-| `read_repository` | Yes | No |
-| `write_repository` | No API authentication | No |
-| `read_api` | Read-only API access | No |
-| `api` | Yes | Yes |
-
-The important distinction is that `write_repository` supports Git-over-HTTP push operations, but does not authorize REST API requests. Your project uses the Repository Files API, so `api` is the appropriate scope. [GitLab Docs](https://docs.gitlab.com/security/tokens/access_token_scopes/)
-
-## 3. Security recommendations for your ESP32-S3
-
-Since your ESP32 will store the token in NVS:
-
-- Select only `api` for the current implementation; do not select unrelated scopes.
-- Set an expiration date and renew the token when necessary.
-- Store it through your existing `NvsTokenManager` rather than hardcoding it in the `.ino` file.
-- Keep TLS certificate validation enabled using the verified root CA.
-- Remember that a personal access token can access projects available to your GitLab account, not just the project configured in your ESP32. Keep it private and revoke it if compromised. [GitLab Docs](https://docs.gitlab.com/security/tokens/access_token_scopes/)
-
-**My recommendation:** Start with a Personal Access Token and the `api` scope. This is the most straightforward option for implementing both downloads and uploads through your current GitLab REST API design.
-
-**One important detail:** the token grants permission to make API requests, but the GitLab account or token's assigned project role must also have sufficient permission to modify the repository.
-
-
-# Create a GitLab Fine-Grained Personal Access Token
+# Create a GitLab Personal Access Token: Fine-Grained 
 
 ## 1. Objective
 
