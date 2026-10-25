@@ -1,0 +1,324 @@
+#include "GitlabClient.h"
+#include <ArduinoJson.h>
+#include <esp_heap_caps.h>
+#include <stdlib.h>
+#include <string.h>
+
+static const size_t MAX_DOWNLOAD_BYTES = 6UL * 1024UL * 1024UL;
+static const size_t INITIAL_DOWNLOAD_CAPACITY = 16UL * 1024UL;
+static const uint32_t HTTP_TIMEOUT_MS = 30000;
+
+GitlabClient::GitlabClient(WiFiClientSecure& tlsClient) : _tls(tlsClient) {}
+
+void GitlabClient::setError(const String& message) {
+  _lastError = message;
+  Serial.print("[GitLab] ERROR: ");
+  Serial.println(message);
+}
+
+String GitlabClient::apiBase() const {
+  String base = _config.gitlabUrl;
+  while (base.endsWith("/")) base.remove(base.length() - 1);
+  return base + "/api/v4/projects/" + _config.projectId;
+}
+
+bool GitlabClient::begin(const GitlabConfig& config, const String& accessToken) {
+  _ready = false;
+  _lastError = "";
+
+  if (config.projectId.length() == 0) {
+    setError("projectId is empty.");
+    return false;
+  }
+  if (accessToken.length() == 0) {
+    setError("GitLab token is empty.");
+    return false;
+  }
+  if (config.rootCA.indexOf("-----BEGIN CERTIFICATE-----") < 0 ||
+      config.rootCA.indexOf("REPLACE_WITH_VERIFIED_ROOT_CA_PEM") >= 0) {
+    setError("A verified root CA PEM must be supplied in GitlabConfig.rootCA.");
+    return false;
+  }
+  if (!config.gitlabUrl.startsWith("https://")) {
+    setError("Only HTTPS GitLab URLs are accepted.");
+    return false;
+  }
+
+  _config = config;
+  _token = accessToken;
+  _tls.setCACert(_config.rootCA.c_str());
+  _tls.setTimeout(HTTP_TIMEOUT_MS);
+  _ready = true;
+  return true;
+}
+
+String GitlabClient::encodeQuery(const String& input) const {
+  const char* hex = "0123456789ABCDEF";
+  String out;
+  out.reserve(input.length() * 3);
+  for (size_t i = 0; i < input.length(); ++i) {
+    uint8_t c = (uint8_t)input[i];
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9') || c == '-' || c == '_' ||
+        c == '.' || c == '~') {
+      out += (char)c;
+    } else {
+      out += '%';
+      out += hex[(c >> 4) & 0x0F];
+      out += hex[c & 0x0F];
+    }
+  }
+  return out;
+}
+
+// GitLab repository file endpoint requires the entire repository path encoded
+// as one path parameter: assets/logo.png -> assets%2Flogo.png.
+String GitlabClient::encodePathForFileEndpoint(const String& input) const {
+  return encodeQuery(input);
+}
+
+bool GitlabClient::requestJsonPage(const String& url, String& response, int& statusCode) {
+  HTTPClient http;
+  http.setConnectTimeout(15000);
+  http.setTimeout(HTTP_TIMEOUT_MS);
+  if (!http.begin(_tls, url)) {
+    setError("HTTPClient begin() failed.");
+    return false;
+  }
+
+  http.addHeader("PRIVATE-TOKEN", _token);
+  http.addHeader("Accept", "application/json");
+  statusCode = http.GET();
+
+  if (statusCode == 401) setError("HTTP 401: token invalid, expired, or not accepted.");
+  else if (statusCode == 403) setError("HTTP 403: token lacks permission for this project.");
+  else if (statusCode == 404) setError("HTTP 404: project or repository path not found, or access is concealed.");
+  else if (statusCode < 200 || statusCode >= 300) {
+    setError("GitLab API returned HTTP " + String(statusCode));
+  }
+
+  if (statusCode == HTTP_CODE_OK) {
+    response = http.getString(); // JSON metadata only, not file payload.
+  }
+  http.end();
+  return statusCode == HTTP_CODE_OK;
+}
+
+bool GitlabClient::listFiles(const String& path,
+                             std::vector<String>& outFileNames,
+                             bool recursive) {
+  outFileNames.clear();
+  if (!_ready) {
+    setError("Call begin() successfully before listFiles().");
+    return false;
+  }
+  if (WiFi.status() != WL_CONNECTED) {
+    setError("Wi-Fi is not connected.");
+    return false;
+  }
+
+  // Use offset pagination; GitLab's documented maximum per_page is 100.
+  for (uint32_t page = 1; page <= 10000; ++page) {
+    String url = apiBase() + "/repository/tree?ref=" + encodeQuery(_config.branch) +
+                 "&per_page=100&page=" + String(page) +
+                 "&recursive=" + String(recursive ? "true" : "false");
+    if (path.length() > 0 && path != "/") {
+      url += "&path=" + encodeQuery(path);
+    }
+
+    String body;
+    int status = 0;
+    if (!requestJsonPage(url, body, status)) return false;
+
+    DynamicJsonDocument doc(24 * 1024);
+    DeserializationError err = deserializeJson(doc, body);
+    if (err) {
+      setError(String("Failed to parse repository tree JSON: ") + err.c_str());
+      return false;
+    }
+    if (!doc.is<JsonArray>()) {
+      setError("Unexpected repository tree response format.");
+      return false;
+    }
+
+    JsonArray arr = doc.as<JsonArray>();
+    for (JsonObject entry : arr) {
+      const char* type = entry["type"] | "";
+      const char* name = entry["name"] | "";
+      if (strcmp(type, "blob") == 0 && name[0] != '\0') {
+        outFileNames.push_back(String(name));
+      }
+    }
+
+    // A short page indicates the last page. Empty page also stops.
+    if (arr.size() < 100) return true;
+  }
+
+  setError("Pagination safety limit reached (10000 pages).");
+  return false;
+}
+
+bool GitlabClient::downloadFileToPSRAM(const String& repoFilePath,
+                                       uint8_t** outBuffer,
+                                       size_t* outLen) {
+  if (outBuffer == nullptr || outLen == nullptr) {
+    setError("Output pointers must not be null.");
+    return false;
+  }
+  *outBuffer = nullptr;
+  *outLen = 0;
+
+  if (!_ready) {
+    setError("Call begin() successfully before downloadFileToPSRAM().");
+    return false;
+  }
+  if (WiFi.status() != WL_CONNECTED) {
+    setError("Wi-Fi is not connected.");
+    return false;
+  }
+  if (repoFilePath.length() == 0 || repoFilePath.startsWith("/")) {
+    setError("Provide a repository-relative file path without a leading slash.");
+    return false;
+  }
+
+  String url = apiBase() + "/repository/files/" +
+               encodePathForFileEndpoint(repoFilePath) +
+               "/raw?ref=" + encodeQuery(_config.branch);
+
+  HTTPClient http;
+  http.setConnectTimeout(15000);
+  http.setTimeout(HTTP_TIMEOUT_MS);
+  http.setReuse(false);
+
+  if (!http.begin(_tls, url)) {
+    setError("HTTPClient begin() failed for raw file request.");
+    return false;
+  }
+  http.addHeader("PRIVATE-TOKEN", _token);
+  http.addHeader("Accept", "application/octet-stream");
+
+  int status = http.GET();
+  if (status != HTTP_CODE_OK) {
+    if (status == 401) setError("HTTP 401: token invalid or expired.");
+    else if (status == 403) setError("HTTP 403: insufficient repository permission.");
+    else if (status == 404) setError("HTTP 404: file not found, branch missing, or access concealed.");
+    else setError("Raw file request returned HTTP " + String(status));
+    http.end();
+    return false;
+  }
+
+  int contentLength = http.getSize(); // -1 if chunked/unknown
+  if (contentLength > 0 && (size_t)contentLength > MAX_DOWNLOAD_BYTES) {
+    setError("File exceeds configured maximum download size.");
+    http.end();
+    return false;
+  }
+
+  WiFiClient* stream = http.getStreamPtr();
+  if (stream == nullptr) {
+    setError("HTTP stream unavailable.");
+    http.end();
+    return false;
+  }
+
+  size_t capacity = contentLength > 0 ? (size_t)contentLength : INITIAL_DOWNLOAD_CAPACITY;
+  if (capacity == 0) capacity = INITIAL_DOWNLOAD_CAPACITY;
+  uint8_t* buffer = (uint8_t*)ps_malloc(capacity);
+  if (buffer == nullptr) {
+    setError("PSRAM allocation failed for download buffer.");
+    http.end();
+    return false;
+  }
+
+  size_t used = 0;
+  uint8_t chunk[2048];
+  uint32_t lastProgress = millis();
+  uint32_t lastDataAt = millis();
+
+  while (http.connected() || stream->available()) {
+    int available = stream->available();
+    if (available > 0) {
+      size_t want = (size_t)available;
+      if (want > sizeof(chunk)) want = sizeof(chunk);
+      int got = stream->readBytes(chunk, want);
+      if (got <= 0) continue;
+
+      if (used + (size_t)got > MAX_DOWNLOAD_BYTES) {
+        free(buffer);
+        setError("Download exceeded configured maximum size.");
+        http.end();
+        return false;
+      }
+
+      if (used + (size_t)got > capacity) {
+        size_t newCapacity = capacity;
+        while (newCapacity < used + (size_t)got) {
+          size_t next = newCapacity * 2;
+          if (next > MAX_DOWNLOAD_BYTES) next = MAX_DOWNLOAD_BYTES;
+          if (next <= newCapacity) {
+            free(buffer);
+            setError("Download buffer capacity overflow.");
+            http.end();
+            return false;
+          }
+          newCapacity = next;
+        }
+
+        uint8_t* grown = (uint8_t*)ps_malloc(newCapacity);
+        if (grown == nullptr) {
+          free(buffer);
+          setError("PSRAM reallocation failed while growing download buffer.");
+          http.end();
+          return false;
+        }
+        memcpy(grown, buffer, used);
+        free(buffer);
+        buffer = grown;
+        capacity = newCapacity;
+      }
+
+      memcpy(buffer + used, chunk, (size_t)got);
+      used += (size_t)got;
+      lastDataAt = millis();
+    } else {
+      if (!http.connected()) break;
+      if (millis() - lastDataAt > HTTP_TIMEOUT_MS) {
+        free(buffer);
+        setError("Timed out waiting for download data.");
+        http.end();
+        return false;
+      }
+      delay(2);
+    }
+
+    if (millis() - lastProgress >= 1000) {
+      if (contentLength > 0) {
+        Serial.printf("[GitLab] Download: %u / %u bytes (%u%%)\n",
+                      (unsigned)used, (unsigned)contentLength,
+                      (unsigned)((used * 100ULL) / (size_t)contentLength));
+      } else {
+        Serial.printf("[GitLab] Download: %u bytes\n", (unsigned)used);
+      }
+      lastProgress = millis();
+    }
+  }
+
+  http.end();
+
+  if (contentLength >= 0 && used != (size_t)contentLength) {
+    free(buffer);
+    setError("Download length mismatch: expected " + String(contentLength) +
+             ", received " + String(used) + ".");
+    return false;
+  }
+  if (used == 0) {
+    free(buffer);
+    setError("Downloaded file is empty.");
+    return false;
+  }
+
+  *outBuffer = buffer;
+  *outLen = used;
+  Serial.printf("[GitLab] Download complete: %u bytes in PSRAM.\n", (unsigned)used);
+  return true;
+}
