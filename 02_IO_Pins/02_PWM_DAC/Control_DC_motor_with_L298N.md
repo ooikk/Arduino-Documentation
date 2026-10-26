@@ -555,3 +555,382 @@ The following spreadsheet simulate the PWM on R-C circuit’s response:
 [image67]: <data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAAXCAMAAADeH4ToAAADAFBMVEUAAAAAAAAAADoAAGYAOpAAZrY6AAA6ZpA6ZrY6kNtmAABmOgBmtttmtv+QOgCQZgCQ2/+2ZgC2Zjq22/+2///bkDrbkGbb////tmb/25D/27b//7b//9sAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADsyJCjAAAAAXRSTlMAQObYZgAAAKhJREFUeF69jtsOgjAQRGehESEiIMFg6P//mRoTJTxoYrWIu224vJs4Sbfbs51pgb+oIEqBioJ8Zpo2buSqKJC1dq2vng0UcqP764K94gs39j4iYTaSxtCCNcZbJXlkHyvW/qmA/YrEE2B4y2zghPqWHsQDNEkJveMPN0kM1LncO2YtnR5Fx2Pl83g7s9MYOVgP5tdAilnvAydVYam3mCKcoqyF+/8P+gKtpyPC2IGVEQAAAABJRU5ErkJggg==>
 
 [image68]: <data:image/png;base64,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>
+
+
+
+Contents
+Control DC motor with L298N using LEDC	6
+Hardware Connection Guide	6
+Complete Code Example	6
+Code Architecture Breakdown	8
+Control DC motor with L298N using MCPWM	10
+Hardware Connection Guide	10
+Code Example: MCPWM Open-Loop Motor Control	10
+Why this is highly efficient:	13
+Charging a capacitor	14
+Step 1: Apply Kirchhoff's Voltage Law (KVL)	14
+Step 3: Set up the Differential Equation	14
+Step 4: Integrate with Initial Conditions	15
+Step 5: Solve for Capacitor Voltage	15
+Step 6: Find the Current Function	16
+Discharging a capacitor	17
+1. Understanding the Circuit Behavior	17
+2. Setting up the Differential Equation	17
+3. Solving the Differential Equation	17
+4. Calculating the Specific Time Constant ()	18
+Final Discharge Equation	18
+Continue Charge & Discharging a capacitor (PWM)	19
+
+
+Control DC motor with L298N using LEDC
+To control a DC motor's direction and speed on an ESP32-S3, you need an external H-bridge motor driver (such as the L298N, TB6612FNG, or DRV8833). The ESP32-S3 cannot drive a motor directly from its GPIO pins because motors demand far more current than the chip can provide.
+An H-bridge requires three control lines per motor:
+PWM Pin (Speed): Controls the average voltage using Pulse Width Modulation.
+IN1 Pin (Direction): Digital high/low to control spin direction.
+IN2 Pin (Direction): Digital low/high to control spin direction.
+Here is a complete, working example using the modern Arduino ESP32 Core 3.0+ API (ledcAttach and ledcWrite) for open-loop speed control.
+Hardware Connection Guide
+ESP32-S3 Pin
+Motor Driver Pin
+Description
+GPIO 4
+PWM / ENA
+Controls motor speed
+GPIO 5
+IN1
+Direction Control Line 1
+GPIO 6
+IN2
+Direction Control Line 2
+GND
+GND
+Ground (Must be shared with motor power supply GND)
+
+
+Complete Code Example 
+
+// Define physical GPIO Pin Assignments
+const int MOTOR_PWM_PIN = 4; // Speed control pin
+const int MOTOR_IN1_PIN = 5; // Direction pin 1
+const int MOTOR_IN2_PIN = 6; // Direction pin 2
+
+// PWM Configuration Properties (Core 3.0+ style)
+const int PWM_FREQ = 10000;  // 10 kHz frequency (prevents audible motor whining)
+const int PWM_RES = 8;       // 8-bit resolution (Speed range: 0 to 255)
+
+void setup() {
+  // Initialize standard digital outputs for direction control
+  pinMode(MOTOR_IN1_PIN, OUTPUT);
+  pinMode(MOTOR_IN2_PIN, OUTPUT);
+
+  // Initialize PWM on the speed pin using the Core 3.0+ API
+  // This automatically sets the pin direction and handles channel routing
+  ledcAttach(MOTOR_PWM_PIN, PWM_FREQ, PWM_RES);
+
+  // Ensure the motor is completely stopped at startup
+  stopMotor();
+}
+
+void loop() {
+  // 1. Spin Forward and gradually accelerate to full speed
+  setDirectionForward();
+  for (int speed = 0; speed <= 255; speed++) {
+    ledcWrite(MOTOR_PWM_PIN, speed);
+    delay(15); // Smooth acceleration over ~3.8 seconds
+  }
+  
+  delay(2000); // Maintain full speed forward for 2 seconds
+
+  // 2. Safely brake the motor before changing directions
+  stopMotor();
+  delay(1000); // Rest for 1 second
+
+  // 3. Spin Backward at a fixed medium speed (roughly 60% power)
+  setDirectionBackward();
+  ledcWrite(MOTOR_PWM_PIN, 150); 
+  delay(3000); // Run backward for 3 seconds
+
+  // 4. Stop again before restarting the loop
+  stopMotor();
+  delay(2000); // Rest for 2 seconds
+}
+
+// --- Motor Control Helper Functions ---
+
+void setDirectionForward() {
+  digitalWrite(MOTOR_IN1_PIN, HIGH);
+  digitalWrite(MOTOR_IN2_PIN, LOW);
+}
+
+void setDirectionBackward() {
+  digitalWrite(MOTOR_IN1_PIN, LOW);
+  digitalWrite(MOTOR_IN2_PIN, HIGH);
+}
+
+void stopMotor() {
+  // Pulling both direction lines to the same state creates an electronic brake
+  digitalWrite(MOTOR_IN1_PIN, LOW);
+  digitalWrite(MOTOR_IN2_PIN, LOW);
+  ledcWrite(MOTOR_PWM_PIN, 0); // Set speed duty cycle to zero
+}
+
+Code Architecture Breakdown
+ledcAttach(MOTOR_PWM_PIN, 10000, 8): Binds our speed pin to a 10 kHz signal with 8-bit resolution. We use a high 10 kHz frequency because lower frequencies (like 50 Hz) cause the physical motor windings to vibrate mechanically, creating an annoying high-pitched buzzing noise.
+ledcWrite(MOTOR_PWM_PIN, speed): Accepts a value from 0 (motor completely off) to 255 (motor receiving full power from your driver board).
+The Direction Truth Table: H-bridges read the relative state of IN1 and IN2 to determine how current flows through the motor:
+HIGH / LOW -> Current flows one way (Forward).
+LOW / HIGH -> Current reverses (Backward).
+LOW / LOW -> Motor stops immediately (Short-brake).
+
+
+Control DC motor with L298N using MCPWM
+Using MCPWM (Motor Control PWM) instead of LEDC is the ideal choice for driving an H-Bridge like the L298N.
+While LEDC is designed for simple tasks like LED dimming, MCPWM is a dedicated hardware engine built specifically for motor control. It runs efficiently in the background, freeing up the main CPU cores for other tasks.
+Because MCPWM is an advanced hardware peripheral, it is typically written using Espressif's official component drivers (IDF style), which work seamlessly within the Arduino IDE for the ESP32-S3.
+Hardware Connection Guide
+The wiring remains identical to the previous example. The L298N requires a speed pin (ENA) and two direction pins (IN1, IN2).
+ESP32-S3 Pin
+L298N Driver Pin
+Description
+GPIO 4
+ENA (PWM)
+Motor Speed Control
+GPIO 5
+IN1
+Direction Control Line 1
+GPIO 6
+IN2
+Direction Control Line 2
+GND
+GND
+Common Ground
+
+
+Code Example: MCPWM Open-Loop Motor Control
+This code initializes the MCPWM peripheral using the modern ESP-IDF v5.0+ / Arduino Core 3.0+ driver structure to control the speed via the ENA pin, while using standard GPIOs for direction.
+
+#include "driver/mcpwm_prelude.h"
+
+// Pin Assignments
+const int MOTOR_PWM_PIN = 4; // ENA on L298N
+const int MOTOR_IN1_PIN = 5; // IN1 on L298N
+const int MOTOR_IN2_PIN = 6; // IN2 on L298N
+
+// MCPWM Hardware Handles
+mcpwm_timer_handle_t timer = NULL;
+mcpwm_operator_handle_t oper = NULL;
+mcpwm_cmpr_handle_t comparator = NULL;
+mcpwm_gen_handle_t generator = NULL;
+
+// Global settings
+const uint32_t PWM_FREQ = 10000;       // 10 kHz frequency
+const uint32_t TIMER_RESOLUTION = 10000000; // 10 MHz internal clock resolution
+const uint32_t PWM_PERIOD = TIMER_RESOLUTION / PWM_FREQ; // Total ticks per cycle (1000 ticks)
+
+void setup() {
+  // 1. Configure standard direction pins
+  pinMode(MOTOR_IN1_PIN, OUTPUT);
+  pinMode(MOTOR_IN2_PIN, OUTPUT);
+  stopMotor();
+
+  // 2. Initialize MCPWM Timer
+  mcpwm_timer_config_t timer_config = {
+    .group_id = 0,
+    .clk_src = MCPWM_TIMER_CLK_SRC_DEFAULT,
+    .resolution_hz = TIMER_RESOLUTION,
+    .count_mode = MCPWM_TIMER_COUNT_MODE_UP,
+    .period_ticks = PWM_PERIOD,
+  };
+  mcpwm_new_timer(&timer_config, &timer);
+
+  // 3. Initialize MCPWM Operator
+  mcpwm_operator_config_t operator_config = {
+    .group_id = 0,
+  };
+  mcpwm_new_operator(&operator_config, &oper);
+  mcpwm_operator_connect_timer(oper, timer);
+
+  // 4. Initialize MCPWM Comparator (Manages Duty Cycle threshold)
+  mcpwm_comparator_config_t comparator_config = {
+    .flags = { .update_cmp_on_tez = true } // Update duty cycle when timer hits zero
+  };
+  mcpwm_new_comparator(oper, &comparator_config, &comparator);
+
+  // 5. Initialize MCPWM Generator (Binds to the physical GPIO)
+  mcpwm_generator_config_t generator_config = {
+    .gen_gpio_num = MOTOR_PWM_PIN,
+  };
+  mcpwm_new_generator(oper, &generator_config, &generator);
+
+  // 6. Set Generator Waveform Actions
+  // When timer resets to zero, drive the pin HIGH
+  mcpwm_generator_set_action_on_timer_event(generator, 
+    MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH));
+  // When timer matches the comparator value, drive the pin LOW
+  mcpwm_generator_set_action_on_compare_event(generator, 
+    MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, comparator, MCPWM_GEN_ACTION_LOW));
+
+  // 7. Enable and Start the Hardware Timer
+  mcpwm_timer_enable(timer);
+  mcpwm_timer_start(timer);
+
+  // Start at 0% speed
+  setMotorSpeed(0);
+}
+
+void loop() {
+  // Forward Acceleration
+  setDirectionForward();
+  for (int percent = 0; percent <= 100; percent += 5) {
+    setMotorSpeed(percent);
+    delay(100);
+  }
+  delay(2000);
+
+  // Brake
+  stopMotor();
+  delay(1000);
+
+  // Backward Run at 60% speed
+  setDirectionBackward();
+  setMotorSpeed(60);
+  delay(3000);
+
+  // Brake
+  stopMotor();
+  delay(2000);
+}
+
+// --- Helper Functions ---
+
+void setMotorSpeed(int speedPercent) {
+  // Constrain input between 0 and 100%
+  speedPercent = constrain(speedPercent, 0, 100);
+  
+  // Calculate target hardware ticks based on percentage
+  uint32_t compare_ticks = (PWM_PERIOD * speedPercent) / 100;
+  
+  // Directly update the hardware comparator register
+  mcpwm_comparator_set_compare_value(comparator, compare_ticks);
+}
+
+void setDirectionForward() {
+  digitalWrite(MOTOR_IN1_PIN, HIGH);
+  digitalWrite(MOTOR_IN2_PIN, LOW);
+}
+
+void setDirectionBackward() {
+  digitalWrite(MOTOR_IN1_PIN, LOW);
+  digitalWrite(MOTOR_IN2_PIN, HIGH);
+}
+
+void stopMotor() {
+  digitalWrite(MOTOR_IN1_PIN, LOW);
+  digitalWrite(MOTOR_IN2_PIN, LOW);
+  if (comparator != NULL) {
+    setMotorSpeed(0);
+  }
+}
+
+
+Why this is highly efficient:
+Zero CPU overhead for PWM: The generator actions are linked directly via internal hardware logic cells. When the timer ticks up and hits the comparator threshold, the hardware switches the physical pin state in nanoseconds without firing an interrupt or consuming CPU cycles.
+Precise Math (PWM_PERIOD): With a 10 MHz resolution clock, a 10 kHz PWM signal yields exactly 1000 steps of resolution. This allows you to scale your speed parameters flawlessly.
+
+
+Charging a capacitor
+
+To find the equations for the capacitor voltage  and the circuit current  during the charging phase, we can set up and solve a first-order linear differential equation using Kirchhoff's Voltage Law (KVL).
+
+Here is the step-by-step mathematical breakdown.
+Step 1: Apply Kirchhoff's Voltage Law (KVL)
+Looking at the loop in your circuit diagram, the total voltage supplied by the battery  must equal the sum of the voltage drops across the resistor  and the capacitor :
+
+Step 2: Express the components in terms of current 
+Using fundamental electronics relationships:
+Ohm's Law for the resistor:
+
+Current-voltage relationship for a capacitor:
+
+Substitute the current equation into Ohm's Law to get  in terms of :
+
+Step 3: Set up the Differential Equation
+Substitute  back into our original KVL equation from Step 1:
+
+To solve this, let's rearrange it into a standard first-order differential equation form:
+
+
+Step 4: Integrate with Initial Conditions
+Assuming the capacitor is completely uncharged at the beginning (), our initial condition is .
+Integrate both sides from time  to :
+
+Using substitution ():
+
+
+Combine the natural logarithms:
+
+Step 5: Solve for Capacitor Voltage 
+Eliminate the natural log by taking the exponential () of both sides:
+
+
+
+Factor out  to get your first target formula:
+
+Step 6: Find the Current Function 
+Now that we have , we can determine the charging current equation by differentiating  with respect to time, using the relation :
+
+
+
+The capacitance  cancels out, leaving you with your second target formula:
+
+
+
+Discharging a capacitor
+To find the transfer function for the capacitor voltage during discharge, we look at how the stored charge flows out of the capacitor through the resistor when no external power source is connected.
+Here is the analytical breakdown and derivation of the discharge equation.
+1. Understanding the Circuit Behavior
+In a discharging RC circuit, the capacitor acts as a temporary voltage source. As current flows, energy is dissipated as heat in the resistor, causing both the voltage across the capacitor  and the current  to decay exponentially toward zero.
+2. Setting up the Differential Equation
+By applying Kirchhoff's Voltage Law (KVL) around the single closed loop:
+
+Using the fundamental component behaviors:
+Ohm's Law: 
+Capacitor Current: Since the capacitor is leaving charge (discharging), the current flowing out relates to the voltage drop by:
+
+Substituting Ohm's Law and the current equation into the KVL expression gives:
+
+3. Solving the Differential Equation
+To isolate the variables for integration, rearrange the terms:
+
+
+Integrate both sides from the start of discharge (, where the initial capacitor voltage is ) to a future time :
+
+
+Take the exponential () of both sides to eliminate the natural logarithm:
+
+Multiplying by  yields the standard time-domain equation for a discharging capacitor:
+
+4. Calculating the Specific Time Constant ()
+The speed of the discharge depends entirely on the circuit's time constant (), defined as:
+
+Using the values provided in your schematic:
+
+
+
+Final Discharge Equation
+Plugging your component values into the transfer function reveals exactly how the voltage drops over time:
+
+(For instance, after roughly 2.21 seconds, the capacitor voltage will have dropped to approximately 36.8% of its initial starting voltage .)
+ 
+
+
+Continue Charge & Discharging a capacitor (PWM)
+
+Under PWM mode, the charging cycle start from none 0V, below is the universal RC charging equation:
+
+Discharging equation:
+
+The following spreadsheet simulate the PWM on R-C circuit’s response:
+ https://docs.google.com/spreadsheets/d/10Ih6O-8kVcTtxQ6LSR1iQ8BdQ8ajPfoUlZrpEv3AAdg/edit?gid=0#gid=0
+
+
