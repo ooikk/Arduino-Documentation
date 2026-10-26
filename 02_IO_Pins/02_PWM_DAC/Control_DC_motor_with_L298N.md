@@ -1,8 +1,6 @@
 # Control DC motor with L298N using LEDC
 
 
-<img width="19" height="23" alt="image" src="https://github.com/user-attachments/assets/12b947df-3ea4-4ecb-9e7e-89b2bb151b90" />
-
 To control a DC motor's direction and speed on an ESP32-S3, you need an external **H-bridge motor driver** (such as the L298N, TB6612FNG, or DRV8833). The ESP32-S3 cannot drive a motor directly from its GPIO pins because motors demand far more current than the chip can provide.
 
 An H-bridge requires three control lines per motor:
