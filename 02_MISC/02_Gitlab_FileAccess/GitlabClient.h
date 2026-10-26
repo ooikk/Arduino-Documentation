@@ -8,7 +8,7 @@ struct GitlabConfig {
   String gitlabUrl = "https://gitlab.com";
   String projectId;       // Numeric project ID or URL-encoded group%2Fproject
   String branch = "main";
-  String rootCA;          // PEM root CA used by WiFiClientSecure::setCACert()
+  String rootCA ;          // PEM root CA used by WiFiClientSecure::setCACert()
 };
 
 class GitlabClient {

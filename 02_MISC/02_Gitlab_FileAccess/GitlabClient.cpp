@@ -6,13 +6,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define DEBUG_TRACE
+
+
 static const size_t MAX_DOWNLOAD_BYTES = 6UL * 1024UL * 1024UL;
 static const size_t INITIAL_DOWNLOAD_CAPACITY = 16UL * 1024UL;
 static const uint32_t HTTP_TIMEOUT_MS = 30000;
 // Buffered JSON/Base64 upload; conservative limit protects ESP32 internal heap.
 static const size_t MAX_UPLOAD_BYTES = 256UL * 1024UL;
 
-GitlabClient::GitlabClient(WiFiClientSecure& tlsClient) : _tls(tlsClient) {}
+GitlabClient::GitlabClient(WiFiClientSecure& tlsClient)
+  : _tls(tlsClient) {}
 
 void GitlabClient::setError(const String& message) {
   _lastError = message;
@@ -21,6 +25,9 @@ void GitlabClient::setError(const String& message) {
 }
 
 String GitlabClient::apiBase() const {
+  // Reference Gitlab OTA link to version.txt
+  //https://gitlab.com/api/v4/projects/88009717/packages/generic/firmware-index/stable/version.txt";
+
   String base = _config.gitlabUrl;
   while (base.endsWith("/")) base.remove(base.length() - 1);
   return base + "/api/v4/projects/" + _config.projectId;
@@ -38,8 +45,7 @@ bool GitlabClient::begin(const GitlabConfig& config, const String& accessToken) 
     setError("GitLab token is empty.");
     return false;
   }
-  if (config.rootCA.indexOf("-----BEGIN CERTIFICATE-----") < 0 ||
-      config.rootCA.indexOf("REPLACE_WITH_VERIFIED_ROOT_CA_PEM") >= 0) {
+  if (config.rootCA.indexOf("-----BEGIN CERTIFICATE-----") < 0 || config.rootCA.indexOf("REPLACE_WITH_VERIFIED_ROOT_CA_PEM") >= 0) {
     setError("A verified root CA PEM must be supplied in GitlabConfig.rootCA.");
     return false;
   }
@@ -62,12 +68,16 @@ String GitlabClient::encodeQuery(const String& input) const {
   out.reserve(input.length() * 3);
   for (size_t i = 0; i < input.length(); ++i) {
     uint8_t c = (uint8_t)input[i];
-    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-        (c >= '0' && c <= '9') || c == '-' || c == '_' ||
-        c == '.' || c == '~') {
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~') {
       out += (char)c;
     } else {
       out += '%';
+      /***** 
+*  c >> 4 = shift right 4 bits / divide by 16. It moves the high nibble down to low nibble.
+*  c = 0xAB
+*  hex[(c >> 4) & 0x0F] // 0xA -> high nibble
+*  hex[c & 0x0F]        // 0xB -> low nibble
+*****/
       out += hex[(c >> 4) & 0x0F];
       out += hex[c & 0x0F];
     }
@@ -102,7 +112,7 @@ bool GitlabClient::requestJsonPage(const String& url, String& response, int& sta
   }
 
   if (statusCode == HTTP_CODE_OK) {
-    response = http.getString(); // JSON metadata only, not file payload.
+    response = http.getString();  // JSON metadata only, not file payload.
   }
   http.end();
   return statusCode == HTTP_CODE_OK;
@@ -123,9 +133,7 @@ bool GitlabClient::listFiles(const String& path,
 
   // Use offset pagination; GitLab's documented maximum per_page is 100.
   for (uint32_t page = 1; page <= 10000; ++page) {
-    String url = apiBase() + "/repository/tree?ref=" + encodeQuery(_config.branch) +
-                 "&per_page=100&page=" + String(page) +
-                 "&recursive=" + String(recursive ? "true" : "false");
+    String url = apiBase() + "/repository/tree?ref=" + encodeQuery(_config.branch) + "&per_page=100&page=" + String(page) + "&recursive=" + String(recursive ? "true" : "false");
     if (path.length() > 0 && path != "/") {
       url += "&path=" + encodeQuery(path);
     }
@@ -185,9 +193,7 @@ bool GitlabClient::downloadFileToPSRAM(const String& repoFilePath,
     return false;
   }
 
-  String url = apiBase() + "/repository/files/" +
-               encodePathForFileEndpoint(repoFilePath) +
-               "/raw?ref=" + encodeQuery(_config.branch);
+  String url = apiBase() + "/repository/files/" + encodePathForFileEndpoint(repoFilePath) + "/raw?ref=" + encodeQuery(_config.branch);
 
   HTTPClient http;
   http.setConnectTimeout(15000);
@@ -201,7 +207,18 @@ bool GitlabClient::downloadFileToPSRAM(const String& repoFilePath,
   http.addHeader("PRIVATE-TOKEN", _token);
   http.addHeader("Accept", "application/octet-stream");
 
+#ifdef DEBUG_TRACE
+  Serial.printf("[GitLab] Download path: '%s'\n", repoFilePath.c_str());
+  Serial.printf("[GitLab] Request URL: %s\n", url.c_str());
+
   int status = http.GET();
+
+  Serial.printf("[GitLab] HTTP status: %d\n", status);
+#else
+
+  int status = http.GET();
+#endif
+
   if (status != HTTP_CODE_OK) {
     if (status == 401) setError("HTTP 401: token invalid or expired.");
     else if (status == 403) setError("HTTP 403: insufficient repository permission.");
@@ -211,7 +228,7 @@ bool GitlabClient::downloadFileToPSRAM(const String& repoFilePath,
     return false;
   }
 
-  int contentLength = http.getSize(); // -1 if chunked/unknown
+  int contentLength = http.getSize();  // -1 if chunked/unknown
   if (contentLength > 0 && (size_t)contentLength > MAX_DOWNLOAD_BYTES) {
     setError("File exceeds configured maximum download size.");
     http.end();
@@ -311,15 +328,20 @@ bool GitlabClient::downloadFileToPSRAM(const String& repoFilePath,
 
   if (contentLength >= 0 && used != (size_t)contentLength) {
     free(buffer);
-    setError("Download length mismatch: expected " + String(contentLength) +
-             ", received " + String(used) + ".");
+    setError("Download length mismatch: expected " + String(contentLength) + ", received " + String(used) + ".");
     return false;
   }
+
   if (used == 0) {
-    free(buffer);
-    setError("Downloaded file is empty.");
-    return false;
+    // HTTP 200 with zero bytes is a successful download of an empty file.
+    // Return the allocated buffer so the caller can free() it normally.
+    *outBuffer = buffer;
+    *outLen = 0;
+
+    Serial.println("[GitLab] Download complete: empty file (0 bytes).");
+    return true;
   }
+
 
   *outBuffer = buffer;
   *outLen = used;
@@ -335,11 +357,11 @@ static String jsonEscape(const String& input) {
   for (size_t i = 0; i < input.length(); ++i) {
     const char c = input[i];
     switch (c) {
-      case '"':  out += "\\\""; break;
+      case '"': out += "\\\""; break;
       case '\\': out += "\\\\"; break;
       case '\b': out += "\\b"; break;
       case '\f': out += "\\f"; break;
-      case '\n': out += "\n"; break;
+      case '\n': out += "\\n"; break;
       case '\r': out += "\\r"; break;
       case '\t': out += "\\t"; break;
       default:
@@ -367,40 +389,87 @@ bool GitlabClient::updateFile(const String& path, const uint8_t* data,
 bool GitlabClient::writeFileRequest(const char* method, const String& path,
                                     const uint8_t* data, size_t len,
                                     const String& commitMessage) {
-  if (!_ready) { setError("Call begin() successfully before file writes."); return false; }
-  if (WiFi.status() != WL_CONNECTED) { setError("Wi-Fi is not connected."); return false; }
-  if (path.length() == 0 || path.startsWith("/") || path.indexOf("..") >= 0) {
-    setError("Use a repository-relative path without a leading slash or '..'."); return false;
+  if (!_ready) {
+    setError("Call begin() successfully before file writes.");
+    return false;
   }
-  if (!data || len == 0) { setError("Upload data is null or empty."); return false; }
-  if (len > MAX_UPLOAD_BYTES) { setError("Upload exceeds 256 KiB safety limit."); return false; }
-  if (commitMessage.length() == 0) { setError("Commit message must not be empty."); return false; }
+  if (WiFi.status() != WL_CONNECTED) {
+    setError("Wi-Fi is not connected.");
+    return false;
+  }
+  if (path.length() == 0 || path.startsWith("/") || path.indexOf("..") >= 0) {
+    setError("Use a repository-relative path without a leading slash or '..'.");
+    return false;
+  }
+  if (!data || len == 0) {
+    setError("Upload data is null or empty.");
+    return false;
+  }
+  if (len > MAX_UPLOAD_BYTES) {
+    setError("Upload exceeds 256 KiB safety limit.");
+    return false;
+  }
+  if (commitMessage.length() == 0) {
+    setError("Commit message must not be empty.");
+    return false;
+  }
 
   size_t encodedLen = 0;
   int rc = mbedtls_base64_encode(nullptr, 0, &encodedLen, data, len);
   if (rc != MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL && rc != 0) {
-    setError("Failed to calculate Base64 output length."); return false;
+    setError("Failed to calculate Base64 output length.");
+    return false;
   }
   char* encoded = (char*)ps_malloc(encodedLen + 1);
-  if (!encoded) { setError("PSRAM allocation failed for Base64 data."); return false; }
+  if (!encoded) {
+    setError("PSRAM allocation failed for Base64 data.");
+    return false;
+  }
   rc = mbedtls_base64_encode((unsigned char*)encoded, encodedLen + 1, &encodedLen, data, len);
-  if (rc != 0) { free(encoded); setError("Base64 encoding failed."); return false; }
+  if (rc != 0) {
+    free(encoded);
+    setError("Base64 encoding failed.");
+    return false;
+  }
   encoded[encodedLen] = '\0';
 
+
   String payload;
-  payload.reserve(encodedLen + commitMessage.length() + _config.branch.length() + 128);
-  payload += "{\"branch\":\""; payload += jsonEscape(_config.branch);
-  payload += "\",\"commit_message\":\""; payload += jsonEscape(commitMessage);
-  payload += "\",\"content\":\""; payload += encoded;
+  const size_t payloadCapacity =
+    encodedLen + commitMessage.length() + _config.branch.length() + 128;
+
+  if (!payload.reserve(payloadCapacity)) {
+    free(encoded);
+    setError("Memory allocation failed for JSON upload payload.");
+    return false;
+  }
+
+  payload += "{\"branch\":\"";
+  payload += jsonEscape(_config.branch);
+  payload += "\",\"commit_message\":\"";
+  payload += jsonEscape(commitMessage);
+  payload += "\",\"content\":\"";
+  payload += encoded;
   payload += "\",\"encoding\":\"base64\"}";
+
   free(encoded);
+  encoded = nullptr;
+
+  if (payload.length() == 0) {
+    setError("Failed to construct JSON upload payload.");
+    return false;
+  }
+
 
   String url = apiBase() + "/repository/files/" + encodePathForFileEndpoint(path);
   HTTPClient http;
   http.setConnectTimeout(15000);
   http.setTimeout(HTTP_TIMEOUT_MS);
   http.setReuse(false);
-  if (!http.begin(_tls, url)) { setError("HTTPClient begin() failed for file write."); return false; }
+  if (!http.begin(_tls, url)) {
+    setError("HTTPClient begin() failed for file write.");
+    return false;
+  }
   http.addHeader("PRIVATE-TOKEN", _token);
   http.addHeader("Accept", "application/json");
   http.addHeader("Content-Type", "application/json");
@@ -428,17 +497,29 @@ bool GitlabClient::deleteRemoteFile(const String& path, const String& message) {
 }
 
 bool GitlabClient::deleteFileRequest(const String& path, const String& commitMessage) {
-  if (!_ready) { setError("Call begin() successfully before deleting remote files."); return false; }
-  if (WiFi.status() != WL_CONNECTED) { setError("Wi-Fi is not connected."); return false; }
-  if (path.length() == 0 || path.startsWith("/") || path.indexOf("..") >= 0) {
-    setError("Use a repository-relative path without a leading slash or '..'."); return false;
+  if (!_ready) {
+    setError("Call begin() successfully before deleting remote files.");
+    return false;
   }
-  if (commitMessage.length() == 0) { setError("Commit message must not be empty."); return false; }
+  if (WiFi.status() != WL_CONNECTED) {
+    setError("Wi-Fi is not connected.");
+    return false;
+  }
+  if (path.length() == 0 || path.startsWith("/") || path.indexOf("..") >= 0) {
+    setError("Use a repository-relative path without a leading slash or '..'.");
+    return false;
+  }
+  if (commitMessage.length() == 0) {
+    setError("Commit message must not be empty.");
+    return false;
+  }
 
   String payload;
   payload.reserve(commitMessage.length() + _config.branch.length() + 64);
-  payload += "{\"branch\":\""; payload += jsonEscape(_config.branch);
-  payload += "\",\"commit_message\":\""; payload += jsonEscape(commitMessage);
+  payload += "{\"branch\":\"";
+  payload += jsonEscape(_config.branch);
+  payload += "\",\"commit_message\":\"";
+  payload += jsonEscape(commitMessage);
   payload += "\"}";
 
   String url = apiBase() + "/repository/files/" + encodePathForFileEndpoint(path);
@@ -446,7 +527,10 @@ bool GitlabClient::deleteFileRequest(const String& path, const String& commitMes
   http.setConnectTimeout(15000);
   http.setTimeout(HTTP_TIMEOUT_MS);
   http.setReuse(false);
-  if (!http.begin(_tls, url)) { setError("HTTPClient begin() failed for file deletion."); return false; }
+  if (!http.begin(_tls, url)) {
+    setError("HTTPClient begin() failed for file deletion.");
+    return false;
+  }
   http.addHeader("PRIVATE-TOKEN", _token);
   http.addHeader("Accept", "application/json");
   http.addHeader("Content-Type", "application/json");
