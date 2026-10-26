@@ -10,7 +10,7 @@ An H-bridge requires three control lines per motor:
 
 Here is a complete, working example using the modern **Arduino ESP32 Core 3.0+ API** (ledcAttach and ledcWrite) for open-loop speed control.
 
-## Hardware Connection Guide {#hardware-connection-guide}
+## Hardware Connection Guide 
 
 | ESP32-S3 Pin | Motor Driver Pin | Description |
 | :---- | :---- | :---- |
@@ -19,7 +19,7 @@ Here is a complete, working example using the modern **Arduino ESP32 Core 3.0+ A
 | **GPIO 6** | **IN2** | Direction Control Line 2 |
 | **GND** | **GND** | Ground (Must be shared with motor power supply GND) |
 
-## Complete Code Example  {#complete-code-example}
+## Complete Code Example  
 
 ```cpp
 // Define physical GPIO Pin Assignments
@@ -85,7 +85,7 @@ void stopMotor() {
 }
 ```
 
-## Code Architecture Breakdown {#code-architecture-breakdown}
+## Code Architecture Breakdown 
 
 - **`ledcAttach(MOTOR_PWM_PIN, 10000, 8)`**: Binds our speed pin to a 10 kHz signal with 8-bit resolution. We use a high 10 kHz frequency because lower frequencies (like 50 Hz) cause the physical motor windings to vibrate mechanically, creating an annoying high-pitched buzzing noise.
 - **`ledcWrite(MOTOR_PWM_PIN, speed)`**: Accepts a value from 0 (motor completely off) to 255 (motor receiving full power from your driver board).
@@ -256,7 +256,7 @@ To find the equations for the capacitor voltage Uc(t) and the circuit current i(
 
 Here is the step-by-step mathematical breakdown.
 
-## Step 1: Apply Kirchhoff's Voltage Law (KVL) {#step-1:-apply-kirchhoff's-voltage-law-(kvl)}
+## Step 1: Apply Kirchhoff's Voltage Law (KVL) 
 
 Looking at the loop in your circuit diagram, the total voltage supplied by the battery ![][image4] must equal the sum of the voltage drops across the resistor ![][image5] and the capacitor ![][image6]:
 
@@ -278,7 +278,7 @@ Substitute the current equation into Ohm's Law to get ![][image11] in terms of !
 
 ![][image13]
 
-## Step 3: Set up the Differential Equation {#step-3:-set-up-the-differential-equation}
+## Step 3: Set up the Differential Equation 
 
 Substitute ![][image14] back into our original KVL equation from Step 1:
 
@@ -290,7 +290,7 @@ To solve this, let's rearrange it into a standard first-order differential equat
 
 ![][image17]
 
-## Step 4: Integrate with Initial Conditions {#step-4:-integrate-with-initial-conditions}
+## Step 4: Integrate with Initial Conditions
 
 Assuming the capacitor is completely uncharged at the beginning (![][image18]), our initial condition is ![][image19].
 
@@ -308,7 +308,7 @@ Combine the natural logarithms:
 
 ![][image26]
 
-## Step 5: Solve for Capacitor Voltage ![][image27] {#step-5:-solve-for-capacitor-voltage}
+## Step 5: Solve for Capacitor Voltage ![][image27] 
 
 Eliminate the natural log by taking the exponential (![][image28]) of both sides:
 
@@ -322,7 +322,7 @@ Factor out ![][image32] to get your first target formula:
 
 ![][image33]
 
-## Step 6: Find the Current Function ![][image34] {#step-6:-find-the-current-function}
+## Step 6: Find the Current Function ![][image34]
 
 Now that we have ![][image35], we can determine the charging current equation by differentiating ![][image36] with respect to time, using the relation ![][image37]:
 
@@ -336,17 +336,17 @@ The capacitance ![][image41] cancels out, leaving you with your second target fo
 
 ![][image42]
 
-# **Discharging a capacitor** {#discharging-a-capacitor}
+# **Discharging a capacitor** 
 
 To find the transfer function for the **capacitor voltage during discharge**, we look at how the stored charge flows out of the capacitor through the resistor when no external power source is connected.
 
 Here is the analytical breakdown and derivation of the discharge equation.
 
-## 1\. Understanding the Circuit Behavior {#1.-understanding-the-circuit-behavior}
+## 1\. Understanding the Circuit Behavior 
 
 In a discharging RC circuit, the capacitor acts as a temporary voltage source. As current flows, energy is dissipated as heat in the resistor, causing both the voltage across the capacitor ![][image43] and the current ![][image44] to decay exponentially toward zero.
 
-## 2\. Setting up the Differential Equation {#2.-setting-up-the-differential-equation}
+## 2\. Setting up the Differential Equation 
 
 By applying **Kirchhoff's Voltage Law (KVL)** around the single closed loop:
 
@@ -362,7 +362,7 @@ Substituting Ohm's Law and the current equation into the KVL expression gives:
 
 ![][image48]
 
-## 3\. Solving the Differential Equation {#3.-solving-the-differential-equation}
+## 3\. Solving the Differential Equation 
 
 To isolate the variables for integration, rearrange the terms:
 
@@ -384,7 +384,7 @@ Multiplying by ![][image58] yields the standard time-domain equation for a disch
 
 ![][image59]
 
-## 4\. Calculating the Specific Time Constant (![][image60]) {#4.-calculating-the-specific-time-constant-()}
+## 4\. Calculating the Specific Time Constant (![][image60]) 
 
 The speed of the discharge depends entirely on the circuit's **time constant (![][image61])**, defined as:
 
@@ -396,7 +396,7 @@ Using the values provided in your schematic:
 * ![][image64]  
   ![][image65]
 
-## Final Discharge Equation {#final-discharge-equation}
+## Final Discharge Equation 
 
 Plugging your component values into the transfer function reveals exactly how the voltage drops over time:
 
@@ -406,7 +406,7 @@ Plugging your component values into the transfer function reveals exactly how th
 
  
 
-# **Continue Charge & Discharging a capacitor (PWM)** {#continue-charge-&-discharging-a-capacitor-(pwm)}
+# **Continue Charge & Discharging a capacitor (PWM)** 
 
 Under PWM mode, the charging cycle start from none 0V, below is the universal RC charging equation:
 
