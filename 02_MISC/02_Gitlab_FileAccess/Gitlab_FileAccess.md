@@ -705,3 +705,54 @@ Use the **fine-grained Personal Access Token** you created earlier, provided its
 That is a closer match to your goal than the Deploy Token. Fine-grained tokens are designed to limit access to selected resources and API permissions. [GitLab Docs](https://docs.gitlab.com/security/tokens/)
 
 If an operation fails, check its HTTP response and the fine-grained permission mapping before changing the token.
+
+## 4. Test your token
+
+You can define the token as a string variable directly in the PowerShell script. Replace `YOUR_GITLAB_TOKEN_HERE` with your actual token.
+
+### Updated PowerShell script
+
+#### GitLab configuration
+
+```powershell
+$projectId = "YOUR_NUMERIC_PROJECT_ID"
+$token = "YOUR_GITLAB_TOKEN_HERE"
+```
+
+#### Test repository access
+
+```powershell
+$uri = "[https://gitlab.com/api/v4/projects/$projectId/repository/tree?ref=main](https://gitlab.com/api/v4/projects/$projectId/repository/tree?ref=main)"
+
+try {
+    $result = Invoke-RestMethod -Uri $uri `
+        -Headers @{ "PRIVATE-TOKEN" = $token } `
+        -Method Get
+
+    Write-Host "Repository access successful."
+    $result | Select-Object name, type, path
+}
+catch {
+    Write-Host "Repository request failed."
+
+    if ($_.Exception.Response) {
+        Write-Host "HTTP status:" ([int]$_.Exception.Response.StatusCode)
+    }
+
+    Write-Host $_.ErrorDetails.Message
+}
+finally {
+    $token = $null
+}
+```
+
+### How to use it
+
+1. Replace `YOUR_NUMERIC_PROJECT_ID` with your GitLab project's numeric ID.
+2. Replace `YOUR_GITLAB_TOKEN_HERE` with your fine-grained Personal Access Token.
+3. Ensure `ref=main` matches your repository's branch.
+4. Run the script.
+
+### Security note
+
+Avoid saving this script with your real token in a shared folder or committing it to Git. The token is stored as plain text in the script and may remain in your PowerShell history or editor backups. Since this is a private repository, keep the token's permissions restricted to the operations your ESP32 needs.
