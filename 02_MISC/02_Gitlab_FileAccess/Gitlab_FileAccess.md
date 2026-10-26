@@ -722,10 +722,16 @@ $token = "YOUR_GITLAB_TOKEN_HERE"
 #### Test repository access
 
 ```powershell
-$uri = "[https://gitlab.com/api/v4/projects/$projectId/repository/tree?ref=main](https://gitlab.com/api/v4/projects/$projectId/repository/tree?ref=main)"
+# GitLab configuration
+$projectId = "YOUR_NUMERIC_PROJECT_ID"
+$token = "YOUR_GITLAB_TOKEN_HERE"
+
+# Test repository access
+$uri = "https://gitlab.com/api/v4/projects/$projectId/repository/tree?ref=main"
 
 try {
-    $result = Invoke-RestMethod -Uri $uri `
+    $result = Invoke-RestMethod `
+        -Uri $uri `
         -Headers @{ "PRIVATE-TOKEN" = $token } `
         -Method Get
 
