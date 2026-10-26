@@ -848,8 +848,8 @@ One caveat: I can't guarantee compilation against your exact `GitlabClient.h` wi
 
 These preserve spaces inside text lines and accept multiline input until `.END`. Set Serial Monitor line ending to `Newline` or `Both NL & CR`.
 
+
 ```cpp
-eplace your current readSerialLine(), readMultilineText(), and runTextUpload() with this code.
 
 static constexpr size_t MAX_TEXT_INPUT_BYTES = 8UL * 1024UL;
 static constexpr size_t MAX_TEXT_UPLOAD_BYTES = 256UL * 1024UL;
