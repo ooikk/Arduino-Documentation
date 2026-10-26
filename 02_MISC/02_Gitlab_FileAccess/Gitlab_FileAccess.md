@@ -569,6 +569,551 @@ Once repository listing and binary downloads work reliably, I recommend hardenin
 The key architectural benefit is that `GitlabClient` can now serve as a reusable repository-access layer for configuration files, images, JSON documents and future OTA manifests. The same pattern can also be extended to download firmware images, but firmware installation should have its own signature verification, partition management and rollback controls rather than treating a successful download as sufficient evidence that an image is safe to install.
 
 ---
+# Serial-to-GitLab Text Upload Command
+
+## Overview
+
+Let's add a serial-to-GitLab text upload command to your existing ESP32-S3 GitLab client. This avoids the LittleFS dependency entirely: you type the filename, destination path, and text directly into Serial Monitor, and the ESP32 commits the content to your private GitLab repository.
+
+For an existing GitLab file, we'll offer three choices:
+
+- **Overwrite** — replace the entire file with the text you enter.
+- **Append** — retrieve the existing text, add your new text to the end, and commit the combined content.
+- **Cancel** — leave the remote file unchanged.
+
+One important distinction: GitLab's Repository Files API does not provide a direct “append” operation. Append must be implemented as a read–combine–update sequence, which is appropriate for text files but can encounter a conflict if another client edits the same file simultaneously.
+
+### 1. Proposed serial interaction
+
+We'll add a new command named `TEXTUPLOAD` and keep your existing `UPLOAD` and `UPDATE` commands unchanged.
+
+Example session:
+
+```text
+> TEXTUPLOAD
+
+Enter GitLab file path (e.g. notes.txt):
+notes.txt
+
+Enter text line by line.
+Enter a line containing .END to finish.
+
+> ESP32-S3 GitLab text upload test
+> Created from Arduino Serial Monitor.
+> Testing append and overwrite.
+> .END
+
+Checking GitLab file: notes.txt
+File already exists.
+
+Choose action:
+  O = Overwrite
+  A = Append
+  C = Cancel
+> A
+
+Existing file downloaded.
+New content appended.
+Uploading combined content...
+
+[SUCCESS] GitLab commit created.
+File: notes.txt
+Operation: Append
+```
+
+For a new file, the command creates it without asking whether to overwrite or append.
+
+### 2. Add the serial input functions
+
+Add these helper functions to your `.ino` file. They collect input one line at a time, support multiline text, and use `.END` as the terminator.
+
+```cpp
+// Read one line from Serial Monitor.
+// Assumes Serial Monitor line ending is set to Newline
+// or Both NL & CR.
+static String readSerialLine(const char* prompt) {
+  Serial.print(prompt);
+
+  while (true) {
+    if (Serial.available()) {
+      String line = Serial.readStringUntil('\n');
+      line.trim();
+      return line;
+    }
+    delay(10);
+  }
+}
+
+// Collect multiline text until a line containing .END.
+// This example deliberately limits input to 8 KiB.
+static bool readMultilineText(String& content) {
+  static const size_t MAX_TEXT_BYTES = 8 * 1024;
+
+  content = "";
+
+  Serial.println("Enter text line by line.");
+  Serial.println("Enter a line containing .END to finish.");
+  Serial.println();
+
+  while (true) {
+    if (!Serial.available()) {
+      delay(10);
+      continue;
+    }
+
+    String line = Serial.readStringUntil('\n');
+    line.trim();
+
+    if (line == ".END") {
+      break;
+    }
+
+    // Preserve line boundaries.
+    if (content.length() + line.length() + 1 > MAX_TEXT_BYTES) {
+      Serial.println("[ERROR] Text exceeds 8 KiB limit.");
+      content = "";
+      return false;
+    }
+
+    content += line;
+    content += '\n';
+
+    Serial.print("> ");
+    Serial.println(line);
+  }
+
+  if (content.isEmpty()) {
+    Serial.println("[ERROR] No text entered.");
+    return false;
+  }
+
+  return true;
+}
+```
+
+Note: This simple version trims leading and trailing whitespace from each line. If you need to preserve spaces exactly, I can provide a byte-preserving serial input implementation instead.
+
+### 3. Add the `TEXTUPLOAD` workflow
+
+Your existing GitLab client already has methods for downloading files, creating files, and updating files. The following workflow reuses those capabilities.
+
+Because I don't have the exact current declarations from your `GitlabClient.h`, check the argument order of `uploadNewFile()`, `updateFile()`, and `downloadFileToPSRAM()` against your existing code before compiling.
+
+```cpp
+static void runTextUpload() {
+  if (!gitlab && !initializeGitlab()) {
+    return;
+  }
+
+  String remotePath = readSerialLine(
+      "Enter GitLab file path (e.g. notes.txt): ");
+
+  if (remotePath.isEmpty() ||
+      remotePath.startsWith("/") ||
+      remotePath.indexOf("..") >= 0) {
+    Serial.println("[ERROR] Invalid repository path.");
+    return;
+  }
+
+  String newText;
+  if (!readMultilineText(newText)) {
+    return;
+  }
+
+  Serial.printf("\nChecking GitLab file: %s\n",
+                remotePath.c_str());
+
+  uint8_t* oldData = nullptr;
+  size_t oldLen = 0;
+
+  bool exists = gitlab->downloadFileToPSRAM(
+      remotePath, &oldData, &oldLen);
+
+  String operation = "Create";
+  String finalText = newText;
+
+  if (exists) {
+    Serial.println("File already exists.");
+    Serial.println("O = Overwrite");
+    Serial.println("A = Append");
+    Serial.println("C = Cancel");
+
+    String choice = readSerialLine("> ");
+    choice.toUpperCase();
+
+    if (choice == "C") {
+      free(oldData);
+      Serial.println("[CANCELLED] Remote file unchanged.");
+      return;
+    }
+
+    if (choice == "O") {
+      operation = "Overwrite";
+    } else if (choice == "A") {
+      operation = "Append";
+
+      // Keep the old file content, then append new text.
+      finalText.reserve(oldLen + newText.length() + 1);
+      finalText = "";
+
+      finalText.concat(
+          reinterpret_cast<const char*>(oldData), oldLen);
+      finalText += newText;
+    } else {
+      free(oldData);
+      Serial.println("[ERROR] Invalid choice.");
+      return;
+    }
+
+    free(oldData);
+    oldData = nullptr;
+  } else {
+    // Important: only treat a confirmed HTTP 404 as
+    // "file not found". A 401, 403, timeout, or TLS error
+    // must abort instead of trying to create the file.
+    Serial.println(
+        "[ERROR] Could not read existing file or confirm "
+        "that it is absent.");
+    Serial.println(gitlab->lastError());
+    Serial.println(
+        "Check the HTTP status before enabling file creation.");
+    return;
+  }
+
+  Serial.printf("Operation: %s\n", operation.c_str());
+  Serial.printf("Final text size: %u bytes\n",
+                (unsigned)finalText.length());
+
+  // Call the appropriate existing GitLab API function here.
+  // For a confirmed existing file:
+  //
+  //   gitlab->updateFile(remotePath, ...);
+  //
+  // For a confirmed missing file:
+  //
+  //   gitlab->uploadNewFile(remotePath, ...);
+  //
+  // Use the exact signatures from GitlabClient.h.
+}
+```
+
+#### Important correction before using this workflow
+
+The example above intentionally stops rather than guessing that every download failure means the file is absent. Your current download method returns a Boolean and stores the failure in `lastError()`, so it needs a reliable way to distinguish HTTP 404 from other errors before supporting automatic creation.
+
+Also, the existing upload API uses Base64 encoding and has a configured 256 KiB limit. For this first version, the 8 KiB serial-input limit is conservative and suitable for text files.
+
+### 4. Connect the new command to your command parser
+
+In the section that processes the command entered in Serial Monitor, add:
+
+```cpp
+else if (command == "TEXTUPLOAD") {
+  runTextUpload();
+}
+```
+
+And add the following to your `HELP` output:
+
+```text
+TEXTUPLOAD  Prompt for text and create, overwrite, or append a GitLab file
+```
+
+### 5. One small change needed in `GitlabClient`
+
+To finish this cleanly, I recommend adding a method that explicitly checks whether a remote file exists and returns its HTTP status. That avoids accidentally interpreting an authentication failure as a missing file.
+
+Please paste the declarations from `GitlabClient.h` for these methods:
+
+```cpp
+downloadFileToPSRAM()
+uploadNewFile()
+updateFile()
+lastError()
+```
+
+With those exact signatures, I can provide the complete, compile-ready `runTextUpload()` implementation, including correct handling of a new file, overwrite, append, and cancellation.
+
+## Complete Code Implementation
+
+I'll make the workflow safe for your ESP32-S3 GitLab client: create when the file is confirmed missing, prompt before overwriting an existing file, append by combining the existing text with the new text, and cancel without modifying GitLab.
+
+One important implementation detail: your current `downloadFileToPSRAM()` returns only `true` or `false`. A failed download alone cannot tell us whether the file is missing (HTTP 404) or the request failed due to a token, TLS, or network problem. The implementation must distinguish those cases before creating a new file.
+
+Below is the implementation for your `.ino` file. It uses your existing `gitlab` object, `initializeGitlab()`, `downloadFileToPSRAM()`, and `lastError()`.
+
+One caveat: I can't guarantee compilation against your exact `GitlabClient.h` without seeing its method declarations. The two write calls near the end are marked for verification because their signatures aren't present in the conversation.
+
+### 1. Add the serial input helpers
+
+These preserve spaces inside text lines and accept multiline input until `.END`. Set Serial Monitor line ending to `Newline` or `Both NL & CR`.
+
+```cpp
+static bool readSerialLine(String& out, const char* prompt) {
+  Serial.print(prompt);
+
+  out = "";
+  while (true) {
+    if (Serial.available()) {
+      out = Serial.readStringUntil('\n');
+
+      // Remove only line-ending characters, not content spaces.
+      while (out.length() &&
+             (out[out.length() - 1] == '\r' ||
+              out[out.length() - 1] == '\n')) {
+        out.remove(out.length() - 1);
+      }
+      return true;
+    }
+    delay(5);
+  }
+}
+
+static bool readMultilineText(String& out) {
+  static const size_t MAX_TEXT_BYTES = 8 * 1024;
+
+  out = "";
+  Serial.println("Enter text, one line at a time.");
+  Serial.println("Enter .END on a line by itself to finish.");
+
+  while (true) {
+    String line;
+    if (!readSerialLine(line, "> ")) return false;
+
+    if (line == ".END") break;
+
+    if (out.length() + line.length() + 1 > MAX_TEXT_BYTES) {
+      Serial.println("[ERROR] Text exceeds 8 KiB.");
+      out = "";
+      return false;
+    }
+
+    out += line;
+    out += '\n';
+  }
+
+  if (out.isEmpty()) {
+    Serial.println("[ERROR] Empty text; nothing uploaded.");
+    return false;
+  }
+
+  return true;
+}
+```
+
+### 2. Add `runTextUpload()`
+
+This handles existing files and cancellation. It only treats an error as “file missing” when `lastError()` starts with `HTTP 404`.
+
+```cpp
+static void runTextUpload() {
+  if (!gitlab && !initializeGitlab()) {
+    Serial.println("[ERROR] GitLab client initialization failed.");
+    return;
+  }
+
+  String remotePath;
+  if (!readSerialLine(
+          remotePath,
+          "GitLab destination path (e.g. notes.txt): ")) {
+    return;
+  }
+
+  remotePath.trim();
+
+  if (remotePath.isEmpty() ||
+      remotePath.startsWith("/") ||
+      remotePath.indexOf("..") >= 0) {
+    Serial.println("[ERROR] Invalid repository path.");
+    return;
+  }
+
+  String newText;
+  if (!readMultilineText(newText)) return;
+
+  Serial.printf("\n[GitLab] Checking '%s'...\n",
+                remotePath.c_str());
+
+  uint8_t* oldData = nullptr;
+  size_t oldLen = 0;
+
+  const bool downloaded =
+      gitlab->downloadFileToPSRAM(remotePath, &oldData, &oldLen);
+
+  bool fileExists = downloaded;
+  bool fileMissing = false;
+
+  if (!downloaded) {
+    String err = gitlab->lastError();
+    Serial.printf("[GitLab] Read failed: %s\n", err.c_str());
+
+    // Your current client reports 404 using "HTTP 404: ...".
+    // Never treat 401, 403, TLS, or network errors as absence.
+    if (err.startsWith("HTTP 404")) {
+      fileMissing = true;
+    } else {
+      Serial.println(
+          "[ABORT] Cannot determine whether the remote file exists.");
+      return;
+    }
+  }
+
+  String finalText;
+  String operation;
+
+  if (fileMissing) {
+    Serial.println("Remote file does not exist.");
+    Serial.println("Create it? (Y/N)");
+
+    String choice;
+    readSerialLine(choice, "> ");
+    choice.trim();
+    choice.toUpperCase();
+
+    if (choice != "Y") {
+      Serial.println("[CANCELLED] No changes made.");
+      return;
+    }
+
+    finalText = newText;
+    operation = "Create";
+  } else {
+    Serial.printf("Remote file exists (%u bytes).\n",
+                  (unsigned)oldLen);
+    Serial.println("Choose action:");
+    Serial.println("  O = Overwrite");
+    Serial.println("  A = Append");
+    Serial.println("  C = Cancel");
+
+    String choice;
+    readSerialLine(choice, "> ");
+    choice.trim();
+    choice.toUpperCase();
+
+    if (choice == "C") {
+      free(oldData);
+      Serial.println("[CANCELLED] No changes made.");
+      return;
+    }
+
+    if (choice == "O") {
+      finalText = newText;
+      operation = "Overwrite";
+    } else if (choice == "A") {
+      // Ensure the existing content ends with a newline
+      // before appending, if it does not already.
+      const bool oldEndsWithNewline =
+          oldLen > 0 &&
+          (oldData[oldLen - 1] == '\n');
+
+      const size_t separatorBytes =
+          (oldLen > 0 && !oldEndsWithNewline) ? 1 : 0;
+
+      const size_t combinedLen =
+          oldLen + separatorBytes + newText.length();
+
+      if (combinedLen > 256 * 1024) {
+        free(oldData);
+        Serial.println(
+            "[ERROR] Combined text exceeds 256 KiB upload limit.");
+        return;
+      }
+
+      finalText.reserve(combinedLen);
+      if (oldLen > 0) {
+        finalText.concat(
+            reinterpret_cast<const char*>(oldData), oldLen);
+      }
+
+      if (separatorBytes) finalText += '\n';
+      finalText += newText;
+      operation = "Append";
+    } else {
+      free(oldData);
+      Serial.println("[ERROR] Invalid choice; no changes made.");
+      return;
+    }
+
+    free(oldData);
+    oldData = nullptr;
+  }
+
+  if (finalText.length() > 256 * 1024) {
+    Serial.println(
+        "[ERROR] Text exceeds configured 256 KiB upload limit.");
+    return;
+  }
+
+  Serial.printf("[GitLab] Operation: %s\n", operation.c_str());
+  Serial.printf("[GitLab] Final size: %u bytes\n",
+                (unsigned)finalText.length());
+
+  const uint8_t* bytes =
+      reinterpret_cast<const uint8_t*>(finalText.c_str());
+  const size_t length = finalText.length();
+
+  // VERIFY these calls against GitlabClient.h.
+  // The expected signature is:
+  // bool method(const String&, const uint8_t*, size_t);
+  bool success = false;
+
+  if (fileMissing) {
+    success = gitlab->uploadNewFile(remotePath, bytes, length);
+  } else {
+    success = gitlab->updateFile(remotePath, bytes, length);
+  }
+
+  if (success) {
+    Serial.printf("[SUCCESS] %s completed.\n",
+                  operation.c_str());
+    Serial.printf("GitLab path: %s\n", remotePath.c_str());
+  } else {
+    Serial.printf("[ERROR] GitLab %s failed: %s\n",
+                  operation.c_str(),
+                  gitlab->lastError().c_str());
+  }
+}
+```
+
+### 3. Register the command
+
+In your existing serial command dispatcher, add:
+
+```cpp
+else if (command == "TEXTUPLOAD") {
+  runTextUpload();
+}
+```
+
+Add this line to `HELP`:
+
+```text
+TEXTUPLOAD  Enter text and create, overwrite, or append a GitLab file
+```
+
+### 4. Test with a new file first
+
+For example:
+
+```text
+TEXTUPLOAD
+GitLab destination path (e.g. notes.txt): esp32-notes.txt
+Enter text, one line at a time.
+Enter .END on a line by itself to finish.
+> ESP32-S3 serial upload test
+> First line of notes.
+> Second line of notes.
+> .END
+Remote file does not exist.
+Create it? (Y/N)
+> Y
+```
+
+Then test appending another line, and finally test overwriting the file.
+
+Before compiling: please paste the declarations of `uploadNewFile()`, `updateFile()`, and `downloadFileToPSRAM()` from `GitlabClient.h`. The method argument order may differ, and I can then adjust the implementation to match your actual client exactly.
+
+---
 
 # Gitlab Path Access
 
