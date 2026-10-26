@@ -849,47 +849,90 @@ One caveat: I can't guarantee compilation against your exact `GitlabClient.h` wi
 These preserve spaces inside text lines and accept multiline input until `.END`. Set Serial Monitor line ending to `Newline` or `Both NL & CR`.
 
 ```cpp
+eplace your current readSerialLine(), readMultilineText(), and runTextUpload() with this code.
+
+static constexpr size_t MAX_TEXT_INPUT_BYTES = 8UL * 1024UL;
+static constexpr size_t MAX_TEXT_UPLOAD_BYTES = 256UL * 1024UL;
+
+// Read one complete serial line, preserving spaces within the line.
+// Serial Monitor should use "Newline" or "Both NL & CR".
 static bool readSerialLine(String& out, const char* prompt) {
+  static bool skipNextLF = false;
+
   Serial.print(prompt);
-
   out = "";
-  while (true) {
-    if (Serial.available()) {
-      out = Serial.readStringUntil('\n');
 
-      // Remove only line-ending characters, not content spaces.
-      while (out.length() &&
-             (out[out.length() - 1] == '\r' ||
-              out[out.length() - 1] == '\n')) {
-        out.remove(out.length() - 1);
-      }
+  while (true) {
+    if (!Serial.available()) {
+      delay(2);
+      continue;
+    }
+
+    const char c = static_cast<char>(Serial.read());
+
+    // If the previous line ended with CR, consume the LF in CRLF.
+    if (skipNextLF) {
+      skipNextLF = false;
+      if (c == '\n') continue;
+    }
+
+    if (c == '\n') {
       return true;
     }
-    delay(5);
+
+    if (c == '\r') {
+      skipNextLF = true;
+      return true;
+    }
+
+    if (!out.concat(c)) {
+      Serial.println("\n[ERROR] Not enough memory for serial input.");
+      return false;
+    }
   }
 }
 
+// Read multiline text until .END. Enter .CANCEL to abort.
 static bool readMultilineText(String& out) {
-  static const size_t MAX_TEXT_BYTES = 8 * 1024;
-
   out = "";
+
+  if (!out.reserve(MAX_TEXT_INPUT_BYTES + 1)) {
+    Serial.println("[ERROR] Cannot reserve memory for text input.");
+    return false;
+  }
+
   Serial.println("Enter text, one line at a time.");
   Serial.println("Enter .END on a line by itself to finish.");
+  Serial.println("Enter .CANCEL on a line by itself to abort.");
 
   while (true) {
     String line;
-    if (!readSerialLine(line, "> ")) return false;
-
-    if (line == ".END") break;
-
-    if (out.length() + line.length() + 1 > MAX_TEXT_BYTES) {
-      Serial.println("[ERROR] Text exceeds 8 KiB.");
-      out = "";
+    if (!readSerialLine(line, "> ")) {
       return false;
     }
 
-    out += line;
-    out += '\n';
+    if (line == ".END") {
+      break;
+    }
+
+    if (line == ".CANCEL") {
+      out = "";
+      Serial.println("[CANCELLED] Text input aborted.");
+      return false;
+    }
+
+    // Each input line is stored with a trailing LF.
+    if (line.length() + 1 > MAX_TEXT_INPUT_BYTES - out.length()) {
+      out = "";
+      Serial.println("[ERROR] Text exceeds the 8 KiB input limit.");
+      return false;
+    }
+
+    if (!out.concat(line) || !out.concat('\n')) {
+      out = "";
+      Serial.println("[ERROR] Memory allocation failed while building text.");
+      return false;
+    }
   }
 
   if (out.isEmpty()) {
@@ -915,11 +958,16 @@ static void runTextUpload() {
   String remotePath;
   if (!readSerialLine(
           remotePath,
-          "GitLab destination path (e.g. notes.txt): ")) {
+          "GitLab destination path (e.g. notes.txt; or .CANCEL): ")) {
     return;
   }
 
   remotePath.trim();
+
+  if (remotePath == ".CANCEL") {
+    Serial.println("[CANCELLED] No changes made.");
+    return;
+  }
 
   if (remotePath.isEmpty() ||
       remotePath.startsWith("/") ||
@@ -929,10 +977,16 @@ static void runTextUpload() {
   }
 
   String newText;
-  if (!readMultilineText(newText)) return;
+  if (!readMultilineText(newText)) {
+    return;
+  }
 
-  Serial.printf("\n[GitLab] Checking '%s'...\n",
-                remotePath.c_str());
+  if (newText.length() > MAX_TEXT_UPLOAD_BYTES) {
+    Serial.println("[ERROR] Text exceeds the 256 KiB upload limit.");
+    return;
+  }
+
+  Serial.printf("\n[GitLab] Checking '%s'...\n", remotePath.c_str());
 
   uint8_t* oldData = nullptr;
   size_t oldLen = 0;
@@ -940,33 +994,37 @@ static void runTextUpload() {
   const bool downloaded =
       gitlab->downloadFileToPSRAM(remotePath, &oldData, &oldLen);
 
-  bool fileExists = downloaded;
   bool fileMissing = false;
 
   if (!downloaded) {
-    String err = gitlab->lastError();
+    const String err = gitlab->lastError();
     Serial.printf("[GitLab] Read failed: %s\n", err.c_str());
 
-    // Your current client reports 404 using "HTTP 404: ...".
-    // Never treat 401, 403, TLS, or network errors as absence.
+    // Only the client's explicit HTTP 404 is treated as a candidate
+    // for a new file. A 404 may also mean branch/project/access trouble.
     if (err.startsWith("HTTP 404")) {
       fileMissing = true;
     } else {
       Serial.println(
-          "[ABORT] Cannot determine whether the remote file exists.");
+          "[ABORT] Cannot verify the remote file. No write attempted.");
       return;
     }
   }
 
   String finalText;
   String operation;
+  String commitMessage;
 
   if (fileMissing) {
-    Serial.println("Remote file does not exist.");
-    Serial.println("Create it? (Y/N)");
+    Serial.println(
+        "The remote file returned HTTP 404. This may mean it is missing, "
+        "but can also indicate a branch/project/access issue.");
+    Serial.println("Attempt to create this path? (Y/N)");
 
     String choice;
-    readSerialLine(choice, "> ");
+    if (!readSerialLine(choice, "> ")) {
+      return;
+    }
     choice.trim();
     choice.toUpperCase();
 
@@ -975,18 +1033,31 @@ static void runTextUpload() {
       return;
     }
 
-    finalText = newText;
+    // Copy new content and verify the copy succeeded.
+    if (!finalText.reserve(newText.length() + 1) ||
+        !finalText.concat(newText) ||
+        finalText.length() != newText.length()) {
+      Serial.println("[ERROR] Could not prepare new file content.");
+      return;
+    }
+
     operation = "Create";
+    commitMessage = "Create text file from ESP32-S3";
   } else {
-    Serial.printf("Remote file exists (%u bytes).\n",
-                  (unsigned)oldLen);
+    // A successful download may contain zero bytes; that means the file
+    // exists but is empty. downloadFileToPSRAM() must support that case.
+    Serial.printf("Remote file exists (%u bytes).\n", (unsigned)oldLen);
     Serial.println("Choose action:");
     Serial.println("  O = Overwrite");
     Serial.println("  A = Append");
     Serial.println("  C = Cancel");
 
     String choice;
-    readSerialLine(choice, "> ");
+    if (!readSerialLine(choice, "> ")) {
+      free(oldData);
+      return;
+    }
+
     choice.trim();
     choice.toUpperCase();
 
@@ -997,40 +1068,72 @@ static void runTextUpload() {
     }
 
     if (choice == "O") {
-      finalText = newText;
+      if (!finalText.reserve(newText.length() + 1) ||
+          !finalText.concat(newText) ||
+          finalText.length() != newText.length()) {
+        free(oldData);
+        Serial.println("[ERROR] Could not prepare overwrite content.");
+        return;
+      }
+
       operation = "Overwrite";
+      commitMessage = "Overwrite text file from ESP32-S3";
     } else if (choice == "A") {
-      // Ensure the existing content ends with a newline
-      // before appending, if it does not already.
+      // A separator is needed only if the existing file is non-empty
+      // and does not already end with LF.
       const bool oldEndsWithNewline =
-          oldLen > 0 &&
-          (oldData[oldLen - 1] == '\n');
+          oldLen > 0 && oldData[oldLen - 1] == '\n';
 
       const size_t separatorBytes =
           (oldLen > 0 && !oldEndsWithNewline) ? 1 : 0;
 
-      const size_t combinedLen =
-          oldLen + separatorBytes + newText.length();
-
-      if (combinedLen > 256 * 1024) {
+      // Check additions without allowing size_t overflow.
+      if (oldLen > MAX_TEXT_UPLOAD_BYTES ||
+          separatorBytes > MAX_TEXT_UPLOAD_BYTES - oldLen ||
+          newText.length() >
+              MAX_TEXT_UPLOAD_BYTES - oldLen - separatorBytes) {
         free(oldData);
         Serial.println(
-            "[ERROR] Combined text exceeds 256 KiB upload limit.");
+            "[ERROR] Combined file exceeds the 256 KiB upload limit.");
         return;
       }
 
-      finalText.reserve(combinedLen);
-      if (oldLen > 0) {
-        finalText.concat(
-            reinterpret_cast<const char*>(oldData), oldLen);
+      const size_t combinedLen =
+          oldLen + separatorBytes + newText.length();
+
+      if (!finalText.reserve(combinedLen + 1)) {
+        free(oldData);
+        Serial.println("[ERROR] Cannot allocate combined text buffer.");
+        return;
       }
 
-      if (separatorBytes) finalText += '\n';
-      finalText += newText;
+      bool built = true;
+
+      if (oldLen > 0) {
+        built = finalText.concat(
+            reinterpret_cast<const char*>(oldData),
+            static_cast<unsigned int>(oldLen));
+      }
+
+      if (built && separatorBytes) {
+        built = finalText.concat('\n');
+      }
+
+      if (built) {
+        built = finalText.concat(newText);
+      }
+
+      if (!built || finalText.length() != combinedLen) {
+        free(oldData);
+        Serial.println("[ERROR] Failed to build complete appended text.");
+        return;
+      }
+
       operation = "Append";
+      commitMessage = "Append text from ESP32-S3";
     } else {
       free(oldData);
-      Serial.println("[ERROR] Invalid choice; no changes made.");
+      Serial.println("[CANCELLED] Invalid choice; no changes made.");
       return;
     }
 
@@ -1038,34 +1141,51 @@ static void runTextUpload() {
     oldData = nullptr;
   }
 
-  if (finalText.length() > 256 * 1024) {
-    Serial.println(
-        "[ERROR] Text exceeds configured 256 KiB upload limit.");
+  // Final safety check before sending data to GitLab.
+  const size_t finalLen = finalText.length();
+
+  if (finalLen == 0) {
+    Serial.println("[ERROR] Final content is empty; upload cancelled.");
     return;
   }
 
-  Serial.printf("[GitLab] Operation: %s\n", operation.c_str());
-  Serial.printf("[GitLab] Final size: %u bytes\n",
-                (unsigned)finalText.length());
+  if (finalLen > MAX_TEXT_UPLOAD_BYTES) {
+    Serial.println("[ERROR] Final content exceeds 256 KiB.");
+    return;
+  }
+
+  Serial.printf("\n[GitLab] Operation: %s\n", operation.c_str());
+  Serial.printf("[GitLab] Destination: %s\n", remotePath.c_str());
+  Serial.printf("[GitLab] Final size: %u bytes\n", (unsigned)finalLen);
+  Serial.println("Commit these changes? (Y/N)");
+
+  String confirm;
+  if (!readSerialLine(confirm, "> ")) {
+    return;
+  }
+  confirm.trim();
+  confirm.toUpperCase();
+
+  if (confirm != "Y") {
+    Serial.println("[CANCELLED] No GitLab write attempted.");
+    return;
+  }
 
   const uint8_t* bytes =
       reinterpret_cast<const uint8_t*>(finalText.c_str());
-  const size_t length = finalText.length();
 
-  // VERIFY these calls against GitlabClient.h.
-  // The expected signature is:
-  // bool method(const String&, const uint8_t*, size_t);
   bool success = false;
 
   if (fileMissing) {
-    success = gitlab->uploadNewFile(remotePath, bytes, length);
+    success = gitlab->uploadNewFile(
+        remotePath, bytes, finalLen, commitMessage);
   } else {
-    success = gitlab->updateFile(remotePath, bytes, length);
+    success = gitlab->updateFile(
+        remotePath, bytes, finalLen, commitMessage);
   }
 
   if (success) {
-    Serial.printf("[SUCCESS] %s completed.\n",
-                  operation.c_str());
+    Serial.printf("[SUCCESS] %s completed.\n", operation.c_str());
     Serial.printf("GitLab path: %s\n", remotePath.c_str());
   } else {
     Serial.printf("[ERROR] GitLab %s failed: %s\n",
@@ -1075,7 +1195,136 @@ static void runTextUpload() {
 }
 ```
 
-### 3. Register the command
+### 3. Modify GitlabClient.cpp to support empty files
+
+In `downloadFileToPSRAM()`, find this block near the end:
+
+```cpp
+if (used == 0) {
+  free(buffer);
+  setError("Downloaded file is empty.");
+  return false;
+}
+```
+
+Replace it with:
+
+```cpp
+
+if (used == 0) {
+  // HTTP 200 with zero bytes is a successful download of an empty file.
+  // Return the allocated buffer so the caller can free() it normally.
+  *outBuffer = buffer;
+  *outLen = 0;
+
+  Serial.println("[GitLab] Download complete: empty file (0 bytes).");
+  return true;
+}
+
+```
+
+Keep the existing length-mismatch check immediately before this block. That check ensures a response declaring a nonzero content length cannot be mistaken for a valid empty file.
+
+This change lets `runTextUpload()` distinguish an existing zero-byte file from a failed download.
+
+### 4. Fix JSON newline escaping
+
+In `GitlabClient.cpp`, find `jsonEscape()` and replace this line:
+
+```cpp
+case '\n': out += "\n"; break;
+```
+
+with:
+
+```cpp
+case '\n': out += "\\n"; break;
+```
+
+The distinction matters: JSON strings must encode line feeds as the two characters `\` and `n`; an unescaped literal newline makes the JSON invalid.
+
+For completeness, the relevant switch cases should look like this:
+
+```cpp
+
+switch (c) {
+  case '"':  out += "\\\""; break;
+  case '\\': out += "\\\\"; break;
+  case '\b': out += "\\b"; break;
+  case '\f': out += "\\f"; break;
+  case '\n': out += "\\n"; break;
+  case '\r': out += "\\r"; break;
+  case '\t': out += "\\t"; break;
+
+  default:
+    if (static_cast<uint8_t>(c) < 0x20) {
+      const char hex[] = "0123456789ABCDEF";
+      out += "\\u00";
+      out += hex[(static_cast<uint8_t>(c) >> 4) & 0x0F];
+      out += hex[static_cast<uint8_t>(c) & 0x0F];
+    } else {
+      out += c;
+    }
+}
+```
+
+### 5. Recommended improvement to `writeFileRequest()`
+
+Your current `writeFileRequest()` correctly enforces the 256 KiB input limit before Base64 encoding. However, Base64 expands the input to approximately 4/3 of its original size, and the JSON payload is built in a separate `String`. On an ESP32-S3, that can create significant memory pressure.
+
+At minimum, check the payload allocation before using it. Replace the existing payload-building section with this:
+
+```cpp
+
+String payload;
+const size_t payloadCapacity =
+    encodedLen + commitMessage.length() +
+    _config.branch.length() + 128;
+
+if (!payload.reserve(payloadCapacity)) {
+  free(encoded);
+  setError("Memory allocation failed for JSON upload payload.");
+  return false;
+}
+
+payload += "{\"branch\":\"";
+payload += jsonEscape(_config.branch);
+payload += "\",\"commit_message\":\"";
+payload += jsonEscape(commitMessage);
+payload += "\",\"content\":\"";
+payload += encoded;
+payload += "\",\"encoding\":\"base64\"}";
+
+free(encoded);
+encoded = nullptr;
+
+// Verify the assembled payload is complete before sending it.
+if (payload.length() == 0 ||
+    payload.length() > payloadCapacity) {
+  setError("Failed to construct JSON upload payload.");
+  return false;
+}
+
+```
+
+This check helps detect allocation failure, although `String` concatenation does not provide a complete guarantee that every subsequent operation succeeds. For larger uploads, a future improvement would be to stream the encoded payload rather than holding the source, Base64 output, and JSON payload in memory simultaneously.
+
+### 6. Integration checklist
+
+Before compiling, make sure the following are true:
+- [ ] The corrected `readSerialLine()` replaces the original version.
+- [ ] `readMultilineText()` and `runTextUpload()` replace the old implementations.
+- [ ] The empty-file change is applied to `downloadFileToPSRAM()`.
+- [ ] `jsonEscape()` correctly escapes newlines.
+- [ ] The existing `uploadNewFile()` and `updateFile()` declarations remain unchanged.
+- [ ] The command dispatcher recognizes `TEXTUPLOAD`.
+- [ ] The Serial Monitor line ending is set to **Newline** or Both **NL** & **CR**.
+
+One clarification on the payload allocation suggestion: checking `payload.length() > payloadCapacity` is not a reliable way to detect a failed `String` allocation, because `String` can grow beyond its reserved capacity. Keep the `reserve()` check, but don't treat that length comparison as a definitive allocation-failure test.
+
+
+
+### 7. Register the command
 
 In your existing serial command dispatcher, add:
 
@@ -1091,7 +1340,19 @@ Add this line to `HELP`:
 TEXTUPLOAD  Enter text and create, overwrite, or append a GitLab file
 ```
 
-### 4. Test with a new file first
+### 8. Test with a new file first
+
+**Suggested test sequence**
+
+1. Create a new `notes.txt` containing two lines.
+2. Run `TEXTUPLOAD` again and choose `O` to overwrite it.
+3. Run it again and choose `A` to append a third line.
+4. Download `notes.txt` with your existing `GET` command and verify the contents.
+5. Try `C` and `.CANCEL` and confirm no GitLab write occurs.
+6. Test a zero-byte file and verify that append works.
+7. Try an invalid destination path and a combined file exceeding 256 KiB.
+
+One final limitation remains: a `404` can mean the file is missing, but it can also indicate an invalid branch or inaccessible resource. The code asks before attempting creation, and the GitLab API's response to that write remains the final authority.
 
 For example:
 
@@ -1108,6 +1369,7 @@ Remote file does not exist.
 Create it? (Y/N)
 > Y
 ```
+
 
 Then test appending another line, and finally test overwriting the file.
 
