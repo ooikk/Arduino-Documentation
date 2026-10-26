@@ -1275,36 +1275,32 @@ Your current `writeFileRequest()` correctly enforces the 256 KiB input limit bef
 At minimum, check the payload allocation before using it. Replace the existing payload-building section with this:
 
 ```cpp
+  String payload;
+  const size_t payloadCapacity =
+      encodedLen + commitMessage.length() +
+      _config.branch.length() + 128;
 
-String payload;
-const size_t payloadCapacity =
-    encodedLen + commitMessage.length() +
-    _config.branch.length() + 128;
+  if (!payload.reserve(payloadCapacity)) {
+    free(encoded);
+    setError("Memory allocation failed for JSON upload payload.");
+    return false;
+  }
 
-if (!payload.reserve(payloadCapacity)) {
+  payload += "{\"branch\":\"";
+  payload += jsonEscape(_config.branch);
+  payload += "\",\"commit_message\":\"";
+  payload += jsonEscape(commitMessage);
+  payload += "\",\"content\":\"";
+  payload += encoded;
+  payload += "\",\"encoding\":\"base64\"}";
+
   free(encoded);
-  setError("Memory allocation failed for JSON upload payload.");
-  return false;
-}
+  encoded = nullptr;
 
-payload += "{\"branch\":\"";
-payload += jsonEscape(_config.branch);
-payload += "\",\"commit_message\":\"";
-payload += jsonEscape(commitMessage);
-payload += "\",\"content\":\"";
-payload += encoded;
-payload += "\",\"encoding\":\"base64\"}";
-
-free(encoded);
-encoded = nullptr;
-
-// Verify the assembled payload is complete before sending it.
-if (payload.length() == 0 ||
-    payload.length() > payloadCapacity) {
-  setError("Failed to construct JSON upload payload.");
-  return false;
-}
-
+  if (payload.length() == 0) {
+    setError("Failed to construct JSON upload payload.");
+    return false;
+  }
 ```
 
 This check helps detect allocation failure, although `String` concatenation does not provide a complete guarantee that every subsequent operation succeeds. For larger uploads, a future improvement would be to stream the encoded payload rather than holding the source, Base64 output, and JSON payload in memory simultaneously.
