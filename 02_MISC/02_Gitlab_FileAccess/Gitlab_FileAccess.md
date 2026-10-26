@@ -691,14 +691,7 @@ One useful detail: the numeric project ID is not a secret. It identifies the pro
 
 For your ESP32-S3 application, the overall model is:
 
-\[
-\text{Request} = \text{Server} + \text{Project ID} + \text{File path} + \text{Branch} + \text{Token}
-\]
-
-\[
-\text{Request} =
-\text{Server}+\text{Project ID}+\text{File path}+\text{Branch}+\text{Token}
-\]
+**Request = Server + Project_ID + File_Path + Branch + Token**
 
 Each part has a distinct role, and GitLab uses them together to determine whether it can return or modify the requested file.
 
