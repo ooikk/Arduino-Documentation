@@ -587,13 +587,14 @@ GET text.txt
 Your code constructs this URL:
 
 ```text
-[https://gitlab.com/api/v4/projects/88068597/repository/files/text.txt/raw?ref=main](https://gitlab.com/api/v4/projects/88068597/repository/files/text.txt/raw?ref=main)
+https://gitlab.com/api/v4/projects/12345678/repository/files/text.txt/raw?ref=main
 ```
+where `PROJECT_ID = 12345678`
 
 ### 1. SERVER
 
 ```text
-[https://gitlab.com](https://gitlab.com)
+https://gitlab.com
 ```
 
 Connect to GitLab's HTTPS server.
@@ -601,10 +602,10 @@ Connect to GitLab's HTTPS server.
 ### 2. PROJECT IDENTIFIER
 
 ```text
-/api/v4/projects/88068597
+/api/v4/projects/12345678
 ```
 
-Select the GitLab project whose numeric ID is `88068597`.
+Select the GitLab project whose numeric ID is `12345678`.
 
 ### 3. FILE IDENTIFIER
 
@@ -648,10 +649,10 @@ For example, your fine-grained token can be restricted to `file-repository/main-
 Your `.ino` file sets the project configuration:
 
 ```cpp
-static const char* PROJECT_ID = "88068597";
+static const char* PROJECT_ID = "12345678";
 static const char* BRANCH = "main";
 
-cfg.gitlabUrl = "[https://gitlab.com](https://gitlab.com)";
+cfg.gitlabUrl = "https://gitlab.com";
 cfg.projectId = PROJECT_ID;
 cfg.branch = BRANCH;
 ```
@@ -692,6 +693,11 @@ For your ESP32-S3 application, the overall model is:
 
 \[
 \text{Request} = \text{Server} + \text{Project ID} + \text{File path} + \text{Branch} + \text{Token}
+\]
+
+\[
+\text{Request} =
+\text{Server}+\text{Project ID}+\text{File path}+\text{Branch}+\text{Token}
 \]
 
 Each part has a distinct role, and GitLab uses them together to determine whether it can return or modify the requested file.
