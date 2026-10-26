@@ -1,48 +1,4 @@
-# Contents
-
-[**Control DC motor with L298N using LEDC	6**](#control-dc-motor-with-l298n-using-ledc)
-
-[Hardware Connection Guide	6](#hardware-connection-guide)
-
-[Complete Code Example	6](#complete-code-example)
-
-[Code Architecture Breakdown	8](#code-architecture-breakdown)
-
-[**Control DC motor with L298N using MCPWM	10**](#control-dc-motor-with-l298n-using-mcpwm)
-
-[Hardware Connection Guide	10](#hardware-connection-guide-1)
-
-[Code Example: MCPWM Open-Loop Motor Control	10](#code-example:-mcpwm-open-loop-motor-control)
-
-[Why this is highly efficient:	13](#why-this-is-highly-efficient:)
-
-[**Charging a capacitor	14**](#charging-a-capacitor)
-
-[Step 1: Apply Kirchhoff's Voltage Law (KVL)	14](#step-1:-apply-kirchhoff's-voltage-law-\(kvl\))
-
-[Step 3: Set up the Differential Equation	14](#step-3:-set-up-the-differential-equation)
-
-[Step 4: Integrate with Initial Conditions	15](#step-4:-integrate-with-initial-conditions)
-
-[Step 5: Solve for Capacitor Voltage	15](#step-5:-solve-for-capacitor-voltage)
-
-[Step 6: Find the Current Function	16](#step-6:-find-the-current-function)
-
-[**Discharging a capacitor	17**](#discharging-a-capacitor)
-
-[1\. Understanding the Circuit Behavior	17](#1.-understanding-the-circuit-behavior)
-
-[2\. Setting up the Differential Equation	17](#2.-setting-up-the-differential-equation)
-
-[3\. Solving the Differential Equation	17](#3.-solving-the-differential-equation)
-
-[4\. Calculating the Specific Time Constant ()	18](#4.-calculating-the-specific-time-constant-\(\))
-
-[Final Discharge Equation	18](#final-discharge-equation)
-
-[**Continue Charge & Discharging a capacitor (PWM)	19**](#continue-charge-&-discharging-a-capacitor-\(pwm\))
-
-# Control DC motor with L298N using LEDC {#control-dc-motor-with-l298n-using-ledc}
+# Control DC motor with L298N using LEDC
 
 To control a DC motor's direction and speed on an ESP32-S3, you need an external **H-bridge motor driver** (such as the L298N, TB6612FNG, or DRV8833). The ESP32-S3 cannot drive a motor directly from its GPIO pins because motors demand far more current than the chip can provide.
 
@@ -65,119 +21,80 @@ Here is a complete, working example using the modern **Arduino ESP32 Core 3.0+ A
 
 ## Complete Code Example  {#complete-code-example}
 
+```cpp
 // Define physical GPIO Pin Assignments
-
 const int MOTOR\_PWM\_PIN \= 4; // Speed control pin
-
 const int MOTOR\_IN1\_PIN \= 5; // Direction pin 1
-
 const int MOTOR\_IN2\_PIN \= 6; // Direction pin 2
 
 // PWM Configuration Properties (Core 3.0+ style)
-
 const int PWM\_FREQ \= 10000;  // 10 kHz frequency (prevents audible motor whining)
-
 const int PWM\_RES \= 8;       // 8-bit resolution (Speed range: 0 to 255\)
 
 void setup() {
-
   // Initialize standard digital outputs for direction control
-
   pinMode(MOTOR\_IN1\_PIN, OUTPUT);
-
   pinMode(MOTOR\_IN2\_PIN, OUTPUT);
 
   // Initialize PWM on the speed pin using the Core 3.0+ API
-
   // This automatically sets the pin direction and handles channel routing
-
   ledcAttach(MOTOR\_PWM\_PIN, PWM\_FREQ, PWM\_RES);
 
   // Ensure the motor is completely stopped at startup
-
   stopMotor();
-
 }
 
 void loop() {
 
   // 1\. Spin Forward and gradually accelerate to full speed
-
   setDirectionForward();
 
   for (int speed \= 0; speed \<= 255; speed++) {
-
     ledcWrite(MOTOR\_PWM\_PIN, speed);
-
     delay(15); // Smooth acceleration over \~3.8 seconds
-
   }
-
-
   delay(2000); // Maintain full speed forward for 2 seconds
-
   // 2\. Safely brake the motor before changing directions
-
   stopMotor();
-
   delay(1000); // Rest for 1 second
-
   // 3\. Spin Backward at a fixed medium speed (roughly 60% power)
-
   setDirectionBackward();
-
   ledcWrite(MOTOR\_PWM\_PIN, 150); 
-
   delay(3000); // Run backward for 3 seconds
-
   // 4\. Stop again before restarting the loop
-
   stopMotor();
-
   delay(2000); // Rest for 2 seconds
-
 }
 
 // \--- Motor Control Helper Functions \---
-
 void setDirectionForward() {
-
   digitalWrite(MOTOR\_IN1\_PIN, HIGH);
-
   digitalWrite(MOTOR\_IN2\_PIN, LOW);
-
 }
 
 void setDirectionBackward() {
-
   digitalWrite(MOTOR\_IN1\_PIN, LOW);
-
   digitalWrite(MOTOR\_IN2\_PIN, HIGH);
-
 }
 
 void stopMotor() {
-
   // Pulling both direction lines to the same state creates an electronic brake
-
   digitalWrite(MOTOR\_IN1\_PIN, LOW);
-
   digitalWrite(MOTOR\_IN2\_PIN, LOW);
-
   ledcWrite(MOTOR\_PWM\_PIN, 0); // Set speed duty cycle to zero
-
 }
+```
 
 ## Code Architecture Breakdown {#code-architecture-breakdown}
 
-* **ledcAttach(MOTOR\_PWM\_PIN, 10000, 8\)**: Binds our speed pin to a 10 kHz signal with 8-bit resolution. We use a high 10 kHz frequency because lower frequencies (like 50 Hz) cause the physical motor windings to vibrate mechanically, creating an annoying high-pitched buzzing noise.  
-* **ledcWrite(MOTOR\_PWM\_PIN, speed)**: Accepts a value from 0 (motor completely off) to 255 (motor receiving full power from your driver board).  
-* **The Direction Truth Table**: H-bridges read the relative state of IN1 and IN2 to determine how current flows through the motor:  
-  * HIGH / LOW \-\> Current flows one way (Forward).  
-  * LOW / HIGH \-\> Current reverses (Backward).  
-  * LOW / LOW \-\> Motor stops immediately (Short-brake).
+- **`ledcAttach(MOTOR_PWM_PIN, 10000, 8)`**: Binds our speed pin to a 10 kHz signal with 8-bit resolution. We use a high 10 kHz frequency because lower frequencies (like 50 Hz) cause the physical motor windings to vibrate mechanically, creating an annoying high-pitched buzzing noise.
+- **`ledcWrite(MOTOR_PWM_PIN, speed)`**: Accepts a value from 0 (motor completely off) to 255 (motor receiving full power from your driver board).
+- **The Direction Truth Table**: H-bridges read the relative state of IN1 and IN2 to determine how current flows through the motor:
+  - HIGH / LOW -> Current flows one way (Forward).
+  - LOW / HIGH -> Current reverses (Backward).
+  - LOW / LOW -> Motor stops immediately (Short-brake).
 
-# Control DC motor with L298N using MCPWM {#control-dc-motor-with-l298n-using-mcpwm}
+# Control DC motor with L298N using MCPWM 
 
 Using **MCPWM** (Motor Control PWM) instead of LEDC is the ideal choice for driving an H-Bridge like the **L298N**.
 
@@ -185,7 +102,7 @@ While LEDC is designed for simple tasks like LED dimming, MCPWM is a dedicated h
 
 Because MCPWM is an advanced hardware peripheral, it is typically written using Espressif's official component drivers (IDF style), which work seamlessly within the Arduino IDE for the ESP32-S3.
 
-## Hardware Connection Guide {#hardware-connection-guide-1}
+## Hardware Connection Guide 
 
 The wiring remains identical to the previous example. The L298N requires a speed pin (ENA) and two direction pins (IN1, IN2).
 
@@ -196,145 +113,146 @@ The wiring remains identical to the previous example. The L298N requires a speed
 | **GPIO 6** | **IN2** | Direction Control Line 2 |
 | **GND** | **GND** | Common Ground |
 
-## Code Example: MCPWM Open-Loop Motor Control {#code-example:-mcpwm-open-loop-motor-control}
+## Code Example: MCPWM Open-Loop Motor Control 
 
 This code initializes the MCPWM peripheral using the modern **ESP-IDF v5.0+ / Arduino Core 3.0+** driver structure to control the speed via the ENA pin, while using standard GPIOs for direction.
 
-\#include "driver/mcpwm\_prelude.h"
+```cpp
+#include "driver/mcpwm_prelude.h"
 
-// Pin Assignments  
-const int MOTOR\_PWM\_PIN \= 4; // ENA on L298N  
-const int MOTOR\_IN1\_PIN \= 5; // IN1 on L298N  
-const int MOTOR\_IN2\_PIN \= 6; // IN2 on L298N
+// Pin Assignments
+const int MOTOR_PWM_PIN = 4; // ENA on L298N
+const int MOTOR_IN1_PIN = 5; // IN1 on L298N
+const int MOTOR_IN2_PIN = 6; // IN2 on L298N
 
-// MCPWM Hardware Handles  
-mcpwm\_timer\_handle\_t timer \= NULL;  
-mcpwm\_operator\_handle\_t oper \= NULL;  
-mcpwm\_cmpr\_handle\_t comparator \= NULL;  
-mcpwm\_gen\_handle\_t generator \= NULL;
+// MCPWM Hardware Handles
+mcpwm_timer_handle_t timer = NULL;
+mcpwm_operator_handle_t oper = NULL;
+mcpwm_cmpr_handle_t comparator = NULL;
+mcpwm_gen_handle_t generator = NULL;
 
-// Global settings  
-const uint32\_t PWM\_FREQ \= 10000;       // 10 kHz frequency  
-const uint32\_t TIMER\_RESOLUTION \= 10000000; // 10 MHz internal clock resolution  
-const uint32\_t PWM\_PERIOD \= TIMER\_RESOLUTION / PWM\_FREQ; // Total ticks per cycle (1000 ticks)
+// Global settings
+const uint32_t PWM_FREQ = 10000;       // 10 kHz frequency
+const uint32_t TIMER_RESOLUTION = 10000000; // 10 MHz internal clock resolution
+const uint32_t PWM_PERIOD = TIMER_RESOLUTION / PWM_FREQ; // Total ticks per cycle (1000 ticks)
 
-void setup() {  
-  // 1\. Configure standard direction pins  
-  pinMode(MOTOR\_IN1\_PIN, OUTPUT);  
-  pinMode(MOTOR\_IN2\_PIN, OUTPUT);  
+void setup() {
+  // 1. Configure standard direction pins
+  pinMode(MOTOR_IN1_PIN, OUTPUT);
+  pinMode(MOTOR_IN2_PIN, OUTPUT);
   stopMotor();
 
-  // 2\. Initialize MCPWM Timer  
-  mcpwm\_timer\_config\_t timer\_config \= {  
-    .group\_id \= 0,  
-    .clk\_src \= MCPWM\_TIMER\_CLK\_SRC\_DEFAULT,  
-    .resolution\_hz \= TIMER\_RESOLUTION,  
-    .count\_mode \= MCPWM\_TIMER\_COUNT\_MODE\_UP,  
-    .period\_ticks \= PWM\_PERIOD,  
-  };  
-  mcpwm\_new\_timer(\&timer\_config, \&timer);
+  // 2. Initialize MCPWM Timer
+  mcpwm_timer_config_t timer_config = {
+    .group_id = 0,
+    .clk_src = MCPWM_TIMER_CLK_SRC_DEFAULT,
+    .resolution_hz = TIMER_RESOLUTION,
+    .count_mode = MCPWM_TIMER_COUNT_MODE_UP,
+    .period_ticks = PWM_PERIOD,
+  };
+  mcpwm_new_timer(&timer_config, &timer);
 
-  // 3\. Initialize MCPWM Operator  
-  mcpwm\_operator\_config\_t operator\_config \= {  
-    .group\_id \= 0,  
-  };  
-  mcpwm\_new\_operator(\&operator\_config, \&oper);  
-  mcpwm\_operator\_connect\_timer(oper, timer);
+  // 3. Initialize MCPWM Operator
+  mcpwm_operator_config_t operator_config = {
+    .group_id = 0,
+  };
+  mcpwm_new_operator(&operator_config, &oper);
+  mcpwm_operator_connect_timer(oper, timer);
 
-  // 4\. Initialize MCPWM Comparator (Manages Duty Cycle threshold)  
-  mcpwm\_comparator\_config\_t comparator\_config \= {  
-    .flags \= { .update\_cmp\_on\_tez \= true } // Update duty cycle when timer hits zero  
-  };  
-  mcpwm\_new\_comparator(oper, \&comparator\_config, \&comparator);
+  // 4. Initialize MCPWM Comparator (Manages Duty Cycle threshold)
+  mcpwm_comparator_config_t comparator_config = {
+    .flags = { .update_cmp_on_tez = true } // Update duty cycle when timer hits zero
+  };
+  mcpwm_new_comparator(oper, &comparator_config, &comparator);
 
-  // 5\. Initialize MCPWM Generator (Binds to the physical GPIO)  
-  mcpwm\_generator\_config\_t generator\_config \= {  
-    .gen\_gpio\_num \= MOTOR\_PWM\_PIN,  
-  };  
-  mcpwm\_new\_generator(oper, \&generator\_config, \&generator);
+  // 5. Initialize MCPWM Generator (Binds to the physical GPIO)
+  mcpwm_generator_config_t generator_config = {
+    .gen_gpio_num = MOTOR_PWM_PIN,
+  };
+  mcpwm_new_generator(oper, &generator_config, &generator);
 
-  // 6\. Set Generator Waveform Actions  
-  // When timer resets to zero, drive the pin HIGH  
-  mcpwm\_generator\_set\_action\_on\_timer\_event(generator,   
-    MCPWM\_GEN\_TIMER\_EVENT\_ACTION(MCPWM\_TIMER\_DIRECTION\_UP, MCPWM\_TIMER\_EVENT\_EMPTY, MCPWM\_GEN\_ACTION\_HIGH));  
-  // When timer matches the comparator value, drive the pin LOW  
-  mcpwm\_generator\_set\_action\_on\_compare\_event(generator,   
-    MCPWM\_GEN\_COMPARE\_EVENT\_ACTION(MCPWM\_TIMER\_DIRECTION\_UP, comparator, MCPWM\_GEN\_ACTION\_LOW));
+  // 6. Set Generator Waveform Actions
+  // When timer resets to zero, drive the pin HIGH
+  mcpwm_generator_set_action_on_timer_event(generator, 
+    MCPWM_GEN_TIMER_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, MCPWM_TIMER_EVENT_EMPTY, MCPWM_GEN_ACTION_HIGH));
+  // When timer matches the comparator value, drive the pin LOW
+  mcpwm_generator_set_action_on_compare_event(generator, 
+    MCPWM_GEN_COMPARE_EVENT_ACTION(MCPWM_TIMER_DIRECTION_UP, comparator, MCPWM_GEN_ACTION_LOW));
 
-  // 7\. Enable and Start the Hardware Timer  
-  mcpwm\_timer\_enable(timer);  
-  mcpwm\_timer\_start(timer);
+  // 7. Enable and Start the Hardware Timer
+  mcpwm_timer_enable(timer);
+  mcpwm_timer_start(timer);
 
-  // Start at 0% speed  
-  setMotorSpeed(0);  
+  // Start at 0% speed
+  setMotorSpeed(0);
 }
 
-void loop() {  
-  // Forward Acceleration  
-  setDirectionForward();  
-  for (int percent \= 0; percent \<= 100; percent \+= 5\) {  
-    setMotorSpeed(percent);  
-    delay(100);  
-  }  
+void loop() {
+  // Forward Acceleration
+  setDirectionForward();
+  for (int percent = 0; percent <= 100; percent += 5) {
+    setMotorSpeed(percent);
+    delay(100);
+  }
   delay(2000);
 
-  // Brake  
-  stopMotor();  
+  // Brake
+  stopMotor();
   delay(1000);
 
-  // Backward Run at 60% speed  
-  setDirectionBackward();  
-  setMotorSpeed(60);  
+  // Backward Run at 60% speed
+  setDirectionBackward();
+  setMotorSpeed(60);
   delay(3000);
 
-  // Brake  
-  stopMotor();  
-  delay(2000);  
+  // Brake
+  stopMotor();
+  delay(2000);
 }
 
-// \--- Helper Functions \---
+// --- Helper Functions ---
 
-void setMotorSpeed(int speedPercent) {  
-  // Constrain input between 0 and 100%  
-  speedPercent \= constrain(speedPercent, 0, 100);  
-    
-  // Calculate target hardware ticks based on percentage  
-  uint32\_t compare\_ticks \= (PWM\_PERIOD \* speedPercent) / 100;  
-    
-  // Directly update the hardware comparator register  
-  mcpwm\_comparator\_set\_compare\_value(comparator, compare\_ticks);  
+void setMotorSpeed(int speedPercent) {
+  // Constrain input between 0 and 100%
+  speedPercent = constrain(speedPercent, 0, 100);
+  
+  // Calculate target hardware ticks based on percentage
+  uint32_t compare_ticks = (PWM_PERIOD * speedPercent) / 100;
+  
+  // Directly update the hardware comparator register
+  mcpwm_comparator_set_compare_value(comparator, compare_ticks);
 }
 
-void setDirectionForward() {  
-  digitalWrite(MOTOR\_IN1\_PIN, HIGH);  
-  digitalWrite(MOTOR\_IN2\_PIN, LOW);  
+void setDirectionForward() {
+  digitalWrite(MOTOR_IN1_PIN, HIGH);
+  digitalWrite(MOTOR_IN2_PIN, LOW);
 }
 
-void setDirectionBackward() {  
-  digitalWrite(MOTOR\_IN1\_PIN, LOW);  
-  digitalWrite(MOTOR\_IN2\_PIN, HIGH);  
+void setDirectionBackward() {
+  digitalWrite(MOTOR_IN1_PIN, LOW);
+  digitalWrite(MOTOR_IN2_PIN, HIGH);
 }
 
-void stopMotor() {  
-  digitalWrite(MOTOR\_IN1\_PIN, LOW);  
-  digitalWrite(MOTOR\_IN2\_PIN, LOW);  
-  if (comparator \!= NULL) {  
-    setMotorSpeed(0);  
-  }  
+void stopMotor() {
+  digitalWrite(MOTOR_IN1_PIN, LOW);
+  digitalWrite(MOTOR_IN2_PIN, LOW);
+  if (comparator != NULL) {
+    setMotorSpeed(0);
+  }
 }
+```
+## Why this is highly efficient: 
 
-## Why this is highly efficient: {#why-this-is-highly-efficient:}
+- **Zero CPU overhead for PWM:** The generator actions are linked directly via internal hardware logic cells. When the timer ticks up and hits the comparator threshold, the hardware switches the physical pin state in nanoseconds without firing an interrupt or consuming CPU cycles.
+- **Precise Math (`PWM_PERIOD`):** With a 10 MHz resolution clock, a 10 kHz PWM signal yields exactly `1000` steps of resolution. This allows you to scale your speed parameters flawlessly.
 
-* **Zero CPU overhead for PWM:** The generator actions are linked directly via internal hardware logic cells. When the timer ticks up and hits the comparator threshold, the hardware switches the physical pin state in nanoseconds without firing an interrupt or consuming CPU cycles.  
-* **Precise Math (`PWM_PERIOD`):** With a 10 MHz resolution clock, a 10 kHz PWM signal yields exactly `1000` steps of resolution. This allows you to scale your speed parameters flawlessly.
 
-# 
+# Charging a capacitor 
 
-# **Charging a capacitor** {#charging-a-capacitor}
+<img width="435" height="233" alt="image" src="https://github.com/user-attachments/assets/60748d2e-a03c-4e98-86f6-0974bc35f78e" />
 
-**![][image1]**
 
-To find the equations for the capacitor voltage ![][image2] and the circuit current ![][image3] during the charging phase, we can set up and solve a first-order linear differential equation using **Kirchhoff's Voltage Law (KVL)**.
+To find the equations for the capacitor voltage Uc(t) and the circuit current i(t) during the charging phase, we can set up and solve a first-order linear differential equation using **Kirchhoff's Voltage Law (KVL)**.
 
 Here is the step-by-step mathematical breakdown.
 
