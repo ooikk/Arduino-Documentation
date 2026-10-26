@@ -570,6 +570,135 @@ The key architectural benefit is that `GitlabClient` can now serve as a reusable
 
 ---
 
+# Gitlab Path Access
+
+The URL does not know about your file-repository project by itself, and the token does not contain the file path. Your ESP32-S3 identifies the target repository through the project ID in the URL, identifies the file through the repository path, and proves its access rights through the token in the HTTP header.
+
+Let's use your actual ESP32-S3 configuration to explain how these pieces work together.
+
+## 1. How GitLab knows which file to return
+
+Suppose your sketch executes:
+
+```cpp
+GET text.txt
+```
+
+Your code constructs this URL:
+
+```text
+[https://gitlab.com/api/v4/projects/88068597/repository/files/text.txt/raw?ref=main](https://gitlab.com/api/v4/projects/88068597/repository/files/text.txt/raw?ref=main)
+```
+
+### 1. SERVER
+
+```text
+[https://gitlab.com](https://gitlab.com)
+```
+
+Connect to GitLab's HTTPS server.
+
+### 2. PROJECT IDENTIFIER
+
+```text
+/api/v4/projects/88068597
+```
+
+Select the GitLab project whose numeric ID is `88068597`.
+
+### 3. FILE IDENTIFIER
+
+```text
+/repository/files/text.txt/raw
+```
+
+Request the raw contents of `text.txt` from that project's repository.
+
+### 4. BRANCH
+
+```text
+?ref=main
+```
+
+Read the file from the `main` branch.
+
+GitLab combines these URL parameters to locate the requested file. The repository path is relative to the root of the repository, so `text.txt` means the file at the root, whereas `docs/text.txt` means the file inside the `docs` directory.
+
+## 2. What role does the token play?
+
+Your sketch sends the token separately in the HTTP request header:
+
+```cpp
+http.addHeader("PRIVATE-TOKEN", _token);
+```
+
+The request therefore has two independent parts:
+
+| Part | Purpose |
+|---|---|
+| **URL** | Identifies the resource: which GitLab server, project, branch, and file to access. |
+| **Token** | Authenticates the request: which authorized identity is making the request, and which operations it is permitted to perform. |
+
+The token is not embedded with the project path. GitLab checks the token's validity, permissions, and the user's access to the target project. A valid token does not automatically grant access to every project.
+
+For example, your fine-grained token can be restricted to `file-repository/main-file` and the required repository operations. If you change the URL to another project, GitLab will not automatically grant that token access to the other project.
+
+## 3. How your sketch connects these pieces
+
+Your `.ino` file sets the project configuration:
+
+```cpp
+static const char* PROJECT_ID = "88068597";
+static const char* BRANCH = "main";
+
+cfg.gitlabUrl = "[https://gitlab.com](https://gitlab.com)";
+cfg.projectId = PROJECT_ID;
+cfg.branch = BRANCH;
+```
+
+Then `initializeGitlab()` loads the token from NVS and passes it to the client:
+
+```cpp
+gitlab->begin(cfg, token);
+```
+
+Finally, `downloadFileToPSRAM()` constructs the file URL and adds the authentication header.
+
+```cpp
+String url = apiBase() + "/repository/files/" +
+             encodePathForFileEndpoint(repoFilePath) +
+             "/raw?ref=" + encodeQuery(_config.branch);
+
+http.addHeader("PRIVATE-TOKEN", _token);
+```
+
+This design separates configuration, authentication, and file selection.
+
+## 4. Can you access another GitLab project just by changing the URL?
+
+Not necessarily. Consider these cases:
+
+| Change | Expected outcome |
+|---|---|
+| Change `text.txt` to `Indoor.bmp` in the same project | Works if the file exists and the token has read permission. |
+| Change `main` to another existing branch | Works if the file exists on that branch and the token has permission. |
+| Change the project ID to another private project | Only works if the token and its associated identity are authorized for that project. |
+| Remove the token header | A private repository request should fail authentication. |
+| Use a token that allows reading but not writing | Downloads may work, while uploads, updates, or deletes are denied. |
+
+One useful detail: the numeric project ID is not a secret. It identifies the project, but it does not grant access to it. The token must still be protected.
+
+For your ESP32-S3 application, the overall model is:
+
+\[
+\text{Request} = \text{Server} + \text{Project ID} + \text{File path} + \text{Branch} + \text{Token}
+\]
+
+Each part has a distinct role, and GitLab uses them together to determine whether it can return or modify the requested file.
+
+
+---
+
 # Create a GitLab Personal Access Token: Fine-Grained 
 
 ## 1. Objective
