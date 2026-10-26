@@ -752,6 +752,61 @@ finally {
 }
 ```
 
+#### Test print a text file from Gitlab
+
+Upload a text file to Gitlab, example:
+File name: `text.txt`
+
+```powershell
+# GitLab configuration
+$projectId = "YOUR_NUMERIC_PROJECT_ID"
+$token = "YOUR_GITLAB_TOKEN_HERE"
+$filePath = "text.txt"
+$branch = "main"
+
+$headers = @{ "PRIVATE-TOKEN" = $token }
+
+try {
+    # 1. List repository files
+    $treeUri = "https://gitlab.com/api/v4/projects/$projectId/repository/tree?ref=$branch"
+
+    $files = Invoke-RestMethod `
+        -Uri $treeUri `
+        -Headers $headers `
+        -Method Get
+
+    Write-Host "`nRepository files:"
+    $files | Select-Object name, type, path | Format-Table -AutoSize
+
+    # 2. Download and print text.txt contents
+    $encodedPath = [Uri]::EscapeDataString($filePath)
+    $fileUri = "https://gitlab.com/api/v4/projects/$projectId/repository/files/$encodedPath/raw?ref=$branch"
+
+    $content = Invoke-RestMethod `
+        -Uri $fileUri `
+        -Headers $headers `
+        -Method Get
+
+    Write-Host "`nContents of $filePath :"
+    Write-Host "----------------------------------------"
+    Write-Output $content
+    Write-Host "`n----------------------------------------"
+}
+catch {
+    Write-Host "GitLab request failed."
+
+    if ($_.Exception.Response) {
+        Write-Host "HTTP status:" ([int]$_.Exception.Response.StatusCode)
+    }
+
+    Write-Host $_.ErrorDetails.Message
+}
+finally {
+    $token = $null
+    $headers = $null
+}
+```
+
 ### How to use it
 
 1. Replace `YOUR_NUMERIC_PROJECT_ID` with your GitLab project's numeric ID.
