@@ -1,3 +1,6 @@
+[![logo-color](https://img.shields.io/badge/Index-Control_DC_motor_with_L298N_using_LEDC-AB03A9?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_IO_Pins/02_PWM_DAC/Control_DC_motor_with_L298N.md)
+[![logo-color](https://img.shields.io/badge/Index-RTOS_PID_Motor_Control-8ACFF8?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_FreeRTOS/FreeRTOS.md)
+
 # PWM as DAC
 
 Connecting PWM pin to a R-C circuit will function as cheap DAC for external control. Below is the simple R-C circuit connected as passive low pass filter.
