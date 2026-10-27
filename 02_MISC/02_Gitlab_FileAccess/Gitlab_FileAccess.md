@@ -2344,3 +2344,132 @@ nvs_loadGitlabToken(token);
 The first uses `::` to identify the class that owns the function. The second uses `->` to access a member through an object pointer. The third calls a standalone function directly.
 
 For your modular ESP32-S3 project, the key design principle is to expose a clear interface in each header and keep implementation details inside the corresponding `.cpp` file. Whether a module uses a class or standalone functions should depend on whether it benefits from maintaining object-specific state—not simply on how complicated its implementation is.
+
+# Understanding `tlsClient` in Your ESP32-S3 GitLab Project
+
+In your ESP32-S3 GitLab file-access project, `tlsClient` is an object that provides the TLS-secured network connection used by `GitlabClient` to communicate with GitLab over HTTPS.
+
+Let's break down this statement:
+
+```cpp
+gitlab = new (std::nothrow) GitlabClient(tlsClient);
+```
+
+There are three important parts:
+
+- `new (std::nothrow)`: dynamically allocates memory for a `GitlabClient` object and returns `nullptr` if allocation fails.
+- `GitlabClient(tlsClient)`: calls the `GitlabClient` constructor, passing `tlsClient` to it.
+- `gitlab = ...`: stores the address of the newly created object in the `gitlab` pointer.
+
+The key question is where `tlsClient` comes from. It must be declared and initialized somewhere before this statement executes.
+
+## 1. Where is `tlsClient` declared?
+
+In your project, it should be declared in the `.ino` file or another shared source file, typically as:
+
+```cpp
+WiFiClientSecure tlsClient;
+```
+
+This creates a `WiFiClientSecure` object named `tlsClient`.
+
+Make sure the relevant header is included:
+
+```cpp
+#include <WiFiClientSecure.h>
+```
+
+If declared at global scope in your `.ino` file, it can be used by `initializeGitlab()` and other functions in that file.
+
+## 2. How does it get passed into `GitlabClient`?
+
+The flow is:
+
+```text
+Main .ino file
+WiFiClientSecure tlsClient;
+Creates the TLS client object
+        |
+        v
+Passes a reference to the object
+GitlabClient constructor
+GitlabClient(tlsClient)
+        |
+        v
+GitlabClient.cpp
+Uses the TLS client for HTTPS requests to GitLab
+```
+
+For example, `GitlabClient.h` might declare the constructor like this:
+
+```cpp
+class GitlabClient {
+private:
+    WiFiClientSecure& _tlsClient;
+
+public:
+    explicit GitlabClient(WiFiClientSecure& tlsClient);
+};
+```
+
+And `GitlabClient.cpp` might define it like this:
+
+```cpp
+GitlabClient::GitlabClient(WiFiClientSecure& tlsClient)
+    : _tlsClient(tlsClient) {
+}
+```
+
+Here, `_tlsClient` is a reference to the original TLS client, not a separate copy.
+
+When `GitlabClient` needs to make an HTTPS request, it can use `_tlsClient` with `HTTPClient`.
+
+For example:
+
+```cpp
+HTTPClient http;
+
+if (http.begin(_tlsClient, url)) {
+    // Configure and perform the HTTP request.
+    http.end();
+}
+```
+
+This is illustrative; use your existing implementation's member names and request-handling logic.
+
+## 3. Where does the CA certificate fit in?
+
+Your GitLab client also needs to configure the TLS client with the appropriate trusted root CA certificate, for example:
+
+```cpp
+tlsClient.setCACert(GITLAB_ROOT_CA);
+```
+
+This configures certificate verification for the TLS connection. Your `GitlabConfig` may instead pass the CA certificate to `GitlabClient::begin()`, which configures the client internally.
+
+The distinction is:
+
+- `tlsClient` provides the secure network connection.
+- The CA certificate establishes which certificate authority is trusted.
+- The GitLab token authenticates your request to the GitLab API.
+
+These three things have different purposes.
+
+## 4. One important lifetime rule
+
+Because `GitlabClient` may retain a reference to `tlsClient`, the TLS object must remain alive for as long as the GitLab client uses it.
+
+A global declaration is suitable:
+
+```cpp
+WiFiClientSecure tlsClient;
+GitlabClient* gitlab = nullptr;
+```
+
+Then, after the required setup:
+
+```cpp
+gitlab = new (std::nothrow) GitlabClient(tlsClient);
+```
+
+In summary: `tlsClient` is the HTTPS transport object supplied to `GitlabClient`. In your project, check the `.ino` file for `WiFiClientSecure tlsClient;`, and check `GitlabClient.h` and `.cpp` for the constructor that receives and stores it.
