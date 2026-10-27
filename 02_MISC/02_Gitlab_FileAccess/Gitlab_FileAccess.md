@@ -2473,3 +2473,141 @@ gitlab = new (std::nothrow) GitlabClient(tlsClient);
 ```
 
 In summary: `tlsClient` is the HTTPS transport object supplied to `GitlabClient`. In your project, check the `.ino` file for `WiFiClientSecure tlsClient;`, and check `GitlabClient.h` and `.cpp` for the constructor that receives and stores it.
+
+# Reusing `GitlabClient` for ESP32-S3 OTA Firmware Updates
+
+You can reuse the `GitlabClient` class structure for your previous ESP32-S3 OTA firmware-update project, especially because both projects need to communicate with GitLab over HTTPS using a TLS client and an authentication token.
+
+However, there is an important distinction: you can reuse the TLS connection, GitLab authentication, and file-download infrastructure, but firmware updating should remain a separate responsibility from ordinary repository file access.
+
+## 1. What can be reused?
+
+Your current architecture already has most of the building blocks.
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/fe7e3cf9-48c4-4140-ac11-5e3f3ae85125" />
+
+
+```text
+Shared infrastructure
+WiFiClientSecure · CA verification · GitLab authentication · HTTP requests
+
+GitLab file access
+Download, upload, update and delete repository files.
+
+OTA updater
+Verify firmware authenticity and integrity, then install and reboot.
+```
+
+| Component | Reuse? | Notes |
+|---|---|---|
+| `WiFiClientSecure` and trusted CA | Yes | Reuse the secure transport configuration. |
+| GitLab token from NVS | Yes | Reuse the token manager and permission checks. |
+| GitLab project/branch configuration | Usually | Can share configuration if both projects use the same repository and branch. |
+| HTTP GET and response handling | Yes, with care | Firmware may be much larger than ordinary files, so streaming is preferable. |
+| `downloadFileToPSRAM()` | Not ideal for firmware | It buffers the entire file in PSRAM. Your firmware is better streamed into the OTA partition. |
+| Firmware signature and hash verification | Keep in OTA module | These are security-critical OTA responsibilities. |
+| Arduino `Update` and reboot logic | Keep in OTA module | Repository file access should not be responsible for installing firmware. |
+
+## 2. Recommended class structure
+
+For your existing ESP32-S3 N16R8 project, I would keep `GitlabClient` as the shared network-access layer and create a separate `OTAUpdater` class.
+
+```text
+ESP32-S3 Application (.ino)
+          |
+          +-----------------------+
+          |                       |
+          v                       v
+    GitlabClient              OTAUpdater
+          |                       |
+          |                       +--> Download manifest
+          |                       +--> Verify RSA signature
+          |                       +--> Verify SHA-256
+          |                       +--> Stream firmware
+          |                       +--> Arduino Update
+          |                       +--> Reboot
+          |
+          +--> WiFiClientSecure
+          +--> GitLab authentication
+          +--> HTTP request handling
+          +--> Repository file operations
+          |
+          v
+      GitLab Server
+```
+
+The two classes can share the same TLS client, but `OTAUpdater` should handle the firmware installation workflow.
+
+### Example of how the classes might be connected
+
+In your main `.ino` file:
+
+```cpp
+WiFiClientSecure tlsClient;
+
+GitlabClient* gitlab = nullptr;
+OTAUpdater* ota = nullptr;
+```
+
+After Wi-Fi and token initialization:
+
+```cpp
+gitlab = new (std::nothrow) GitlabClient(tlsClient);
+
+if (gitlab != nullptr) {
+    // Initialize GitlabClient with your existing configuration and token.
+    // Then initialize OTAUpdater using the shared GitlabClient.
+}
+```
+
+The OTA class could receive a reference to the GitLab client:
+
+```cpp
+class OTAUpdater {
+public:
+    explicit OTAUpdater(GitlabClient& client);
+
+    bool checkAndInstallUpdate();
+
+private:
+    GitlabClient& _gitlab;
+};
+```
+
+This is a proposed interface, not code that can be dropped into your existing project without implementing the corresponding methods.
+
+The benefit is that `OTAUpdater` can reuse the GitLab client's authenticated download capabilities without duplicating the connection and token-management logic.
+
+## 3. One important issue: repository files versus firmware packages
+
+Your current GitLab file-access module accesses repository files. Your previous OTA project used the GitLab Generic Package Registry for firmware distribution.
+
+These use different API endpoints.
+
+- **Repository files:** GitLab Repository Files API or raw-file endpoint.
+- **OTA firmware:** Generic Package Registry endpoint, such as `/api/v4/projects/{id}/packages/generic/...`.
+
+Therefore, the current `downloadFileToPSRAM()` method may not directly retrieve firmware from the package URL without modification. Its endpoint construction and authentication handling need to support the package registry.
+
+I would add a separate download method for package artifacts rather than complicating your existing repository-file functions.
+
+## 4. Why firmware should not be downloaded entirely into PSRAM
+
+Your ESP32-S3 has 8 MB of PSRAM, but buffering a full firmware image is unnecessary. Your existing OTA approach can stream the firmware response into the inactive OTA partition using Arduino's `Update` API.
+
+A secure OTA workflow should:
+
+1. Fetch the signed manifest over verified HTTPS.
+2. Verify the manifest signature using your trusted public key.
+3. Check the product, firmware version, expected image size and SHA-256.
+4. Stream firmware into the inactive OTA partition while calculating the hash.
+5. Verify the final image size and hash, and ensure the image is valid.
+6. Finalize the update and reboot only after all checks succeed.
+
+HTTPS, a GitLab token and SHA-256 alone do not establish firmware authenticity. Retain your existing RSA signature verification and secure-boot protections where configured.
+
+## My recommendation
+
+Reuse the existing `GitlabClient` for transport and authentication, then add an `OTAUpdater` module that handles signed manifests, firmware streaming and installation. Keep `NVSTokenManager` and your PSRAM utilities independent.
+
+This gives you one shared GitLab connection layer for repository file management and OTA, while preserving a clear separation between ordinary file operations and
