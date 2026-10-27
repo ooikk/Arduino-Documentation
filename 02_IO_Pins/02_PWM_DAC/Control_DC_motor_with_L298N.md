@@ -396,7 +396,7 @@ Multiplying by *U_0* yields the standard time-domain equation for a discharging 
 <img width="149" height="45" alt="image" src="https://github.com/user-attachments/assets/4f8dd21b-8000-4ca7-b65e-52c09675fcb1" />
 
 
-## 4. Calculating the Specific Time Constant (![][image60]) 
+## 4. Calculating the Specific Time Constant ($\tau$) 
 
 The speed of the discharge depends entirely on the circuit's **time constant (![][image61])**, defined as:
 
