@@ -1,4 +1,5 @@
 [![logo-color](https://img.shields.io/badge/Index-Readme_Setup-8B639B?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_Gitlab_FileAccess/README_SETUP.md)
+[![logo-color](https://img.shields.io/badge/Index-C++_eLearning-12544F?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/C%2B%2B_Learning.md)
 
 # Secure GitLab File Access Library
 
