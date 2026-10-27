@@ -26,6 +26,7 @@ Voltage output:
 
 Link to PWM R-C circuit response: [https://docs.google.com/spreadsheets/d/10Ih6O-8kVcTtxQ6LSR1iQ8BdQ8ajPfoUlZrpEv3AAdg/edit?gid=0#gid=0](https://docs.google.com/spreadsheets/d/10Ih6O-8kVcTtxQ6LSR1iQ8BdQ8ajPfoUlZrpEv3AAdg/edit?gid=0#gid=0)
 
+# Simulation
 Online Circuit Simulator: [Falstad.com](https://www.falstad.com/circuit/)
 
 Circuit Simulator
@@ -42,3 +43,7 @@ Circuit Simulator
   </o>
 </cir>
 ```
+<img width="675" height="432" alt="image" src="https://github.com/user-attachments/assets/7762148f-1599-4b44-bf23-690eede305c7" />
+
+
+<img width="928" height="679" alt="image" src="https://github.com/user-attachments/assets/ce87b9c5-6e1a-4103-88ce-c6618042b2d6" />
