@@ -2925,7 +2925,8 @@ The parameter `tlsClient` refers to the existing object. It does not create a se
 
 Conceptually, the relationship looks like this:
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/db2509c9-7356-4ec0-bd10-6b95b910a40c" />
+
+<img width="1039" height="347" alt="image" src="https://github.com/user-attachments/assets/d6c9b166-48ad-4ac5-affb-ea0c98b30917" />
 
 
 ```text
