@@ -2474,6 +2474,248 @@ gitlab = new (std::nothrow) GitlabClient(tlsClient);
 
 In summary: `tlsClient` is the HTTPS transport object supplied to `GitlabClient`. In your project, check the `.ino` file for `WiFiClientSecure tlsClient;`, and check `GitlabClient.h` and `.cpp` for the constructor that receives and stores it.
 
+# How `gitlab->` Accesses `GitlabClient` Member Functions
+
+The statement
+
+```cpp
+gitlab = new (std::nothrow) GitlabClient(tlsClient);
+```
+
+creates **one** `GitlabClient` object. It does not automatically link every function to the object. The class declaration in `GitlabClient.h` defines which functions belong to that class. The object can then access those public member functions through `gitlab->`.
+
+Let's walk through the relationship using your actual functions.
+
+## 1. The relationship between the class, object and functions
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/53dae025-5390-4210-b80e-893fe318e628" />
+
+
+```text
+GitlabClient class
+The blueprint declared in GitlabClient.h
+
+begin()
+listFiles()
+downloadFileToPSRAM()
+uploadNewFile()
+updateFile()
+deleteRemoteFile()
+lastError()
+    |
+    v
+Construct an object with tlsClient
+
+gitlab pointer
+GitlabClient* gitlab
+Points to the created object in memory
+    |
+    v
+Call public member functions
+gitlab->begin(...)
+gitlab->listFiles(...)
+gitlab->uploadNewFile(...)
+```
+
+The class defines the available member functions. The pointer `gitlab` identifies which instance of that class you want to use.
+
+## 2. What happens during object creation?
+
+Suppose you have:
+
+```cpp
+GitlabClient* gitlab = nullptr;
+
+gitlab = new (std::nothrow) GitlabClient(tlsClient);
+```
+
+There are three steps.
+
+### Step 1 — `GitlabClient* gitlab`
+
+Declares a pointer that can hold the address of a `GitlabClient` object.
+
+### Step 2 — `new (std::nothrow) GitlabClient(tlsClient)`
+
+Allocates memory for one object and invokes its constructor, passing `tlsClient` to it.
+
+### Step 3 — Assign the returned pointer to `gitlab`
+
+If allocation succeeds, `gitlab` points to the new object. If allocation fails, `gitlab` becomes `nullptr`.
+
+The object contains its own instance data, such as the TLS client reference, configuration and error string, depending on your class implementation.
+
+The member functions are compiled program code; they are not copied into the object every time you create an instance. The object stores the state those functions operate on.
+
+## 3. How do all your functions become accessible through `gitlab->`?
+
+They must be declared as **public member functions** inside the `GitlabClient` class.
+
+For example, your header might contain:
+
+```cpp
+class GitlabClient {
+public:
+    bool begin(const GitlabConfig& config,
+               const String& accessToken);
+
+    bool listFiles(const String& path,
+                   std::vector<String>& outFileNames,
+                   bool recursive = false);
+
+    bool downloadFileToPSRAM(const String& repoFilePath,
+                             uint8_t** outBuffer,
+                             size_t* outLen);
+
+    bool uploadNewFile(
+        const String& repoFilePath,
+        const uint8_t* data,
+        size_t len,
+        const String& commitMessage =
+            "Upload file from ESP32-S3");
+
+    bool updateFile(
+        const String& repoFilePath,
+        const uint8_t* data,
+        size_t len,
+        const String& commitMessage =
+            "Update file from ESP32-S3");
+
+    bool deleteRemoteFile(
+        const String& repoFilePath,
+        const String& commitMessage =
+            "Delete file from ESP32-S3");
+
+    String lastError() const {
+        return _lastError;
+    }
+
+private:
+    String _lastError;
+
+    // Other private members, such as TLS client and configuration.
+};
+```
+
+This is a simplified illustration of the class structure; retain your existing private members and declarations.
+
+Because these functions are under `public:`, the main program can call them through the object pointer.
+
+For example:
+
+```cpp
+gitlab->begin(config, token);
+
+gitlab->listFiles("/", files, false);
+
+gitlab->uploadNewFile(
+    "notes.txt",
+    data,
+    length,
+    "Upload notes"
+);
+
+Serial.println(gitlab->lastError());
+```
+
+Each call invokes the corresponding function on the object pointed to by `gitlab`.
+
+**Important:** Creating the object does not automatically execute `begin()`. You still need to call `begin(config, token)` to initialize the GitLab client.
+
+## 4. How does the compiler connect the `.h` and `.cpp` files?
+
+Your `GitlabClient.h` declares the class and its member functions. Your `GitlabClient.cpp` implements those functions.
+
+For example, the header declares:
+
+```cpp
+bool uploadNewFile(
+    const String& repoFilePath,
+    const uint8_t* data,
+    size_t len,
+    const String& commitMessage
+);
+```
+
+The `.cpp` file defines the same member function:
+
+```cpp
+bool GitlabClient::uploadNewFile(
+    const String& repoFilePath,
+    const uint8_t* data,
+    size_t len,
+    const String& commitMessage
+) {
+    // Actual GitLab upload implementation
+}
+```
+
+The `GitlabClient::` scope qualifier tells the compiler that the definition belongs to the `GitlabClient` class.
+
+During compilation and linking, the compiler and linker associate the declaration with its implementation. The call:
+
+```cpp
+gitlab->uploadNewFile(...);
+```
+
+then invokes that implementation on the selected object.
+
+A function declared in the header but never implemented will generally cause a linker error if it is used and no other matching definition is available.
+
+## 5. Does `gitlab->` work for every function in the project?
+
+No. It works for accessible members of the `GitlabClient` object, not arbitrary functions.
+
+| Function | Can call using `gitlab->`? | Reason |
+|---|---|---|
+| `begin()` | Yes | Public member of `GitlabClient` |
+| `listFiles()` | Yes | Public member of `GitlabClient` |
+| `downloadFileToPSRAM()` | Yes | Public member of `GitlabClient` |
+| `uploadNewFile()` | Yes | Public member of `GitlabClient` |
+| `nvs_loadGitlabToken()` | No, not normally | Standalone NVS function, not a GitLab client member |
+| `allocatePSRAM()` | No, not normally | Standalone PSRAM function, not a GitLab client member |
+
+For a standalone function, you call it directly:
+
+```cpp
+nvs_loadGitlabToken(token);
+```
+
+You would only call `gitlab->someFunction()` if `someFunction()` were actually declared as an accessible member of `GitlabClient`.
+
+## 6. One final detail: `lastError() const`
+
+Your declaration:
+
+```cpp
+String lastError() const {
+    return _lastError;
+}
+```
+
+is a member function implemented directly inside the header's class declaration.
+
+The trailing `const` means this member function promises not to modify the object's member state through the ordinary `this` pointer.
+
+It returns a `String` containing the error message, so you can write:
+
+```cpp
+Serial.println(gitlab->lastError());
+```
+
+The function itself is available through the same object pointer as your other public members.
+
+## In summary
+
+- `GitlabClient` is the class that declares the available member functions.
+- `new (std::nothrow) GitlabClient(tlsClient)` constructs one object.
+- `gitlab` stores a pointer to that object.
+- `gitlab->functionName()` invokes a public member function on that object.
+- The `.cpp` file provides the implementations for functions declared in the header.
+- The object's state is stored per instance; the compiled function code is generally shared.
+
+So yes, all seven functions you listed can be accessed through `gitlab->` provided they are declared as public members of `GitlabClient` and their implementations are correctly linked.
+
 # Reusing `GitlabClient` for ESP32-S3 OTA Firmware Updates
 
 You can reuse the `GitlabClient` class structure for your previous ESP32-S3 OTA firmware-update project, especially because both projects need to communicate with GitLab over HTTPS using a TLS client and an authentication token.
