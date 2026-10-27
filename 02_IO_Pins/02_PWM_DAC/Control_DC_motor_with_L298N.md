@@ -321,7 +321,7 @@ Combine the natural logarithms:
 
 ## Step 5: Solve for Capacitor Voltage *U_C(t)* 
 
-Eliminate the natural log by taking the exponential (*e^x*) of both sides:
+Eliminate the natural log by taking the exponential ($e^x$) of both sides:
 
 <img width="224" height="177" alt="image" src="https://github.com/user-attachments/assets/da0889e9-f34c-499a-a908-cfa54e9f3520" />
 
