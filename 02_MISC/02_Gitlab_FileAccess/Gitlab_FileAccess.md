@@ -2422,7 +2422,7 @@ GitlabClient::GitlabClient(WiFiClientSecure& tlsClient)
 
 Here, `_tls` is a reference to the original TLS client, not a separate copy.
 
-When `GitlabClient` needs to make an HTTPS request, it can use `_tlsClient` with `HTTPClient`.
+When `GitlabClient` needs to make an HTTPS request, it can use `_tls` with `HTTPClient`.
 
 For example:
 
