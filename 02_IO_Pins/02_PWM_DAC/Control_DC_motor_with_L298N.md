@@ -257,7 +257,7 @@ void stopMotor() {
 <img width="435" height="233" alt="image" src="https://github.com/user-attachments/assets/60748d2e-a03c-4e98-86f6-0974bc35f78e" />
 
 
-To find the equations for the capacitor voltage $U_C(t)$ *U_C(t)* and the circuit current *i(t)* during the charging phase, we can set up and solve a first-order linear differential equation using **Kirchhoff's Voltage Law (KVL)**.
+To find the equations for the capacitor voltage $U_C(t)$  and the circuit current $i(t)$ during the charging phase, we can set up and solve a first-order linear differential equation using **Kirchhoff's Voltage Law (KVL)**.
 
 Here is the step-by-step mathematical breakdown.
 
