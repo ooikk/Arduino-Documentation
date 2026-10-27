@@ -2405,7 +2405,7 @@ For example, `GitlabClient.h` might declare the constructor like this:
 ```cpp
 class GitlabClient {
 private:
-    WiFiClientSecure& _tlsClient;
+    WiFiClientSecure& _tls;
 
 public:
     explicit GitlabClient(WiFiClientSecure& tlsClient);
