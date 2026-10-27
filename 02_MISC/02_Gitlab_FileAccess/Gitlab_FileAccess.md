@@ -2852,6 +2852,155 @@ This remains valid because you explicitly call the constructor with `tlsClient`.
 
 **My recommendation:** Keep `explicit` in your `GitlabClient` constructor. It makes the class's construction intentional and helps prevent accidental implicit conversions. It does not change how the TLS reference works or how you call methods such as `gitlab->listFiles(...)`.
 
+# Understanding `: _tls(tlsClient)` in the `GitlabClient` Constructor
+
+Let's break down this constructor one piece at a time:
+
+```cpp
+GitlabClient::GitlabClient(WiFiClientSecure& tlsClient)
+  : _tls(tlsClient) {}
+```
+
+The key part is `: _tls(tlsClient)`. It is called a **member initializer list**. It initializes the class member `_tls` using the object passed in as the parameter `tlsClient`.
+
+## 1. Where does `_tls` come from?
+
+In `GitlabClient.h`, your class should declare `_tls` as a member, probably in the private section:
+
+```cpp
+class GitlabClient {
+public:
+    explicit GitlabClient(WiFiClientSecure& tlsClient);
+
+private:
+    WiFiClientSecure& _tls;
+};
+```
+
+There are two different identifiers here:
+
+| Identifier | Meaning |
+|---|---|
+| `tlsClient` | The constructor parameter. It refers to an existing TLS client supplied by the caller. |
+| `_tls` | A member variable of the `GitlabClient` class. It stores a reference to that TLS client. |
+
+The leading underscore is just a naming convention. It has no special assignment behavior.
+
+## 2. How does the initialization work?
+
+Suppose your `.ino` file contains:
+
+```cpp
+WiFiClientSecure tlsClient;
+
+GitlabClient* gitlab =
+    new (std::nothrow) GitlabClient(tlsClient);
+```
+
+The process is:
+
+### Step 1 — Create the original TLS object
+
+```cpp
+WiFiClientSecure tlsClient;
+```
+
+An actual `WiFiClientSecure` object is created.
+
+### Step 2 — Pass it to the constructor
+
+```cpp
+GitlabClient(tlsClient)
+```
+
+The parameter `tlsClient` refers to the existing object. It does not create a second TLS client.
+
+### Step 3 — Initialize the member reference
+
+```cpp
+: _tls(tlsClient)
+```
+
+`_tls` becomes another reference to the same TLS object.
+
+Conceptually, the relationship looks like this:
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/db2509c9-7356-4ec0-bd10-6b95b910a40c" />
+
+
+```text
+Original object
+tlsClient
+One WiFiClientSecure object
+
+Both names refer to the same object
+
+tlsClient
+Caller
+
+_tls
+GitlabClient member
+```
+
+Consequently, when a `GitlabClient` method uses `_tls`, it operates on the same TLS client that was declared in your `.ino` file.
+
+For example:
+
+```cpp
+bool GitlabClient::someMethod() {
+    // Use the existing TLS client.
+    // _tls.connect(...);
+}
+```
+
+This is illustrative; the actual connection call depends on your implementation.
+
+## 3. Is `: _tls(tlsClient)` the same as assignment?
+
+No. This distinction is important.
+
+For an ordinary variable, you might write:
+
+```cpp
+int value;
+value = 10;
+```
+
+That assigns a value after `value` exists.
+
+But `_tls` is a reference member:
+
+```cpp
+WiFiClientSecure& _tls;
+```
+
+A reference must be bound to an existing object when it is initialized. Therefore, this is correct:
+
+```cpp
+GitlabClient::GitlabClient(WiFiClientSecure& tlsClient)
+    : _tls(tlsClient)
+{
+}
+```
+
+You cannot initialize the reference later by writing `_tls = tlsClient;`. That expression would assign to the object `_tls` refers to, rather than make the reference point to a different object.
+
+## 4. Why are the braces `{}` empty?
+
+```cpp
+: _tls(tlsClient) {}
+```
+
+The empty braces mean the constructor body has no additional statements. The member reference has already been initialized by the initializer list.
+
+In short:
+
+- `GitlabClient::GitlabClient(...)` defines the constructor.
+- `: _tls(tlsClient)` binds the member reference to the supplied TLS object.
+- `{}` means no further initialization work is required in the constructor body.
+
+**Practical takeaway:** Your `GitlabClient` class does not need to create or own a separate TLS client. It can reuse the one created by your `.ino` file through the `_tls` reference. Just ensure the original `tlsClient` remains alive for the entire time `GitlabClient` uses it.
+
 # Reusing `GitlabClient` for ESP32-S3 OTA Firmware Updates
 
 You can reuse the `GitlabClient` class structure for your previous ESP32-S3 OTA firmware-update project, especially because both projects need to communicate with GitLab over HTTPS using a TLS client and an authentication token.
