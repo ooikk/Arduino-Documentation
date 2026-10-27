@@ -23,6 +23,5 @@ Voltage output:
 
 <img alt="image" style="width: 50%; height: auto;"  src="https://github.com/user-attachments/assets/ba57d7cb-c586-4d60-a22e-5b3142474510" />
 
-Link to equation derivation: [https://docs.google.com/document/d/1Z1LyTMkD0gJsj7zBMVP3iZKuiQb6vydKDT4mPzqHD1U/edit?tab=t.0](https://docs.google.com/document/d/1Z1LyTMkD0gJsj7zBMVP3iZKuiQb6vydKDT4mPzqHD1U/edit?tab=t.0)
 
 Link to PWM R-C circuit response: [https://docs.google.com/spreadsheets/d/10Ih6O-8kVcTtxQ6LSR1iQ8BdQ8ajPfoUlZrpEv3AAdg/edit?gid=0#gid=0](https://docs.google.com/spreadsheets/d/10Ih6O-8kVcTtxQ6LSR1iQ8BdQ8ajPfoUlZrpEv3AAdg/edit?gid=0#gid=0)
