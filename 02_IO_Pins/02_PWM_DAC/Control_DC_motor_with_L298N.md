@@ -24,66 +24,70 @@ Here is a complete, working example using the modern **Arduino ESP32 Core 3.0+ A
 
 ```cpp
 // Define physical GPIO Pin Assignments
-const int MOTOR\_PWM\_PIN \= 4; // Speed control pin
-const int MOTOR\_IN1\_PIN \= 5; // Direction pin 1
-const int MOTOR\_IN2\_PIN \= 6; // Direction pin 2
+const int MOTOR_PWM_PIN = 4; // Speed control pin
+const int MOTOR_IN1_PIN = 5; // Direction pin 1
+const int MOTOR_IN2_PIN = 6; // Direction pin 2
 
 // PWM Configuration Properties (Core 3.0+ style)
-const int PWM\_FREQ \= 10000;  // 10 kHz frequency (prevents audible motor whining)
-const int PWM\_RES \= 8;       // 8-bit resolution (Speed range: 0 to 255\)
+const int PWM_FREQ = 10000;  // 10 kHz frequency (prevents audible motor whining)
+const int PWM_RES = 8;       // 8-bit resolution (Speed range: 0 to 255)
 
 void setup() {
   // Initialize standard digital outputs for direction control
-  pinMode(MOTOR\_IN1\_PIN, OUTPUT);
-  pinMode(MOTOR\_IN2\_PIN, OUTPUT);
+  pinMode(MOTOR_IN1_PIN, OUTPUT);
+  pinMode(MOTOR_IN2_PIN, OUTPUT);
 
   // Initialize PWM on the speed pin using the Core 3.0+ API
   // This automatically sets the pin direction and handles channel routing
-  ledcAttach(MOTOR\_PWM\_PIN, PWM\_FREQ, PWM\_RES);
+  ledcAttach(MOTOR_PWM_PIN, PWM_FREQ, PWM_RES);
 
   // Ensure the motor is completely stopped at startup
   stopMotor();
 }
 
 void loop() {
-
-  // 1\. Spin Forward and gradually accelerate to full speed
+  // 1. Spin Forward and gradually accelerate to full speed
   setDirectionForward();
-
-  for (int speed \= 0; speed \<= 255; speed++) {
-    ledcWrite(MOTOR\_PWM\_PIN, speed);
-    delay(15); // Smooth acceleration over \~3.8 seconds
+  for (int speed = 0; speed <= 255; speed++) {
+    ledcWrite(MOTOR_PWM_PIN, speed);
+    delay(15); // Smooth acceleration over ~3.8 seconds
   }
+  
   delay(2000); // Maintain full speed forward for 2 seconds
-  // 2\. Safely brake the motor before changing directions
+
+  // 2. Safely brake the motor before changing directions
   stopMotor();
   delay(1000); // Rest for 1 second
-  // 3\. Spin Backward at a fixed medium speed (roughly 60% power)
+
+  // 3. Spin Backward at a fixed medium speed (roughly 60% power)
   setDirectionBackward();
-  ledcWrite(MOTOR\_PWM\_PIN, 150); 
+  ledcWrite(MOTOR_PWM_PIN, 150); 
   delay(3000); // Run backward for 3 seconds
-  // 4\. Stop again before restarting the loop
+
+  // 4. Stop again before restarting the loop
   stopMotor();
   delay(2000); // Rest for 2 seconds
 }
 
-// \--- Motor Control Helper Functions \---
+// --- Motor Control Helper Functions ---
+
 void setDirectionForward() {
-  digitalWrite(MOTOR\_IN1\_PIN, HIGH);
-  digitalWrite(MOTOR\_IN2\_PIN, LOW);
+  digitalWrite(MOTOR_IN1_PIN, HIGH);
+  digitalWrite(MOTOR_IN2_PIN, LOW);
 }
 
 void setDirectionBackward() {
-  digitalWrite(MOTOR\_IN1\_PIN, LOW);
-  digitalWrite(MOTOR\_IN2\_PIN, HIGH);
+  digitalWrite(MOTOR_IN1_PIN, LOW);
+  digitalWrite(MOTOR_IN2_PIN, HIGH);
 }
 
 void stopMotor() {
   // Pulling both direction lines to the same state creates an electronic brake
-  digitalWrite(MOTOR\_IN1\_PIN, LOW);
-  digitalWrite(MOTOR\_IN2\_PIN, LOW);
-  ledcWrite(MOTOR\_PWM\_PIN, 0); // Set speed duty cycle to zero
+  digitalWrite(MOTOR_IN1_PIN, LOW);
+  digitalWrite(MOTOR_IN2_PIN, LOW);
+  ledcWrite(MOTOR_PWM_PIN, 0); // Set speed duty cycle to zero
 }
+
 ```
 
 ## Code Architecture Breakdown 
@@ -253,89 +257,92 @@ void stopMotor() {
 <img width="435" height="233" alt="image" src="https://github.com/user-attachments/assets/60748d2e-a03c-4e98-86f6-0974bc35f78e" />
 
 
-To find the equations for the capacitor voltage Uc(t) and the circuit current i(t) during the charging phase, we can set up and solve a first-order linear differential equation using **Kirchhoff's Voltage Law (KVL)**.
+To find the equations for the capacitor voltage *U_C(t)* and the circuit current *i(t)* during the charging phase, we can set up and solve a first-order linear differential equation using **Kirchhoff's Voltage Law (KVL)**.
 
 Here is the step-by-step mathematical breakdown.
 
 ## Step 1: Apply Kirchhoff's Voltage Law (KVL) 
 
-Looking at the loop in your circuit diagram, the total voltage supplied by the battery ![][image4] must equal the sum of the voltage drops across the resistor ![][image5] and the capacitor ![][image6]:
+Looking at the loop in your circuit diagram, the total voltage supplied by the battery *U_Batt* must equal the sum of the voltage drops across the resistor *U_R(t)* and the capacitor *U_C(t)*:
 
-![][image7]
+<img width="196" height="47" alt="image" src="https://github.com/user-attachments/assets/d1dd6a74-179a-40ba-9141-eec49eec5706" />
 
-**Step 2: Express the components in terms of current ![][image8]**
+
+**Step 2: Express the components in terms of current *i(t)***
 
 Using fundamental electronics relationships:
 
 1. **Ohm's Law** for the resistor:
 
-   ![][image9]
+<img width="139" height="32" alt="image" src="https://github.com/user-attachments/assets/9b65168b-0748-42a6-b69e-14ebeb8223a9" />
+
 
 2. **Current-voltage relationship** for a capacitor:
 
-   ![][image10]
+<img width="141" height="50" alt="image" src="https://github.com/user-attachments/assets/ada5d21b-5881-4bba-8345-91756067298f" />
 
-Substitute the current equation into Ohm's Law to get ![][image11] in terms of ![][image12]:
 
-![][image13]
+Substitute the current equation into Ohm's Law to get *U_R(t)* in terms of *U_C(t)*:
+
+<img width="174" height="58" alt="image" src="https://github.com/user-attachments/assets/fb38cea3-91be-45dd-9a79-71649fef72be" />
+
 
 ## Step 3: Set up the Differential Equation 
 
-Substitute ![][image14] back into our original KVL equation from Step 1:
+Substitute *U_R(t)* back into our original KVL equation from Step 1:
 
-![][image15]
+<img width="222" height="61" alt="image" src="https://github.com/user-attachments/assets/1a63b9f3-6434-48b9-b7d0-ea981f8d830b" />
+
 
 To solve this, let's rearrange it into a standard first-order differential equation form:
 
-![][image16]
+<img width="243" height="125" alt="image" src="https://github.com/user-attachments/assets/c71a3882-8ad5-4934-8e28-df91bc460939" />
 
-![][image17]
 
 ## Step 4: Integrate with Initial Conditions
 
-Assuming the capacitor is completely uncharged at the beginning (![][image18]), our initial condition is ![][image19].
+Assuming the capacitor is completely uncharged at the beginning (*t=0*), our initial condition is *U_C(0)=0*.
 
-Integrate both sides from time ![][image20] to ![][image21]:
+Integrate both sides from time *0* to *t*:
 
-![][image22]
+<img width="332" height="65" alt="image" src="https://github.com/user-attachments/assets/34b7aec0-ecff-4bc7-9b1b-e5b01e3c1a29" />
 
-Using substitution (![][image23]):
 
-![][image24]
+Using substitution (<img width="178" height="41" alt="image" src="https://github.com/user-attachments/assets/33fd3738-45f4-4f77-a340-279be45ed248" />
+):
 
-![][image25]
+<img width="363" height="121" alt="image" src="https://github.com/user-attachments/assets/8319a471-85c4-4479-a383-bca07962a180" />
+
 
 Combine the natural logarithms:
 
-![][image26]
+<img width="229" height="73" alt="image" src="https://github.com/user-attachments/assets/5af3fb27-02c3-4312-b787-f49c7b9f3837" />
 
-## Step 5: Solve for Capacitor Voltage ![][image27] 
 
-Eliminate the natural log by taking the exponential (![][image28]) of both sides:
+## Step 5: Solve for Capacitor Voltage *U_C(t)* 
 
-![][image29]
+Eliminate the natural log by taking the exponential (*e^x*) of both sides:
 
-![][image30]
+<img width="224" height="177" alt="image" src="https://github.com/user-attachments/assets/da0889e9-f34c-499a-a908-cfa54e9f3520" />
 
-![][image31]
 
-Factor out ![][image32] to get your first target formula:
+Factor out *U_Batt* to get your first target formula:
 
-![][image33]
+<img width="225" height="52" alt="image" src="https://github.com/user-attachments/assets/fa3ee770-ea59-440a-bfd2-32f2721a7829" />
 
-## Step 6: Find the Current Function ![][image34]
 
-Now that we have ![][image35], we can determine the charging current equation by differentiating ![][image36] with respect to time, using the relation ![][image37]:
+## Step 6: Find the Current Function *i(t)*
 
-![][image38]
+Now that we have *U_C(t)*, we can determine the charging current equation by differentiating *U_C(t)* with respect to time, using the relation <img width="114" height="37" alt="image" src="https://github.com/user-attachments/assets/985ec257-a7d2-4bb0-a826-ae2620d73621" />
+:
 
-![][image39]
+<img width="300" height="193" alt="image" src="https://github.com/user-attachments/assets/03846709-0d0b-4a87-aa6d-4dfa63184b55" />
 
-![][image40]
 
-The capacitance ![][image41] cancels out, leaving you with your second target formula:
+The capacitance *C* cancels out, leaving you with your second target formula:
 
-![][image42]
+<img width="153" height="57" alt="image" src="https://github.com/user-attachments/assets/cccdcf49-3645-4d2d-9e09-3dc0bcaa30bf" />
+
 
 # **Discharging a capacitor** 
 
