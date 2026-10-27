@@ -263,12 +263,12 @@ Here is the step-by-step mathematical breakdown.
 
 ## Step 1: Apply Kirchhoff's Voltage Law (KVL) 
 
-Looking at the loop in your circuit diagram, the total voltage supplied by the battery *U_Batt* must equal the sum of the voltage drops across the resistor *U_R(t)* and the capacitor *U_C(t)*:
+Looking at the loop in your circuit diagram, the total voltage supplied by the battery $U_Batt$ must equal the sum of the voltage drops across the resistor $U_R(t)$ and the capacitor $U_C(t)$:
 
 <img width="196" height="47" alt="image" src="https://github.com/user-attachments/assets/d1dd6a74-179a-40ba-9141-eec49eec5706" />
 
 
-**Step 2: Express the components in terms of current *i(t)***
+**Step 2: Express the components in terms of current $i(t)$**
 
 Using fundamental electronics relationships:
 
@@ -282,14 +282,14 @@ Using fundamental electronics relationships:
 <img width="141" height="50" alt="image" src="https://github.com/user-attachments/assets/ada5d21b-5881-4bba-8345-91756067298f" />
 
 
-Substitute the current equation into Ohm's Law to get *U_R(t)* in terms of *U_C(t)*:
+Substitute the current equation into Ohm's Law to get $U_R(t)$ in terms of $U_C(t)$:
 
 <img width="174" height="58" alt="image" src="https://github.com/user-attachments/assets/fb38cea3-91be-45dd-9a79-71649fef72be" />
 
 
 ## Step 3: Set up the Differential Equation 
 
-Substitute *U_R(t)* back into our original KVL equation from Step 1:
+Substitute $U_R(t)$ back into our original KVL equation from Step 1:
 
 <img width="222" height="61" alt="image" src="https://github.com/user-attachments/assets/1a63b9f3-6434-48b9-b7d0-ea981f8d830b" />
 
@@ -301,9 +301,9 @@ To solve this, let's rearrange it into a standard first-order differential equat
 
 ## Step 4: Integrate with Initial Conditions
 
-Assuming the capacitor is completely uncharged at the beginning (*t=0*), our initial condition is *U_C(0)=0*.
+Assuming the capacitor is completely uncharged at the beginning ($t=0$), our initial condition is $U_C(0)=0$.
 
-Integrate both sides from time *0* to *t*:
+Integrate both sides from time $0$ to $t$:
 
 <img width="332" height="65" alt="image" src="https://github.com/user-attachments/assets/34b7aec0-ecff-4bc7-9b1b-e5b01e3c1a29" />
 
@@ -319,27 +319,27 @@ Combine the natural logarithms:
 <img width="229" height="73" alt="image" src="https://github.com/user-attachments/assets/5af3fb27-02c3-4312-b787-f49c7b9f3837" />
 
 
-## Step 5: Solve for Capacitor Voltage *U_C(t)* 
+## Step 5: Solve for Capacitor Voltage $U_C(t)$ 
 
 Eliminate the natural log by taking the exponential ($e^x$) of both sides:
 
 <img width="224" height="177" alt="image" src="https://github.com/user-attachments/assets/da0889e9-f34c-499a-a908-cfa54e9f3520" />
 
 
-Factor out *U_Batt* to get your first target formula:
+Factor out $U_Batt$ to get your first target formula:
 
 <img width="225" height="52" alt="image" src="https://github.com/user-attachments/assets/fa3ee770-ea59-440a-bfd2-32f2721a7829" />
 
 
-## Step 6: Find the Current Function *i(t)*
+## Step 6: Find the Current Function $i(t)$
 
-Now that we have *U_C(t)*, we can determine the charging current equation by differentiating *U_C(t)* with respect to time, using the relation <img width="114" height="37" alt="image" src="https://github.com/user-attachments/assets/985ec257-a7d2-4bb0-a826-ae2620d73621" />
+Now that we have $U_C(t)$, we can determine the charging current equation by differentiating $U_C(t)$ with respect to time, using the relation <img width="114" height="37" alt="image" src="https://github.com/user-attachments/assets/985ec257-a7d2-4bb0-a826-ae2620d73621" />
 :
 
 <img width="300" height="193" alt="image" src="https://github.com/user-attachments/assets/03846709-0d0b-4a87-aa6d-4dfa63184b55" />
 
 
-The capacitance *C* cancels out, leaving you with your second target formula:
+The capacitance $C$ cancels out, leaving you with your second target formula:
 
 <img width="153" height="57" alt="image" src="https://github.com/user-attachments/assets/cccdcf49-3645-4d2d-9e09-3dc0bcaa30bf" />
 
@@ -352,7 +352,7 @@ Here is the analytical breakdown and derivation of the discharge equation.
 
 ## 1. Understanding the Circuit Behavior 
 
-In a discharging RC circuit, the capacitor acts as a temporary voltage source. As current flows, energy is dissipated as heat in the resistor, causing both the voltage across the capacitor *U_C(t)* and the current *i(t)* to decay exponentially toward zero.
+In a discharging RC circuit, the capacitor acts as a temporary voltage source. As current flows, energy is dissipated as heat in the resistor, causing both the voltage across the capacitor $U_C(t)$ and the current $i(t)$ to decay exponentially toward zero.
 
 ## 2. Setting up the Differential Equation 
 
@@ -363,9 +363,10 @@ By applying **Kirchhoff's Voltage Law (KVL)** around the single closed loop:
 
 Using the fundamental component behaviors:
 
-* **Ohm's Law:** <img width="135" height="28" alt="image" src="https://github.com/user-attachments/assets/a80e263d-1521-4d56-b3f8-48daf5568d05" />
+- **Ohm's Law:** <img width="135" height="28" alt="image" src="https://github.com/user-attachments/assets/a80e263d-1521-4d56-b3f8-48daf5568d05" />
 
-* **Capacitor Current:** Since the capacitor is *leaving* charge (discharging), the current flowing out relates to the voltage drop by:  
+
+- **Capacitor Current:** Since the capacitor is *leaving* charge (discharging), the current flowing out relates to the voltage drop by:  
 <img width="120" height="49" alt="image" src="https://github.com/user-attachments/assets/66b33a03-b987-483e-8d3e-f910c48c401a" />
 
 
@@ -381,7 +382,7 @@ To isolate the variables for integration, rearrange the terms:
 <img width="216" height="121" alt="image" src="https://github.com/user-attachments/assets/13a5a2cd-9207-4c78-9cf6-2aba687c49a9" />
 
 
-Integrate both sides from the start of discharge (*t=0*, where the initial capacitor voltage is *U_0*) to a future time *t*:
+Integrate both sides from the start of discharge ($t=0$, where the initial capacitor voltage is $U_0$) to a future time $t$:
 
 <img width="303" height="141" alt="image" src="https://github.com/user-attachments/assets/0f2fe3ef-671f-4992-844f-dceea9a212d4" />
 
@@ -391,7 +392,7 @@ Take the exponential ($e^x$) of both sides to eliminate the natural logarithm:
 <img width="121" height="57" alt="image" src="https://github.com/user-attachments/assets/6e24b26d-2e15-4ec4-948c-c64434b65f93" />
 
 
-Multiplying by *U_0* yields the standard time-domain equation for a discharging capacitor:
+Multiplying by $U_0$ yields the standard time-domain equation for a discharging capacitor:
 
 <img width="149" height="45" alt="image" src="https://github.com/user-attachments/assets/4f8dd21b-8000-4ca7-b65e-52c09675fcb1" />
 
@@ -414,7 +415,7 @@ Plugging your component values into the transfer function reveals exactly how th
 
 <img width="172" height="47" alt="image" src="https://github.com/user-attachments/assets/180f6785-cbcc-4f72-9ab3-5d7e63ec8aad" />
 
->For instance, after roughly 2.21 seconds, the capacitor voltage will have dropped to approximately 36.8% of its initial starting voltage *U_0*.
+>For instance, after roughly 2.21 seconds, the capacitor voltage will have dropped to approximately 36.8% of its initial starting voltage $U_0$.
 
  
 
@@ -432,7 +433,7 @@ Discharging equation:
 
 The following spreadsheet simulate the PWM on R-C circuit’s response:
 
+- Google Sheet: [RC Circuit](https://docs.google.com/spreadsheets/d/10Ih6O-8kVcTtxQ6LSR1iQ8BdQ8ajPfoUlZrpEv3AAdg/edit?gid=0#gid=0)
+- Online Circuit Simulator: [Falstad.com](https://www.falstad.com/circuit/)
+
 Original doc: [Control DC motor with L298N](https://docs.google.com/document/d/1SvGCzkDtPiJGzOT2NCowSnUFJOa3VR7HOvcXryYpcvc/edit?tab=t.0)
-
-Google Sheet: [RC Circuit](https://docs.google.com/spreadsheets/d/10Ih6O-8kVcTtxQ6LSR1iQ8BdQ8ajPfoUlZrpEv3AAdg/edit?gid=0#gid=0)
-
