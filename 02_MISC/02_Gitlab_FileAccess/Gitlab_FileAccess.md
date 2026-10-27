@@ -1748,3 +1748,599 @@ finally {
 ### Security note
 
 Avoid saving this script with your real token in a shared folder or committing it to Git. The token is stored as plain text in the script and may remain in your PowerShell history or editor backups. Since this is a private repository, keep the token's permissions restricted to the operations your ESP32 needs.
+
+---
+
+# C++ Modules: `GitlabClient`, `PSRamFileManager`, and `NVSTokenManager`
+
+In your ESP32-S3 project, `GitlabClient`, `PSRamFileManager`, and `NVSTokenManager` are modules that serve different purposes. The main difference is that `GitlabClient` is designed as a C++ class, while the other two can be implemented as collections of standalone functions.
+
+Let's examine why `GitlabClient` uses `GitlabClient::functionName()` in its implementation but is called using `gitlab->functionName()` in your `.ino` file.
+
+## 1. Understand the three layers of a C++ module
+
+A typical module in your project has three parts:
+
+| Layer | File | Purpose |
+|---|---|---|
+| Declaration (interface) | `.h` | Tells other files which functions, classes, and data are available. |
+| Implementation | `.cpp` | Contains the actual function definitions and logic. |
+| Usage (caller) | `.ino` | Calls the functions to perform the required operation. |
+
+For example, your GitLab client may have this structure:
+
+```text
+02_Gitlab_FileAccess/
+│
+├── 02_Gitlab_FileAccess.ino    Main program
+│
+├── GitlabClient.h              Class declaration
+├── GitlabClient.cpp            Class implementation
+│
+├── PSRamFileManager.h          PSRAM functions
+├── PSRamFileManager.cpp        PSRAM implementation
+│
+├── NVSTokenManager.h           NVS functions
+└── NVSTokenManager.cpp         NVS implementation
+```
+
+The header files provide the interfaces. The `.cpp` files implement them. The `.ino` file coordinates the modules.
+
+## 2. Why does `GitlabClient.cpp` use `GitlabClient::`?
+
+Consider a simplified version of your class declaration in `GitlabClient.h`:
+
+```cpp
+class GitlabClient {
+public:
+    bool uploadNewFile(
+        const String& repoFilePath,
+        const uint8_t* data,
+        size_t len,
+        const String& commitMessage
+    );
+
+    bool updateFile(
+        const String& repoFilePath,
+        const uint8_t* data,
+        size_t len,
+        const String& commitMessage
+    );
+};
+```
+
+This declares a class called `GitlabClient` with two member functions.
+
+It tells the compiler that these functions belong to the class, but it does not provide their implementations.
+
+In `GitlabClient.cpp`, you might see:
+
+```cpp
+bool GitlabClient::uploadNewFile(
+    const String& repoFilePath,
+    const uint8_t* data,
+    size_t len,
+    const String& commitMessage
+) {
+    // Implementation goes here
+}
+```
+
+The important part is:
+
+```cpp
+GitlabClient::uploadNewFile
+```
+
+The `::` operator is called the **scope resolution operator**.
+
+It tells the compiler:
+
+```text
+uploadNewFile() is a member function of the GitlabClient class.
+```
+
+Without the class name, this would be a different declaration:
+
+```cpp
+bool uploadNewFile(...) {
+    // ...
+}
+```
+
+That would define an ordinary standalone function, not the member function declared in the class.
+
+### Why separate the declaration and implementation?
+
+You could put the entire function implementation inside the class declaration in the header. However, separating them has several benefits:
+
+- The header presents a clean interface.
+- The `.cpp` file contains the implementation details.
+- Other modules can use the class without needing to read its implementation.
+- Changes to implementation details often do not require changes to the interface.
+
+This is especially useful for `GitlabClient`, which handles HTTPS, authentication, HTTP requests, Base64 encoding, and GitLab API responses.
+
+## 3. Why does the `.ino` file use `gitlab->uploadNewFile()`?
+
+Now consider how your main program calls the function:
+
+```cpp
+gitlab->uploadNewFile(
+    remotePath,
+    bytes,
+    length,
+    commitMessage
+);
+```
+
+The key is the `->` operator.
+
+`gitlab` is a pointer to a `GitlabClient` object. The `->` operator accesses a member of the object to which that pointer refers.
+
+Let's break this down.
+
+### Step 1: Declare a pointer
+
+Your initialization code may contain something similar to:
+
+```cpp
+GitlabClient* gitlab = nullptr;
+```
+
+This declares `gitlab` as a pointer to a `GitlabClient` object.
+
+Initially:
+
+```text
+gitlab
+  |
+  v
+nullptr
+```
+
+No object is assigned to the pointer yet.
+
+### Step 2: Create the object
+
+Your project uses dynamic allocation with `new`, along these lines:
+
+```cpp
+gitlab = new (std::nothrow) GitlabClient(tlsClient);
+```
+
+Assuming allocation succeeds, this creates a `GitlabClient` object and stores its address in `gitlab`.
+
+Conceptually:
+
+```text
+gitlab pointer
+     |
+     v
++----------------------------+
+| GitlabClient object        |
+|                            |
+| TLS client reference       |
+| Configuration              |
+| Authentication state       |
+| Error information          |
++----------------------------+
+```
+
+The constructor receives `tlsClient`, allowing the object to use the TLS client for HTTPS communication.
+
+The actual object members depend on your class implementation.
+
+### Step 3: Call a member function through the pointer
+
+You can now write:
+
+```cpp
+gitlab->uploadNewFile(
+    remotePath,
+    bytes,
+    length,
+    commitMessage
+);
+```
+
+This is shorthand for:
+
+```cpp
+(*gitlab).uploadNewFile(
+    remotePath,
+    bytes,
+    length,
+    commitMessage
+);
+```
+
+Both expressions call `uploadNewFile()` on the object pointed to by `gitlab`.
+
+The operators have different purposes:
+
+| Operator | Purpose | Example |
+|---|---|---|
+| `::` | Identifies which class or namespace a function belongs to. | `GitlabClient::uploadNewFile()` |
+| `->` | Accesses a member through an object pointer. | `gitlab->uploadNewFile()` |
+| `.` | Accesses a member directly through an object. | `client.uploadNewFile()` |
+
+**Important:** `GitlabClient::uploadNewFile()` in the `.cpp` file defines the member function. It is not generally the way you call that non-static member function on a particular object.
+
+For example, if you created an ordinary object instead of a pointer:
+
+```cpp
+GitlabClient client(tlsClient);
+
+client.uploadNewFile(
+    remotePath,
+    bytes,
+    length,
+    commitMessage
+);
+```
+
+You would use the `.` operator.
+
+## 4. Why use a class for GitLab but simpler functions for PSRAM and NVS?
+
+This is the most important architectural difference in your project.
+
+A C++ module does not have to be a class. You can organize a module using standalone functions or a class, depending on its responsibilities.
+
+### A. `GitlabClient`: a class that maintains state
+
+Your GitLab client has several related responsibilities:
+
+- Maintaining configuration, such as the project ID and branch.
+- Using a TLS client to establish HTTPS connections.
+- Managing authentication with the GitLab token.
+- Uploading, downloading, updating, and deleting files.
+- Reporting errors through `lastError()`.
+
+These operations share configuration and state, making a class a natural choice.
+
+For example, a simplified class might look like this:
+
+```cpp
+class GitlabClient {
+private:
+    String _token;
+    String _branch;
+    String _lastError;
+
+public:
+    bool begin(const String& token);
+
+    bool uploadNewFile(
+        const String& path,
+        const uint8_t* data,
+        size_t len,
+        const String& commitMessage
+    );
+
+    bool downloadFileToPSRAM(
+        const String& path,
+        uint8_t** outBuffer,
+        size_t* outLen
+    );
+
+    String lastError() const;
+};
+```
+
+This is an illustration of the design, not a replacement for your existing header.
+
+An object can maintain its own configuration and error information.
+
+For example:
+
+```cpp
+gitlab->uploadNewFile(...);
+
+if (!gitlab->lastError().isEmpty()) {
+    Serial.println(gitlab->lastError());
+}
+```
+
+The object can retain the error produced by its most recent operation.
+
+### Why is this useful?
+
+Suppose you eventually access two GitLab projects.
+
+You could create two objects with different configurations:
+
+```cpp
+GitlabClient* clientA;
+GitlabClient* clientB;
+```
+
+Each object could maintain its own project configuration and error state.
+
+You would not have to redesign the module around a separate collection of global variables.
+
+This is one advantage of object-oriented programming.
+
+### B. `PSRamFileManager`: a collection of related operations
+
+Your PSRAM file manager may perform operations such as:
+
+- Checking PSRAM availability.
+- Allocating memory buffers.
+- Reading and writing file data in memory.
+- Releasing allocated memory.
+
+If these operations do not require a persistent object with its own configuration or state, standalone functions can be sufficient.
+
+For example:
+
+```cpp
+// PSRamFileManager.h
+
+bool initializePSRAM();
+
+uint8_t* allocatePSRAM(size_t size);
+
+void releasePSRAM(uint8_t* buffer);
+```
+
+The implementation could reside in `PSRamFileManager.cpp`:
+
+```cpp
+// Illustrative implementation
+
+uint8_t* allocatePSRAM(size_t size) {
+    return static_cast<uint8_t*>(ps_malloc(size));
+}
+
+void releasePSRAM(uint8_t* buffer) {
+    free(buffer);
+}
+```
+
+The main program can call these functions directly:
+
+```cpp
+uint8_t* buffer = allocatePSRAM(4096);
+
+if (buffer != nullptr) {
+    // Use the buffer.
+
+    releasePSRAM(buffer);
+}
+```
+
+Notice that there is no `GitlabClient`-style object pointer.
+
+The functions are called directly because they are standalone functions.
+
+The `ps_malloc()` and `free()` calls above illustrate the approach; use the actual function names and memory-management rules from your existing module.
+
+### C. `NVSTokenManager`: functions for managing persistent storage
+
+Your NVS token manager may provide functions to:
+
+- Load the GitLab token from NVS.
+- Provision a token through the Serial Monitor.
+- Save the token.
+- Check whether a token exists.
+
+These can also be standalone functions if they operate on a known NVS namespace and key.
+
+For example:
+
+```cpp
+// NVSTokenManager.h
+
+bool nvs_loadGitlabToken(String& token);
+
+bool nvs_provisionGitlabTokenFromSerial();
+```
+
+Your main program can call:
+
+```cpp
+String token;
+
+if (nvs_loadGitlabToken(token)) {
+    Serial.println("GitLab token loaded successfully.");
+}
+```
+
+Again, these are illustrative signatures; retain the signatures defined in your actual project.
+
+The NVS module can hide the storage details from the main program, just as `GitlabClient` hides GitLab API details.
+
+### Comparison
+
+| Characteristic | `GitlabClient` | `PSRamFileManager` | `NVSTokenManager` |
+|---|---|---|---|
+| Typical design | C++ class | Standalone functions | Standalone functions |
+| Maintains object-specific state | Yes | Not necessarily | Not necessarily |
+| Requires object construction | Yes, for the class design | No, if using standalone functions | No, if using standalone functions |
+| Example definition | `GitlabClient::uploadNewFile()` | `allocatePSRAM()` | `nvs_loadGitlabToken()` |
+| Example call | `gitlab->uploadNewFile()` | `allocatePSRAM()` | `nvs_loadGitlabToken(token)` |
+| Main purpose | Communicate with GitLab | Manage memory buffers | Manage persistent credentials |
+
+The distinction is not that GitLab is inherently more complex than PSRAM or NVS. Rather, the class design groups operations around an object that maintains related state, while standalone functions group operations by module.
+
+You could implement PSRAM or NVS as classes too, if that provided a meaningful benefit.
+
+## 5. How the three modules work together
+
+Your `.ino` file acts as the coordinator.
+
+A simplified initialization flow looks like this:
+
+```text
+              Main .ino
+                  |
+                  v
+        +-------------------+
+        | Initialize Wi-Fi  |
+        +-------------------+
+                  |
+                  v
+        +-------------------+
+        | NVSTokenManager   |
+        | Load GitLab token |
+        +-------------------+
+                  |
+                  v
+        +-------------------+
+        | GitlabClient      |
+        | Initialize HTTPS  |
+        | and configuration |
+        +-------------------+
+                  |
+                  v
+        +-------------------+
+        | PSRamFileManager  |
+        | Allocate buffers  |
+        +-------------------+
+                  |
+                  v
+        +-------------------+
+        | GitLab operation  |
+        | Download/upload   |
+        +-------------------+
+```
+
+This illustrates the roles, not a mandatory initialization order for every module. Your actual code determines which modules need to be initialized first.
+
+For example, your existing GitLab initialization sequence loads the token from NVS before initializing the GitLab client.
+
+When you upload a file:
+
+```cpp
+gitlab->uploadNewFile(
+    remotePath,
+    bytes,
+    length,
+    commitMessage
+);
+```
+
+the main program passes the file path and data to the GitLab client. The client handles the HTTP request and GitLab API interaction.
+
+The PSRAM manager, if used to prepare or store the file buffer, manages the memory independently. The NVS manager provides the persistent token.
+
+Each module has a distinct responsibility.
+
+## 6. Why do we need both `.h` and `.cpp` files?
+
+Consider the declaration in `GitlabClient.h`:
+
+```cpp
+bool uploadNewFile(
+    const String& repoFilePath,
+    const uint8_t* data,
+    size_t len,
+    const String& commitMessage
+);
+```
+
+This tells the compiler the function's interface, including its parameter types and return type.
+
+The corresponding implementation in `GitlabClient.cpp`:
+
+```cpp
+bool GitlabClient::uploadNewFile(
+    const String& repoFilePath,
+    const uint8_t* data,
+    size_t len,
+    const String& commitMessage
+) {
+    // Validate input.
+    // Encode data.
+    // Construct the GitLab API request.
+    // Send the request.
+    // Record the result.
+}
+```
+
+contains the actual logic.
+
+The header allows the `.ino` file to call the function without knowing how it works internally.
+
+The same separation applies to standalone functions in your PSRAM and NVS modules.
+
+For example:
+
+```cpp
+#include "GitlabClient.h"
+#include "PSRamFileManager.h"
+#include "NVSTokenManager.h"
+```
+
+These include directives make the corresponding declarations available to the `.ino` file.
+
+The `.cpp` files provide the implementations that the linker connects to the compiled program.
+
+## 7. One important improvement: you do not always need `new`
+
+Your current GitLab client uses dynamic allocation, apparently along these lines:
+
+```cpp
+gitlab = new (std::nothrow) GitlabClient(tlsClient);
+```
+
+This is valid, and it can be appropriate when you need dynamic object creation or optional allocation.
+
+However, if the GitLab client is created once and used throughout the program, you could also construct it as a normal object.
+
+For example, if the class supports the required constructor:
+
+```cpp
+GitlabClient gitlab(tlsClient);
+```
+
+You would then call:
+
+```cpp
+gitlab.uploadNewFile(
+    remotePath,
+    bytes,
+    length,
+    commitMessage
+);
+```
+
+instead of:
+
+```cpp
+gitlab->uploadNewFile(
+    remotePath,
+    bytes,
+    length,
+    commitMessage
+);
+```
+
+The second approach uses a pointer and dynamic allocation; the first uses a directly declared object.
+
+Do not change your current implementation without checking its initialization requirements. Your existing design may intentionally allocate the object only after Wi-Fi and token initialization.
+
+For your ESP32-S3, both approaches are valid. The choice depends on your lifecycle and memory-management requirements.
+
+## Final takeaway
+
+Remember these three distinctions:
+
+```cpp
+// 1. Class member function definition in GitlabClient.cpp
+bool GitlabClient::uploadNewFile(...) {
+    // Implementation
+}
+
+// 2. Call through a pointer to a GitlabClient object
+gitlab->uploadNewFile(...);
+
+// 3. Call a standalone function from another module
+nvs_loadGitlabToken(token);
+```
+
+The first uses `::` to identify the class that owns the function. The second uses `->` to access a member through an object pointer. The third calls a standalone function directly.
+
+For your modular ESP32-S3 project, the key design principle is to expose a clear interface in each header and keep implementation details inside the corresponding `.cpp` file. Whether a module uses a class or standalone functions should depend on whether it benefits from maintaining object-specific state—not simply on how complicated its implementation is.
