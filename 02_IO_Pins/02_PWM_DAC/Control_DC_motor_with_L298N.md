@@ -350,49 +350,53 @@ To find the transfer function for the **capacitor voltage during discharge**, we
 
 Here is the analytical breakdown and derivation of the discharge equation.
 
-## 1\. Understanding the Circuit Behavior 
+## 1. Understanding the Circuit Behavior 
 
-In a discharging RC circuit, the capacitor acts as a temporary voltage source. As current flows, energy is dissipated as heat in the resistor, causing both the voltage across the capacitor ![][image43] and the current ![][image44] to decay exponentially toward zero.
+In a discharging RC circuit, the capacitor acts as a temporary voltage source. As current flows, energy is dissipated as heat in the resistor, causing both the voltage across the capacitor *U_C(t)* and the current *i(t)* to decay exponentially toward zero.
 
-## 2\. Setting up the Differential Equation 
+## 2. Setting up the Differential Equation 
 
 By applying **Kirchhoff's Voltage Law (KVL)** around the single closed loop:
 
-![][image45]
+<img width="158" height="41" alt="image" src="https://github.com/user-attachments/assets/286c8817-1570-4ef2-8a70-56afee4f0566" />
+
 
 Using the fundamental component behaviors:
 
-* **Ohm's Law:** ![][image46]  
+* **Ohm's Law:** <img width="135" height="28" alt="image" src="https://github.com/user-attachments/assets/a80e263d-1521-4d56-b3f8-48daf5568d05" />
+
 * **Capacitor Current:** Since the capacitor is *leaving* charge (discharging), the current flowing out relates to the voltage drop by:  
-  ![][image47]
+<img width="120" height="49" alt="image" src="https://github.com/user-attachments/assets/66b33a03-b987-483e-8d3e-f910c48c401a" />
+
 
 Substituting Ohm's Law and the current equation into the KVL expression gives:
 
-![][image48]
+<img width="196" height="58" alt="image" src="https://github.com/user-attachments/assets/b68258fe-cfeb-4da5-902f-313568cd950c" />
 
-## 3\. Solving the Differential Equation 
+
+## 3. Solving the Differential Equation 
 
 To isolate the variables for integration, rearrange the terms:
 
-![][image49]
+<img width="216" height="121" alt="image" src="https://github.com/user-attachments/assets/13a5a2cd-9207-4c78-9cf6-2aba687c49a9" />
 
-![][image50]
 
-Integrate both sides from the start of discharge (![][image51], where the initial capacitor voltage is ![][image52]) to a future time ![][image53]:
+Integrate both sides from the start of discharge (*t=0*, where the initial capacitor voltage is *U_0*) to a future time *t*:
 
-![][image54]
+<img width="303" height="141" alt="image" src="https://github.com/user-attachments/assets/0f2fe3ef-671f-4992-844f-dceea9a212d4" />
 
-![][image55]
 
-Take the exponential (![][image56]) of both sides to eliminate the natural logarithm:
+Take the exponential (*e^x*) of both sides to eliminate the natural logarithm:
 
-![][image57]
+<img width="121" height="57" alt="image" src="https://github.com/user-attachments/assets/6e24b26d-2e15-4ec4-948c-c64434b65f93" />
 
-Multiplying by ![][image58] yields the standard time-domain equation for a discharging capacitor:
 
-![][image59]
+Multiplying by *U_0* yields the standard time-domain equation for a discharging capacitor:
 
-## 4\. Calculating the Specific Time Constant (![][image60]) 
+<img width="149" height="45" alt="image" src="https://github.com/user-attachments/assets/4f8dd21b-8000-4ca7-b65e-52c09675fcb1" />
+
+
+## 4. Calculating the Specific Time Constant (![][image60]) 
 
 The speed of the discharge depends entirely on the circuit's **time constant (![][image61])**, defined as:
 
