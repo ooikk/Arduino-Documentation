@@ -1,3 +1,6 @@
+[![logo-color](https://img.shields.io/badge/Index-C++_Tutorial-59B292?logo=github&logoColor=white&labelColor=5B7E3C)](https://www.w3schools.com/cpp/default.asp)
+
+
 # C++ Learning Path for Your ESP32-S3 `GitlabClient` Project
 
 The topic you are exploring is primarily **C++ Object-Oriented Programming (OOP)**, with emphasis on constructors, references, pointers, and object lifetime.
@@ -158,3 +161,7 @@ Before moving to advanced topics such as inheritance, templates, and polymorphis
 These are especially important in embedded C++, where objects may manage TLS connections, PSRAM buffers, peripherals, and FreeRTOS resources.
 
 **My recommended first reading** is [LearnCpp.com, Chapter 12: Compound Types — References and Pointers](https://www.learncpp.com/), followed by Chapter 14 on classes and constructors. Then return to your `GitlabClient` constructor and see if you can explain every token in it without referring to the notes.
+
+
+
+
