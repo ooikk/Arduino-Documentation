@@ -2791,7 +2791,7 @@ Creates the TLS client object
 Passes a reference to the constructor
 
 GitlabClient object
-_tlsClient references tlsClient
+_tls references tlsClient
 Uses that TLS client for secure HTTPS communication
 ```
 
