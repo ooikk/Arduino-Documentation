@@ -14,6 +14,8 @@ Secure with private keys at Gitlab:
 
 ![logo-color](https://img.shields.io/badge/Index-Badges-DA6556?logo=github&logoColor=white&labelColor=5B7E3C)
 
+--- 
+
 # Module 1 — ESP32-S3 Security Engineering
 
 **Target:** ESP32-S3 DevKitC-1 · N16R8 · Arduino IDE 2.x · Espressif Arduino-ESP32 Core 3.x
