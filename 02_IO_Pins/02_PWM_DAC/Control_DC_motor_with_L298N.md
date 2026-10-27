@@ -386,7 +386,7 @@ Integrate both sides from the start of discharge (*t=0*, where the initial capac
 <img width="303" height="141" alt="image" src="https://github.com/user-attachments/assets/0f2fe3ef-671f-4992-844f-dceea9a212d4" />
 
 
-Take the exponential (*e^x*) of both sides to eliminate the natural logarithm:
+Take the exponential ($e^x$) of both sides to eliminate the natural logarithm:
 
 <img width="121" height="57" alt="image" src="https://github.com/user-attachments/assets/6e24b26d-2e15-4ec4-948c-c64434b65f93" />
 
