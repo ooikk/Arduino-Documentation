@@ -2716,6 +2716,142 @@ The function itself is available through the same object pointer as your other p
 
 So yes, all seven functions you listed can be accessed through `gitlab->` provided they are declared as public members of `GitlabClient` and their implementations are correctly linked.
 
+# Understanding `explicit` in the `GitlabClient` Constructor
+
+Yes, `explicit` is a C++ keyword that can be used with a constructor. In your `GitlabClient.h`:
+
+```cpp
+explicit GitlabClient(WiFiClientSecure& tlsClient);
+```
+
+This is a constructor declaration, not its implementation. Let's break it down.
+
+## 1. Understanding each part
+
+| Syntax | Meaning |
+|---|---|
+| `explicit` | Prevents the constructor from being used for certain implicit conversions. |
+| `GitlabClient` | The constructor has the same name as the class. |
+| `WiFiClientSecure&` | Accepts a reference to an existing `WiFiClientSecure` object. |
+| `tlsClient` | The parameter name, referring to the supplied TLS client. |
+| `;` | Ends the declaration; the implementation is elsewhere. |
+
+## 2. Where is the constructor implemented?
+
+In `GitlabClient.cpp`, you would typically define it like this:
+
+```cpp
+#include "GitlabClient.h"
+
+GitlabClient::GitlabClient(WiFiClientSecure& tlsClient)
+    : _tls(tlsClient)
+{
+}
+```
+
+This assumes your header declares a reference member named `_tls`:
+
+```cpp
+class GitlabClient {
+public:
+    explicit GitlabClient(WiFiClientSecure& tlsClient);
+
+private:
+    WiFiClientSecure& _tls;
+};
+```
+
+The important part is:
+
+```cpp
+: _tls(tlsClient)
+```
+
+This is the **member initializer list**. It initializes `_tls` as a reference to the existing object passed into the constructor. It does not create another `WiFiClientSecure` object or copy the existing one.
+
+For example, in your `.ino` file:
+
+```cpp
+WiFiClientSecure tlsClient;
+
+GitlabClient* gitlab = nullptr;
+
+gitlab = new (std::nothrow) GitlabClient(tlsClient);
+```
+
+The relationship is:
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/f7fd1750-d8bc-490a-9590-9abbf25dd18c" />
+
+
+```text
+.ino file
+WiFiClientSecure tlsClient;
+Creates the TLS client object
+Passes a reference to the constructor
+
+GitlabClient object
+_tlsClient references tlsClient
+Uses that TLS client for secure HTTPS communication
+```
+
+The TLS object must remain alive for as long as `GitlabClient` uses its reference.
+
+## 3. Why use `explicit`?
+
+Consider a constructor without `explicit`:
+
+```cpp
+class GitlabClient {
+public:
+    GitlabClient(WiFiClientSecure& tlsClient);
+};
+```
+
+C++ could permit certain implicit conversions, such as:
+
+```cpp
+WiFiClientSecure tlsClient;
+
+GitlabClient client = tlsClient;
+```
+
+Here, the compiler could implicitly construct a `GitlabClient` from `tlsClient`.
+
+With `explicit`:
+
+```cpp
+explicit GitlabClient(WiFiClientSecure& tlsClient);
+```
+
+That implicit construction is prohibited. You must construct the object directly:
+
+```cpp
+GitlabClient client(tlsClient);
+```
+
+Or use your dynamic allocation pattern:
+
+```cpp
+GitlabClient* gitlab =
+    new (std::nothrow) GitlabClient(tlsClient);
+```
+
+Both are valid.
+
+## 4. Does `explicit` affect `newGitlab`?
+
+No. It does not prevent you from creating another object or assigning another pointer.
+
+```cpp
+GitlabClient* newGitlab =
+    new (std::nothrow) GitlabClient(tlsClient);
+```
+
+This remains valid because you explicitly call the constructor with `tlsClient`.
+
+**My recommendation:** Keep `explicit` in your `GitlabClient` constructor. It makes the class's construction intentional and helps prevent accidental implicit conversions. It does not change how the TLS reference works or how you call methods such as `gitlab->listFiles(...)`.
+
 # Reusing `GitlabClient` for ESP32-S3 OTA Firmware Updates
 
 You can reuse the `GitlabClient` class structure for your previous ESP32-S3 OTA firmware-update project, especially because both projects need to communicate with GitLab over HTTPS using a TLS client and an authentication token.
