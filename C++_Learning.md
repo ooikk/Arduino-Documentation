@@ -1,5 +1,5 @@
 [![logo-color](https://img.shields.io/badge/Index-C++_Tutorial-59B292?logo=github&logoColor=white&labelColor=5B7E3C)](https://www.w3schools.com/cpp/default.asp)
-
+[![logo-color](https://img.shields.io/badge/Index-Learn_C++-467235?logo=github&logoColor=white&labelColor=5B7E3C)](https://www.learncpp.com/)
 
 # C++ Learning Path for Your ESP32-S3 `GitlabClient` Project
 
