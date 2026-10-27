@@ -2416,11 +2416,11 @@ And `GitlabClient.cpp` might define it like this:
 
 ```cpp
 GitlabClient::GitlabClient(WiFiClientSecure& tlsClient)
-    : _tlsClient(tlsClient) {
+    : _tls(tlsClient) {
 }
 ```
 
-Here, `_tlsClient` is a reference to the original TLS client, not a separate copy.
+Here, `_tls` is a reference to the original TLS client, not a separate copy.
 
 When `GitlabClient` needs to make an HTTPS request, it can use `_tlsClient` with `HTTPClient`.
 
@@ -2429,7 +2429,7 @@ For example:
 ```cpp
 HTTPClient http;
 
-if (http.begin(_tlsClient, url)) {
+if (http.begin(_tls, url)) {
     // Configure and perform the HTTP request.
     http.end();
 }
