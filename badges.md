@@ -10,27 +10,46 @@ Here are copy-paste-ready Markdown code samples for every Shields.io format and 
 ![logo-color](https://img.shields.io/badge/Pick_Color-Color_Hunt-A5E9DD?logo=github&logoColor=white&labelColor=2373F4)
 ```
 
+### Color Code
 https://colorhunt.co/
 
-```
+### Alert!
+
 > [!NOTE]
 > Useful information that users should know, even when skimming content.
 ```
 > [!NOTE]
 > Useful information that users should know, even when skimming content.
+```
 
 > [!TIP]
 > Helpful advice for doing things better or more easily.
+```
+> [!TIP]
+> Helpful advice for doing things better or more easily.
+```
 
 > [!IMPORTANT]
 > Key information users need to know to achieve their goal.
+```
+> [!IMPORTANT]
+> Key information users need to know to achieve their goal.
+```
 
 > [!WARNING]
 > Urgent info that needs immediate user attention to avoid problems.
+```
+> [!WARNING]
+> Urgent info that needs immediate user attention to avoid problems.
+```
 
 > [!CAUTION]
 > Advises about risks or negative outcomes of certain actions.
 
+```
+> [!CAUTION]
+> Advises about risks or negative outcomes of certain actions.
+```
 
 ### Style
 <!-- flat (default) -->
