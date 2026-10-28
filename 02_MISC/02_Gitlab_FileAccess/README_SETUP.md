@@ -16,7 +16,7 @@ Arduino IDE 2.x / Espressif Arduino-ESP32 Core 3.x. Project modules:
 5. Configure Tools:
    - Flash Size: 16MB (or 16MB for N16R8)
    - PSRAM: OPI PSRAM
-   - Partition Scheme: 16MB with OTA, or 16M Flash (3MB APP/9.9MB FATFS) if that is the scheme shown by your installed core
+   - Partition Scheme: Ensure choose a partition with **SPIFFS**. 16MB with OTA, or 16M Flash (3MB APP/9.9MB SPIFFS) if that is the scheme shown by your installed core
    - USB CDC On Boot: Enabled is convenient for native USB serial, but use the port that actually appears on your PC
 6. Install **ArduinoJson** from Library Manager. `Preferences`, `LittleFS`, `WiFi`, `WiFiClientSecure`, and `HTTPClient` are provided by the ESP32 Arduino core; do not install separate libraries for these.
 7. Copy all files in this folder into one Arduino sketch folder named `GitlabFileAccess`. Open `GitlabFileAccess.ino`.
