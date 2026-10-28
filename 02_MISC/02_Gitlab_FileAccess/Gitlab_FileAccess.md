@@ -570,7 +570,7 @@ Once repository listing and binary downloads work reliably, I recommend hardenin
 The key architectural benefit is that `GitlabClient` can now serve as a reusable repository-access layer for configuration files, images, JSON documents and future OTA manifests. The same pattern can also be extended to download firmware images, but firmware installation should have its own signature verification, partition management and rollback controls rather than treating a successful download as sufficient evidence that an image is safe to install.
 
 ---
-# Testing `UPLOAD` and `UPDATE` in the ESP32-S3 GitLab Project
+# Testing `UPLOAD` and `UPDATE`
 
 For your ESP32-S3 `02_Gitlab_FileAccess` project, I recommend testing `UPLOAD` and `UPDATE` through the Serial Monitor using two local test files and a three-stage verification procedure.
 
