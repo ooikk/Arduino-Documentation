@@ -3491,6 +3491,81 @@ void setup() {
 
 You can then avoid repeatedly mounting it in individual file-operation functions, provided you have a reliable way to ensure initialization succeeded before those functions run.
 
+## Mounting LittleFS Once in an ESP32-S3 Project
+
+There can be problems with mounting LittleFS multiple times, but calling `LittleFS.begin(false)` repeatedly is not automatically harmful. The main concern is unnecessary remounting and how the filesystem is managed.
+
+For your ESP32-S3 N16R8 project using Arduino-ESP32 Core 3.3.12, I recommend mounting LittleFS **once** during initialization and reusing it.
+
+### 1. What happens when you call `LittleFS.begin(false)` repeatedly?
+
+| Situation | Possible consequence |
+|---|---|
+| First call succeeds | LittleFS is mounted and files can be accessed. |
+| Second call while already mounted | Depending on the core's implementation, it may reuse the existing mount or attempt another mount. Don't rely on repeated calls being harmless. |
+| Remount while files are open | Can cause file-handle or filesystem-state problems, depending on the implementation. |
+| Mount fails with `false` | No automatic formatting is requested; your application should handle the failure. |
+
+The exact behaviour depends on the Arduino-ESP32 core implementation, so repeated calls should not be used as a substitute for tracking initialization state.
+
+### 2. Recommended approach for your project
+
+Mount LittleFS once in `setup()`:
+
+```cpp
+bool littleFSReady = false;
+
+void setup() {
+    Serial.begin(115200);
+
+    littleFSReady = LittleFS.begin(false);
+
+    if (littleFSReady) {
+        Serial.println("[LittleFS] Mounted successfully.");
+    } else {
+        Serial.println("[ERROR] LittleFS mount failed.");
+    }
+}
+```
+
+Then, inside `uploadLittleFSFile()`, replace the repeated mount operation with a readiness check:
+
+```cpp
+if (!littleFSReady) {
+    Serial.println("[ERROR] LittleFS is not mounted.");
+    return;
+}
+```
+
+You can continue opening and closing individual files as needed:
+
+```cpp
+File file = LittleFS.open(localPath, "r");
+
+if (!file) {
+    Serial.println("[ERROR] File not found.");
+    return;
+}
+
+// Read or process the file.
+
+file.close();
+```
+
+Opening and closing files repeatedly is normal. It is the filesystem mount itself that you generally want to manage centrally.
+
+### 3. When should you mount again?
+
+You generally do **not** need to mount again after:
+
+- A file upload or download.
+- Creating, reading, updating, or deleting a file.
+- Closing a file.
+
+You may need to mount again if the filesystem has deliberately been unmounted or the filesystem subsystem has been reinitialized. In that case, make sure no file handles remain open.
+
+**My recommendation:** For your GitLab file-access application, mount LittleFS once in `setup()`, record whether mounting succeeded, and let your upload/update functions check that status. This keeps the filesystem lifecycle predictable and avoids redundant initialization.
+
 ---
 
 # Reusing `GitlabClient` for ESP32-S3 OTA Firmware Updates
