@@ -114,10 +114,70 @@ Configure the **Tools** menu:
 | Board | ESP32S3 Dev Module or the appropriate DevKitC-1 entry |
 | Flash Size | 16MB |
 | PSRAM | OPI PSRAM |
-| Partition Scheme | 16MB with OTA, or the compatible 16MB scheme available in your installed core |
+| Partition Scheme | Ensure select option with **SPIFFS** for LittleFS support. eg 16MB with OTA, or the compatible 16MB scheme available in your installed core |
 | USB CDC On Boot | Enabled if you use the native USB serial interface |
 
 The N16R8's 8MB PSRAM is separate from its 16MB flash. Selecting the correct PSRAM mode is essential.
+
+
+#### Custom Partition: Changing default `ffat` to `spiffs` in the ESP32-S3 Partition Table
+
+You can change `ffat` to `spiffs` in your custom partition table, but there are two important considerations.
+
+- The `spiffs` label will match the default partition label expected by `LittleFS.begin(false)`.
+- You will no longer have a FAT filesystem partition named `ffat`. If you currently use FATFS to store files, those files will not be accessible through the new LittleFS partition.
+
+##### 1. Your proposed partition table
+
+Your proposed change is structurally valid:
+
+```csv
+# Name,   Type, SubType, Offset,  Size, Flags
+nvs,      data, nvs,     0x9000,  0x5000,
+otadata,  data, ota,     0xe000,  0x2000,
+app0,     app,  ota_0,   0x10000, 0x300000,
+app1,     app,  ota_1,   0x310000,0x300000,
+spiffs,   data, spiffs,  0x610000,0x9E0000,
+coredump, data, coredump,0xFF0000,0x10000,
+```
+
+The partition boundaries remain unchanged:
+
+| Partition | Start | Size |
+|---|---|---|
+| `app0` | `0x10000` | 3 MB |
+| `app1` | `0x310000` | 3 MB |
+| `spiffs` | `0x610000` | 9.875 MB |
+| `coredump` | `0xFF0000` | 64 KB |
+
+The filesystem partition ends at `0xFF0000`, immediately before the `coredump` partition. Your offsets and sizes remain consistent with the original layout.
+
+##### 2. What you must do after changing the table
+
+1. Save the modified CSV partition table.
+2. Ensure Arduino IDE is actually using this custom partition table when compiling and uploading your firmware.
+3. Rebuild and upload the firmware with the updated partition table.
+4. Test mounting LittleFS with `LittleFS.begin(false)`.
+
+**Important:** Changing the partition label or subtype does not convert existing FATFS data into LittleFS data. Treat the filesystem contents as potentially incompatible and back up anything important before changing the partition layout or formatting.
+
+##### 3. One more thing about your 16 MB flash
+
+Your partition table uses the full 16 MB address range, from `0x000000` to `0x1000000`, including the bootloader, partition table, applications, filesystem, and coredump.
+
+After the change, you should be able to use:
+
+```cpp
+if (!LittleFS.begin(false)) {
+    Serial.println("[LittleFS] Mount failed.");
+} else {
+    Serial.println("[LittleFS] Mounted successfully.");
+}
+```
+
+This resolves the missing-`spiffs`-label issue provided the new partition table is actually flashed and the filesystem can be mounted. If mounting still fails, check whether the partition contains a valid LittleFS filesystem; `false` prevents automatic formatting on mount failure.
+
+
 
 ### 2.3 Required libraries
 
