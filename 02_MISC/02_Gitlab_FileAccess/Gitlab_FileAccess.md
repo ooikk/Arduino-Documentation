@@ -178,6 +178,36 @@ if (!LittleFS.begin(false)) {
 }
 ```
 
+##### 4. Format SPIFFS partition
+
+If you still encounter mounting partition error, and do not need to preserve any files in that partition, the simplest solution is to format it as LittleFS once. This erases the existing filesystem contents in that partition.
+
+```cpp
+void setup() {
+    Serial.begin(115200);
+
+    // Destructive: erases the contents of the "spiffs" partition.
+    if (!LittleFS.begin(false)) {
+        Serial.println("[LittleFS] Initial mount failed.");
+
+        if (LittleFS.format()) {
+            Serial.println("[LittleFS] Format successful.");
+
+            if (LittleFS.begin(false)) {
+                Serial.println("[LittleFS] Mounted successfully.");
+            } else {
+                Serial.println("[LittleFS] Mount still failed.");
+            }
+        } else {
+            Serial.println("[LittleFS] Format failed.");
+        }
+    }
+}
+
+void loop() {
+}
+```
+
 This resolves the missing-`spiffs`-label issue provided the new partition table is actually flashed and the filesystem can be mounted. If mounting still fails, check whether the partition contains a valid LittleFS filesystem; `false` prevents automatic formatting on mount failure.
 
 
