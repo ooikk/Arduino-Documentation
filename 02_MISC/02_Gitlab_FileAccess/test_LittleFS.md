@@ -31,34 +31,32 @@ In your current implementation, the function immediately fails when `LittleFS.op
 Replace the existing `uploadLittleFSFile()` function with the following version. The main change is that a missing local file triggers the Serial input helper.
 
 ```cpp
-static bool uploadLittleFSFile(
-    const String& remotePath,
-    const String& localPath,
-    bool update) {
-
+static bool uploadLittleFSFile(const String& remotePath, const String& localPath, bool update) {
   if (!gitlab && !initializeGitlab()) return false;
 
-  if (!LittleFS.begin(false)) {
-    Serial.println("[LittleFS] Mount failed.");
-    return false;
+  if (!littleFSReady) {  //if not mounted try again
+    if (!LittleFS.begin(false)) {
+      Serial.println("[LittleFS] Mount failed.");
+      return false;
+    }
+    littleFSReady = true;
   }
-
   // Validate the local path.
   if (localPath.length() == 0 || !localPath.startsWith("/")) {
-    Serial.println(
-        "Local source must be an absolute LittleFS path, e.g. /upload.txt");
+    Serial.println("Local source must be an absolute LittleFS path, e.g. /upload.txt");
     return false;
   }
 
   // Try to open the requested local file.
   File file = LittleFS.open(localPath, "r");
-
   if (!file || file.isDirectory()) {
+
+    // BEGIN: Prompt user to create LittleFS file to flash
     if (file) file.close();
 
     Serial.printf(
-        "[LittleFS] Local file '%s' does not exist or cannot be opened.\n",
-        localPath.c_str());
+      "[LittleFS] Local file '%s' does not exist or cannot be opened.\n",
+      localPath.c_str());
 
     Serial.println("Create this local text file using Serial input? (Y/N)");
 
@@ -90,21 +88,25 @@ static bool uploadLittleFSFile(
       Serial.println("[LittleFS] Cannot reopen the created file.");
       return false;
     }
+
+    // END: Prompt user to create LittleFS file to flash
+    /*	  
+    Serial.println("[LittleFS] Cannot open local source file.");
+    if (file) file.close();
+    return false;
+*/
   }
 
   // Check file size.
   size_t len = file.size();
-
   if (len == 0 || len > MAX_TEXT_UPLOAD_BYTES) {
-    Serial.println(
-        "[Upload] Source file must be 1 byte to 256 KiB.");
+    Serial.println("[Upload] Source file must be 1 byte to 256 KiB.");
     file.close();
     return false;
   }
 
   // Allocate PSRAM for the file contents.
   uint8_t* data = (uint8_t*)ps_malloc(len);
-
   if (!data) {
     Serial.println("[Upload] PSRAM allocation failed.");
     file.close();
@@ -114,7 +116,6 @@ static bool uploadLittleFSFile(
   // Read the complete file.
   size_t got = file.read(data, len);
   file.close();
-
   if (got != len) {
     free(data);
     Serial.println("[Upload] Failed to read complete local file.");
@@ -122,40 +123,41 @@ static bool uploadLittleFSFile(
   }
 
   Serial.printf(
-      "[%s] Local file: %s (%u bytes)\n",
-      update ? "UPDATE" : "UPLOAD",
-      localPath.c_str(),
-      (unsigned)len);
+    "[%s] Local file: %s (%u bytes)\n",
+    update ? "UPDATE" : "UPLOAD",
+    localPath.c_str(),
+    (unsigned)len);
 
   Serial.printf(
-      "[%s] Remote file: %s\n",
-      update ? "UPDATE" : "UPLOAD",
-      remotePath.c_str());
+    "[%s] Remote file: %s\n",
+    update ? "UPDATE" : "UPLOAD",
+    remotePath.c_str());
 
   // Perform the requested GitLab operation.
-  String commit =
-      String(update ? "Update " : "Upload ")
-      + remotePath + " from ESP32-S3";
-
+  String commit = String(update ? "Update " : "Upload ") + remotePath + " from ESP32-S3";
   bool ok = update
-      ? gitlab->updateFile(remotePath, data, len, commit)
-      : gitlab->uploadNewFile(remotePath, data, len, commit);
-
+              ? gitlab->updateFile(remotePath, data, len, commit)
+              : gitlab->uploadNewFile(remotePath, data, len, commit);
   free(data);
 
   if (!ok) {
     Serial.printf(
-        "[%s] Failed: %s\n",
-        update ? "UPDATE" : "UPLOAD",
-        gitlab->lastError().c_str());
+      "[%s] Failed: %s\n",
+      update ? "UPDATE" : "UPLOAD",
+      gitlab->lastError().c_str());
     return false;
   }
 
   Serial.printf(
-      "[%s] Successful.\n",
-      update ? "UPDATE" : "UPLOAD");
+    "[%s] Successful.\n",
+    update ? "UPDATE" : "UPLOAD");
 
   return true;
+
+  /*
+  if (!ok) Serial.println(gitlab->lastError());
+  return ok;
+  */
 }
 ```
 
@@ -168,12 +170,34 @@ Place the following implementation after your existing `readMultilineText()` fun
 This reuses your existing multiline input function rather than duplicating its logic.
 
 ```cpp
-// Create a text file in LittleFS using content entered over Serial.
+/ Create a text file in LittleFS using content entered over Serial.
 static bool prepareUploadTestFile(const String& localPath) {
 
   Serial.println();
   Serial.println("========== CREATE LOCAL TEST FILE ==========");
   Serial.printf("LittleFS path: %s\n", localPath.c_str());
+
+  // NEW: Create the parent directory if it does not exist.
+  int lastSlash = localPath.lastIndexOf('/');
+  if (lastSlash > 0) {
+    String parentDir = localPath.substring(0, lastSlash);
+
+    if (!LittleFS.exists(parentDir)) {
+      Serial.printf(
+        "[LittleFS] Creating parent directory: %s\n",
+        parentDir.c_str());
+
+      if (!LittleFS.mkdir(parentDir)) {
+        Serial.printf(
+          "[LittleFS] Failed to create parent directory: %s\n",
+          parentDir.c_str());
+        return false;
+      }
+
+      Serial.println("[LittleFS] Parent directory created.");
+    }
+  }
+  // END NEW
 
   Serial.println("Enter the file content below.");
   Serial.println("Enter .END on a line by itself to finish.");
@@ -206,24 +230,24 @@ static bool prepareUploadTestFile(const String& localPath) {
   const size_t expected = content.length();
 
   const size_t written = file.write(
-      reinterpret_cast<const uint8_t*>(content.c_str()),
-      expected);
+    reinterpret_cast<const uint8_t*>(content.c_str()),
+    expected);
 
   file.close();
 
   if (written != expected) {
     Serial.printf(
-        "[LittleFS] Incomplete write: %u of %u bytes.\n",
-        (unsigned)written,
-        (unsigned)expected);
+      "[LittleFS] Incomplete write: %u of %u bytes.\n",
+      (unsigned)written,
+      (unsigned)expected);
 
     return false;
   }
 
   Serial.printf(
-      "[LittleFS] Created '%s' (%u bytes).\n",
-      localPath.c_str(),
-      (unsigned)written);
+    "[LittleFS] Created '%s' (%u bytes).\n",
+    localPath.c_str(),
+    (unsigned)written);
 
   Serial.println("[LittleFS] File content saved successfully.");
 
@@ -365,6 +389,7 @@ static void listLocalDirectory(const String& path, uint8_t depth) {
   File dir = LittleFS.open(path, "r");
 
   if (!dir || !dir.isDirectory()) {
+    Serial.printf("[ERROR] Cannot open directory: %s\n", path.c_str());
     if (dir) dir.close();
     return;
   }
@@ -372,29 +397,40 @@ static void listLocalDirectory(const String& path, uint8_t depth) {
   File entry = dir.openNextFile();
 
   while (entry) {
-    // Indent entries according to directory depth.
+    String name = entry.name();
+    bool isDir = entry.isDirectory();
+    size_t fileSize = entry.size();
+
+    // Print indentation.
     for (uint8_t i = 0; i < depth; i++) {
       Serial.print("  ");
     }
 
-    String name = entry.name();
+    // Normalize entry name into a full path.
+    String childPath;
 
-    if (entry.isDirectory()) {
-      Serial.printf("[DIR]  %s/\n", name.c_str());
-
-      // Construct the full path for recursive traversal.
-      String childPath = path;
+    if (name.startsWith("/")) {
+      childPath = name;
+    } else {
+      childPath = path;
       if (!childPath.endsWith("/")) {
         childPath += "/";
       }
       childPath += name;
+    }
 
+    if (isDir) {
+      Serial.printf("[DIR]  %s/\n", childPath.c_str());
+
+      // Close the current entry before recursively opening its directory.
       entry.close();
+
       listLocalDirectory(childPath, depth + 1);
     } else {
       Serial.printf("[FILE] %s (%u bytes)\n",
-                    name.c_str(),
-                    (unsigned)entry.size());
+                    childPath.c_str(),
+                    (unsigned)fileSize);
+
       entry.close();
     }
 
