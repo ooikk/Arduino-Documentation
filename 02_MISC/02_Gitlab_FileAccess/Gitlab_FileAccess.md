@@ -3220,6 +3220,279 @@ In short:
 
 **Practical takeaway:** Your `GitlabClient` class does not need to create or own a separate TLS client. It can reuse the one created by your `.ino` file through the `_tls` reference. Just ensure the original `tlsClient` remains alive for the entire time `GitlabClient` uses it.
 
+# LittleFS, Flash, and PSRAM on the ESP32-S3
+
+LittleFS does **not** store files in PSRAM. On your ESP32-S3 N16R8, LittleFS typically stores files in the ESP32's **16 MB flash memory**, while PSRAM is a separate **8 MB external RAM** used for temporary data and buffers.
+
+## 1. ESP32-S3 memory locations
+
+| Memory | Your board's capacity | Purpose | Does LittleFS store files here? |
+|---|---|---|---|
+| Flash | 16 MB | Firmware, filesystem, persistent data | Yes |
+| PSRAM | 8 MB | Large runtime buffers and temporary data | No |
+| Internal SRAM | Part of the ESP32-S3's internal memory | Stack, heap, tasks, and runtime data | No |
+
+The exact amount of flash allocated to LittleFS depends on your partition table.
+
+## 2. What happens in your current code?
+
+Consider this code from your GitLab file-upload project:
+
+```cpp
+File file = LittleFS.open(localPath, "r");
+```
+
+When you open a file, LittleFS accesses the file stored in flash. It does not automatically copy the entire file into PSRAM.
+
+Your code then explicitly allocates a PSRAM buffer:
+
+```cpp
+uint8_t* buffer = (uint8_t*)ps_malloc(len);
+```
+
+And reads the file into that buffer:
+
+```cpp
+size_t bytesRead = file.read(buffer, len);
+```
+
+The process is:
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/eca1c1e5-59e7-4d19-9739-7be14ba48ff3" />
+
+
+1. **LittleFS in flash:** The original file is stored persistently in flash.
+2. **PSRAM buffer:** `ps_malloc(len)` allocates a temporary buffer in PSRAM.
+3. **File read:** `file.read(buffer, len)` copies the file's contents from LittleFS into the buffer.
+4. **GitLab upload:** Your GitLab client uploads the contents of the PSRAM buffer.
+5. **Buffer release:** `free(buffer)` releases the allocated memory after the upload operation.
+
+The original file remains in flash after the buffer is released.
+
+## 3. Why use PSRAM in your project?
+
+Suppose you want to upload a 200 KB file.
+
+- **LittleFS:** Stores the file persistently in flash.
+- **PSRAM:** Holds a temporary 200 KB copy while the upload is performed.
+- **Internal SRAM:** Remains available for other runtime requirements, although the upload process and other functions still consume some internal memory.
+
+Your code's 256 KiB file-size limit is an application-level restriction, not a LittleFS or PSRAM hardware limit.
+
+**One important consideration:** Your current approach loads the entire file into PSRAM before uploading it. For larger files, you could instead read the file in smaller chunks and upload them incrementally, reducing peak RAM usage. However, that requires your `GitlabClient` upload implementation to support streaming or chunked input.
+
+## LittleFS File Persistence After Reboot
+
+Yes. On your ESP32-S3 N16R8, files stored in LittleFS persist across reboots and power cycles. You can access a file again as long as you know its path and filename, provided the filesystem and file have not been erased, reformatted, or corrupted.
+
+### 1. Example: Access a file after reboot
+
+Suppose your program creates this file:
+
+```cpp
+LittleFS.begin(false);
+
+File file = LittleFS.open("/upload_test.txt", "w");
+file.println("Hello from ESP32-S3!");
+file.close();
+```
+
+After rebooting the ESP32-S3, you can read the same file:
+
+```cpp
+if (!LittleFS.begin(false)) {
+    Serial.println("LittleFS mount failed");
+    return;
+}
+
+File file = LittleFS.open("/upload_test.txt", "r");
+
+if (file) {
+    while (file.available()) {
+        Serial.write(file.read());
+    }
+    file.close();
+} else {
+    Serial.println("File not found");
+}
+```
+
+Expected output:
+
+```text
+Hello from ESP32-S3!
+```
+
+You do not need to recreate the file after every reboot.
+
+### 2. What survives a reboot?
+
+| Event | LittleFS file | PSRAM buffer |
+|---|---|---|
+| ESP32-S3 software reboot | Preserved | Lost |
+| Power off and power on | Preserved | Lost |
+| Upload new firmware | Usually preserved, depending on the upload method and partition configuration | Lost |
+| Erase or format LittleFS | Lost | Lost when power is removed or the ESP32 resets |
+
+**Important:** Avoid calling `LittleFS.format()` or using a firmware-upload procedure that erases the filesystem if you want to preserve your files.
+
+### 3. How this applies to your GitLab file-access project
+
+For example, you could create these files:
+
+```text
+LittleFS
+├── upload_test.txt
+├── update_test.txt
+└── config
+    └── settings.txt
+```
+
+You can access them after reboot using their paths:
+
+```cpp
+LittleFS.open("/upload_test.txt", "r");
+LittleFS.open("/update_test.txt", "r");
+LittleFS.open("/config/settings.txt", "r");
+```
+
+Your existing command could therefore work like this:
+
+```text
+UPLOAD examples/upload_test.txt /upload_test.txt
+UPDATE examples/update_test.txt /update_test.txt
+```
+
+The local files can remain in LittleFS between sessions. Your program only needs to check whether the requested file exists before attempting the upload or update.
+
+**One distinction:** LittleFS stores files persistently in flash, but PSRAM is temporary working memory. Once you reboot, the PSRAM buffer disappears; you simply reopen the persistent LittleFS file and allocate a new buffer if needed.
+
+## Understanding `LittleFS.begin(false)`
+
+In your ESP32-S3 project, `LittleFS.begin(false)` uses `false` to tell LittleFS **not** to automatically format the filesystem if mounting fails.
+
+### 1. Difference between `LittleFS.begin(false)` and `LittleFS.begin(true)`
+
+The function signature is:
+
+```cpp
+bool LittleFS.begin(bool formatOnFail = false,
+                    const char* basePath = "/littlefs",
+                    uint8_t maxOpenFiles = 10,
+                    const char* partitionLabel = NULL);
+```
+
+The important parameter is `formatOnFail`.
+
+| Code | Behaviour | Risk to existing files |
+|---|---|---|
+| `LittleFS.begin(false)` | If mounting fails, do not automatically format the filesystem. | Protects against automatic formatting |
+| `LittleFS.begin(true)` | If mounting fails, attempt to format the filesystem and mount again. | Existing files may be erased if formatting occurs |
+| `LittleFS.begin()` | Uses the default, `false`. | Protects against automatic formatting |
+
+### 2. Example using `LittleFS.begin(false)`
+
+```cpp
+if (!LittleFS.begin(false)) {
+    Serial.println("LittleFS mount failed!");
+    Serial.println("Existing files have not been automatically formatted.");
+    return;
+}
+
+Serial.println("LittleFS mounted successfully.");
+```
+
+Consider two scenarios.
+
+#### Scenario A: Filesystem is healthy
+
+```text
+LittleFS.begin(false)
+        |
+        v
+Filesystem mounts successfully
+        |
+        v
+Existing files remain accessible
+```
+
+#### Scenario B: Filesystem cannot be mounted
+
+```text
+LittleFS.begin(false)
+        |
+        v
+Mount fails
+        |
+        v
+Returns false
+        |
+        v
+Program handles the error
+```
+
+The filesystem is not automatically formatted. This gives your application an opportunity to investigate the problem without immediately risking the stored files.
+
+Note that `false` does not guarantee that the files are intact; it only disables automatic formatting on mount failure.
+
+### 3. Why `false` is appropriate for your GitLab project
+
+Your ESP32-S3 project uses LittleFS to store files that you subsequently upload to GitLab.
+
+For example:
+
+```text
+LittleFS
+├── upload_test.txt
+├── update_test.txt
+└── config.txt
+```
+
+You want these files to survive reboots and remain available for future uploads.
+
+If you use:
+
+```cpp
+LittleFS.begin(true);
+```
+
+and mounting fails, the library may format the filesystem. This could erase the files you wanted to preserve.
+
+Therefore, I recommend:
+
+```cpp
+LittleFS.begin(false);
+```
+
+For your file-access project, preserving existing files is more important than automatically recovering from a mount failure.
+
+If mounting fails, investigate the partition configuration or filesystem condition before deciding whether to format it.
+
+### 4. One additional recommendation
+
+Your existing program calls `LittleFS.begin(false)` during `setup()` and again inside `uploadLittleFSFile()`.
+
+You generally only need to mount LittleFS once during initialization and check that it succeeded. Subsequent functions can use the already-mounted filesystem.
+
+For example:
+
+```cpp
+void setup() {
+    Serial.begin(115200);
+
+    if (!LittleFS.begin(false)) {
+        Serial.println("[ERROR] LittleFS mount failed.");
+        return;
+    }
+
+    Serial.println("[LittleFS] Ready.");
+}
+```
+
+You can then avoid repeatedly mounting it in individual file-operation functions, provided you have a reliable way to ensure initialization succeeded before those functions run.
+
+---
+
 # Reusing `GitlabClient` for ESP32-S3 OTA Firmware Updates
 
 You can reuse the `GitlabClient` class structure for your previous ESP32-S3 OTA firmware-update project, especially because both projects need to communicate with GitLab over HTTPS using a TLS client and an authentication token.
