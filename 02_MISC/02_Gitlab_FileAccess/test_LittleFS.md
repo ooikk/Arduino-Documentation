@@ -351,4 +351,151 @@ That is fine for testing, but the practical limit for files created using this h
 **Result:** You can now create a missing LittleFS text file directly from Serial Monitor and immediately use it as the source for either `UPLOAD` or `UPDATE`, without hardcoding its contents into the sketch.
 
 ---
+# Adding a `LISTLOCAL` Command for LittleFS
 
+I recommend adding a `LISTLOCAL` command that recursively lists all files and subdirectories in LittleFS, including each file's size. It will not require Wi-Fi or GitLab access.
+
+## 1. Add the helper function
+
+Add this function to your `.ino` file, in the helper-functions section. It uses the existing LittleFS library.
+
+```cpp
+// Recursively list files and subdirectories in LittleFS.
+static void listLocalDirectory(const String& path, uint8_t depth) {
+  File dir = LittleFS.open(path, "r");
+
+  if (!dir || !dir.isDirectory()) {
+    if (dir) dir.close();
+    return;
+  }
+
+  File entry = dir.openNextFile();
+
+  while (entry) {
+    // Indent entries according to directory depth.
+    for (uint8_t i = 0; i < depth; i++) {
+      Serial.print("  ");
+    }
+
+    String name = entry.name();
+
+    if (entry.isDirectory()) {
+      Serial.printf("[DIR]  %s/\n", name.c_str());
+
+      // Construct the full path for recursive traversal.
+      String childPath = path;
+      if (!childPath.endsWith("/")) {
+        childPath += "/";
+      }
+      childPath += name;
+
+      entry.close();
+      listLocalDirectory(childPath, depth + 1);
+    } else {
+      Serial.printf("[FILE] %s (%u bytes)\n",
+                    name.c_str(),
+                    (unsigned)entry.size());
+      entry.close();
+    }
+
+    entry = dir.openNextFile();
+  }
+
+  dir.close();
+}
+
+// LISTLOCAL: list all local files, including subdirectories.
+static void runListLocal() {
+  Serial.println();
+  Serial.println("========== LOCAL LITTLEFS FILES ==========");
+
+  if (!littleFSReady) {
+    Serial.println("[ERROR] LittleFS is not mounted.");
+    return;
+  }
+
+  Serial.printf("Filesystem total: %u bytes\n",
+                (unsigned)LittleFS.totalBytes());
+  Serial.printf("Filesystem used:  %u bytes\n",
+                (unsigned)LittleFS.usedBytes());
+
+  listLocalDirectory("/", 0);
+
+  Serial.println("========== END OF LOCAL FILES ==========");
+}
+```
+
+**Note:** This implementation assumes you have a global `littleFSReady` flag that is set to `true` after LittleFS mounts successfully. Your `setup()` code should maintain that flag.
+
+## 2. Register the command in `handleCommand()`
+
+Find your existing command handling code:
+
+```cpp
+if (command == "HELP") {
+  printHelp();
+} else if (command == "DEL" && argument.equalsIgnoreCase("token")) {
+```
+
+Insert the new command between `HELP` and `DEL`:
+
+```cpp
+if (command == "HELP") {
+  printHelp();
+} else if (command == "LISTLOCAL") {
+  runListLocal();
+} else if (command == "DEL" && argument.equalsIgnoreCase("token")) {
+```
+
+## 3. Update `printHelp()`
+
+Add this line to the command list:
+
+```cpp
+Serial.println(" LISTLOCAL           ->list all local LittleFS files recursively");
+```
+
+## 4. Example output
+
+Suppose LittleFS contains the following files:
+
+```text
+/
+├── upload_test.txt
+├── config.txt
+└── assets/
+    ├── logo.png
+    └── documents/
+        └── readme.txt
+```
+
+Entering this command in the Serial Monitor:
+
+```text
+LISTLOCAL
+```
+
+Could produce output similar to:
+
+```text
+========== LOCAL LITTLEFS FILES ==========
+Filesystem total: 10354688 bytes
+Filesystem used:  16384 bytes
+[FILE] /upload_test.txt (128 bytes)
+[FILE] /config.txt (64 bytes)
+[DIR]  /assets/
+  [FILE] /assets/logo.png (2048 bytes)
+  [DIR]  /assets/documents/
+    [FILE] /assets/documents/readme.txt (512 bytes)
+========== END OF LOCAL FILES ==========
+```
+
+The actual capacity, used space, and file sizes depend on your filesystem contents.
+
+### Important implementation detail
+
+Arduino-ESP32 filesystem implementations can differ in whether `entry.name()` returns a basename or a full path. If it returns a full path, concatenating it with the parent directory would construct an incorrect child path.
+
+If your output shows incorrect paths or directories aren't traversed, print `entry.name()` for a nested file and adjust the path construction accordingly.
+
+**Expected benefit:** `LISTLOCAL` lets you verify that a file exists in LittleFS before running commands such as `UPLOAD` or `UPDATE`.
