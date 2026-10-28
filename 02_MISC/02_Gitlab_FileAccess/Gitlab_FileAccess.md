@@ -570,6 +570,223 @@ Once repository listing and binary downloads work reliably, I recommend hardenin
 The key architectural benefit is that `GitlabClient` can now serve as a reusable repository-access layer for configuration files, images, JSON documents and future OTA manifests. The same pattern can also be extended to download firmware images, but firmware installation should have its own signature verification, partition management and rollback controls rather than treating a successful download as sufficient evidence that an image is safe to install.
 
 ---
+# Testing `UPLOAD` and `UPDATE` in the ESP32-S3 GitLab Project
+
+For your ESP32-S3 `02_Gitlab_FileAccess` project, I recommend testing `UPLOAD` and `UPDATE` through the Serial Monitor using two local test files and a three-stage verification procedure.
+
+The key is to verify not only that the commands return success, but also that the remote GitLab repository contains the correct file contents.
+
+## 1. Testing strategy
+
+Use the following test sequence:
+
+| Stage | Command | Expected result |
+|---|---|---|
+| 1 | `UPLOAD test/upload_test.txt /upload_test.txt` | Creates a new remote file from LittleFS |
+| 2 | `UPLOAD test/upload_test.txt /upload_test.txt` again | Fails or reports that the file already exists; it must not silently overwrite it |
+| 3 | `UPDATE test/upload_test.txt /upload_test.txt` | Updates the existing remote file |
+| 4 | Verify the file in GitLab | Remote content matches the latest local content |
+
+This sequence tests both the normal operation and the distinction between creating a new file and updating an existing one.
+
+**Important:** The remote paths above are examples. Use the path format expected by your `GitlabClient` implementation. Also, `UPLOAD` and `UPDATE` should have distinct semantics: `UPLOAD` creates a new file, while `UPDATE` modifies an existing file.
+
+## 2. Prepare a test file in LittleFS
+
+First, ensure that `/upload_test.txt` exists in the ESP32-S3's LittleFS filesystem.
+
+If you already have a Serial command to create or write a LittleFS file, use it. Otherwise, temporarily add this test helper to your sketch:
+
+```cpp
+#include <LittleFS.h>
+
+void prepareUploadTestFile() {
+    File file = LittleFS.open("/upload_test.txt", "w");
+
+    if (!file) {
+        Serial.println("[TEST] Failed to create LittleFS file");
+        return;
+    }
+
+    file.println("ESP32-S3 GitLab upload test");
+    file.println("Version: 1");
+    file.close();
+
+    Serial.println("[TEST] Created /upload_test.txt");
+}
+```
+
+Call `prepareUploadTestFile()` once after LittleFS has been successfully mounted. Don't call it on every boot, because opening the file with `"w"` truncates its existing contents.
+
+Verify the file using your existing file-listing or file-reading command, if available.
+
+Expected content:
+
+```text
+ESP32-S3 GitLab upload test
+Version: 1
+```
+
+## 3. Test `UPLOAD` — create a new remote file
+
+Open the Serial Monitor and enter:
+
+```text
+UPLOAD test/upload_test.txt /upload_test.txt
+```
+
+This assumes your command syntax is:
+
+```text
+UPLOAD <remote-path> <local-LittleFS-path>
+```
+
+### Expected result
+
+Your implementation should:
+
+- Parse the remote and local paths.
+- Open `/upload_test.txt` from LittleFS.
+- Confirm that the local file exists and can be read.
+- Send the file contents to GitLab using the appropriate API.
+- Report the HTTP/API result.
+
+An illustrative success message would be:
+
+```text
+[UPLOAD] Local file: /upload_test.txt
+[UPLOAD] Remote file: test/upload_test.txt
+[UPLOAD] File size: ...
+[UPLOAD] HTTP status: ...
+[UPLOAD] Upload successful
+```
+
+The exact messages depend on your implementation.
+
+### Verify on GitLab
+
+Open the target repository and check that `test/upload_test.txt` exists with the expected contents.
+
+**Important:** The GitLab API for creating a repository file generally rejects an attempt to create a file that already exists. Your `UPLOAD` command should preserve this behavior rather than silently overwriting the file.
+
+## 4. Test `UPLOAD` again — verify duplicate-file handling
+
+Without deleting the remote file, run the same command again:
+
+```text
+UPLOAD test/upload_test.txt /upload_test.txt
+```
+
+**Expected result:** GitLab rejects the duplicate creation, typically with an HTTP 400 response from its repository file API.
+
+Your command should report a clear failure, such as:
+
+```text
+[UPLOAD] Failed to create remote file
+[UPLOAD] Remote file may already exist
+```
+
+The precise HTTP response depends on the GitLab endpoint and request details.
+
+Verify that the original remote content remains unchanged.
+
+This test is important because it confirms that `UPLOAD` does not unintentionally behave like `UPDATE`.
+
+## 5. Prepare a modified local file
+
+Now change the local file's contents so you can distinguish the original upload from the subsequent update.
+
+For example, temporarily modify your helper to write:
+
+```cpp
+file.println("ESP32-S3 GitLab upload test");
+file.println("Version: 2");
+file.println("UPDATE command verification");
+```
+
+Rebuild and upload the sketch if necessary, or use your existing LittleFS file-writing command to change the file.
+
+Verify that `/upload_test.txt` now contains:
+
+```text
+ESP32-S3 GitLab upload test
+Version: 2
+UPDATE command verification
+```
+
+Do not delete or recreate the remote file. We want to test an update to the existing file.
+
+## 6. Test `UPDATE` — modify the existing remote file
+
+Enter this command in the Serial Monitor:
+
+```text
+UPDATE test/upload_test.txt /upload_test.txt
+```
+
+Your implementation should:
+
+- Open the local file from LittleFS.
+- Read its contents.
+- Send a GitLab repository file API request to update the existing remote file.
+- Supply the required commit message and file content.
+- Handle the API response and report success or failure.
+
+For GitLab's repository file API, updating an existing file normally requires a commit message and the new file content. The request also needs to identify the target branch, and the API may require the file's existing state to be valid for the requested update.
+
+An illustrative success message would be:
+
+```text
+[UPDATE] Local file: /upload_test.txt
+[UPDATE] Remote file: test/upload_test.txt
+[UPDATE] HTTP status: ...
+[UPDATE] File updated successfully
+```
+
+### Verify the result
+
+Open the remote file in GitLab and confirm that its content now reads:
+
+```text
+ESP32-S3 GitLab upload test
+Version: 2
+UPDATE command verification
+```
+
+Check the commit history as well. A successful update should normally create a commit containing the file modification.
+
+## 7. Add two negative tests
+
+Once both commands work, test their error handling.
+
+| Test | Command | Expected behavior |
+|---|---|---|
+| `UPLOAD` a nonexistent local file | `UPLOAD test/missing.txt /missing.txt` | Reports a local-file error without creating a remote file |
+| `UPDATE` a nonexistent remote file | `UPDATE test/does_not_exist.txt /upload_test.txt` | Reports a remote-file or API error; must not create the file accidentally |
+
+For the second test, use a remote path you have confirmed does not exist.
+
+These tests ensure that local and remote errors are handled separately.
+
+## 8. Recommended test record
+
+Record the results in this table as you test:
+
+| Test | Expected result | Actual result |
+|---|---|---|
+| `UPLOAD` new file | Remote file created | |
+| `UPLOAD` duplicate file | Duplicate rejected | |
+| `UPDATE` existing file | Remote contents changed | |
+| `UPLOAD` missing local file | Local-file error | |
+| `UPDATE` missing remote file | Remote-file error | |
+
+### One implementation detail to check
+
+I haven't inspected your current `GitlabClient.cpp` command parser or upload/update methods, so the commands and expected log messages above are based on the syntax you provided.
+
+If you share the Serial command parser and the implementations of your `UPLOAD` and `UPDATE` functions, I can tailor the test procedure to your actual code, including the exact commands, expected HTTP status codes, and verification steps—without rewriting your existing implementation.
+
+---
 # Serial-to-GitLab Text Upload Command
 
 ## Overview
