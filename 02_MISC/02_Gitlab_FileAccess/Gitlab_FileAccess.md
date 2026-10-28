@@ -3681,6 +3681,9 @@ Your application can reopen this file after reboot and upload its contents to Gi
 
 ## 3. How the two work together
 
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/5cd5402d-0d34-430b-8261-a63adc3fc075" />
+
+
 ```text
 ESP32-S3 application
 GitLab file-access program
