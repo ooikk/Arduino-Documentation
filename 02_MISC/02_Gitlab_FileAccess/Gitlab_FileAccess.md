@@ -1222,6 +1222,165 @@ If your output shows incorrect paths or directories aren't traversed, print `ent
 
 **Expected benefit:** `LISTLOCAL` lets you verify that a file exists in LittleFS before running commands such as `UPLOAD` or `UPDATE`.
 
+# Adding an `RMLOCAL` Command for LittleFS
+
+Let's add `RMLOCAL` to your ESP32-S3 LittleFS command handler, following the same approach as your existing `LISTLOCAL` and `RM` commands.
+
+The behavior will be:
+
+- `RMLOCAL /localtest.txt` — delete a local file.
+- `RMLOCAL /test/localtest4.txt` — delete a file inside a subdirectory.
+- After deleting the file, remove its immediate parent directory if it is empty.
+- If the directory still contains other files or subdirectories, leave it intact.
+- Never remove the LittleFS root directory `/`.
+- Report success or failure through Serial.
+
+For minimal changes, we'll add one helper function, one command-handler branch, and one help line.
+
+## 1. Add the `removeLocalFile()` helper
+
+This deletes the specified file, then checks whether its immediate parent directory is empty. If empty, it removes that directory too.
+
+```cpp
+static bool removeLocalFile(const String& localPath) {
+
+  // Validate the local path.
+  if (localPath.length() == 0 || !localPath.startsWith("/") ||
+      localPath == "/") {
+    Serial.println("[RMLOCAL] Invalid local file path.");
+    return false;
+  }
+
+  if (!littleFSReady) {
+    Serial.println("[RMLOCAL] LittleFS is not mounted.");
+    return false;
+  }
+
+  // Confirm that the target exists and is a file.
+  File file = LittleFS.open(localPath, "r");
+
+  if (!file) {
+    Serial.printf("[RMLOCAL] File not found: %s\n",
+                  localPath.c_str());
+    return false;
+  }
+
+  if (file.isDirectory()) {
+    file.close();
+    Serial.println("[RMLOCAL] Path is a directory, not a file.");
+    return false;
+  }
+
+  file.close();
+
+  // Delete the file.
+  if (!LittleFS.remove(localPath)) {
+    Serial.printf("[RMLOCAL] Failed to delete: %s\n",
+                  localPath.c_str());
+    return false;
+  }
+
+  Serial.printf("[RMLOCAL] Deleted file: %s\n",
+                localPath.c_str());
+
+  // Find the immediate parent directory.
+  int lastSlash = localPath.lastIndexOf('/');
+
+  // Root-level files have no removable parent directory.
+  if (lastSlash <= 0) {
+    return true;
+  }
+
+  String parentDir = localPath.substring(0, lastSlash);
+
+  // Check whether the parent directory is empty.
+  File dir = LittleFS.open(parentDir, "r");
+
+  if (!dir || !dir.isDirectory()) {
+    if (dir) dir.close();
+    Serial.printf("[RMLOCAL] Cannot inspect directory: %s\n",
+                  parentDir.c_str());
+    return true;  // File was deleted successfully.
+  }
+
+  File entry = dir.openNextFile();
+  bool isEmpty = !entry;
+
+  if (entry) {
+    entry.close();
+  }
+
+  dir.close();
+
+  // Remove the directory only if it is empty.
+  if (isEmpty) {
+    if (LittleFS.rmdir(parentDir.c_str())) {
+      Serial.printf("[RMLOCAL] Removed empty directory: %s\n",
+                    parentDir.c_str());
+    } else {
+      Serial.printf("[RMLOCAL] Could not remove directory: %s\n",
+                    parentDir.c_str());
+    }
+  } else {
+    Serial.printf("[RMLOCAL] Directory not empty; kept: %s\n",
+                  parentDir.c_str());
+  }
+
+  return true;
+}
+```
+
+## 2. Add `RMLOCAL` to `handleCommand()`
+
+Add this branch alongside your existing `LISTLOCAL` command. Keep the command ordering consistent with your current parser.
+
+```cpp
+} else if (command == "RMLOCAL") {
+  argument.trim();
+
+  if (argument.length() == 0) {
+    Serial.println("Usage: RMLOCAL /path/to/local-file.txt");
+  } else {
+    removeLocalFile(argument);
+  }
+```
+
+Make sure the closing brace and `else if` structure match the surrounding code in your existing `handleCommand()`.
+
+## 3. Add a help line
+
+Add this to `printHelp()`:
+
+```cpp
+Serial.println(" RMLOCAL /path      ->delete local file; remove parent directory if empty");
+```
+
+## 4. Test it
+
+Suppose `LISTLOCAL` currently shows:
+
+```text
+[DIR]  /test/
+  [FILE] /test/localtest4.txt (32 bytes)
+```
+
+Run:
+
+```text
+RMLOCAL /test/localtest4.txt
+```
+
+Expected output:
+
+```text
+[RMLOCAL] Deleted file: /test/localtest4.txt
+[RMLOCAL] Removed empty directory: /test
+```
+
+If `/test/` contains another file, the file you selected will be deleted but `/test/` will remain.
+
+**Scope:** This removes only the immediate parent directory if empty. It does not recursively delete other files or remove higher-level parent directories. Root-level files such as `/localtest.txt` are supported too.
+
 ---
 # Serial-to-GitLab Text Upload Command
 
