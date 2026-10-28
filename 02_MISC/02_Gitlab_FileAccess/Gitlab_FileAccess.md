@@ -127,9 +127,9 @@ You can change `ffat` to `spiffs` in your custom partition table, but there are 
 - The `spiffs` label will match the default partition label expected by `LittleFS.begin(false)`.
 - You will no longer have a FAT filesystem partition named `ffat`. If you currently use FATFS to store files, those files will not be accessible through the new LittleFS partition.
 
-##### 1. Your proposed partition table
+##### 1. Custom partition table
 
-Your proposed change is structurally valid:
+The proposed change is structurally valid:
 
 ```csv
 # Name,   Type, SubType, Offset,  Size, Flags
