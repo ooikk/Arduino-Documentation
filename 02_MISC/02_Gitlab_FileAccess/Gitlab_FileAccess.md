@@ -3629,6 +3629,95 @@ You may need to mount again if the filesystem has deliberately been unmounted or
 
 **My recommendation:** For your GitLab file-access application, mount LittleFS once in `setup()`, record whether mounting succeeded, and let your upload/update functions check that status. This keeps the filesystem lifecycle predictable and avoids redundant initialization.
 
+
+# NVS vs. LittleFS in Your ESP32-S3 GitLab Project
+
+In your ESP32-S3 N16R8 GitLab file-access project, NVS and LittleFS both store data persistently in flash, but they are designed for different purposes.
+
+- **NVS (Non-Volatile Storage):** Best for small key-value data, such as your GitLab access token, configuration flags, and version numbers.
+- **LittleFS:** Best for files, such as text documents, configuration files, logs, and files you want to upload to GitLab.
+
+## 1. Compare NVS and LittleFS
+
+| Feature | NVS | LittleFS |
+|---|---|---|
+| Data organization | Namespace → key → value | Directories and files |
+| Example | `ota` → `gitlab_token` → token string | `/upload_test.txt` → file contents |
+| Best suited for | Small settings and credentials | File contents and larger data |
+| Access method | Preferences API | `LittleFS.open()` |
+| Read/write unit | Individual keys and values | File operations and byte streams |
+| Persistence across reboot | Yes | Yes |
+| Storage capacity | Limited by allocated NVS partition and its overhead | Limited by allocated filesystem partition and its overhead |
+| Ideal for large files | No | Yes |
+
+Both use flash memory, not PSRAM. When you read their data, the application may copy it into RAM for processing.
+
+## 2. Example from your current project
+
+### NVS — store your GitLab token
+
+**Namespace:** `ota` · **Key:** `gitlab_token`
+
+```cpp
+Preferences prefs;
+prefs.begin("ota", false);
+prefs.putString("gitlab_token", token);
+prefs.end();
+```
+
+Your application retrieves the token after reboot without asking you to enter it again.
+
+### LittleFS — store files for upload
+
+**Path:** `/upload_test.txt`
+
+```cpp
+File file = LittleFS.open("/upload_test.txt", "w");
+file.println("Hello GitLab!");
+file.close();
+```
+
+Your application can reopen this file after reboot and upload its contents to GitLab.
+
+## 3. How the two work together
+
+```text
+ESP32-S3 application
+GitLab file-access program
+
+NVS
+Retrieve token
+
+LittleFS
+Read file
+
+GitLab HTTPS request
+Authenticate using the token and upload the file contents
+```
+
+For example, when you execute:
+
+```text
+UPLOAD examples/upload_test.txt /upload_test.txt
+```
+
+Your application can retrieve the GitLab token from NVS, read `/upload_test.txt` from LittleFS, and send the file to GitLab over HTTPS.
+
+## 4. Security difference
+
+One important distinction: NVS is persistent storage, **not encryption by itself**. A GitLab token stored in NVS is not automatically encrypted simply because it is in NVS. Similarly, LittleFS does not automatically encrypt file contents.
+
+For your security-focused project, consider:
+
+- **NVS encryption** to protect stored key-value data.
+- **Flash Encryption** to protect flash contents more broadly.
+- **Secure Boot** to help ensure only authenticated firmware runs.
+
+These protections have different roles and configuration requirements.
+
+**My recommendation:** Keep the GitLab token in NVS and the user-created or downloaded files in LittleFS. That separation makes your application easier to maintain and gives each type of data an appropriate storage mechanism.
+
+
 ---
 
 # Reusing `GitlabClient` for ESP32-S3 OTA Firmware Updates
