@@ -161,6 +161,9 @@ The filesystem partition ends at `0xFF0000`, immediately before the `coredump` p
 
 **Important:** Changing the partition label or subtype does not convert existing FATFS data into LittleFS data. Treat the filesystem contents as potentially incompatible and back up anything important before changing the partition layout or formatting.
 
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/2112773d-7ba7-45ce-bd6d-aedf2490a37b" />
+
+
 ##### 3. One more thing about your 16 MB flash
 
 Your partition table uses the full 16 MB address range, from `0x000000` to `0x1000000`, including the bootloader, partition table, applications, filesystem, and coredump.
