@@ -12,6 +12,10 @@ Here are copy-paste-ready Markdown code samples for every Shields.io format and 
 
 https://colorhunt.co/
 
+```
+> [!NOTE]
+> Useful information that users should know, even when skimming content.
+```
 > [!NOTE]
 > Useful information that users should know, even when skimming content.
 
