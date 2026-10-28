@@ -920,6 +920,27 @@ static bool prepareUploadTestFile(const String& localPath) {
 }
 ```
 
+
+Below is the sample helper function just to store text to local SPIFFS:
+
+```cpp
+#include <LittleFS.h>
+
+void writeTextToSPIFFS() {
+    File file = LittleFS.open("/upload_test.txt", "w");
+
+    if (!file) {
+        Serial.println("[TEST] Failed to create LittleFS file");
+        return;
+    }
+
+    file.println("ESP32-S3 GitLab upload test");
+    file.println("Version: 1");
+    file.close();
+
+    Serial.println("[TEST] Created /upload_test.txt");
+}
+```
 ### How the helper works
 
 For example, suppose you enter:
