@@ -390,6 +390,9 @@ size_t bytesRead = file.read(buffer, len);
 
 The process is:
 
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/eca1c1e5-59e7-4d19-9739-7be14ba48ff3" />
+
+
 1. **LittleFS in flash:** The original file is stored persistently in flash.
 2. **PSRAM buffer:** `ps_malloc(len)` allocates a temporary buffer in PSRAM.
 3. **File read:** `file.read(buffer, len)` copies the file's contents from LittleFS into the buffer.
