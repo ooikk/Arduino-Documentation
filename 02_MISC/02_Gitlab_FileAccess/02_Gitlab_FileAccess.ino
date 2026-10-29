@@ -8,7 +8,8 @@
 #include "GitlabClient.h"
 #include "PsramFileManager.h"
 
-//#define FORMAT_SPIFFS  // Option to format SPIFFS once during setup, turn off after run this once
+//#define DEBUG_TRACE
+#define FORMAT_SPIFFS  // Option to format SPIFFS once during setup, turn off after run this once
 
 // Demo convenience only: for a real/public repository, move these to a local
 // secrets header excluded from source control. Never put the GitLab PAT here.
@@ -51,7 +52,8 @@ static void printHelp() {
   Serial.println();
   Serial.println("Commands:");
   Serial.println(" LIST /              ->list root-level files");
-  Serial.println(" LIST folder         ->list files in assets directory");
+  Serial.println(" LIST                ->list all files include sub dirs");
+  Serial.println(" LIST folder         ->list files in folder directory");
   Serial.println(" LISTLOCAL           ->list all local LittleFS files recursively");
   Serial.println(" GET folder/logo.png ->download file to PSRAM, print SHA-256, free buffer");
   Serial.println(" TEXTUPLOAD          ->Prompt for text and create, overwrite, or append a GitLab file");
@@ -142,6 +144,7 @@ static bool initializeGitlab() {
   return true;
 }
 
+/*
 static void runList(String path) {
   if (!gitlab && !initializeGitlab()) return;
   path.trim();
@@ -155,6 +158,47 @@ static void runList(String path) {
   Serial.printf("[GitLab] Files in '%s': %u\n", path.c_str(), (unsigned)names.size());
   for (const String& name : names) Serial.println(name);
 }
+
+*/
+
+
+static void runList(String path) {
+  if (!gitlab && !initializeGitlab()) return;
+
+  path.trim();
+
+  // LIST  = recursively list the repository.
+  // LIST / = list only the repository root.
+  // bool recursive = path.isEmpty();
+  bool recursive = true;
+
+  if (path == "/") {
+    path = "";
+    recursive = false;
+  }
+
+
+#ifdef DEBUG_TRACE
+  Serial.printf("[DEBUG] path='%s', recursive=%s\n",
+                path.c_str(), recursive ? "true" : "false");
+#endif
+
+  std::vector<String> names;
+  if (!gitlab->listFiles(path, names, recursive)) {
+    Serial.println(gitlab->lastError());
+    return;
+  }
+
+  Serial.printf("[GitLab] Files in '%s'%s: %u\n",
+                path.c_str(),
+                recursive ? " (recursive)" : "",
+                (unsigned)names.size());
+
+  for (const String& name : names) {
+    Serial.println(name);
+  }
+}
+
 
 static void runGet(const String& path) {
   if (!gitlab && !initializeGitlab()) return;
@@ -498,9 +542,11 @@ static bool prepareUploadTestFile(const String& localPath) {
   }
   // END NEW
 
+  /* skip this as it's already display at readMultilineText below
   Serial.println("Enter the file content below.");
   Serial.println("Enter .END on a line by itself to finish.");
   Serial.println("Enter .CANCEL on a line by itself to abort.");
+*/
 
   String content;
 
@@ -961,7 +1007,8 @@ static void handleCommand(String line) {
     }
     Serial.println("[Security] Reboot to provision a new token.");
   } else if (command == "LIST") {
-    runList(argument.length() ? argument : "/");
+    //runList(argument.length() ? argument : "/");
+    runList(argument);
   } else if (command == "UPLOAD" || command == "UPDATE") {
     int secondSplit = argument.indexOf(' ');
     if (secondSplit < 0) {

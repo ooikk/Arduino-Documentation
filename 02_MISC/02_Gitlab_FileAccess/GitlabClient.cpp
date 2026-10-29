@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEBUG_TRACE
+//#define DEBUG_TRACE
 
 
 static const size_t MAX_DOWNLOAD_BYTES = 6UL * 1024UL * 1024UL;
@@ -157,10 +157,23 @@ bool GitlabClient::listFiles(const String& path,
     for (JsonObject entry : arr) {
       const char* type = entry["type"] | "";
       const char* name = entry["name"] | "";
+      /*
       if (strcmp(type, "blob") == 0 && name[0] != '\0') {
         outFileNames.push_back(String(name));
       }
+*/
+
+      if (name[0] != '\0') {
+        if (strcmp(type, "blob") == 0) {
+          // Regular file
+          outFileNames.push_back(String(name));
+        } else if (strcmp(type, "tree") == 0) {
+          // Directory
+          outFileNames.push_back(String(name) + "/");
+        }
+      }
     }
+
 
     // A short page indicates the last page. Empty page also stops.
     if (arr.size() < 100) return true;
@@ -462,6 +475,21 @@ bool GitlabClient::writeFileRequest(const char* method, const String& path,
 
 
   String url = apiBase() + "/repository/files/" + encodePathForFileEndpoint(path);
+
+#ifdef DEBUG_TRACE
+  Serial.println();
+  Serial.println("[GitLab] ===== FILE WRITE DEBUG =====");
+  Serial.printf("[GitLab] Method: %s\n", method);
+  Serial.printf("[GitLab] Branch: '%s'\n", _config.branch.c_str());
+  Serial.printf("[GitLab] Repository path: '%s'\n", path.c_str());
+  Serial.printf("[GitLab] Encoded path: '%s'\n",
+                encodePathForFileEndpoint(path).c_str());
+  Serial.printf("[GitLab] Request URL: %s\n", url.c_str());
+  Serial.printf("[GitLab] Payload length: %u bytes\n",
+                (unsigned)payload.length());
+  Serial.println("[GitLab] ============================");
+#endif
+
   HTTPClient http;
   http.setConnectTimeout(15000);
   http.setTimeout(HTTP_TIMEOUT_MS);
@@ -475,6 +503,12 @@ bool GitlabClient::writeFileRequest(const char* method, const String& path,
   http.addHeader("Content-Type", "application/json");
   int status = http.sendRequest(method, (uint8_t*)payload.c_str(), payload.length());
   String response = http.getString();
+
+#ifdef DEBUG_TRACE
+  Serial.printf("[GitLab] HTTP status: %d\n", status);
+  Serial.printf("[GitLab] Response: %s\n", response.c_str());
+#endif
+
   http.end();
   payload = "";
 
