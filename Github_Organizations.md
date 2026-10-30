@@ -1504,9 +1504,9 @@ This repository contains ESP32 lecture notes, schematics, and reference code for
 2. Use git clone or GitHub Desktop. Do not try to fork.
 3. For labs: Go to GitHub Classroom invite link posted on LMS.
 
-```
+
 git clone https://github.com/esp32-course-2026/01-lecture-notes.git
-```
+
 
 ## Structure
 - week01-gpio/ - GPIO, LED, Button, Interrupts
