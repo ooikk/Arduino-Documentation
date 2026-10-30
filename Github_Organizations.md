@@ -1276,6 +1276,195 @@ The equivalent commands work on a MacBook, using the same folder path syntax sho
 
 ---
 
+# How to Assign Repository Permissions in GitHub Organization
+
+Since you use GitHub through a web browser, you can configure all repository permissions through GitHub's website. You do not need PowerShell, Git commands, or the GitHub CLI to manage permissions.
+
+For your ESP32 course, the goal is to let students read and clone your teaching materials but prevent them from modifying your original course repositories.
+
+## 1. Understand the five repository roles
+
+GitHub provides five standard repository roles.
+
+| Role | What the user can generally do | Recommended for |
+|---|---|---|
+| Read | View, clone, and download repository contents | Students accessing course materials |
+| Triage | Read and manage issues and pull requests without write access to repository contents | TAs helping manage student issues |
+| Write | Push code and make changes to the repository | Students submitting assignments to their own repositories |
+| Maintain | Manage many repository tasks without full administrative control | TAs maintaining selected repositories |
+| Admin | Manage repository settings, permissions, and other administrative functions | Trusted instructors |
+
+For your course, remember these two rules:
+
+- Students should normally have `Read` access to the instructor's course-materials repositories.
+- Students should have `Write` access to their own assignment repositories, but not to other students' repositories.
+
+GitHub's official guide: [Managing repository roles](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles)
+
+## 2. Method A — Assign permissions using Teams (recommended)
+
+This is the best method for your ESP32 course because you can assign permissions to an entire cohort instead of adding students individually to every repository.
+
+### Step 1: Open your repository
+
+1. Sign in to [GitHub](https://github.com/).
+2. Open your ESP32 Organization.
+3. Click **Repositories**.
+4. Select your course repository, for example `esp32-course-materials`.
+
+### Step 2: Open repository access settings
+
+1. Click **Settings** in the repository's top menu.
+2. In the left sidebar, find the **Access** section.
+3. Click **Collaborators & teams**.
+
+GitHub displays the people and teams that currently have access to the repository. [GitHub Docs](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/managing-teams-and-people-with-access-to-your-repository)
+
+### Step 3: Add a team
+
+1. Under **Manage access**, click **Add people** or **Add teams**. The label may vary slightly.
+2. Search for your team, such as `Cohort-2026`.
+3. Select the team.
+4. Under **Choose a role**, select `Read`.
+5. Click **Add team to this repository** or the equivalent confirmation button.
+
+Your students now have read access through that team, provided they are members of it and have accepted any required invitations.
+
+### Step 4: Repeat for the other teams
+
+For `esp32-course-materials`, you might configure:
+
+| Team | Permission |
+|---|---|
+| `Instructors` | `Admin`, for trusted repository administrators |
+| `TAs` | `Read` or `Write`, depending on responsibilities |
+| `Cohort-2026` | `Read` |
+
+For `esp32-instructor-only`:
+
+| Team | Permission |
+|---|---|
+| `Instructors` | `Admin` |
+| `TAs` | `Read`, if authorized |
+| `Cohort-2026` | No access |
+
+**Important:** Do not add the student cohort to your instructor-only repository.
+
+Official instructions: [Managing team access to an organization repository](https://github.com/github/docs/blob/main/content/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository.md)
+
+## 3. Method B — Assign permissions to an individual student
+
+Use this method when a student needs access to a specific assignment repository.
+
+For example, suppose you have created:
+
+```text
+assignment-01-studentA
+```
+
+You want Student A to submit their code but prevent them from changing the original teaching materials.
+
+### Step 1: Open the student's repository
+
+1. Open your GitHub Organization.
+2. Select `assignment-01-studentA`.
+3. Click **Settings**.
+4. Under **Access**, click **Collaborators & teams**.
+
+### Step 2: Add the student
+
+1. Click **Add people**.
+2. Search for the student's GitHub username.
+3. Select the correct account.
+4. Choose the `Write` role.
+5. Confirm the invitation.
+
+The student must accept the invitation if GitHub requires it.
+
+### Step 3: Verify the permission
+
+1. Return to **Settings → Collaborators & teams**.
+2. Confirm that the student appears with the `Write` role.
+
+Repeat for other students, giving each student access only to their assigned repository.
+
+Official instructions: [Managing teams and people with access to your repository](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/managing-teams-and-people-with-access-to-your-repository)
+
+## 4. Recommended permission matrix for your course
+
+Here is the configuration I recommend implementing first.
+
+| Repository | Instructors | TAs | Cohort-2026 | Individual student |
+|---|---|---|---|---|
+| `esp32-course-materials` | Admin | Read | Read | No additional access needed |
+| `esp32-code-examples` | Admin | Read | Read | No additional access needed |
+| `esp32-instructor-only` | Admin | As authorized | No access | No access |
+| `esp32-assignment-01-template` | Admin | Write | Read, if needed | Read, if needed |
+| `assignment-01-studentA` | Admin | Read or Write | No cohort-wide access | Student A: Write |
+| `assignment-01-studentB` | Admin | Read or Write | No cohort-wide access | Student B: Write |
+
+The table describes the intended permissions. Check for inherited permissions, organization-wide access, and any direct grants before considering the configuration complete.
+
+### A critical security check
+
+Suppose you grant Student A `Write` access to their assignment repository but also add them to a team with `Write` access to every assignment repository.
+
+Student A could then modify other students' submissions.
+
+Avoid granting cohort-wide `Write` access to student assignment repositories. Give each student access only to their own repository.
+
+## 5. How to check who has access
+
+For each important repository:
+
+1. Open the repository.
+2. Click **Settings**.
+3. Select **Collaborators & teams**.
+4. Review the list under **Manage access**.
+5. Check the role assigned to every team and individual.
+6. Remove any unauthorized access.
+
+If GitHub shows **Mixed roles** next to a person, investigate the conflicting permissions. A user may have access through multiple routes. [GitHub Docs](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/managing-teams-and-people-with-access-to-your-repository)
+
+For your instructor-only repository, verify that the student cohort has no access.
+
+## 6. How to remove a student's access
+
+When a student leaves the course:
+
+1. Open each relevant repository.
+2. Go to **Settings → Collaborators & teams**.
+3. Find the student's direct access, if any.
+4. Click **Remove**.
+5. Review the student's team memberships and remove any that are no longer appropriate.
+6. Verify that no other team or direct permission still grants access.
+
+Removing a student's repository access does not delete copies previously cloned to their computer. [GitHub Docs](https://docs.github.com/en/enterprise-cloud%40latest/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-team-access-to-an-organization-repository)
+
+## 7. My recommendation: configure one repository first
+
+Before configuring all your ESP32 repositories, test the process with just these two:
+
+### Repository A: `esp32-course-materials`
+
+- `Instructors`: Admin
+- `TAs`: Read
+- `Cohort-2026`: Read
+
+### Repository B: `assignment-01-studentA`
+
+- `Instructors`: Admin
+- `Student A`: Write
+- Other students: No access
+
+Test using a separate student account. Confirm that the student can clone the course materials, cannot push changes to the instructor's repository, and can push changes to their own assignment repository.
+
+Once these tests pass, repeat the configuration for the remaining repositories.
+
+One question before you proceed: Have you already created the `Instructors`, `TAs`, and `Cohort-2026` teams in your GitHub Organization, or do you need instructions to create those teams first?
+
+---
+
 # ESP32 Course Distribution with GitHub Organizations (Meta AI)
 
 As an ESP32 instructor, your goal isn't DRM - it's **friction**. You want students to have Read/Clone but not be able to mass-distribute. GitHub Organizations does this well if you set it up right.
