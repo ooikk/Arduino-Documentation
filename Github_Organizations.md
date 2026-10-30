@@ -1068,7 +1068,209 @@ For an ordinary ESP32 course, this is a practical balance between security, stud
 
 ---
 
-# ESP32 Course Distribution with GitHub Organizations
+# Using Git with GitHub on Windows and MacBook
+
+Since you access GitHub through a browser, you can use Windows PowerShell on your Windows computer or Terminal on your MacBook to work with GitHub repositories.
+
+The Git commands are almost identical on both systems. The main difference is how you open the terminal and install Git.
+
+## 1. Windows — PowerShell
+
+### Step 1: Install Git
+
+If Git is not installed, download and install Git for Windows from the official website.
+
+[Git for Windows](https://git-scm.com/install/windows)
+
+After installation:
+
+1. Open the Windows Start menu.
+2. Search for PowerShell.
+3. Open Windows PowerShell.
+4. Check that Git is installed:
+
+```powershell
+git --version
+```
+
+You should see a version number, such as `git version 2.x.x`.
+
+### Step 2: Clone your GitHub repository
+
+1. Open your private assignment repository in your browser.
+2. Click the green **Code** button.
+3. Select **HTTPS**.
+4. Copy the repository URL.
+5. Open PowerShell.
+6. Run:
+
+```powershell
+# Navigate to the folder where you want to store your assignments
+cd "$HOME\Documents"
+
+# Clone your GitHub repository
+git clone <repository-url>
+
+# Enter the repository folder
+cd <repository-folder>
+```
+
+Replace `<repository-url>` with the URL you copied from GitHub.
+
+For example, if your repository is named `assignment-01-studentA`:
+
+```powershell
+git clone https://github.com/ESP32-Learning-Lab/assignment-01-studentA.git
+
+cd assignment-01-studentA
+```
+
+Use your actual organization name and repository URL.
+
+### Step 3: Edit your assignment
+
+You can edit your Arduino `.ino` files using Arduino IDE, or your ESP-IDF project using your chosen development environment.
+
+After saving your changes, return to PowerShell.
+
+### Step 4: Submit your assignment
+
+```powershell
+# Check which files have changed
+git status
+
+# Stage your changes
+git add .
+
+# Commit your changes
+git commit -m "Complete assignment 1"
+
+# Upload your changes to GitHub
+git push
+```
+
+After `git push` succeeds, refresh your repository page in the browser. Your changes should appear on GitHub.
+
+## 2. MacBook — Terminal
+
+### Step 1: Check whether Git is installed
+
+1. Open Spotlight Search by pressing `Command + Space`.
+2. Type `Terminal`.
+3. Open Terminal.
+4. Run:
+
+```bash
+git --version
+```
+
+If Git is not installed, macOS may prompt you to install the Xcode Command Line Tools. Follow the prompt.
+
+Alternatively, install Git using the official instructions:
+
+[Git installation instructions](https://git-scm.com/install/mac)
+
+### Step 2: Clone your GitHub repository
+
+In Terminal, run:
+
+```bash
+# Navigate to the Documents folder
+cd "$HOME/Documents"
+
+# Clone your GitHub repository
+git clone <repository-url>
+
+# Enter the repository folder
+cd <repository-folder>
+```
+
+For example:
+
+```bash
+git clone https://github.com/ESP32-Learning-Lab/assignment-01-studentA.git
+
+cd assignment-01-studentA
+```
+
+Again, replace the example URL with your actual repository URL.
+
+### Step 3: Edit your assignment
+
+Open your Arduino sketch in Arduino IDE or your ESP-IDF project in your preferred development environment.
+
+Make your changes and save the files.
+
+### Step 4: Submit your assignment
+
+```bash
+# Check which files have changed
+git status
+
+# Stage your changes
+git add .
+
+# Commit your changes
+git commit -m "Complete assignment 1"
+
+# Upload your changes to GitHub
+git push
+```
+
+Refresh the repository page in your browser to verify the submission.
+
+## 3. Windows vs. MacBook — Command comparison
+
+| Operation | Windows PowerShell | MacBook Terminal |
+|---|---|---|
+| Check Git installation | `git --version` | `git --version` |
+| Navigate to Documents | `cd "$HOME\Documents"` | `cd "$HOME/Documents"` |
+| Clone repository | `git clone <repository-url>` | `git clone <repository-url>` |
+| Enter repository | `cd <repository-folder>` | `cd <repository-folder>` |
+| Check changes | `git status` | `git status` |
+| Stage changes | `git add .` | `git add .` |
+| Commit changes | `git commit -m "Complete assignment 1"` | `git commit -m "Complete assignment 1"` |
+| Upload changes | `git push` | `git push` |
+
+The Git commands themselves are the same on both platforms.
+
+## 4. Important: First-time GitHub authentication
+
+Cloning a private repository and uploading changes require authentication.
+
+For private repositories, GitHub may prompt you to authenticate through a browser or a supported credential manager.
+
+If Git asks for a GitHub password in the terminal, do not enter your normal GitHub account password. GitHub does not accept account passwords for Git operations over HTTPS.
+
+Use a supported authentication method, such as Git Credential Manager or GitHub CLI. See the official instructions:
+
+[GitHub authentication for Git](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/about-authentication-to-github)
+
+For beginners, I recommend using HTTPS with browser-based authentication where available.
+
+### Two important rules for your students
+
+1. **Clone only once.** The first `git clone` downloads the repository. For subsequent sessions, navigate to the existing repository folder instead of cloning it again.
+2. **Check `git status` before committing.** This helps students identify which files they are about to submit.
+
+For example, when returning to an existing assignment on Windows:
+
+```powershell
+cd "$HOME\Documents\assignment-01-studentA"
+
+git status
+git add .
+git commit -m "Update assignment 1"
+git push
+```
+
+The equivalent commands work on a MacBook, using the same folder path syntax shown above.
+
+**Security reminder:** Students should push work only to their assigned private repositories. They should never put GitHub access tokens, Wi-Fi passwords, or private keys into their Arduino or ESP-IDF source files.
+
+---
+
+# ESP32 Course Distribution with GitHub Organizations (Meta AI)
 
 As an ESP32 instructor, your goal isn't DRM - it's **friction**. You want students to have Read/Clone but not be able to mass-distribute. GitHub Organizations does this well if you set it up right.
 
@@ -1238,5 +1440,5 @@ By accepting this assignment, I agree:
 
 This keeps your costs at $0, your workflow beginner-friendly (students never need to `git init`), and your materials protected by both access control and policy. You can't stop a determined student from copy-pasting, but you can prevent the common case where one student forks your lecture notes to public and 300 people star it.
 
-Want me to generate the starter LICENSE, README, CODEOWNERS, and branch protection ruleset files for you to copy into your org?
+
 
