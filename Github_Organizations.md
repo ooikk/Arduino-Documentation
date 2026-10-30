@@ -35,7 +35,7 @@ There is a significant date-sensitive issue with the requested design. GitHub's 
 
 
 > [!TIP]
-> Use Classroom 50 as altenative: https://github.com/foundation50/classroom50/wiki
+> Use Classroom 50 as altenative: https://github.com/foundation50/classroom50/wiki    
 > Classroom 50 is a free, open-source tool for distributing and auto-grading programming assignments on GitHub. It's an alternative to GitHub Classroom, supported by the Fifty Foundation.
 
 
