@@ -4,6 +4,7 @@
 
 ---
 [![logo-color](https://img.shields.io/badge/Index-Badges-70FFD2?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/badges.md)
+[![logo-color](https://img.shields.io/badge/Index-Auto_Generate_Readme-E3AFC9?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/Auto_Generate_Readme.md)
 [![logo-color](https://img.shields.io/badge/Index-General_Info-FFFC8C?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/General_Info.md)
 [![logo-color](https://img.shields.io/badge/Index-Arduino_Project_File-FFCC4D?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/Arduino_Project_File.md)
 [![logo-color](https://img.shields.io/badge/Index-Bootloader_Mode-DF301C?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/Bootloader_Mode.md)
