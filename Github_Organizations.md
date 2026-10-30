@@ -1440,5 +1440,217 @@ By accepting this assignment, I agree:
 
 This keeps your costs at $0, your workflow beginner-friendly (students never need to `git init`), and your materials protected by both access control and policy. You can't stop a determined student from copy-pasting, but you can prevent the common case where one student forks your lecture notes to public and 300 people star it.
 
+## Starter LICENSE, README, CODEOWNERS, and branch protection ruleset files
 
+Individual files/ sections:
+
+- **LICENSE.md** - Educational non-distribution license. Put in root of every repo.
+- **README.md** - Warning banner + quick start for beginners. Replace your main `01-lecture-notes` README with this.
+- **CODEOWNERS** - Only Instructors/TAs can approve changes. Place in repo root AND in `.github/CODEOWNERS`
+  - Copy: `.github/CODEOWNERS`
+- **ruleset.json** + **BRANCH_PROTECTION_GUIDE.md** - Blocks direct push to `main`, requires PR + CODEOWNER review, blocks force-push and deletion.
+- **STUDENT_AGREEMENT.md** - Post to LMS, have students sign before first Classroom link.
+- **SETUP_CHECKLIST.md** - Your one-page Org hardening checklist.
+- **watermark.yml** - Optional GitHub Action placeholder to stamp PDFs with `Licensed to @username`.
+
+### Educational non-distribution license
+
+Educational non-distribution license. Put in root of every repo.
+
+```markdown
+# Educational Use License - ESP32 Course Materials
+
+Copyright (c) 2026 Peter Tan / [Your University Name]
+
+This material is provided SOLELY for students officially enrolled in
+[Course Code: e.g., EE4208 - IoT with ESP32] - Semester 2026.
+
+## Permissions Granted
+- Clone, pull, and read within the private GitHub Organization esp32-course-2026
+- Use code examples (Arduino / ESP-IDF) for coursework, labs, and final project
+- Modify template repositories assigned via GitHub Classroom for assignment submission
+
+## Prohibited Actions
+You may NOT, without prior written permission:
+1. Make any part public - including public GitHub repos, Gists, forums, blogs, Chegg, Course Hero
+2. Share, forward, or distribute PDFs, schematics, slides, or source code outside the Organization
+3. Upload to AI training datasets or public file-sharing services
+4. Fork to a personal public account (forking is disabled)
+
+This license is based on CC BY-NC-ND 4.0 with additional non-distribution clause.
+
+Enforcement: Violation will be treated as academic misconduct and may result in revocation of access.
+
+Contact: [your-email@university.edu]
+```
+
+### Private Course Materials
+
+Warning banner + quick start for beginners. Replace your main 01-lecture-notes README with this.
+
+```markdown
+# PRIVATE COURSE MATERIAL - DO NOT SHARE
+
+> Repository: 01-lecture-notes
+> Organization: esp32-course-2026
+> Access: Private - Enrolled Students Only (Read-only)
+> Forking: Disabled
+> License: See LICENSE.md
+
+This repository contains ESP32 lecture notes, schematics, and reference code for GPIO, Wi-Fi, BLE, FreeRTOS, Sensors, MQTT, IoT Projects.
+
+## For Students - Quick Start
+1. You have Read access only. You can clone/pull but cannot push directly.
+2. Use git clone or GitHub Desktop. Do not try to fork.
+3. For labs: Go to GitHub Classroom invite link posted on LMS.
+
+```
+git clone https://github.com/esp32-course-2026/01-lecture-notes.git
+```
+
+## Structure
+- week01-gpio/ - GPIO, LED, Button, Interrupts
+- week02-wifi/ - STA/AP mode, HTTP, MQTT
+- week03-ble/ - BLE Server/Client
+- week04-freertos/ - Tasks, Queues, Timers
+- week05-sensors/ - I2C, SPI, DHT22, MPU6050
+- schematics/ - KiCad / PDF
+- pdf/ - Slides - Watermarked
+
+## Policy Reminder
+If you received this outside GitHub Organization, please delete and contact instructor.
+
+Maintained by @Instructors - Issues welcome, PRs only from TAs.
+
+```
+
+### esp32-course-starter-pack/CODEOWNERS
+
+Only Instructors/TAs can approve changes. Place in repo root AND in .github/CODEOWNERS
+
+```markdown
+# CODEOWNERS for esp32-course-2026/01-lecture-notes
+# Only Instructors and TAs can approve changes
+
+* @esp32-course-2026/instructors
+
+/schematics/ @esp32-course-2026/instructors
+/pdf/ @esp32-course-2026/instructors
+/week* @esp32-course-2026/tas @esp32-course-2026/instructors
+```
+
+```json
+{
+  "name": "protect-main-lecture-notes",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/heads/main"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews_on_push": true,
+        "require_code_owner_review": true,
+        "require_last_push_approval": true
+      }
+    }
+  ],
+  "bypass_actors": [
+    { "actor_id": 1, "actor_type": "Team", "bypass_mode": "always" }
+  ]
+}
+
+```
+
+### Branch Protection Guide
+
+Blocks direct push to main, requires PR + CODEOWNER review, blocks force-push and deletion.
+
+```markdown
+# Branch Protection Setup for 01-lecture-notes
+
+## UI Steps
+1. Repo > Settings > Rules > Rulesets > New Ruleset > Branch
+2. Name: protect-main-lecture-notes
+3. Enforcement: Active
+4. Target branches: main
+5. Rules:
+   - Restrict deletions: ON
+   - Require pull request before merging: ON (Approvals:1, Require CODEOWNERS)
+   - Require status checks: optional
+   - Block force pushes: ON
+6. Bypass: Allow Instructors team
+
+Import ruleset.json via gh CLI: gh api -X POST /repos/ORG/REPO/rulesets --input ruleset.json
+
+```
+### STUDENT AGREEMENT
+
+Post to LMS, have students sign before first Classroom link.
+
+```markdown
+# STUDENT AGREEMENT - ESP32 Course Materials
+
+Course: [EE4208 - IoT with ESP32] - 2026
+Organization: github.com/esp32-course-2026
+
+By accepting assignment in GitHub Classroom or joining Org, I agree:
+
+1. Confidentiality: All notes, PDFs, schematics, code in private Org are confidential.
+2. No Public Sharing: I will NOT make public on public GitHub, Gist, blogs, Reddit, Discord outside class, Chegg, Course Hero.
+3. No Redistribution: I will NOT forward to anyone not enrolled.
+4. Technical Compliance: I will NOT bypass forking restrictions or remove watermarks.
+5. Access Duration: Access revoked after semester. Delete local copies except my own code for portfolio.
+6. Acknowledgement: Violations tracked via audit logs, treated as academic misconduct.
+
+Name: __________________ GitHub: @______________ Date: _________ Signature: _________
+```
+
+### One-page Org hardening checklist
+
+- Your one-page Org hardening checklist.
+- watermark.yml (I couldn't attach this file. Want me to make it again?) - Optional GitHub Action placeholder to stamp PDFs with Licensed to @username.
+
+```markdown
+# ORGANIZATION SETUP CHECKLIST
+
+- [ ] Create Org Free plan
+- [ ] Settings > Member privileges: Base=No permission, Public repo creation OFF, Forking private OFF, 2FA ON
+- [ ] Teams: Instructors (Owner), TAs (Maintainer), Cohort-2026-S2 (Member)
+- [ ] Create repos as Private, disable forking
+- [ ] Add CODEOWNERS, LICENSE.md, README.md
+- [ ] Create Ruleset from ruleset.json
+- [ ] Link GitHub Classroom to Org
+- [ ] Test with dummy student account
+```
+
+
+
+### How to deploy in 5 minutes
+
+#### 1. For `01-lecture-notes` repo
+
+- Create as **Private**
+- Settings > General > Uncheck "Allow forking"
+- Upload `LICENSE.md`, `README.md`, `CODEOWNERS`
+- Settings > Rules > Rulesets > Import `ruleset.json` -> Set Bypass to your `Instructors` Team
+
+#### 2. For template repos like `lab01-blink-template`
+
+- Create as Private > Settings > Check "Template repository"
+- Same LICENSE + README but add lab instructions
+
+#### 3. GitHub Classroom
+
+Link Classroom to your Org. When you create assignment `Lab01`, choose template `lab01-blink-template` and set visibility to **Private** - Classroom auto-creates `lab01-@student` as private, no forking needed.
+
+This gives you: Private-only access, no public forks, Read-only for students on notes, private per-student copies for labs, and a legal/policy layer that actually deters sharing more than any technical lock.
 
