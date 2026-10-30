@@ -259,7 +259,9 @@ Use the following as your initial permission matrix.
 
 For a small class, an instructor may choose to give TAs `Write` access only to the repositories they maintain. Use `Maintain` when a TA must manage repository settings or collaborators without needing full administrative control.
 
-GitHub's repository roles include Read, Triage, Write, Maintain, and Admin, with different capabilities. ([GitHub repository roles](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles?utm_source=chatgpt.com))
+GitHub's repository roles include Read, Triage, Write, Maintain, and Admin, with different capabilities. ([GitHub repository roles](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles))
+
+**Steps to assign repository permissions:** [https://github.com/ooikk/Arduino-Documentation/blob/main/Github_Organizations.md#how-to-assign-repository-permissions-in-github-organization](https://github.com/ooikk/Arduino-Documentation/blob/main/Github_Organizations.md#how-to-assign-repository-permissions-in-github-organization)
 
 ---
 
