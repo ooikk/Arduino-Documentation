@@ -31,7 +31,7 @@ There is one important limitation: **GitHub can restrict access and discourage r
 
 ## 2. Important platform status: GitHub Classroom
 
-There is a significant date-sensitive issue with the requested design. GitHub's current documentation states that **GitHub Classroom is scheduled to be retired on August 28, 2026**. Today's date is October 30, 2026, so you should not build a new course around GitHub Classroom unless GitHub has announced a change to that retirement status. [GitHub Docs](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/create-an-assignment-from-a-template-repository?utm_source=chatgpt.com)
+There is a significant date-sensitive issue with the requested design. GitHub's current documentation states that **GitHub Classroom is scheduled to be retired on August 28, 2026**. Today's date is October 30, 2026, so you should not build a new course around GitHub Classroom unless GitHub has announced a change to that retirement status. [GitHub Docs](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/create-an-assignment-from-a-template-repository)
 
 For this guide, I will design the core distribution system around private repositories and teams, then provide a Classroom workflow reference and a practical replacement based on private student repositories.
 
@@ -51,7 +51,7 @@ This preserves the important design principle: **instructor-controlled source re
 4. Confirm that you can sign in and create private repositories.
 5. If you teach through a school or polytechnic, check whether it already has a GitHub Organization or institutional policy for course repositories.
 
-Official guide: [GitHub Organizations documentation](https://docs.github.com/en/organizations?utm_source=chatgpt.com).
+Official guide: [GitHub Organizations documentation](https://docs.github.com/en/organizations).
 
 ### Step 2: Create an Organization
 
@@ -89,7 +89,7 @@ Configure the following settings, using the closest equivalent labels in the cur
 | Organization owners | One primary instructor and, ideally, one trusted backup | Reduces excessive privileges |
 | Two-factor authentication | Require it for organization members where supported | Reduces account-compromise risk |
 
-GitHub allows organization owners to configure base repository permissions, which apply to members across the organization's repositories. Setting base permission to `None` is a useful starting point because access can then be granted through specific teams. [GitHub](https://github.com/github/docs/blob/main/content/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/setting-base-permissions-for-an-organization.md?utm_source=chatgpt.com)
+GitHub allows organization owners to configure base repository permissions, which apply to members across the organization's repositories. Setting base permission to `None` is a useful starting point because access can then be granted through specific teams. [GitHub](https://github.com/github/docs/blob/main/content/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/setting-base-permissions-for-an-organization.md)
 
 **Important:** Test the actual permissions using a separate student account before uploading sensitive instructor-only materials.
 
@@ -101,7 +101,7 @@ GitHub Education provides educational resources and benefits for eligible educat
 
 ### Step-by-step application
 
-1. Open the official [GitHub Education for Teachers application](https://docs.github.com/en/education/about-github-education/github-education-for-teachers/apply-to-github-education-as-a-teacher?utm_source=chatgpt.com).
+1. Open the official [GitHub Education for Teachers application](https://docs.github.com/en/education/about-github-education/github-education-for-teachers/apply-to-github-education-as-a-teacher).
 2. Sign in with your personal GitHub account.
 3. Open your Education benefits settings.
 4. Select **Start an application**.
@@ -111,7 +111,7 @@ GitHub Education provides educational resources and benefits for eligible educat
 8. Submit the application.
 9. Check the status of your application and any benefits made available after approval.
 
-GitHub's stated requirements include educator or faculty status, a verifiable school-issued email address, supporting evidence of school affiliation, and a personal GitHub account. [GitHub Docs](https://docs.github.com/en/education/about-github-education/github-education-for-teachers/apply-to-github-education-as-a-teacher?utm_source=chatgpt.com)
+GitHub's stated requirements include educator or faculty status, a verifiable school-issued email address, supporting evidence of school affiliation, and a personal GitHub account. [GitHub Docs](https://docs.github.com/en/education/about-github-education/github-education-for-teachers/apply-to-github-education-as-a-teacher)
 
 ### What if you teach independently?
 
@@ -267,13 +267,13 @@ Base permissions apply to organization members across repositories. If you grant
 
 With base permissions set to `None`, explicitly grant the cohort access to approved teaching repositories.
 
-Note that base permissions do not apply to outside collaborators, and internal repositories have a minimum read-access level. ([GitHub documentation](https://github.com/github/docs/blob/main/content/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/setting-base-permissions-for-an-organization.md?utm_source=chatgpt.com))
+Note that base permissions do not apply to outside collaborators, and internal repositories have a minimum read-access level. ([GitHub documentation](https://github.com/github/docs/blob/main/content/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/setting-base-permissions-for-an-organization.md))
 
 ### 7.2 Custom Repository Roles
 
 GitHub supports custom repository roles on GitHub Enterprise Cloud.
 
-They can be useful when predefined roles are too broad, but they are **not necessary for a typical free course setup**. Do not upgrade solely to obtain custom roles unless a specific permission requirement justifies the cost. [GitHub Docs](https://docs.github.com/en/enterprise-cloud%40latest/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-custom-repository-roles-for-an-organization?utm_source=chatgpt.com)
+They can be useful when predefined roles are too broad, but they are **not necessary for a typical free course setup**. Do not upgrade solely to obtain custom roles unless a specific permission requirement justifies the cost. [GitHub Docs](https://docs.github.com/en/enterprise-cloud%40latest/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/managing-custom-repository-roles-for-an-organization)
 
 For a free-first implementation, use the standard repository roles.
 
@@ -329,11 +329,11 @@ The most important design decision is to distinguish between controls that preve
 | End-of-semester access removal | Stops authorized accounts from accessing protected resources after removal | Essential |
 | Student agreement | Establishes explicit obligations and potential consequences | Essential |
 
-GitHub's security guidance recommends restricting repository forking and visibility changes, limiting repository creation, reviewing audit logs, and using appropriate branch protections. ([GitHub security guidance](https://docs.github.com/en/code-security/tutorials/secure-your-organization/prevent-data-leaks?utm_source=chatgpt.com))
+GitHub's security guidance recommends restricting repository forking and visibility changes, limiting repository creation, reviewing audit logs, and using appropriate branch protections. ([GitHub security guidance](https://docs.github.com/en/code-security/tutorials/secure-your-organization/prevent-data-leaks))
 
 ### 8.1 Disable forking of private repositories
 
-This is one of the most useful controls for your course. GitHub allows organization owners to configure whether private repositories can be forked. New organizations are configured to disallow private-repository forking by default, according to GitHub's documentation. ([GitHub forking policy](https://docs.github.com/en/organizations/managing-organization-settings/managing-the-forking-policy-for-your-organization?utm_source=chatgpt.com))
+This is one of the most useful controls for your course. GitHub allows organization owners to configure whether private repositories can be forked. New organizations are configured to disallow private-repository forking by default, according to GitHub's documentation. ([GitHub forking policy](https://docs.github.com/en/organizations/managing-organization-settings/managing-the-forking-policy-for-your-organization))
 
 **Configuration steps:**
 
@@ -369,7 +369,7 @@ These controls reduce the likelihood of accidental disclosure. They do not preve
 
 SAML single sign-on can make sense when an educational institution has an identity provider such as Microsoft Entra ID or Okta.
 
-However, GitHub's current documentation identifies SAML SSO as a GitHub Enterprise Cloud feature. Do not assume that ordinary GitHub Free includes it. ([GitHub SAML SSO documentation](https://docs.github.com/en/enterprise-cloud%40latest/organizations/managing-saml-single-sign-on-for-your-organization?utm_source=chatgpt.com))
+However, GitHub's current documentation identifies SAML SSO as a GitHub Enterprise Cloud feature. Do not assume that ordinary GitHub Free includes it. ([GitHub SAML SSO documentation](https://docs.github.com/en/enterprise-cloud%40latest/organizations/managing-saml-single-sign-on-for-your-organization))
 
 For a small course with students using personal GitHub accounts, use:
 
@@ -383,7 +383,7 @@ Do not build the course around SSO unless your institution already has the neces
 
 ### 8.4 IP allow lists
 
-GitHub Enterprise Cloud supports organization IP allow lists. They can restrict access to organization resources based on source IP addresses. ([GitHub IP allow list documentation](https://docs.github.com/en/enterprise-cloud%40latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/managing-allowed-ip-addresses-for-your-organization?utm_source=chatgpt.com))
+GitHub Enterprise Cloud supports organization IP allow lists. They can restrict access to organization resources based on source IP addresses. ([GitHub IP allow list documentation](https://docs.github.com/en/enterprise-cloud%40latest/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/managing-allowed-ip-addresses-for-your-organization))
 
 For a student course, however, IP allow lists often create more problems than they solve:
 
@@ -400,7 +400,7 @@ If you later teach a restricted corporate course, an IP allow list may be approp
 
 Do not confuse domain verification with a complete student-email admission control.
 
-GitHub's verified-domain feature establishes ownership of a domain. Restricting organization email notifications to approved or verified domains is a separate Enterprise Cloud capability. It does not generally stop someone with authorized repository access from cloning the repository. ([GitHub domain verification documentation](https://docs.github.com/en/organizations/managing-organization-settings/verifying-or-approving-a-domain-for-your-organization?utm_source=chatgpt.com))
+GitHub's verified-domain feature establishes ownership of a domain. Restricting organization email notifications to approved or verified domains is a separate Enterprise Cloud capability. It does not generally stop someone with authorized repository access from cloning the repository. ([GitHub domain verification documentation](https://docs.github.com/en/organizations/managing-organization-settings/verifying-or-approving-a-domain-for-your-organization))
 
 For a free-first class:
 
@@ -433,7 +433,7 @@ For an instructor-controlled source repository:
 6. Prevent force pushes and branch deletion where available.
 7. Restrict bypass permissions to trusted maintainers when supported.
 
-GitHub's documentation states that branch protection is available for public repositories under GitHub Free and for public and private repositories under paid plans such as GitHub Pro, Team, and Enterprise Cloud. Check the current plan requirements before applying protection to private instructor repositories. ([GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches?utm_source=chatgpt.com))
+GitHub's documentation states that branch protection is available for public repositories under GitHub Free and for public and private repositories under paid plans such as GitHub Pro, Team, and Enterprise Cloud. Check the current plan requirements before applying protection to private instructor repositories. ([GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches))
 
 **For your course:** Students should normally have `Read` access to instructor repositories, so they cannot push changes to those repositories in the first place. Branch protection is an additional safeguard for instructor and TA changes.
 
@@ -443,7 +443,7 @@ GitHub's documentation states that branch protection is available for public rep
 
 Audit logs help investigate who performed certain organization actions and when.
 
-GitHub documents an organization audit log that records activities such as organization changes and repository-related events. Access and retention vary by plan and event type. ([GitHub audit log documentation](https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/reviewing-the-audit-log-for-your-organization?utm_source=chatgpt.com))
+GitHub documents an organization audit log that records activities such as organization changes and repository-related events. Access and retention vary by plan and event type. ([GitHub audit log documentation](https://docs.github.com/en/organizations/keeping-your-organization-secure/managing-security-settings-for-your-organization/reviewing-the-audit-log-for-your-organization))
 
 ### Recommended review procedure
 
@@ -464,7 +464,7 @@ At the end of each semester:
 - Check for unexpected repositories created in the organization.
 - Investigate any known unauthorized publication or access incident.
 
-**Important limitation:** Audit logs are not a comprehensive surveillance mechanism. Do not assume they record every file viewed, every local clone, or every attempt to copy material. GitHub's security documentation explicitly notes limitations in the available audit data. [GitHub Docs](https://docs.github.com/en/code-security/reference/security-incident-response/investigation-tools?utm_source=chatgpt.com)
+**Important limitation:** Audit logs are not a comprehensive surveillance mechanism. Do not assume they record every file viewed, every local clone, or every attempt to copy material. GitHub's security documentation explicitly notes limitations in the available audit data. [GitHub Docs](https://docs.github.com/en/code-security/reference/security-incident-response/investigation-tools)
 
 ---
 
@@ -510,7 +510,7 @@ GitHub Classroom was designed to automate several tasks that otherwise require m
 - Track accepted assignments.
 - Provide feedback and, where configured, automatic grading.
 
-However, GitHub's documentation states that Classroom was scheduled for retirement on August 28, 2026. Its documentation also describes migration options, including Classroom 50 and Codio. As of October 30, 2026, verify which replacement services are operational and what their current pricing and eligibility requirements are before adopting one. [GitHub Docs](https://docs.github.com/en/education/manage-coursework-with-github-classroom/get-started-with-github-classroom?utm_source=chatgpt.com)
+However, GitHub's documentation states that Classroom was scheduled for retirement on August 28, 2026. Its documentation also describes migration options, including Classroom 50 and Codio. As of October 30, 2026, verify which replacement services are operational and what their current pricing and eligibility requirements are before adopting one. [GitHub Docs](https://docs.github.com/en/education/manage-coursework-with-github-classroom/get-started-with-github-classroom)
 
 ### 12.1 What the original Classroom workflow looked like
 
@@ -529,7 +529,7 @@ For reference, the original workflow was:
 11. Students clone their repositories, work locally, and push their submissions.
 12. The instructor reviews the submissions.
 
-GitHub's documentation confirms that individual assignments could generate repositories from templates and that repository visibility and student administrative access were configurable. [GitHub Docs](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/create-an-individual-assignment?utm_source=chatgpt.com)
+GitHub's documentation confirms that individual assignments could generate repositories from templates and that repository visibility and student administrative access were configurable. [GitHub Docs](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/create-an-individual-assignment)
 
 This workflow is useful as a reference when evaluating replacement platforms, but **do not assume that these Classroom functions remain available after the announced retirement**.
 
