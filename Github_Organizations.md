@@ -33,6 +33,12 @@ There is one important limitation: **GitHub can restrict access and discourage r
 
 There is a significant date-sensitive issue with the requested design. GitHub's current documentation states that **GitHub Classroom is scheduled to be retired on August 28, 2026**. Today's date is October 30, 2026, so you should not build a new course around GitHub Classroom unless GitHub has announced a change to that retirement status. [GitHub Docs](https://docs.github.com/en/education/manage-coursework-with-github-classroom/teach-with-github-classroom/create-an-assignment-from-a-template-repository)
 
+Classroom 50
+> [!TIP]
+> Use Classroom 50 as altenative: https://github.com/foundation50/classroom50/wiki
+> Classroom 50 is a free, open-source tool for distributing and auto-grading programming assignments on GitHub. It's an alternative to GitHub Classroom, supported by the Fifty Foundation.
+
+
 For this guide, I will design the core distribution system around private repositories and teams, then provide a Classroom workflow reference and a practical replacement based on private student repositories.
 
 This preserves the important design principle: **instructor-controlled source repositories must remain separate from student working repositories**.
