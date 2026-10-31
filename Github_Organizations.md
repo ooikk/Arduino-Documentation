@@ -3,6 +3,7 @@
 [![logo-color](https://img.shields.io/badge/Index-Classroom_50-97D7FF?logo=github&logoColor=white&labelColor=5B7E3C)](#classroom-50--complete-guide)
 [![logo-color](https://img.shields.io/badge/Index-Github--Gists-B4E4D6?logo=github&logoColor=white&labelColor=5B7E3C)](#github-gists)
 [![logo-color](https://img.shields.io/badge/Index-Github_Actions-218DAE?logo=github&logoColor=white&labelColor=5B7E3C)](#github-actions--introduction-features-and-step-by-step-setup)
+[![logo-color](https://img.shields.io/badge/Index-Github_Actions_Secrets-D8A2A2?logo=github&logoColor=white&labelColor=5B7E3C)](#practical-exercise-store-confidential-credentials-using-github-actions-secrets)
 
 
 
