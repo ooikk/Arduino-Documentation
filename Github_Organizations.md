@@ -2867,3 +2867,121 @@ I would implement it in this order:
 One particularly important design decision: Keep `esp32-course-materials` as your permanent instructor-controlled source repository. Classroom 50 should distribute assignment-specific copies, not replace your main teaching repository.
 
 That way, you can update the master ESP32 course materials without unintentionally changing existing student submissions.
+
+---
+
+# GitHub Gists
+
+GitHub Gists is a GitHub feature that allows you to share small pieces of code, configuration files, notes or text without creating a complete GitHub repository.
+
+Think of it as a lightweight code-sharing service or an online code snippet library.
+
+[Open GitHub Gist](https://gist.github.com/)
+
+## 1. What can you do with Gists?
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a5f8c497-1e75-4d8a-8040-1e8fb4ddd342" />
+
+
+[docs.github.com](https://docs.github.com/en/get-started/writing-on-github/editing-and-sharing-content-with-gists/creating-gists)
+
+Typical applications:
+
+- Share a short Arduino ESP32 code example.
+- Publish a reusable C++ function.
+- Share configuration files.
+- Keep useful command-line instructions.
+- Store code snippets for teaching.
+- Share debugging logs with students.
+
+For example, you might create a Gist containing:
+
+```cpp
+// ESP32-S3: Check PSRAM availability
+
+void setup() {
+  Serial.begin(115200);
+
+  if (psramFound()) {
+    Serial.printf("PSRAM: %u bytes\n",
+                  ESP.getPsramSize());
+  } else {
+    Serial.println("PSRAM not found");
+  }
+}
+
+void loop() {
+}
+```
+
+You can share the Gist URL with students without asking them to clone a repository.
+
+## 2. Public Gist vs Secret Gist
+
+| Feature | Public Gist | Secret Gist |
+|---|---|---|
+| Discoverable through GitHub search | Yes | No |
+| Anyone with URL can view | Yes | Yes |
+| Can be shared | Yes | Yes |
+| Version history | Yes | Yes |
+| Can be cloned | Yes | Yes |
+
+**Important**
+
+Secret Gists are not private repositories. Anyone who obtains the URL can access them.
+
+Never store passwords, API tokens, Wi-Fi credentials or GitLab deployment tokens in a Gist.
+
+## 3. Gist vs Repository
+
+| Feature | Gist | GitHub Repository |
+|---|---|---|
+| Main purpose | Share code snippets | Manage complete projects |
+| Multiple files | Yes | Yes |
+| Version control | Yes | Yes |
+| Issues and pull requests | No standard repository workflow | Yes |
+| GitHub Actions | No normal repository workflow | Yes |
+| GitHub Classroom | Not intended for assignments | Yes |
+| Project documentation | Basic | Full project support |
+
+## 4. How I would use Gists in your ESP32 Learning Lab
+
+I would use Gists as a supplementary teaching resource rather than your main course repository.
+
+| Teaching material | Recommended location |
+|---|---|
+| Complete ESP32 lessons | GitHub repository |
+| Student assignments | GitHub Classroom |
+| Reusable ESP32 code snippets | GitHub Gists |
+| ESP32 libraries | GitHub repository |
+| Firmware binaries | GitLab Package Registry |
+| Automated compilation | GitHub Actions |
+
+For example, you could create a collection of Gists:
+
+- ESP32 GPIO initialization
+- ADC reading and voltage conversion
+- PWM motor control
+- I²C device scanning
+- SPI communication
+- PSRAM allocation
+- FreeRTOS task creation
+- ESP-NOW communication
+- Wi-Fi connection troubleshooting
+
+## 5. Creating your first Gist
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b52a920b-e3cd-4209-a7c4-18387c0c41bc" />
+
+
+[osdeploy.com](https://www.osdeploy.com/guides/pscloudscript/github-gist)
+
+1. Visit [gist.github.com](https://gist.github.com/).
+2. Sign in with your GitHub account.
+3. Enter a filename, for example `ESP32_PSRAM_Test.ino`.
+4. Paste your code.
+5. Add a description.
+6. Choose **Create public gist** or **Create secret gist**.
+7. You will receive a URL that you can share with students.
+
+**My recommendation:** Gists are particularly useful for your ESP32 teaching activities when you want to distribute small, standalone code examples without creating a separate repository for every example. Keep your official course materials and student assignments in your existing GitHub organization.
