@@ -598,7 +598,13 @@ Use the private visibility setting.
 
 Populate each repository from the assignment template. GitHub's web interface supports creating a repository from a template, where the applicable permissions and repository ownership allow it.
 
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/3e200c44-717e-4af6-905e-b9763ca84af0" />
+
+
 Give the appropriate student write access to their repository. Give TAs access only when necessary.
+
+
+
 
 **Do not grant students access to one another's individual repositories.**
 
