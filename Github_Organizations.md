@@ -3565,7 +3565,9 @@ To download it:
 3. Find **Artifacts**.
 4. Click **ESP32-S3-Firmware**.
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/3370d2ea-83ae-466c-a069-12005401d10a" />
+
+
+<img width="80%" height="auto" alt="image" src="https://github.com/user-attachments/assets/17aa9fe3-ddea-462c-8dc6-03e01d6636de" />
 
 
 This is useful for your firmware distribution and testing exercises.
