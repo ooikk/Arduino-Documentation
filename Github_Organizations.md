@@ -3360,6 +3360,10 @@ You have now demonstrated the complete workflow lifecycle:
 Trigger → Workflow → Job → Runner → Steps → Results
 ```
 
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/2dd809fa-eed3-42d5-8585-fac9fb52fc11" />
+
+
+
 ## 6. Practical project: Automatically compile ESP32-S3 firmware
 
 Now let's move from a simple demonstration to something useful for your embedded systems teaching environment.
