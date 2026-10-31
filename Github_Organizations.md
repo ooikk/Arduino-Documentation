@@ -2976,7 +2976,7 @@ For example, you could create a collection of Gists:
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b52a920b-e3cd-4209-a7c4-18387c0c41bc" />
 
 
-[osdeploy.com](https://www.osdeploy.com/guides/pscloudscript/github-gist)
+
 
 1. Visit [gist.github.com](https://gist.github.com/).
 2. Sign in with your GitHub account.
