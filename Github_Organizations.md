@@ -3805,3 +3805,372 @@ Build status, reports and downloadable firmware
 ```
 
 The most valuable next step is to develop a reusable workflow that supports your exact ESP32-S3 N16R8 configuration, Arduino Core 3.3.12, required libraries and compilation settings. Once tested in one repository, you can introduce it into your GitHub Classroom assignment templates and scale it across your students.
+
+---
+
+# Practical Exercise: Store Confidential Credentials Using GitHub Actions Secrets
+
+**Hands-on GitHub Actions tutorial**
+
+GitHub Actions Secrets allows you to store sensitive information, such as passwords, API keys and deployment tokens, securely in GitHub.
+
+For your ESP32 projects, this is particularly useful because you already use a GitLab Deploy Token to access your private GitLab Generic Package Registry.
+
+**Our objective:** Store a GitLab access token in GitHub Secrets, then demonstrate how a GitHub Actions workflow can retrieve and use that token without exposing its actual value in the source code.
+
+We will use a harmless demonstration first, then apply the same technique to your ESP32 firmware deployment.
+
+## 1. Understand how GitHub Secrets works
+
+Normally, you might write this in a workflow:
+
+```yaml
+env:
+  GITLAB_TOKEN: "glpat-xxxxxxxxxxxxxxxx"
+```
+
+This is dangerous because anyone who can read the repository's workflow file can potentially obtain the token.
+
+Instead, GitHub provides encrypted storage for confidential values.
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/69b2841d-70f0-4389-9683-2a7b70a6ccb3" />
+
+
+The process works as follows:
+
+1. You create a secret in GitHub repository settings.
+2. GitHub encrypts and stores the secret.
+3. Your workflow references the secret by its name.
+4. GitHub makes the secret available to the workflow at runtime.
+5. The workflow uses the credential without hardcoding its value.
+
+For example:
+
+```yaml
+env:
+  GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+```
+
+Here:
+
+- `GITLAB_TOKEN` on the left is an environment variable.
+- `secrets.GITLAB_TOKEN` on the right retrieves the GitHub Secret.
+- The actual token is never written into your YAML file.
+
+**Important:** GitHub masks many secret values in workflow logs, but masking is not a guarantee against accidental disclosure. A malicious or poorly designed workflow can still expose secrets. Never print, encode, or transmit credentials to untrusted destinations.
+
+## 2. Create a test secret in GitHub
+
+Let's use a dummy credential first.
+
+### Exercise 1 – Browser setup
+
+### Step 1: Open repository Settings
+
+Navigate to your repository:
+
+[ESP32-GitHub-Actions-Lab](https://github.com/esp32-course/ESP32-GitHub-Actions-Lab)
+
+Then:
+
+1. Click **Settings**.
+2. Look at the left navigation menu.
+3. Find **Secrets and variables**.
+4. Expand it.
+5. Select **Actions**.
+
+<img width="80%" height="auto" alt="image" src="https://github.com/user-attachments/assets/bd2b2203-2f7c-4f41-a27a-3cc337b0d26a" />
+
+
+### Step 2: Create a new repository secret
+
+1. Click **New repository secret**.
+2. Enter the following:
+
+**Create demonstration secret**
+
+| Field | Value |
+|---|---|
+| Secret name | `DEMO_API_KEY` |
+| Secret value | `DEMO-12345-TEST-ONLY` |
+
+This is a fictitious demonstration value, not a real API credential.
+
+3. Click **Add secret**.
+
+You should now see `DEMO_API_KEY` listed under **Repository secrets**.
+
+GitHub does not show you the saved value again. You can update it, but you cannot retrieve the original plaintext value from the settings page.
+
+## 3. Create a workflow to test the secret
+
+Now we will modify your existing `hello-world.yml` workflow.
+
+The objective is to prove that:
+
+- GitHub Actions can access the secret.
+- The secret is available to the workflow at runtime.
+- We can use it without displaying its value.
+- The workflow can detect whether the secret exists.
+
+### Step 1: Update `hello-world.yml`
+
+Open:
+
+```text
+ESP32-GitHub-Actions-Lab/.github/workflows/hello-world.yml
+```
+
+Replace the contents with:
+
+```yaml
+name: GitHub Actions Secrets Demo
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  secrets-demo:
+    name: Test GitHub Secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Display greeting
+        run: echo "GitHub Actions Secrets Demo"
+
+      - name: Check whether secret is available
+        env:
+          DEMO_API_KEY: ${{ secrets.DEMO_API_KEY }}
+        run: |
+          if [ -n "$DEMO_API_KEY" ]; then
+            echo "SUCCESS: Secret is available!"
+          else
+            echo "ERROR: Secret is missing!"
+            exit 1
+          fi
+
+      - name: Use secret without displaying it
+        env:
+          DEMO_API_KEY: ${{ secrets.DEMO_API_KEY }}
+        run: |
+          echo "Credential successfully passed to the environment."
+          echo "Credential length: ${#DEMO_API_KEY} characters"
+
+      - name: Display execution status
+        run: echo "Secrets demonstration completed."
+```
+
+Notice this important statement:
+
+```yaml
+DEMO_API_KEY: ${{ secrets.DEMO_API_KEY }}
+```
+
+This is how the workflow accesses the secret.
+
+The value is passed into the environment of that particular step, rather than being embedded in the workflow source code.
+
+### Step 2: Commit and execute
+
+1. Click **Commit changes**.
+2. Open the **Actions** tab.
+3. Select **GitHub Actions Secrets Demo**.
+4. Open the latest workflow execution.
+5. Click **Test GitHub Secrets**.
+6. Expand the execution steps.
+
+Expected output:
+
+```text
+GitHub Actions Secrets Demo
+
+SUCCESS: Secret is available!
+
+Credential successfully passed to the environment.
+Credential length: 21 characters
+
+Secrets demonstration completed.
+```
+
+**Expected result:** Success
+
+The important observation is that you can verify the credential is available without revealing its actual value.
+
+If you remove the secret from GitHub Settings and rerun the workflow, the validation step should fail.
+
+## 4. Understand the three levels of GitHub Secrets
+
+GitHub supports three main scopes.
+
+### 1. Repository Secrets
+
+**Recommended for your current exercise**
+
+Credentials are available to workflows in one specific repository.
+
+Example:
+
+```text
+ESP32-GitHub-Actions-Lab
+```
+
+### 2. Environment Secrets
+
+Credentials are associated with a deployment environment.
+
+Examples:
+
+- Development
+- Testing
+- Production
+
+You can configure required reviewers before a deployment job can access production secrets.
+
+### 3. Organization Secrets
+
+Credentials can be shared with multiple repositories according to access policies.
+
+Example:
+
+One deployment credential shared across several ESP32 course repositories.
+
+**Free-plan restriction**
+
+GitHub Free does not allow private repositories to access organization-level Actions secrets. Since your classroom repositories are private, use repository-level secrets for now.  
+
+- [Using secrets in GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
+- [Secrets reference](https://docs.github.com/en/actions/reference/security/secrets)
+
+For your current setup, I recommend repository secrets. Later, you can use environment secrets to protect firmware release and production deployment operations.
+
+## 5. Apply this to your existing GitLab firmware project
+
+Now let's use the same technique with your existing ESP32 GitLab OTA architecture.
+
+Previously, you used a GitLab Deploy Token to download firmware from your Generic Package Registry.
+
+Instead of putting that token in your GitHub workflow YAML, we will store it in GitHub Secrets.
+
+### Step 1: Create the GitLab token secret
+
+Go back to:
+
+```text
+Repository → Settings → Secrets and variables → Actions
+```
+
+1. Click **New repository secret**.
+2. Enter:
+
+| Field | Value |
+|---|---|
+| Name | `GITLAB_TOKEN` |
+| Secret | Your actual GitLab Deploy Token |
+
+3. Click **Add secret**.
+
+Do not paste the actual token into this conversation or your workflow file.
+
+If your GitLab authentication also requires a deploy-token username, store it separately as `GITLAB_USERNAME`.
+
+### Step 2: Use the GitLab token in a workflow
+
+For demonstration, add this job to a separate workflow file called:
+
+```text
+.github/workflows/gitlab-access-test.yml
+```
+
+```yaml
+name: GitLab Secure Access Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  gitlab-test:
+    name: Test GitLab Authentication
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check credential availability
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          if [ -z "$GITLAB_TOKEN" ]; then
+            echo "ERROR: GitLab token missing"
+            exit 1
+          fi
+
+          echo "GitLab credential is available."
+
+      - name: Test GitLab Package Registry access
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          curl --fail --silent --show-error \
+            --output /dev/null \
+            --write-out "HTTP status: %{http_code}\n" \
+            --header "Deploy-Token: ${GITLAB_TOKEN}" \
+            "[https://gitlab.com/api/v4/projects/PROJECT_ID/packages/generic/firmware/VERSION/FILENAME](https://gitlab.com/api/v4/projects/PROJECT_ID/packages/generic/firmware/VERSION/FILENAME)"
+```
+
+Replace `PROJECT_ID`, `VERSION` and `FILENAME` with the actual package details.
+
+The workflow uses the GitLab Deploy Token authentication header. The token is not included in the URL or printed in the logs.
+
+An HTTP 200 response indicates successful download access. A 404 may indicate an incorrect package path or missing package; 401/403 generally indicates an authentication or authorization problem.
+
+For this test, the response body is discarded rather than saving the firmware.
+
+## 6. Important security considerations
+
+There are several things I want you to understand before using real deployment credentials.
+
+| Security practice | Reason |
+|---|---|
+| Never hardcode tokens in YAML | Prevent source-code exposure |
+| Use repository Secrets | Keep credentials separate from source code |
+| Use read-only Deploy Tokens when possible | Minimize damage if compromised |
+| Never print secrets | Avoid accidental disclosure |
+| Restrict repository write access | Write access can expose secrets through modified workflows |
+| Rotate compromised tokens | Prevent continued unauthorized access |
+| Avoid exposing secrets to student code | Student submissions are untrusted |
+
+GitHub also limits individual secrets to 48 KB.  
+GitHub Docs+1
+
+One particularly important consideration for GitHub Classroom: workflows triggered by pull requests from forks do not receive ordinary repository secrets. Do not change the workflow to a more privileged trigger simply to work around this restriction.  
+GitHub Docs+1
+
+## 7. Your practical exercise checklist
+
+```text
+- [] Secrets implementation progress: 0/7 completed
+
+- [] Create DEMO_API_KEY under repository Actions secrets
+
+- [] Execute the GitHub Actions Secrets Demo workflow
+
+- [] Verify that the secret availability check passes
+
+- [] Confirm that the actual secret value is never printed
+
+- [] Create GITLAB_TOKEN under repository Actions secrets
+
+- [] Run the GitLab access test using your real Deploy Token
+
+- [] Confirm that the GitLab request returns HTTP 200
+```
+
+## 8. Official documentation
+
+- [GitHub – Using Secrets in GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets)
+- [GitHub – Secrets reference and limitations](https://docs.github.com/en/actions/reference/security/secrets)
+- [GitLab – Deploy Tokens](https://docs.gitlab.com/user/project/deploy_tokens/)
+
+**My recommended next step:** Once this exercise works, we can integrate GitHub Actions with your existing GitLab Generic Package Registry to automate ESP32 firmware compilation and upload. This would give you a complete source-code → automated compilation → authenticated firmware publishing pipeline without putting any credentials into your source code.
