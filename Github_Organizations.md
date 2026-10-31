@@ -638,6 +638,8 @@ git push
 
 These commands are suitable for a basic workflow, assuming Git is installed, the student has authenticated successfully, and the student's account has write access to the assigned repository.
 
+**Steps to install Git:** https://github.com/ooikk/Arduino-Documentation/blob/main/Github_Organizations.md#using-git-with-github-on-windows-and-macbook
+
 ### Step 4: Review the submission
 
 The instructor or TA can:
