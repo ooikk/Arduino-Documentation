@@ -1,7 +1,7 @@
 [![logo-color](https://img.shields.io/badge/Index-Installing_Git-086288?logo=github&logoColor=white&labelColor=5B7E3C)](#using-git-with-github-on-windows-and-macbook)
 [![logo-color](https://img.shields.io/badge/Index-Organization_By_Meta-4D8DBA?logo=github&logoColor=white&labelColor=5B7E3C)](#esp32-course-distribution-with-github-organizations-meta-ai)
 [![logo-color](https://img.shields.io/badge/Index-Classroom_50-97D7FF?logo=github&logoColor=white&labelColor=5B7E3C)](#classroom-50--complete-guide)
-
+[![logo-color](https://img.shields.io/badge/Index-Github-Gists-B4E4D6?logo=github&logoColor=white&labelColor=5B7E3C)](#github-gists)
 
 ![logo-color](https://img.shields.io/badge/Index-Badges-DA6556?logo=github&logoColor=white&labelColor=5B7E3C)
 
