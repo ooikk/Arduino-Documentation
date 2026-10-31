@@ -1871,3 +1871,981 @@ Link Classroom to your Org. When you create assignment `Lab01`, choose template 
 
 This gives you: Private-only access, no public forks, Read-only for students on notes, private per-student copies for labs, and a legal/policy layer that actually deters sharing more than any technical lock.
 
+---
+
+# Classroom 50 — Complete Guide
+
+[CS50](https://images.openai.com/static-rsc-4/Bw-A7LTqhHhnviDq5mVQwhOYCuIQBdBf1inTYJsjLw7zlgmOMHr6p3dhuBK694HMDaOq_9luwIyXlv1PN-8nb_BzQNzW3bC5ADyzqmKexw1yYW7LgmCP0BXfUDlPmuVKraEs8lzzX6qczv0VSOAXSt9L_tFiXTEyeMeViYoqf9k?purpose=inline)
+
+## Classroom 50
+
+Free and open source  
+Developed by the Fifty Foundation · Launched July 1, 2026
+
+[Official Classroom 50 website](https://classroom50.org/?utm_source=chatgpt.com) · [GitHub source repository](https://github.com/foundation50/classroom50?utm_source=chatgpt.com)
+
+## 1. What is Classroom 50?
+
+Classroom 50 is a free, open-source educational platform developed by the Fifty Foundation as an alternative to GitHub Classroom.
+
+It allows instructors to distribute programming assignments, create private student repositories, run automated tests, and manage submissions using GitHub as the underlying repository and computing infrastructure.
+
+It is particularly relevant to your ESP32 course because it retains the familiar GitHub workflow:
+
+1. Instructor prepares a starter-code repository.
+2. Classroom 50 distributes the assignment.
+3. Each student receives an individual GitHub repository.
+4. Students clone their repositories and work locally.
+5. Students commit and push their changes.
+6. Automated tests can run through GitHub Actions.
+7. Instructors review the submissions.
+
+The first version was released on July 1, 2026. GitHub's official transition announcement identifies Classroom 50 as an open-source alternative to the retired GitHub Classroom.  
+GitHub+2
+
+An important distinction: Classroom 50 is not a replacement for your GitHub Organization. It is an application that works with your existing GitHub Organization and repositories.
+
+Your existing organization remains the central place for managing students, teaching materials, teams, and repository permissions.
+
+## 2. What can Classroom 50 do?
+
+[GitHub Classroom](https://images.openai.com/static-rsc-4/hfNW78b5XyhUGh2F-DL-dki4UMjULIcEMLW72L3CMkh_XpMWecni_IYPmhrGpAQSiYuTTr0X4nrq-AkjtppCUamkpbfsDvZD42gvZg3wzohSKmepEiaRRSffYrBEbVtGziliHDhVDaB7Py0cViMBa4pXtAanou5W42n1IIb3dXM?purpose=inline)
+
+### 1. Assignment distribution
+
+Create programming assignments using instructor-prepared starter repositories. Students receive their own assignment repositories instead of modifying the original template.
+
+[Github 따라 하기 - 3. 협업하기](https://images.openai.com/static-rsc-4/H9ngiZAajaFScJqPB_feTiT3-En_Q0Hipku_nPs5I4h6psE-QhUuXRzz_lt0V25s0MzzGyOD8Pha7J518CM4e_eVjEKxdVcaqfbi53YpZleTLy2yURDGEW08SPJvU22E3a3FvxVGBHltvSTgS7EsXd0_3s5z7URFT4oHN0zZ0cw?purpose=inline)
+
+### 2. Private student repositories
+
+Students work independently in their own GitHub repositories. You can configure repository ownership and access through the connected GitHub organization.
+
+[CI/CD: Matrix](https://images.openai.com/static-rsc-4/i1iEDZCoyXgoZ6t4xYJbU4I3GMsXQGWl-K9O_Pquqr0G5c_zE_GdNTPl6tDmkygTntOfWZkcptPt5epoCZcQjfeVwqFcsWfMz4351BKqutJ6FWPZAYZvWFiWKemMdwiHvDhwM5nMYkPLSy9q_gVsaDXkvCoxplCyiA1vEOBqvx0?purpose=inline)
+
+### 3. Automated grading
+
+Define correctness tests and use GitHub Actions to execute them when students push code. This provides automated feedback on programming assignments.
+
+[Developing Software In a Team: Code Review – Intermediate Research Software Development](https://images.openai.com/static-rsc-4/alrqdYrZWzsnqJLDki4XtrAmONJuvAJT2G6InIIuFD2EElvLblTbsA0bVIzbPgfg8L6P6NDc1A3sE3xLvrVRr85iFbPql9DkfqIDid85C7sdpMLRDZdY4g2pcrAK9BatPUgsLsaTvnGvEMfdosHuujMGG7lPV6g_YfqJ51bIHt4?purpose=inline)
+
+### 4. Submission management
+
+Manage assignment submissions and review student work through the associated GitHub repositories.
+
+[Deploying your experiment | Smile](https://images.openai.com/static-rsc-4/6ximReLpD-XyDvtlTW3hpg2W1d4NGvMYKWzFwIzOBhYad9tKWYHbuG4IdBmgGEc0DOCfk88cYUMED1AY128fniA6_Ifl65mINu2PGkTGESxWKxLn8rdWCyWx0IQ3khYWLSYb4W6BEhF6iuzJIQUMOc0blbr2j4CaUfajNyFpQnY?purpose=inline)
+
+### 5. Git-based workflow
+
+Students can use Git Bash, Windows PowerShell, or macOS Terminal. They can also use GitHub through their browser for repository management.  
+GitHub+2
+
+## 3. Important requirements before installation
+
+This is the most important point to check before proceeding.
+
+### GitHub Organization plan
+
+**Required:** Classroom 50 requires your GitHub Organization to be on GitHub Team or Enterprise. A normal GitHub Free organization is not sufficient.
+
+However, verified educators can obtain GitHub Team for their organization free through GitHub Education.
+
+**Recommended:** GitHub Team through verified educator benefits — S$0.
+
+Student accounts can remain on GitHub Free.
+
+[Apply for GitHub Education](https://education.github.com/discount_requests/application?utm_source=chatgpt.com)  
+GitHub+1
+
+### 3.1 Requirements checklist
+
+| Requirement | Needed? |
+|---|---|
+| Personal GitHub account | Yes |
+| GitHub Organization | Yes |
+| Organization on GitHub Team or Enterprise | Yes |
+| Verified GitHub educator benefit | Required for free Team upgrade |
+| GitHub CLI | No, when using the web application |
+| Arduino IDE | Not needed for Classroom 50 setup |
+| ESP-IDF | Not needed for Classroom 50 setup |
+| Student GitHub accounts | Yes |
+| GitHub Actions | Used for automated grading |
+| GitHub Pages | Used by Classroom 50 for publishing its classroom data |
+
+An important distinction: GitHub Education approval on your personal account does not automatically upgrade your organization. You must apply the benefit to the specific organization that hosts your ESP32 course.  
+GitHub+1
+
+# Part B — Integrate Classroom 50 with Your Existing Organization
+
+## 4. Understand the integration architecture
+
+You already have a GitHub Organization. Classroom 50 will use that organization rather than creating a separate one.
+
+Here is the proposed architecture:
+
+```text
+Your GitHub Organization
+ESP32-Learning-Lab
+Central identity, repository and permission management
+
+Authorized GitHub connection
+
+Classroom 50 Web Application
+Teacher dashboard · Rosters · Assignments · Grading
+
+One-time organization setup
+
+classroom50
+Private configuration repository
+
+GitHub Actions
+Automated grading and score collection
+
+Course templates
+Instructor-controlled starter code
+
+Student repositories
+Individual private assignments
+```
+
+A particularly useful design feature is that Classroom 50 does not maintain a separate classroom database. Its classroom configuration, roster, assignments and scores are stored in your GitHub organization. The web application operates in your browser and uses GitHub as its backend.  
+GitHub+1
+
+## 5. Step 1 — Upgrade your existing Organization to GitHub Team
+
+First, check your current plan.
+
+1. Sign in to GitHub.
+2. Open your ESP32 Organization.
+3. Select **Settings**.
+4. Open **Billing & licensing** or the current billing overview.
+5. Check the organization plan.
+
+If it shows GitHub Free:
+
+1. Complete the GitHub Education teacher verification process.
+2. Wait for approval.
+3. Open your GitHub Education benefits page.
+4. Find the GitHub Team benefit.
+5. Apply it to your existing ESP32 Organization.
+6. Return to your organization billing page.
+7. Confirm that the organization now shows GitHub Team.
+
+Official guides:
+
+- [GitHub Education teacher application](https://docs.github.com/en/education/about-github-education/github-education-for-teachers/apply-to-github-education-as-a-teacher?utm_source=chatgpt.com)
+- [Educator eligibility and benefits](https://docs.github.com/en/education/about-github-education/github-education-for-teachers/apply-to-github-education-as-a-teacher?utm_source=chatgpt.com)
+
+Do not create a second organization just to use Classroom 50. Upgrade the one you have already configured.
+
+## 6. Step 2 — Authorize Classroom 50 to access your Organization
+
+**Browser only — no software installation**
+
+1. Open [Classroom 50](https://classroom50.org/?utm_source=chatgpt.com).
+2. Click **Sign in with GitHub**.
+3. Sign in using your instructor GitHub account.
+4. GitHub will display an authorization page.
+5. Review the requested permissions.
+6. Authorize Classroom 50.
+7. If GitHub asks you to grant organization access:
+   - Find your ESP32 Organization.
+   - Click **Grant**.
+8. If it shows **Request**, rather than **Grant**, your organization may require approval of third-party applications.
+9. As organization owner, approve Classroom 50 under:
+
+```text
+Organization → Settings → Third-party access → OAuth app policy
+```
+
+The exact menu labels can vary.
+
+10. Return to Classroom 50.
+11. Refresh the organization list.
+12. Confirm that your ESP32 Organization appears.
+
+**Important:** Classroom 50 only displays organizations for which you have granted it access. Being an organization owner or having GitHub Education benefits does not automatically grant this application access.  
+GitHub+1
+
+## 7. Step 3 — Run the one-time organization setup
+
+This is the most important integration step.
+
+After authorizing your organization:
+
+1. Classroom 50 should display your organization.
+2. Select **Set up new organization**.
+3. Select your ESP32 Organization.
+4. Click **Set up**.
+5. Click **Run setup**.
+
+Classroom 50 will configure several things in GitHub automatically.
+
+| Configuration | Purpose |
+|---|---|
+| Organization member privileges | Establish settings needed for classroom operation |
+| GitHub Actions | Enable automated grading workflows |
+| Actions spending cap | Set a zero-dollar spending cap where possible |
+| Organization rulesets | Protect student repositories |
+| `classroom50` repository | Store classroom configuration and data |
+| Workflow files | Support automated grading and score collection |
+| GitHub Pages | Publish classroom information required by the application |
+
+The `classroom50` repository is created as a private repository in your organization.
+
+When setup finishes, review the result of every step. If an operation cannot be applied automatically, Classroom 50 explains what needs to be changed manually.
+
+**Security consideration for your existing setup:** Classroom 50 modifies some organization-level settings. Review these carefully, especially member privileges, team creation, Actions and repository rulesets. Do not assume your previous organization settings will remain unchanged.  
+GitHub+1
+
+## 8. Step 4 — Configure the Classroom 50 service token
+
+**Important security step**
+
+Classroom 50 needs a service token to perform background tasks when you are not signed in.
+
+For example:
+
+- Collecting student scores.
+- Reading student assignment repositories.
+- Regrading submissions.
+- Publishing grading results.
+
+This is separate from the GitHub authorization you completed in Step 2.
+
+### 8.1 Generate the token
+
+After organization setup:
+
+1. Click **Next: service token**.
+2. Select **Set a token**.
+3. Choose the token expiry. The documented default is 120 days.
+4. Click **Generate new access token**.
+5. GitHub opens its fine-grained personal access token creation page.
+6. Classroom 50 pre-populates the required token name and permissions.
+7. Select your ESP32 Organization as the resource owner.
+8. Set **Repository access** to **All repositories**.
+9. Review the permissions generated by Classroom 50.
+10. Click **Generate token**.
+
+Do not manually reduce the permissions unless you understand which Classroom 50 operations depend on them.
+
+### 8.2 Save the token
+
+1. Copy the newly generated token.
+2. Return to Classroom 50.
+3. Paste it into the service token field.
+4. Click **Save token**.
+
+```text
+Token saved
+when validation succeeds.
+```
+
+The token is saved as a GitHub Actions secret named:
+
+```text
+CLASSROOM50_SERVICE_TOKEN
+```
+
+inside your private `classroom50` repository.
+
+### 8.3 Test the token
+
+1. Click **Test token** in the organization settings.
+2. Classroom 50 will run a read-only check to confirm that the token has the necessary permissions.
+3. If the check fails, review the missing permission information and generate a replacement token.
+
+### 8.4 Token management
+
+I recommend adding the token expiry date to your instructor administration calendar.
+
+1. Check the token status periodically.
+2. Generate a replacement before expiry.
+3. Save the new token through Classroom 50's **Set a new token** function.
+
+- Never put this token in Arduino sketches, ESP-IDF source files, or student repositories.
+- Never share it with students or paste it into a chat.
+
+The token is important because it allows background workflows to access repositories across your organization.  
+GitHub+1
+
+## 9. Step 5 — Create your ESP32 classroom
+
+After the organization setup and service token configuration:
+
+1. Click **Done**.
+2. Open your ESP32 Organization.
+3. Click **Create classroom**.
+4. Use these suggested settings:
+
+| Field | Suggested value |
+|---|---|
+| Classroom name | ESP32 Embedded Systems |
+| Classroom slug | `esp32-2026` |
+| Term | 2026 |
+| Unlisted link | Initially disabled |
+
+You can create different classrooms for different cohorts or class groups within the same organization.
+
+For example:
+
+```text
+ESP32-Learning-Lab
+│
+├── ESP32 Embedded Systems 2026
+│   └── esp32-2026
+│
+├── ESP32 Embedded Systems 2027
+│   └── esp32-2027
+│
+└── ESP32 Advanced IoT
+    └── esp32-advanced
+```
+
+**Security note:** Classroom 50 supports unlisted classroom links, but these are not private access controls. Anyone with the published link may be able to read the associated published data. Do not use an unlisted link as a substitute for private repositories or membership controls.  
+GitHub
+
+## 10. Step 6 — Add your Teaching Assistants
+
+Inside your classroom:
+
+1. Open **Settings**.
+2. Find **Staff and roles**.
+3. Enter the TA's GitHub username.
+4. Select the appropriate role.
+5. Click **Add**.
+
+Classroom 50 supports four roles:
+
+| Role | Suggested person | Responsibility |
+|---|---|---|
+| Teacher | You | Full classroom administration |
+| Head TA | Senior teaching assistant | Manage teaching operations |
+| TA | Teaching assistant | Assist with reviewing and grading |
+| Student | Course participant | Accept and complete assignments |
+
+These are Classroom 50 classroom roles, not identical to GitHub's repository permission roles.
+
+For your course, I recommend:
+
+- You: Teacher.
+- Senior TA: Head TA.
+- Other TAs: TA.
+- Students: Student.
+
+You should retain organization ownership rather than relying solely on the Classroom 50 Teacher role for administrative control.  
+GitHub
+
+# Part C — Prepare Your ESP32 Assignments
+
+## 11. Step 7 — Prepare the assignment template repositories
+
+This is where your existing ESP32 teaching materials become useful.
+
+I recommend keeping your main teaching materials repository separate from your assignment templates.
+
+For example:
+
+```text
+ESP32-Learning-Lab
+│
+├── esp32-course-materials
+│   ├── 01-GPIO
+│   ├── 02-WiFi-BLE
+│   ├── 03-FreeRTOS
+│   ├── 04-Sensors-IoT
+│   ├── 05-Memory-PSRAM
+│   └── 06-Secure-OTA
+│
+├── esp32-code-examples
+│   ├── Arduino
+│   └── ESP-IDF
+│
+├── esp32-instructor-only
+│   ├── solutions
+│   └── grading-rubrics
+│
+├── esp32-assignment-gpio
+├── esp32-assignment-wifi
+├── esp32-assignment-freertos
+└── classroom50
+```
+
+### 11.1 Create the first assignment template
+
+Let's start with GPIO.
+
+Create a private repository:
+
+```text
+esp32-assignment-gpio
+```
+
+Suggested folder structure:
+
+```text
+esp32-assignment-gpio/
+│
+├── README.md
+├── LICENSE
+│
+├── Arduino/
+│   ├── GPIO_Exercise.ino
+│   └── README.md
+│
+├── ESP-IDF/
+│   ├── CMakeLists.txt
+│   └── main/
+│       ├── CMakeLists.txt
+│       └── main.c
+│
+├── schematics/
+│   └── gpio_connection.png
+│
+└── .github/
+    └── pull_request_template.md
+```
+
+The `README.md` should explain:
+
+- Assignment objectives.
+- Required ESP32 board.
+- Hardware connections.
+- GPIO pins to use.
+- Expected program behaviour.
+- Submission requirements.
+- Testing criteria.
+
+### 11.2 Enable GitHub template repository
+
+In the GitHub browser:
+
+1. Open `esp32-assignment-gpio`.
+2. Select **Settings**.
+3. Under **General**, find **Template repository**.
+4. Enable **Template repository**.
+
+This allows Classroom 50 to use the repository as the starting point for individual student repositories.
+
+### 11.3 Keep solutions separate
+
+Do not include the complete instructor solution in the template.
+
+For example:
+
+```text
+esp32-instructor-only/
+│
+├── GPIO/
+│   ├── solution.ino
+│   ├── solution.md
+│   └── grading-rubric.md
+│
+├── WiFi/
+│   └── solution/
+│
+└── FreeRTOS/
+    └── solution/
+```
+
+Students should receive only the starter code and assignment instructions.
+
+## 12. Step 8 — Create your first assignment in Classroom 50
+
+Return to your Classroom 50 dashboard.
+
+1. Open **ESP32 Embedded Systems 2026**.
+2. Select **Assignments**.
+3. Click **Assignment**.
+
+The assignment creation screen has four main sections.
+
+### Section A — Details
+
+Use these settings:
+
+| Field | Example |
+|---|---|
+| Assignment name | ESP32 GPIO Exercise 01 |
+| Assignment slug | `gpio-01` |
+| Description | Digital GPIO input and output programming |
+| Assignment type | Individual |
+
+For a first exercise, I recommend individual assignments.
+
+Group assignments are also supported, but individual assignments are easier to manage for beginners.
+
+### Section B — Repository setup
+
+Configure:
+
+| Field | Recommended setting |
+|---|---|
+| Start with a template | Template repository |
+| Template | `ESP32-Learning-Lab/esp32-assignment-gpio` |
+| Repository visibility | Private |
+| Student repository access | Write |
+| Feedback pull request | Enabled |
+| Include all branches | Disabled unless needed |
+
+The student repository should be private.
+
+Students need `Write` access to their own repository so that they can push completed code.
+
+The feedback pull request option provides a convenient place for instructor feedback.
+
+### Section C — Submission and grading
+
+There are three main grading modes:
+
+| Mode | Description | Recommended use |
+|---|---|---|
+| Not graded | Collect submissions without assigning scores | Practice exercises |
+| Manual | Instructor enters scores | Hardware demonstrations and practical assessments |
+| Autograded | Tests execute automatically | Programming exercises with testable outputs |
+
+For your first GPIO assignment, I suggest **Manual grading** until you have tested the automated grading workflow.
+
+### Section D — Schedule and access
+
+Set:
+
+- Release date.
+- Due date.
+- Assignment lock, if required.
+
+The due date identifies late submissions but does not automatically prevent students from pushing changes. Use the close-submission function when you actually want to stop submissions.
+
+Finally, click **Create assignment**.
+
+The settings and assignment options above follow the current Classroom 50 Web Teacher Guide.  
+GitHub+1
+
+## 13. Step 9 — Add students to your classroom
+
+This is where Classroom 50 connects your actual students to their GitHub accounts.
+
+There are two ways to add students.
+
+### Option A: Add students individually
+
+1. Open your classroom.
+2. Select **Roster**.
+3. Click the arrow beside **Upload roster**.
+4. Select **Add member**.
+5. Select the role **Student**.
+6. Enter the student's GitHub username.
+7. Optionally enter their name and email.
+8. Click **Add member**.
+
+Classroom 50 sends an invitation to join your GitHub Organization.
+
+The student must accept the invitation before accepting assignments.
+
+### Option B: Upload the student roster (recommended)
+
+For a class of 20–30 students, this is easier.
+
+Prepare a CSV file:
+
+```csv
+username,first_name,last_name,email,section
+studentA,John,Tan,john@example.com,A
+studentB,Mary,Lim,mary@example.com,A
+studentC,David,Lee,david@example.com,A
+```
+
+Then:
+
+1. Open **Roster**.
+2. Click **Upload roster**.
+3. Select your CSV file.
+4. Review the imported student records.
+5. Confirm the import.
+
+Classroom 50 sends the organization invitations.
+
+You can also import a simple list of GitHub usernames or email addresses.
+
+**Important:** Students must have their own GitHub accounts. If you invite students by email, Classroom 50 can match them to their GitHub accounts when they accept.
+
+The roster interface shows which students have joined and which invitations are still pending.  
+GitHub
+
+## 14. Step 10 — Distribute the assignment
+
+After creating the assignment and adding students:
+
+1. Open the assignment.
+2. Find the student invitation or assignment link.
+3. Click **Share** where available.
+4. Copy the assignment invitation link.
+5. Send it to your students through your normal communication channel.
+
+### Student workflow
+
+1. **Receive assignment link**  
+   Student opens the Classroom 50 invitation in a browser.
+2. **Sign in with GitHub**  
+   Student uses their own GitHub account.
+3. **Accept assignment**  
+   Classroom 50 creates an individual private repository from your template.
+4. **Clone repository**  
+   Student downloads the repository to their Windows or Mac computer.
+5. **Complete ESP32 exercise**  
+   Student edits Arduino or ESP-IDF code and tests it on their ESP32 board.
+6. **Commit and push**  
+   Student uploads their work to their private GitHub repository.
+7. **Instructor reviews submission**  
+   Classroom 50 collects the submission and displays grading information.
+
+The important advantage is that students do not need to create their own assignment repositories manually.
+
+### Example resulting repositories
+
+For an assignment called `gpio-01`, the repositories will follow a classroom and assignment naming convention:
+
+```text
+ESP32-Learning-Lab
+│
+├── esp32-2026-gpio-01-studentA
+├── esp32-2026-gpio-01-studentB
+├── esp32-2026-gpio-01-studentC
+└── esp32-2026-gpio-01-studentD
+```
+
+Each student works in their own private repository.
+
+Your original `esp32-assignment-gpio` template remains separate from their submissions.  
+GitHub+1
+
+# Part D — Automated Grading for ESP32
+
+## 15. What can Classroom 50 automatically grade?
+
+Classroom 50 supports three built-in test types:
+
+| Test type | How it works | ESP32 application |
+|---|---|---|
+| Input/Output | Compares program output against expected output | Testing parsing functions or command-line utilities |
+| Run command | Executes a command and checks its exit code | Compile checks and script execution |
+| Python pytest | Executes Python unit tests | Testing Python tools and supporting applications |
+
+You can also provide custom grading scripts and configure a Docker environment.
+
+Tests can be assigned individual point values, and Classroom 50 can produce a score based on the test results.  
+GitHub+1
+
+## 16. Important: ESP32 hardware cannot be tested automatically by an ordinary GitHub-hosted runner
+
+This distinction is particularly important for your course.
+
+GitHub Actions normally executes code on a cloud computer, not on the student's physical ESP32-S3 board.
+
+For example, GitHub Actions cannot directly verify:
+
+- Whether GPIO 4 physically drives an LED.
+- Whether an MFRC522 RFID reader is wired correctly.
+- Whether an ILI9488 display actually shows the correct image.
+- Whether an ESP32-S3 successfully communicates with a sensor over I²C.
+- Whether an ESP-NOW message is received by another physical ESP32.
+
+You can, however, automatically check code-level requirements.
+
+### My recommended grading strategy
+
+```text
+ESP32 assignment grading model
+
+Automated
+40% — Source-code and compilation checks
+- Required source files exist.
+- Required functions are implemented.
+- Code compiles using a configured Arduino CLI or ESP-IDF environment.
+- Static checks pass.
+- Unit tests pass.
+
+Manual
+40% — Physical hardware demonstration
+- ESP32 GPIO behaviour.
+- Sensor readings.
+- Communication reliability.
+- Display output.
+- Correct circuit connections.
+
+Manual
+20% — Technical explanation
+- Explain program structure.
+- Explain GPIO configuration.
+- Explain FreeRTOS task behaviour where relevant.
+- Explain troubleshooting and design decisions.
+```
+
+These percentages are an example grading scheme, not a Classroom 50 limitation.
+
+### Example: GPIO assignment
+
+Suppose students must write an Arduino sketch that:
+
+- Configures GPIO 4 as an output.
+- Configures GPIO 5 as an input.
+- Reads the input state.
+- Controls an LED.
+- Prints the input state to Serial.
+
+Possible automated tests:
+
+| Test | Points |
+|---|---|
+| Required Arduino source file exists | 10 |
+| GPIO 4 configuration detected | 10 |
+| GPIO 5 configuration detected | 10 |
+| Required function implemented | 20 |
+| Arduino compilation succeeds | 30 |
+| Unit tests for logic pass | 20 |
+| **Total** | **100** |
+
+The physical LED and input operation should still be demonstrated by the student.
+
+**My advice:** Start with manual grading. Once you have a stable assignment template, gradually introduce automated compilation and unit testing.
+
+## 17. Teacher feedback and submission tracking
+
+Classroom 50 supports:
+
+- Submission tracking.
+- Scores and grading results.
+- Inline feedback through feedback pull requests.
+- Regrading.
+- Collecting scores for an entire classroom.
+- Reviewing student repository changes and commit histories.
+
+### How to review submissions
+
+1. Open the classroom.
+2. Select the assignment.
+3. Open its submissions page.
+4. Review the list of students.
+5. Check submission status.
+6. Open the student's repository when necessary.
+7. Review the submitted code.
+8. Enter manual scores or review automated results.
+
+For automated assignments, you can use **Collect now** or **Collect all** to collect scores. The background collection workflows depend on the service token configured earlier.  
+GitHub+1
+
+# Part E — Security, Privacy and Cost Considerations
+
+## 18. Does Classroom 50 protect your ESP32 course materials?
+
+Yes, it provides useful access controls, but it is important to understand what it protects and what it does not.
+
+| Security requirement | Classroom 50 / GitHub capability |
+|---|---|
+| Keep assignment repositories private | Supported |
+| Prevent students modifying instructor templates | Use private templates and read-only access |
+| Give each student an individual repository | Supported |
+| Isolate student submissions | Supported through individual repositories and permissions |
+| Prevent unauthorized public forking | Configure organization forking policy |
+| Prevent students downloading source code | Not possible while allowing cloning |
+| Prevent copying downloaded materials | Not possible |
+| Revoke organization access | Supported through GitHub membership management |
+| Keep grading configuration private | Private `classroom50` repository |
+| Protect background workflows | Fine-grained service token stored as a GitHub Actions secret |
+
+### Three additional precautions I recommend
+
+**1. Keep student assignment repositories private.**
+
+Do not enable public repository visibility for ordinary coursework.
+
+**2. Keep your original teaching materials separate.**
+
+Do not give students `Write` or `Admin` access to your original course repositories.
+
+**3. Be careful with autograder test files.**
+
+There is an important detail in Classroom 50's current documentation: uploaded teacher-only test files are protected from student modification, but they are also published through the organization's public GitHub Pages site and can be read by students.
+
+Therefore, never put complete instructor solutions, answer keys, signing keys, or confidential grading information in these test files. Use them for test scripts and test fixtures only.  
+GitHub+1
+
+## 19. How does Classroom 50 affect your existing Teams?
+
+You previously created:
+
+- `Instructors`
+- `TAs`
+- `Cohort-2026`
+
+You can retain these teams.
+
+However, Classroom 50 maintains its own classroom-specific teams and staff/roster structure.
+
+I recommend the following separation:
+
+| Existing GitHub team | Purpose |
+|---|---|
+| `Instructors` | Organization and course administration |
+| `TAs` | General course support |
+| `Cohort-2026` | Read-only access to common course materials |
+
+Classroom 50 then manages student enrollment and assignment access through its own classroom mechanisms.
+
+Do not manually give the entire `Cohort-2026` team `Write` access to assignment repositories. Let Classroom 50 manage individual student permissions.
+
+Also, review its organization setup changes before allowing students to join. In particular, student-created teams are needed if you intend to use student-formed group assignments.  
+GitHub+1
+
+## 20. Cost considerations
+
+**Target: S$0**
+
+| Component | Cost approach |
+|---|---|
+| Classroom 50 | Free and open source |
+| GitHub Team | Free for verified educators through GitHub Education |
+| Student GitHub accounts | Free |
+| Private repositories | Included in the applicable GitHub Team plan |
+| GitHub Actions | Included usage quotas, subject to current plan limits |
+| GitHub Pages | Available under the supported Team configuration |
+| Arduino IDE | Free |
+| ESP-IDF | Free |
+
+Classroom 50's organization setup attempts to configure a zero-dollar Actions spending cap where possible. This is useful protection against unexpected charges, but you should still review the organization's billing and Actions usage periodically.  
+GitHub+1
+
+# Part F — Semester-End Administration
+
+## 21. What happens when the semester ends?
+
+Classroom 50 does not automatically delete all student repositories when a student is removed from the roster.
+
+You need to manage the lifecycle yourself.
+
+### Recommended procedure
+
+1. Collect all assignment scores.
+2. Export or record required grading information.
+3. Close assignment submissions.
+4. Remove students from the classroom or organization according to your access policy.
+5. Review direct repository permissions.
+6. Check student assignment repositories.
+7. Retain or archive submissions according to your institutional requirements.
+8. Rotate or review service tokens as appropriate.
+
+Removing a student from the roster and deleting their repository are separate operations.
+
+This is another reason to maintain your own instructor backup.  
+GitHub+1
+
+# Part G — Your First Implementation
+
+## 22. Recommended rollout sequence
+
+I suggest that you do not migrate all your ESP32 teaching materials immediately.
+
+Start with one small pilot assignment.
+
+```text
+ESP32 Classroom 50 implementation checklist
+0 of 12 completed
+0%
+
+Verify GitHub Education educator status
+Apply for educator verification.
+
+Upgrade existing organization
+Apply free GitHub Team to ESP32-Learning-Lab.
+
+Authorize Classroom 50
+Sign in and grant organization access.
+
+Run organization setup
+Create classroom50 repository and configure Actions and Pages.
+
+Configure service token
+Generate and test the fine-grained token.
+
+Create classroom
+ESP32 Embedded Systems 2026.
+
+Add TAs
+Assign appropriate Classroom 50 roles.
+
+Prepare GPIO template
+Create esp32-assignment-gpio.
+
+Create first assignment
+GPIO Exercise 01, individual, private.
+
+Add 2 test students
+Verify student invitation and assignment acceptance.
+
+Test student workflow
+Clone, edit, commit and push.
+
+Review submissions
+Verify private access and instructor feedback.
+```
+
+## 23. Official Classroom 50 resources
+
+These are the most useful references for your implementation.
+
+### 1. Classroom 50 Web Teacher Guide
+
+**Most important**  
+Detailed browser-based instructions covering organization setup, service tokens, classrooms, assignments, students and grading.
+
+[Open Web Teacher Guide](https://github.com/foundation50/classroom50/wiki/Web-Teacher-Guide?utm_source=chatgpt.com)
+
+### 2. Quickstart
+
+A practical walkthrough to create your first classroom and graded assignment.
+
+[Open Quickstart](https://github.com/foundation50/classroom50/wiki/Quickstart?utm_source=chatgpt.com)
+
+### 3. Assignment Templates
+
+How to prepare and configure your starter-code repositories.
+
+[Open Assignment Templates](https://github.com/foundation50/classroom50/wiki/Assignment-Templates?utm_source=chatgpt.com)
+
+### 4. Autograding Basics
+
+Learn how to configure automated tests and grading.
+
+[Open Autograding Basics](https://github.com/foundation50/classroom50/wiki/Autograding-Basics?utm_source=chatgpt.com)
+
+### 5. Course Lifecycle and End of Term
+
+Manage students, submissions and the end-of-semester process.
+
+[Open lifecycle guide](https://github.com/foundation50/classroom50/wiki/Course-Lifecycle-and-End-of-Term?utm_source=chatgpt.com)
+
+### 6. Troubleshooting
+
+Useful for organization authorization, missing organizations, token errors and setup problems.
+
+[Open Troubleshooting](https://github.com/foundation50/classroom50/wiki/Troubleshooting?utm_source=chatgpt.com)
+
+# My final recommendation for your ESP32 Learning Lab
+
+I recommend adopting Classroom 50, subject to getting the free GitHub Team benefit.
+
+It is a good fit for your teaching model because it allows you to keep your existing instructor materials in private repositories while distributing individual assignment copies to students.
+
+I would implement it in this order:
+
+1. Get your existing organization upgraded to GitHub Team.
+2. Complete Classroom 50 integration using the browser.
+3. Create one GPIO assignment.
+4. Test with two student accounts.
+5. Introduce automated compilation checks after the basic workflow works.
+6. Gradually migrate your Wi-Fi, BLE, FreeRTOS, sensor and secure OTA assignments.
+
+One particularly important design decision: Keep `esp32-course-materials` as your permanent instructor-controlled source repository. Classroom 50 should distribute assignment-specific copies, not replace your main teaching repository.
+
+That way, you can update the master ESP32 course materials without unintentionally changing existing student submissions.
