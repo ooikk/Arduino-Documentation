@@ -2987,3 +2987,817 @@ For example, you could create a collection of Gists:
 7. You will receive a URL that you can share with students.
 
 **My recommendation:** Gists are particularly useful for your ESP32 teaching activities when you want to distribute small, standalone code examples without creating a separate repository for every example. Keep your official course materials and student assignments in your existing GitHub organization.
+
+---
+
+# GitHub Actions – Introduction, Features and Step-by-Step Setup
+
+**Recommended for your ESP32 Learning Lab**
+
+GitHub Actions is one of the most useful features of GitHub because it allows you to automate software development, compilation, testing, validation and deployment directly from your GitHub repositories.
+
+For your ESP32-S3 projects and GitHub Classroom teaching environment, GitHub Actions can become an automated teaching assistant:
+
+1. Students submit their Arduino code.
+2. GitHub automatically detects the submission.
+3. An automated environment compiles the ESP32-S3 firmware.
+4. Tests and validation checks are performed.
+5. Results are reported back to the student and instructor.
+
+You do not need to manually download every student's code and compile it in Arduino IDE.
+
+Let's go through the concepts first, followed by a practical setup.
+
+## 1. What is GitHub Actions?
+
+GitHub Actions is a Continuous Integration and Continuous Delivery/Deployment (CI/CD) platform built into GitHub.
+
+In traditional software development, developers often perform these activities manually:
+
+- Write source code.
+- Compile the program.
+- Run tests.
+- Check for errors.
+- Package the application.
+- Release the software.
+
+GitHub Actions automates these activities using predefined workflows.
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/3ede542a-ecfb-493b-84a4-72299f4e33d7" />
+
+
+
+
+For example, whenever you upload a new ESP32 program to GitHub, an Actions workflow can automatically:
+
+- Download the source code.
+- Install the ESP32 Arduino development environment.
+- Compile the program for ESP32-S3.
+- Check whether compilation succeeds.
+- Save the generated `.bin` firmware.
+- Report the result on GitHub.
+
+This is called Continuous Integration (CI).
+
+When the workflow also publishes the firmware or deploys a website, that is part of Continuous Delivery/Deployment (CD).
+
+## 2. Understanding the main components
+
+Before setting up Actions, understand five important terms.
+
+### 1. Workflow
+
+A workflow is an automated process defined in a YAML file.
+
+Example: `esp32-build.yml`
+
+It specifies what to do, when to execute and which operations to perform.
+
+### 2. Event / Trigger
+
+An event determines when a workflow starts.
+
+Examples:
+
+- Student pushes new code.
+- A pull request is submitted.
+- An instructor manually starts a workflow.
+- A scheduled time is reached.
+
+### 3. Job
+
+A job is a collection of steps that execute on a runner.
+
+Example:
+
+- Install Arduino CLI.
+- Install ESP32 board support.
+- Compile firmware.
+
+### 4. Runner
+
+A runner is the computer that executes the workflow.
+
+GitHub provides hosted runners such as Ubuntu Linux, Windows and macOS.
+
+You can also configure your own self-hosted runner.
+
+### 5. Step
+
+A step is an individual command or action inside a job.
+
+Example:
+
+```yaml
+- name: Compile ESP32 firmware
+  run: arduino-cli compile ...
+```
+
+## 3. GitHub Actions architecture
+
+The following diagram illustrates how the components work together.
+
+<img width="75%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a8c691ab-eb04-4c93-bb46-f10915d82290" />
+
+
+The execution sequence is:
+
+1. An event occurs in a GitHub repository.
+2. GitHub checks the workflow configuration.
+3. A runner is allocated.
+4. The runner executes the jobs and steps.
+5. The workflow generates logs, reports and optional output files.
+6. GitHub displays the execution result.
+
+## 4. Important features of GitHub Actions
+
+Here are the capabilities you can use in your projects.
+
+| Feature | What it does | ESP32 application |
+|---|---|---|
+| Continuous Integration | Automatically builds and tests code | Compile every ESP32 submission |
+| Continuous Deployment | Automatically publishes or deploys software | Deploy course website |
+| Event triggers | Starts workflows when events occur | Trigger on student code submission |
+| Scheduled workflows | Executes at specified times | Run nightly project checks |
+| Manual execution | Allows users to start workflows | Instructor initiates a build |
+| Matrix builds | Runs multiple configurations in parallel | Compile for ESP32-S3, ESP32-C3 and ESP32 |
+| Secrets management | Stores encrypted credentials | Store deployment credentials |
+| Artifacts | Saves generated files | Store compiled `.bin` firmware |
+| Caching | Reuses downloaded dependencies | Reduce repeated ESP32 core downloads |
+| Workflow reports | Displays logs and pass/fail status | Show students compilation errors |
+| Reusable workflows | Shares automation across repositories | Apply one build procedure to all classes |
+
+Some particularly useful features deserve more explanation.
+
+### 4.1 Event triggers
+
+You can decide exactly when automation should run.
+
+| Trigger | Meaning | Example |
+|---|---|---|
+| `push` | New code uploaded | Student submits code |
+| `pull_request` | Pull request opened or updated | Instructor reviews assignment |
+| `workflow_dispatch` | Manual execution | Instructor starts compilation |
+| `schedule` | Scheduled execution | Daily course checks |
+| `release` | New release published | Publish firmware |
+
+You can also restrict triggers to particular branches or changed files.
+
+### 4.2 Matrix builds
+
+This is a powerful feature for embedded development.
+
+Suppose you want to compile one application for three different ESP32 targets.
+
+Instead of creating three separate workflows, you can define a matrix:
+
+```yaml
+strategy:
+  matrix:
+    board:
+      - esp32:esp32:esp32s3
+      - esp32:esp32:esp32c3
+      - esp32:esp32:esp32
+```
+
+GitHub can run these builds in parallel.
+
+This helps identify board-specific compilation problems.
+
+### 4.3 Secrets management
+
+You can store confidential information in GitHub without putting it directly into your source code.
+
+For example:
+
+- GitLab deployment token
+- Cloudflare API token
+- Website deployment credentials
+- Private package registry credentials
+
+Your workflow accesses these values through GitHub's secrets mechanism.
+
+Example:
+
+```yaml
+env:
+  GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+```
+
+The actual token is configured separately under repository or organization settings.
+
+**Security recommendation:** Never expose deployment secrets to workflows that execute untrusted student contributions. In particular, do not use `pull_request_target` to check out and execute untrusted pull-request code.
+
+### 4.4 Artifacts
+
+Artifacts are files produced by a workflow that you can download later.
+
+For ESP32 projects, these could include:
+
+- Compiled firmware `.bin`
+- Compilation reports
+- Test results
+- Log files
+- Generated documentation
+
+For example, a student can submit an Arduino sketch and download the compiled firmware from the corresponding Actions run.
+
+### 4.5 Workflow templates and Marketplace
+
+You do not have to write everything yourself.
+
+GitHub provides a Marketplace containing reusable actions for:
+
+- Installing development tools
+- Compiling applications
+- Running automated tests
+- Publishing packages
+- Deploying websites
+- Generating reports
+
+You can find them here: [GitHub Actions Marketplace](https://github.com/marketplace?type=actions).
+
+## 5. Step-by-step: Enable GitHub Actions
+
+Let's begin with a simple setup using the GitHub website. No PowerShell, Git command line or local installation is required.
+
+We will use an existing repository in your GitHub organization.
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/0ea79d93-496a-4925-afaa-2350f9954a08" />
+
+
+### Step 1 – Open your repository
+
+1. Sign in to GitHub.
+2. Open your GitHub organization.
+3. Select a repository you control.
+4. Click the **Actions** tab.
+
+For the first experiment, I recommend using a separate repository named:
+
+```text
+ESP32-GitHub-Actions-Lab
+```
+
+This prevents experimental workflow files from affecting your actual teaching materials.
+
+### Step 2 – Enable Actions
+
+If Actions is not enabled:
+
+1. Open repository **Settings**.
+2. Select **Actions**.
+3. Select **General**.
+4. Check the **Actions permissions**.
+5. Allow the workflows you intend to use.
+
+For a beginner experiment, the default GitHub-provided actions are sufficient.
+
+If this is an organization repository, the organization-level Actions policy may also restrict what individual repositories can run.
+
+### Step 3 – Create your first workflow
+
+You can create a workflow directly through the browser.
+
+1. Open the repository.
+2. Click **Add file**.
+3. Select **Create new file**.
+4. Enter this filename:
+
+```text
+.github/workflows/hello-world.yml
+```
+
+GitHub automatically creates the necessary folders when you enter the full path.
+
+### 5. Paste the following YAML:
+
+```yaml
+name: My First GitHub Action
+
+# Events that trigger the workflow
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+# Jobs to execute
+jobs:
+  hello-world:
+    name: Hello World Job
+
+    # Use a GitHub-hosted Ubuntu machine
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1
+      - name: Display greeting
+        run: echo "Hello from GitHub Actions!"
+
+      # Step 2
+      - name: Display repository
+        run: echo "Repository: $GITHUB_REPOSITORY"
+
+      # Step 3
+      - name: Display current date
+        run: date
+```
+
+Click **Commit changes**.
+
+Commit directly to the `main` branch.
+
+Congratulations! You have created your first workflow.
+
+### Step 4 – Execute the workflow
+
+There are two ways to execute it.
+
+**Method A – Automatic execution**
+
+Since the workflow contains:
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+```
+
+Every new push to the `main` branch triggers the workflow.
+
+**Method B – Manual execution**
+
+1. Open the repository's **Actions** tab.
+2. Select **My First GitHub Action**.
+3. Click **Run workflow**.
+4. Select the `main` branch.
+5. Click **Run workflow** again.
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/30cf0c8e-574a-48cd-a4cb-a2bcc5c9a634" />
+
+
+### Step 5 – Examine the execution results
+
+1. Open the **Actions** tab.
+2. Select the latest workflow run.
+3. Click **Hello World Job**.
+4. Expand each execution step.
+5. Examine the output.
+
+You should see something similar to:
+
+```text
+Hello from GitHub Actions!
+
+Repository: your-org/ESP32-GitHub-Actions-Lab
+
+Current date: ...
+```
+
+**Success**  Workflow completed successfully
+
+
+You have now demonstrated the complete workflow lifecycle:
+
+```text
+Trigger → Workflow → Job → Runner → Steps → Results
+```
+
+## 6. Practical project: Automatically compile ESP32-S3 firmware
+
+Now let's move from a simple demonstration to something useful for your embedded systems teaching environment.
+
+### Recommended practical exercise
+
+We will create a workflow that automatically compiles an Arduino ESP32-S3 sketch.
+
+The setup will use:
+
+- Arduino CLI
+- ESP32 Arduino Core 3.3.12
+- ESP32-S3 target
+- Ubuntu GitHub-hosted runner
+
+This is compatible with your existing Arduino IDE 2.3.10 and ESP32 Arduino Core 3.3.12 development environment.
+
+### Step 1 – Prepare the repository
+
+Create this structure in your GitHub repository:
+
+```text
+ESP32-GitHub-Actions-Lab/
+│
+├── ESP32S3_Blink/
+│   └── ESP32S3_Blink.ino
+│
+└── .github/
+    └── workflows/
+        └── esp32-build.yml
+```
+
+The folder and `.ino` filename should have matching names.
+
+### Step 2 – Create the Arduino sketch
+
+Create `ESP32S3_Blink/ESP32S3_Blink.ino`:
+
+```cpp
+#define LED_PIN 2
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(LED_PIN, OUTPUT);
+
+  Serial.println("ESP32-S3 started");
+}
+
+void loop() {
+  digitalWrite(LED_PIN, HIGH);
+  delay(500);
+
+  digitalWrite(LED_PIN, LOW);
+  delay(500);
+}
+```
+
+This is a basic compilation exercise. GPIO 2 is only an example; the actual LED connection depends on your ESP32-S3 development board.
+
+### Step 3 – Create the ESP32 compilation workflow
+
+Create the file:
+
+```text
+.github/workflows/esp32-build.yml
+```
+
+Paste this configuration:
+
+```yaml
+name: ESP32-S3 Firmware Build
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile ESP32-S3
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Download repository source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Install Arduino CLI
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      # 3. Configure ESP32 board package
+      - name: Configure ESP32 board manager
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls \
+            [https://espressif.github.io/arduino-esp32/package_esp32_index.json](https://espressif.github.io/arduino-esp32/package_esp32_index.json)
+
+      # 4. Download board definitions
+      - name: Update board index
+        run: arduino-cli core update-index
+
+      # 5. Install ESP32 Arduino Core
+      - name: Install ESP32 Core
+        run: |
+          arduino-cli core install esp32:esp32@3.3.12
+
+      # 6. Compile firmware
+      - name: Compile ESP32-S3 firmware
+        run: |
+          arduino-cli compile \
+            --fqbn esp32:esp32:esp32s3 \
+            --output-dir ./build \
+            ./ESP32S3_Blink
+
+      # 7. Display generated firmware
+      - name: List firmware files
+        run: ls -lh ./build
+```
+
+This example uses the official Arduino CLI setup action and Espressif's Arduino ESP32 board package.
+
+References:
+
+- [Arduino CLI setup action](https://github.com/arduino/setup-arduino-cli)
+- [Arduino ESP32 documentation](https://docs.espressif.com/projects/arduino-esp32/en/latest/)
+- [Arduino CLI documentation](https://arduino.github.io/arduino-cli/).
+
+### Step 4 – Commit and execute
+
+1. Click **Commit changes**.
+2. Commit both the Arduino sketch and workflow YAML file.
+3. Open the **Actions** tab.
+4. Select **ESP32-S3 Firmware Build**.
+5. Click the latest workflow execution.
+6. Select the **Compile ESP32-S3** job.
+
+You should see these operations:
+
+```text
+Expected workflow execution
+
+1. Checkout repository
+Expected: PASS
+
+2. Install Arduino CLI
+Expected: PASS
+
+3. Configure ESP32 board manager
+Expected: PASS
+
+4. Install ESP32 Core 3.3.12
+Expected: PASS
+
+5. Compile ESP32-S3 firmware
+Expected: PASS
+
+6. List firmware files
+Expected: PASS
+
+These are the expected results, not a claim that the workflow has already been executed.
+```
+
+### Step 5 – Save the compiled firmware as an artifact
+
+Currently, the firmware is generated inside the runner's temporary environment.
+
+When the job finishes, the runner is discarded. If you want to retain the firmware, add another step after **List firmware files**:
+
+```yaml
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ESP32-S3-Firmware
+          path: build/*.bin
+          retention-days: 7
+```
+
+Now GitHub saves the generated firmware as a downloadable artifact.
+
+To download it:
+
+1. Open the successful workflow run.
+2. Scroll to the bottom of the summary page.
+3. Find **Artifacts**.
+4. Click **ESP32-S3-Firmware**.
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/3370d2ea-83ae-466c-a069-12005401d10a" />
+
+
+This is useful for your firmware distribution and testing exercises.
+
+**Important for your ESP32-S3 N16R8 board:** The example above compiles for the generic ESP32-S3 target. It does not yet guarantee that the generated firmware uses your exact 16 MB Flash, OPI PSRAM and other board-menu settings. Those must be configured through the appropriate Arduino CLI board options. Also, compilation does not physically upload or test the firmware on your development board.
+
+## 7. Integrating GitHub Actions with GitHub Classroom
+
+This is where GitHub Actions becomes particularly valuable for your teaching environment.
+
+Imagine you have 30 students working on an ESP32 GPIO assignment.
+
+Without automation:
+
+1. Students submit their source code.
+2. You download each repository.
+3. Open Arduino IDE.
+4. Compile each assignment.
+5. Record compilation errors.
+6. Return feedback to students.
+
+With GitHub Actions:
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/7b19f3c7-8a80-44e5-a2b9-5febe44c736b" />
+
+
+The process becomes:
+
+1. Instructor creates an assignment using GitHub Classroom.
+2. Students accept the assignment.
+3. GitHub creates individual student repositories.
+4. Students upload their Arduino code.
+5. GitHub Actions automatically starts.
+6. The workflow compiles the code.
+7. Compilation results are recorded.
+8. Instructor reviews the results.
+
+### Suggested automated assessment structure
+
+For example, an ESP32 GPIO assignment could have the following checks:
+
+| Assessment | Automated check |
+|---|---|
+| Source code submitted | Check required `.ino` file |
+| Correct board target | Compile for ESP32-S3 |
+| GPIO initialization | Check required declarations |
+| Digital output | Check compilation and required function |
+| Documentation | Check `README.md` |
+| Compilation | Build must succeed |
+
+Note that source-code checks can verify the presence of required functions, but they cannot prove that the student's physical circuit works correctly.
+
+### Where should the workflow be stored?
+
+I recommend placing the workflow in your GitHub Classroom assignment template repository:
+
+```text
+ESP32_GPIO_Assignment/
+│
+├── ESP32_GPIO_Assignment.ino
+├── README.md
+│
+└── .github/
+    └── workflows/
+        └── auto-build.yml
+```
+
+When GitHub Classroom creates student repositories from the template, the workflow configuration can be included.
+
+However, verify that Actions is enabled and permitted in the generated repositories. Organization policies, workflow approval requirements and permissions can affect execution.
+
+For private student repositories, make sure the organization has sufficient Actions minutes.
+
+## 8. GitHub Actions usage limitations on Free accounts
+
+Since you are using GitHub Free, this is worth understanding before deploying workflows across an entire class.
+
+**GitHub Free**
+
+| Resource | Free allowance |
+|---|---|
+| Actions minutes | 2,000/month |
+| Artifact storage | 500 MB |
+| Cache storage | 10 GB per repository |
+| Public repository standard runners | Free |
+| Self-hosted runners | No GitHub runner-minute charge |
+
+The 500 MB artifact allowance is shared with GitHub Packages storage. The cache allowance is separate.
+
+For private repositories, standard hosted-runner usage consumes the monthly minutes. Public repositories using standard hosted runners do not consume that allowance.  
+GitHub Docs+1
+
+### Example: Estimate for your classroom
+
+Assume:
+
+- 30 students
+- 10 assignments per student
+- Each compilation takes 2 minutes
+
+Total: *30 * 10 * 2 = 600 minutes*
+
+Monthly Actions usage estimate:
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/f8509963-b0a7-40fe-87ee-e9c773b8f6a5" />
+
+
+```text
+600 / 2,000
+30% of monthly allowance
+1,400 minutes remaining
+```
+
+This is an illustrative estimate assuming private repositories under a Free billing account. Actual usage depends on runner type, operating system, execution time and billing-account ownership.
+
+For your classroom, I recommend compiling only when students push code or submit a pull request, rather than on every minor repository event.
+
+## 9. Monitoring and troubleshooting
+
+GitHub provides a dashboard for monitoring workflow executions.
+
+Open the repository's **Actions** tab.
+
+You can examine:
+
+| Information | What you learn |
+|---|---|
+| Workflow status | Successful, failed or cancelled |
+| Execution duration | How long compilation takes |
+| Job logs | Which operation failed |
+| Trigger event | What started the workflow |
+| Commit information | Which source-code revision was tested |
+| Artifacts | What files were generated |
+
+### Common errors in ESP32 workflows
+
+| Error | Possible reason |
+|---|---|
+| Sketch not found | Incorrect folder or filename |
+| Board not found | ESP32 core not installed |
+| Library not found | Required library missing from workflow |
+| Compilation failed | Source-code or dependency error |
+| Permission denied | Repository Actions permissions |
+| Artifact not found | Incorrect output directory or file pattern |
+
+**One important point:** GitHub-hosted runners are temporary cloud computers. They do not retain installed ESP32 libraries or build files between separate workflow runs unless you configure caching or artifact storage.
+
+## 10. Security considerations
+
+For your ESP32 secure OTA and GitLab integration work, I recommend these practices:
+
+- Never hardcode GitLab deployment tokens in YAML files.
+- Store confidential credentials using GitHub Actions Secrets.
+- Give workflows only the permissions they require.
+- Pin third-party actions to reviewed versions or immutable commit SHAs for production workflows.
+- Avoid executing untrusted student code in workflows that have access to deployment secrets.
+- Require instructor approval before publishing firmware or deploying production websites.
+
+GitHub Actions can become part of your secure software development lifecycle, but the workflow itself must also be secured.
+
+## 11. Recommended learning roadmap
+
+I suggest introducing GitHub Actions to your students and yourself in four stages.
+
+```text
+GitHub Actions learning roadmap
+
+Stage 1 – Fundamentals
+Start here
+- Create a workflow.
+- Understand YAML syntax.
+- Configure event triggers.
+- Execute manual workflows.
+- Read execution logs.
+
+Stage 2 – ESP32 Continuous Integration
+- Install Arduino CLI.
+- Install ESP32 Arduino Core.
+- Compile ESP32-S3 projects.
+- Manage external libraries.
+- Save firmware artifacts.
+
+Stage 3 – GitHub Classroom Automation
+- Integrate workflows into assignment templates.
+- Automatically compile student submissions.
+- Generate assessment reports.
+- Validate required source files.
+- Monitor student submission results.
+
+Stage 4 – Advanced CI/CD and Security
+- Matrix builds.
+- GitHub Secrets.
+- Reusable workflows.
+- Automated firmware releases.
+- GitLab Package Registry integration.
+- Automated website deployment.
+```
+
+## 12. Official learning resources
+
+These are useful references:
+
+- [GitHub Actions – Official Documentation](https://docs.github.com/en/actions)
+- [Writing workflows](https://docs.github.com/en/actions/writing-workflows)
+- [Workflow events and triggers](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows)
+- [GitHub Actions security](https://docs.github.com/en/actions/security-for-github-actions)
+- [GitHub Actions Marketplace](https://github.com/marketplace?type=actions)
+- [GitHub Actions features](https://github.com/features/actions)
+
+## My recommendation for your next implementation
+
+I would take your existing GitHub organization and GitHub Classroom setup and build a reusable ESP32-S3 CI/CD workflow template.
+
+The eventual architecture would look like this:
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/6afc75f3-406a-41eb-9c2b-074e5f77f425" />
+
+
+
+```text
+GitHub Classroom
+Student assignment repositories
+
+GitHub Actions
+Automated build and assessment
+
+Build successful
+Generate firmware BIN
+
+Build failed
+Return compilation logs
+
+Instructor assessment dashboard
+Build status, reports and downloadable firmware
+```
+
+The most valuable next step is to develop a reusable workflow that supports your exact ESP32-S3 N16R8 configuration, Arduino Core 3.3.12, required libraries and compilation settings. Once tested in one repository, you can introduce it into your GitHub Classroom assignment templates and scale it across your students.
