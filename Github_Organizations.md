@@ -1,3 +1,10 @@
+[![logo-color](https://img.shields.io/badge/Index-Installing Git-086288?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/Github_Organizations.md#using-git-with-github-on-windows-and-macbook)
+[![logo-color](https://img.shields.io/badge/Index-Organization_By_Meta-4D8DBA?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/Github_Organizations.md#esp32-course-distribution-with-github-organizations-meta-ai)
+
+![logo-color](https://img.shields.io/badge/Index-Badges-DA6556?logo=github&logoColor=white&labelColor=5B7E3C)
+
+
+
 
 # Secure ESP32 Course Distribution Using a GitHub Organization
 **Practical implementation guide | Free-first | Arduino IDE and ESP-IDF | Student access control**
