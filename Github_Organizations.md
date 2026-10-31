@@ -551,6 +551,9 @@ This requires more administration than an automated classroom service, but it is
 
 ### Step 1: Create an assignment template
 
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e471d2ca-d1c1-4f6e-a7fe-85f89d4aa1d7" />
+
+
 Create a private repository named:
 
 `esp32-assignment-01-template`
