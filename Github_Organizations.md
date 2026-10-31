@@ -1910,8 +1910,6 @@ Your existing organization remains the central place for managing students, teac
 ## 2. What can Classroom 50 do?
 
 
-
-
 ### 1. Assignment distribution
 
 <img width="70%" height="Auto" alt="image" src="https://github.com/user-attachments/assets/c81afa7e-6b27-4b67-8d58-0a62c4921a5d" />
