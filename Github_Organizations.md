@@ -3536,10 +3536,10 @@ Expected: PASS
 
 These are the expected results, not a claim that the workflow has already been executed.
 
+```
+
 <img width="80%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b7603e29-085c-4336-8a01-56eb3dffca3d" />
 
-
-```
 
 ### Step 5 – Save the compiled firmware as an artifact
 
