@@ -3328,7 +3328,9 @@ Every new push to the `main` branch triggers the workflow.
 4. Select the `main` branch.
 5. Click **Run workflow** again.
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/30cf0c8e-574a-48cd-a4cb-a2bcc5c9a634" />
+
+
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ec6534c4-2cf6-4d38-afda-bd6354736918" />
 
 
 ### Step 5 – Examine the execution results
