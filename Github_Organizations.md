@@ -3270,9 +3270,9 @@ GitHub automatically creates the necessary folders when you enter the full path.
 ### 5. Paste the following YAML:
 
 ```yaml
+
 name: My First GitHub Action
 
-# Events that trigger the workflow
 on:
   push:
     branches:
@@ -3280,26 +3280,21 @@ on:
 
   workflow_dispatch:
 
-# Jobs to execute
 jobs:
   hello-world:
     name: Hello World Job
-
-    # Use a GitHub-hosted Ubuntu machine
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1
       - name: Display greeting
         run: echo "Hello from GitHub Actions!"
 
-      # Step 2
       - name: Display repository
-        run: echo "Repository: $GITHUB_REPOSITORY"
+        run: 'echo "Repository: $GITHUB_REPOSITORY"'
 
-      # Step 3
       - name: Display current date
         run: date
+
 ```
 
 Click **Commit changes**.
@@ -3469,7 +3464,7 @@ jobs:
         run: |
           arduino-cli config init
           arduino-cli config add board_manager.additional_urls \
-            [https://espressif.github.io/arduino-esp32/package_esp32_index.json](https://espressif.github.io/arduino-esp32/package_esp32_index.json)
+            https://espressif.github.io/arduino-esp32/package_esp32_index.json
 
       # 4. Download board definitions
       - name: Update board index
