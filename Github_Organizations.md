@@ -3330,7 +3330,7 @@ Every new push to the `main` branch triggers the workflow.
 
 
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ec6534c4-2cf6-4d38-afda-bd6354736918" />
+<img width="80%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ec6534c4-2cf6-4d38-afda-bd6354736918" />
 
 
 ### Step 5 – Examine the execution results
@@ -3360,7 +3360,7 @@ You have now demonstrated the complete workflow lifecycle:
 Trigger → Workflow → Job → Runner → Steps → Results
 ```
 
-<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/2dd809fa-eed3-42d5-8585-fac9fb52fc11" />
+<img width="80%" height="auto" alt="image" src="https://github.com/user-attachments/assets/2dd809fa-eed3-42d5-8585-fac9fb52fc11" />
 
 
 
