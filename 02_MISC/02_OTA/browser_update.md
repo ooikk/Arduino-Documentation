@@ -12,13 +12,14 @@ Although all three methods can update firmware without manually opening Arduino 
 
 ## 1. Browser-Based Firmware Flashing (Web Serial)
 
-[GitHub - esphome/esp-web-tools: Open source tools to allow working with ESP devices in the browser](https://images.openai.com/static-rsc-4/8koTfjv4GODBc0Nek_BREAfUhhFBRc8lu8AZREgEO7D_y4G3wsV4DkbdHni_2lJm9SuY1hncRp1kqyD8g0yXakUr9y9E5BQ7vUu64GvLZ5axRllJqT3sA7voO9HSiL_GrdN62GZ9se0BX1Ra3aIMphBGRJ9HZlbOS6k0_qyZqqQ?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/f0cc43cc-24f6-4fc4-9d4d-a28db73e8a46" />
 
-[github.com](https://github.com/esphome/esp-web-tools?utm_source=chatgpt.com)
+
+[github.com](https://github.com/esphome/esp-web-tools)
 
 The approach used by the OceanLabz firmware flashing page is based on Web Serial API, commonly implemented using ESP Web Tools or a similar browser-based flashing framework.
 
-Reference: [OceanLabz – Flash Firmware (Browser-Based)](https://www.oceanlabz.in/firmware/?utm_source=chatgpt.com#Flash_Firmware_Browser-Based).
+Reference: [OceanLabz – Flash Firmware (Browser-Based)](https://www.oceanlabz.in/firmware/#Flash_Firmware_Browser-Based).
 
 ### How it works
 
@@ -31,11 +32,12 @@ Reference: [OceanLabz – Flash Firmware (Browser-Based)](https://www.oceanlabz.
 7. The flashing software puts the ESP32 into download mode if necessary.
 8. Firmware is transferred and written into the ESP32 flash memory.
 
-[Primeiros Passos com MicroPython | Franzininho](https://images.openai.com/static-rsc-4/PVCuvDudsUPPzEy-ZYqC_baj3tg1v5mbnDtFLDAiAxQWKsmPo6T75wpQH10zo0a-a7u0aj5oWM8sE3k6inMe3OkT4d6KquLkPLdK7gpQ218xskwiz4djQmyGpdnNkmvIy26F4Fv7YwVtd9Za243GcNR4e-mJ74YxuK3My5laz6c?purpose=inline)
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a06c992f-4a94-40fb-9ee7-bbbed753a327" />
 
-[Bootloader - DONE.LAND](https://images.openai.com/static-rsc-4/eIxxX9SB0tD8e39hEHtj-JgXZCt_LkI2vI0gdsUQ7tuEgO4jF1Y2LFNnEtZzQiAySksSKayFLcll6TToaL3-csYDKbylOXl3buj5LEHQLgbk4JqtuO_AhKVxmM5VPH8n_UuKDkfz9Al0uEGwiH9nTFh8X_8SBuhqeA1MHJJDZs4?purpose=inline)
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e1041be7-bff1-4493-a301-8be4277bbd40" />
 
-[Hướng dẫn nạp firmware ESP32 bằng trình duyệt (ESP-Web-Tools) | XIAOZHI.VN](https://images.openai.com/static-rsc-4/A8hOXHKhepn6acF70hHwZjHEDPeYZRzfUuqSKmVEUoBxrV3vWMVlsI1NQioZO85bzVk5S60zZYk7HV0-lXiLJ7KsTjcf6pplBDHo8jxdEllzQH2vX212m8AwO5f3YcykoJ7RZL_iz0IsRD7KX9qChpItt6ibOd5ktInqrXN6Elo?purpose=inline)
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/cce40dca-246e-4fdc-9765-33b08a13a3c2" />
+
 
 ### Important characteristics
 
@@ -57,9 +59,10 @@ Also, the website needs to provide the correct firmware binaries and flash offse
 
 ## 2. Arduino OTA
 
-[Over-the-Air Firmware Updates Using the ESP32 MCU | DigiKey](https://images.openai.com/static-rsc-4/g4eq170HG4OMP0N4D5xhRR2ET5SRkQ-v9sLrKzXLbwNEaakmvWegemgZezlCLyt7L-YlNXQR0LJrNTmmIy5GZNGbO1NsLR-kG_8grgWE0kV_HnlfzwBlTJn5bkmEC2NScO10WxO0OwjEPF3SaPyURGsfsAakdiqsTF_TzB45k0k?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e7b6a62e-174a-42eb-beee-acbf25d09dc5" />
 
-[digikey.com](https://www.digikey.com/en/articles/how-to-perform-ota-updates-using-esp32-microcontroller-and-esp-idf?utm_source=chatgpt.com)
+
+[digikey.com](https://www.digikey.com/en/articles/how-to-perform-ota-updates-using-esp32-microcontroller-and-esp-idf)
 
 Arduino OTA allows you to upload firmware wirelessly from Arduino IDE to an ESP32 that is already running your application.
 
@@ -82,9 +85,10 @@ Arduino OTA allows you to upload firmware wirelessly from Arduino IDE to an ESP3
 
 ## 3. ElegantOTA
 
-[ESP32 OTA Over The Internet | Husarnet](https://images.openai.com/static-rsc-4/ncMIDDzyXdi7exyEabvgs6ZZBRXyvvbESt_2Rx6zEjundLLuW00zrBux4G72PDQCrenIKIaYiR4hfiSbSMTecBqFiRPM11eKzvFz32-U6fMmNRolwbOjsyYN6XxV9r7p-apgfDZxEDe6jxYTCZw_I6k0sRObV0tyGoOdHamHIYc?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/c42347a2-3912-418a-b942-790dd76a064e" />
 
-[husarnet.com](https://husarnet.com/blog/internet-ota-esp32/?utm_source=chatgpt.com)
+
+[husarnet.com](https://husarnet.com/blog/internet-ota-esp32/)
 
 ElegantOTA takes a different approach.
 
@@ -148,8 +152,10 @@ Flash programming commands
 SPI Flash
 Bootloader + partition table + application + other flash regions, as configured
 ```
-
 Can program the device without an existing application.
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/d68f514c-f7af-42a5-801b-a23896a8167f" />
+
 
 ### B. Arduino OTA / ElegantOTA – Application-Level Update
 
@@ -162,8 +168,13 @@ OTA update mechanism
 OTA_0 / OTA_1 Application Partition
 New firmware written to inactive OTA slot
 ```
-
 Requires an operational application and OTA partition configuration.
+
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/dc3b007b-6823-4e14-b6ee-4ccfcb598c6f" />
+
+
+
 
 The browser-based approach communicates with the ESP32 ROM bootloader, whereas Arduino OTA and ElegantOTA depend on software already running inside the ESP32.
 
@@ -261,9 +272,10 @@ Learn RSA-2048 signatures, Secure Boot V2 and firmware authenticity.
 
 You could create a browser-based firmware installer for students:
 
-[Sonoff NSPanel Blueprint - Configure your own custom NSPanel easy via a Blueprint - Page 25 - Blueprints Exchange - Home Assistant Community](https://images.openai.com/static-rsc-4/P0YB5ZZYnse7h0y0bmpoVe7s_8ZHr3y4Lr3euvvkV5vnGaYHgIY-j5GQfn3_xS6BlP7JIkS6gtMVg8-XDJ4MseWCZpIq3zHJ8pH7KpzNrL9t_lecAKWSZumWWv6IE9dstJdIqvWR4yQdMRhAJLgrMsFT_PX0J3wBnk3InjXqbUU?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/fd1c6e23-68c9-472e-8e35-2e593c637532" />
 
-[community.home-assistant.io](https://community.home-assistant.io/t/sonoff-nspanel-blueprint-configure-your-own-custom-nspanel-easy-via-a-blueprint/500577?page=25&utm_source=chatgpt.com)
+
+[community.home-assistant.io](https://community.home-assistant.io/t/sonoff-nspanel-blueprint-configure-your-own-custom-nspanel-easy-via-a-blueprint/500577?page=25)
 
 For example:
 
@@ -282,8 +294,8 @@ The student does not need Arduino IDE, Python, esptool or knowledge of COM port 
 
 ### Useful references
 
-- [OceanLabz Browser-Based Firmware Installer](https://www.oceanlabz.in/firmware/?utm_source=chatgpt.com#Flash_Firmware_Browser-Based) — the example you found.
-- [ESP Web Tools](https://esphome.github.io/esp-web-tools/?utm_source=chatgpt.com) — framework for building your own installer.
-- [Espressif esptool-js](https://github.com/espressif/esptool-js?utm_source=chatgpt.com) — JavaScript flashing implementation.
+- [OceanLabz Browser-Based Firmware Installer](https://www.oceanlabz.in/firmware/#Flash_Firmware_Browser-Based) — the example you found.
+- [ESP Web Tools](https://esphome.github.io/esp-web-tools/) — framework for building your own installer.
+- [Espressif esptool-js](https://github.com/espressif/esptool-js?) — JavaScript flashing implementation.
 
 **My conclusion:** Browser Web Serial is not a replacement for Arduino OTA or ElegantOTA. It fills a different role: USB-based firmware installation without requiring development software. For your ESP32-S3 course, it is an excellent way to simplify initial firmware installation, while your signed HTTPS OTA remains the more appropriate solution for maintaining deployed devices.
