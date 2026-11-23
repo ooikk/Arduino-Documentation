@@ -1158,7 +1158,7 @@ GitHub Pages is the simplest way to host your installer without a separate hosti
 After deployment, your website will be available at an address similar to:
 
 ```text
-[https://YOUR-USERNAME.github.io/ESP32-Browser-Flasher/](https://YOUR-USERNAME.github.io/ESP32-Browser-Flasher/)
+https://YOUR-USERNAME.github.io/ESP32-Browser-Flasher/
 ```
 
 Wait for GitHub Pages to finish deploying.
