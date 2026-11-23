@@ -5,11 +5,12 @@
 
 
 
+
 [![logo-color](https://img.shields.io/badge/Index-Github_OTA-E76F51?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/OTA_Update.md#automatic-pull-ota-for-esp32-s3--arduino-ide-2310)
 [![logo-color](https://img.shields.io/badge/Index-Security-DA6556?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md)
 [![logo-color](https://img.shields.io/badge/Index-Github_OTA_SecureSign-249D8F?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#hands-on-lab-harden-your-esp32-s3-ota-updater)
 [![logo-color](https://img.shields.io/badge/Index-Gitlab_OTA_SecureSign_Authentication-E9C46A?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Security/Security.md#secure-ota-migration-github--gitlab-generic-package-registry)
-[![logo-color](https://img.shields.io/badge/Index-Browser_Update-FFF83F?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/browser_update.md)
+[![logo-color](https://img.shields.io/badge/Index-Browser_Update-FFF83F?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/02_MISC/02_OTA/02_Browser_Flasher/browser_update.md)
 
 # ESP32-S3 Over-the-Air Updating
 
