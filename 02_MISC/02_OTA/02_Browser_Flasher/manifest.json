@@ -1,0 +1,16 @@
+{
+  "name": "ESP32-S3 N16R8 Firmware",
+  "version": "1.0.0",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "parts": [
+        {
+          "path": "./firmware/firmware.bin",
+          "offset": 65536
+        }
+      ]
+    }
+  ]
+}
