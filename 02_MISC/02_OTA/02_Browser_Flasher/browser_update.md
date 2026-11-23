@@ -953,7 +953,7 @@ Open your GitHub repository.
     <!-- ESP Web Tools -->
     <script
       type="module"
-      src="[https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module](https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module)">
+      src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module">
     </script>
 
     <style>
