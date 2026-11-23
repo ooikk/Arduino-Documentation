@@ -1794,7 +1794,7 @@ If the file is available, download it using GitHub's **Download raw file** optio
 Alternatively, the expected raw URL is:
 
 ```text
-[https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware.bin](https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware.bin)
+https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware.bin
 ```
 
 This is the URL format for a raw GitHub file. The actual file path and branch must exist for the download to work.
