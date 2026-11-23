@@ -1869,6 +1869,9 @@ For an application-only firmware binary, the manifest would look like:
 }
 ```
 
+> [!IMPORTANT]
+> **JSON** does not support hexadecimal numbers. JSON requires decimal numbers. 
+
 The decimal value `65536` is equivalent to:
 
 ```text
