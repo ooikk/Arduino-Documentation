@@ -1767,7 +1767,7 @@ ESP32-S3 N16R8
 Installer:
 
 ```text
-[https://YOUR-VERCEL-URL.vercel.app/](https://YOUR-VERCEL-URL.vercel.app/)
+https://YOUR-VERCEL-URL.vercel.app/
 ```
 
 ## 4.1 Step 1 — Locate the firmware in GitHub
