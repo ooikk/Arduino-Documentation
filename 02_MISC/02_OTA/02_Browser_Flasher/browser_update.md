@@ -1211,7 +1211,7 @@ Vercel will deploy the static website and provide an HTTPS URL.
 For example:
 
 ```text
-[https://esp32-browser-flasher.vercel.app](https://esp32-browser-flasher.vercel.app)
+https://esp32-browser-flasher.vercel.app
 ```
 
 Your students can now access the installer without installing any software.
