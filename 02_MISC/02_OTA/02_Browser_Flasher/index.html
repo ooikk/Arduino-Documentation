@@ -1,0 +1,191 @@
+The complete updated `index.html` is available in the code below. Copy it into your repository, replacing the existing file.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP32-S3 Browser Flasher</title>
+
+    <script type="module"
+      src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module">
+    </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f4f8;
+            margin: 0;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #0002;
+        }
+
+        h1 { color: #1565c0; }
+
+        .info {
+            text-align: left;
+            background: #eef5ff;
+            padding: 15px;
+            border-radius: 8px;
+            line-height: 1.7;
+        }
+
+        .release-info {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f5f7fa;
+            border: 1px solid #dce3ec;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .release-info h3 { margin-top: 0; color: #1565c0; }
+        #firmware-version { font-weight: bold; color: #1b5e20; }
+        #changelog { padding-left: 22px; line-height: 1.6; }
+        #release-status { color: #666; font-size: 13px; }
+
+        esp-web-install-button {
+            display: block;
+            margin: 30px auto;
+        }
+
+        .warning { color: #b71c1c; font-size: 14px; }
+        a { color: #1565c0; }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h1>ESP32-S3 Firmware Installer</h1>
+
+    <p>
+        Browser-based firmware flashing using
+        ESP Web Tools and Web Serial.
+    </p>
+
+    <div class="info">
+        <b>Target Board:</b> ESP32-S3 N16R8<br>
+        <b>Flash:</b> 16 MB<br>
+        <b>PSRAM:</b> 8 MB OPI<br>
+        <b>Transport:</b> USB Serial<br>
+        <b>Firmware:</b> Binary
+    </div>
+
+    <div class="release-info">
+        <h3>Firmware Release</h3>
+        <div>
+            Revision:
+            <span id="firmware-version">Loading...</span>
+        </div>
+        <h4>Change Log</h4>
+        <ul id="changelog"></ul>
+        <div id="release-status" aria-live="polite"></div>
+    </div>
+
+    <h3>Installation</h3>
+
+    <p>
+        Connect your ESP32-S3 using a USB data cable.
+        Click Connect and select the correct serial port.
+    </p>
+
+    <esp-web-install-button manifest="./manifest.json">
+    </esp-web-install-button>
+
+    <p class="warning">
+        Do not disconnect USB power during flashing.
+        Flashing a complete image may erase existing
+        Wi-Fi settings and stored data.
+    </p>
+
+    <p>
+        <a href="./firmware/firmware.bin" download>
+            Download firmware manually
+        </a>
+    </p>
+
+    <p><small>Powered by ESP Web Tools</small></p>
+</div>
+
+<script>
+async function loadFirmwareReleaseNotes() {
+    const versionElement =
+        document.getElementById("firmware-version");
+    const changelogElement =
+        document.getElementById("changelog");
+    const statusElement =
+        document.getElementById("release-status");
+
+    try {
+        const response = await fetch("./version.txt", {
+            cache: "no-store"
+        });
+
+        if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+        }
+
+        const text = await response.text();
+
+        const lines = text
+            .replace(/^\uFEFF/, "")
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+
+        if (lines.length === 0) {
+            throw new Error("version.txt is empty");
+        }
+
+        // First non-empty line is the firmware revision.
+        versionElement.textContent = lines[0];
+
+        // Remaining lines are release notes.
+        changelogElement.replaceChildren();
+
+        const notes = lines.slice(1);
+
+        if (notes.length === 0) {
+            const item = document.createElement("li");
+            item.textContent = "No change log available.";
+            changelogElement.appendChild(item);
+        } else {
+            notes.forEach(note => {
+                const item = document.createElement("li");
+                item.textContent = note.replace(/^[-*]\s*/, "");
+                changelogElement.appendChild(item);
+            });
+        }
+
+        statusElement.textContent = "";
+
+    } catch (error) {
+        versionElement.textContent = "Unavailable";
+        changelogElement.replaceChildren();
+
+        statusElement.textContent =
+            "Unable to load version.txt (" +
+            error.message + ").";
+
+        console.error(
+            "Failed to load firmware release notes:", error
+        );
+    }
+}
+
+loadFirmwareReleaseNotes();
+</script>
+
+</body>
+</html>
+```
