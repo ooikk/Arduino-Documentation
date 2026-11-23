@@ -1235,7 +1235,7 @@ The browser should display a serial-port selection dialog when you initiate the 
 
 ## 3.3 Custom flasher versus Espressif ESP Launchpad
 
-Espressif provides its own browser-based firmware installer called ESP Launchpad.
+Espressif provides its own browser-based firmware installer called [ESP Launchpad](https://espressif.github.io/esp-launchpad/).
 
 ESP Launchpad – Official Espressif Installer.
 
