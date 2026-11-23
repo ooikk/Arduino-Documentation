@@ -1942,15 +1942,22 @@ Installation verification (/ completed)
 
 These are the primary references I recommend keeping alongside the course materials.
 
-| Reference | Purpose |
-|---|---|
-| ESP Web Tools | Browser installer framework |
-| ESP Web Tools GitHub | Source code and manifest examples |
-| Espressif esptool-js | JavaScript flashing implementation |
-| ESP32-S3 esptool documentation | Flash programming and bootloader |
-| ESP32-S3 serial connection | USB and UART connection |
-| MDN Web Serial API | Browser serial interface |
-| ESP Launchpad | Official Espressif installer |
+| Resource | Purpose | Link |
+|---|---|---|
+| ESP Web Tools | Browser installer framework | [ESP Web Tools](https://esphome.github.io/esp-web-tools/) |
+| ESP Web Tools GitHub | Source code and manifest examples | [GitHub repository](https://github.com/esphome/esp-web-tools?) |
+| Espressif esptool-js | JavaScript flashing implementation using Web Serial | [GitHub repository](https://github.com/espressif/esptool-js) · [API documentation](https://espressif.github.io/esptool-js/docs/index.html) |
+| ESP32-S3 esptool documentation | Flash programming, bootloader and troubleshooting | [ESP32-S3 documentation](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/) |
+| ESP32-S3 serial connection | USB/UART connection and serial settings | [Serial connection guide](https://docs.espressif.com/projects/esptool/en/latest/esp32s3/esptool/serial-connection.html) |
+| MDN Web Serial API | Browser serial interface documentation | [MDN documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API) |
+| ESP Launchpad | Official Espressif browser-based firmware installer | [Open ESP Launchpad](https://espressif.github.io/esp-launchpad/?flashConfigURL=https:%2F%2Fespressif.github.io%2Fesp-usb-bridge%2Flaunchpad.toml |
+
+Additional useful link for your ESP32-S3 project:
+
+- [Espressif esptool-js live browser flasher](https://espressif.github.io/esptool-js/) — try flashing firmware directly from your browser.
+
+**My recommendation:** Keep ESP Web Tools for your manifest-driven installation website. Refer to esptool-js when you want more control over the flashing process, such as selecting multiple firmware files, specifying flash addresses, and implementing a custom flashing interface.
+
 
 ---
 
