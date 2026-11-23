@@ -1,4 +1,5 @@
-
+[![logo-color](https://img.shields.io/badge/Browser_Flasher-Vercel-E11A45?logo=github&logoColor=white&labelColor=5B7E3C)](https://esp32-browser-flasher.vercel.app/)
+[![logo-color](https://img.shields.io/badge/Browser_Flasher-Github_IO-E3AFC9?logo=github&logoColor=white&labelColor=5B7E3C)](https://ooikk.github.io/ESP32-Browser-Flasher/)
 
 
 
