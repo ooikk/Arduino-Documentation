@@ -1674,6 +1674,8 @@ You mentioned four useful references. Here is how I would classify them.
 
 **A. WLED Web Installer**
 
+https://install.wled.me/
+
 install.wled.me
 
 Designed specifically for installing WLED firmware.
@@ -1687,7 +1689,7 @@ Best for installing WLED, not a general-purpose course installer.
 
 **B. OceanLabz Browser Flasher**
 
-OceanLabz firmware installer
+[OceanLabz firmware installer](https://www.oceanlabz.in/firmware/)
 
 Provides a project-specific installation experience.
 
@@ -1700,7 +1702,7 @@ Best for users who want to install a predefined project without configuring firm
 
 **C. ESP Web Tools**
 
-ESP Web Tools
+[ESP Web Tools](https://esptool.spacehuhn.com/)
 
 This is the framework I recommend for your custom installer.
 
@@ -1725,6 +1727,9 @@ This is a lower-level JavaScript flashing implementation.
 Best for advanced developers building a completely custom flasher.
 
 The WLED installer currently exposes useful board-specific options such as flash size, PSRAM type and flash mode. OceanLabz demonstrates a more simplified project installation process.
+
+
+
 
 ## 3.6 Choosing the right installer
 
