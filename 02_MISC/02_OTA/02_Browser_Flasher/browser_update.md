@@ -1,3 +1,5 @@
+[![logo-color](https://img.shields.io/badge/Index-ESP32_Browser_Flasher-EDC92C?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/ESP32-Browser-Flasher)
+
 [![logo-color](https://img.shields.io/badge/Browser_Flasher-Vercel-E11A45?logo=github&logoColor=white&labelColor=5B7E3C)](https://esp32-browser-flasher.vercel.app/)
 [![logo-color](https://img.shields.io/badge/Browser_Flasher-Github_IO-E3AFC9?logo=github&logoColor=white&labelColor=5B7E3C)](https://ooikk.github.io/ESP32-Browser-Flasher/)
 
