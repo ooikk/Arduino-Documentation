@@ -1322,13 +1322,13 @@ Open the folder and select the firmware binary.
 Click **Download raw file**, or use the direct raw URL:
 
 ```text
-[https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware.bin](https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware.bin)
+https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware.bin
 ```
 
 The raw URL follows this structure:
 
 ```text
-[https://raw.githubusercontent.com/](https://raw.githubusercontent.com/)
+https://raw.githubusercontent.com/
     USERNAME/
     REPOSITORY/
     BRANCH/
@@ -1434,7 +1434,7 @@ Open your custom Vercel or GitHub Pages website.
 For example:
 
 ```text
-[https://esp32-browser-flasher.vercel.app/](https://esp32-browser-flasher.vercel.app/)
+https://esp32-browser-flasher.vercel.app/
 ```
 
 Use Chrome or Edge.
@@ -1855,7 +1855,7 @@ For an application-only firmware binary, the manifest would look like:
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "[https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware.bin](https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware.bin)",
+          "path": "https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware.bin",
           "offset": 65536
         }
       ]
@@ -1882,7 +1882,7 @@ For a merged firmware image:
       "chipFamily": "ESP32-S3",
       "parts": [
         {
-          "path": "[https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware-merged.bin](https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware-merged.bin)",
+          "path": "https://raw.githubusercontent.com/ooikk/Arduino-Documentation/main/02_MISC/02_OTA/02_Browser_Flasher/firmware-merged.bin",
           "offset": 0
         }
       ]
@@ -1904,7 +1904,7 @@ Open your deployed Vercel website.
 For example:
 
 ```text
-[https://esp32-browser-flasher.vercel.app/](https://esp32-browser-flasher.vercel.app/)
+https://esp32-browser-flasher.vercel.app/
 ```
 
 The browser should display:
