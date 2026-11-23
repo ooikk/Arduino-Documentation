@@ -1,0 +1,6 @@
+1.0.0
+- Add release note in version.txt
+- Fix Release note print out
+- Change version number
+- To confirm release note print out is fixed
+- Another version
