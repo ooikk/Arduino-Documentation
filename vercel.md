@@ -478,7 +478,7 @@ Vercel provides two useful monitoring features.
 
 Core Web Vitals are Google's user-experience measurements, including how quickly the main page content loads and how responsive the page feels.
 
-**Where to find them:** Project â†’ Analytics or Speed Insights.
+**Where to find them:** Project -> Analytics or Speed Insights.
 
 **Beginner example:** Check whether visitors are accessing your homepage and whether the page loads slowly on mobile devices.
 
@@ -506,7 +506,7 @@ These features let you do more than serve static files.
 | Edge Functions       | Runs suitable code close to visitors      | Redirect users based on location |
 | Cron Jobs            | Runs a function on a scheduled timetable  | Generate a daily report          |
 
-**Where to find them:** Project dashboard â†’ Functions or relevant deployment/runtime settings. Cron Jobs are configured through your project code and `vercel.json`.
+**Where to find them:** Project dashboard -> Functions or relevant deployment/runtime settings. Cron Jobs are configured through your project code and `vercel.json`.
 
 A Cron Job is a scheduled task. For example, you could configure a function to run every day to retrieve data or generate a report.
 
@@ -538,7 +538,7 @@ Important distinction:
 - Vercel Blob and Edge Config are Vercel storage products.
 - Postgres and KV are commonly supplied through third-party Marketplace providers such as Neon, Supabase and Upstash.
 
-Marketplace integrations can provision these resources and provide connection details through environment variables. Their pricing depends on the provider and selected plan.&#x20;
+Marketplace integrations can provision these resources and provide connection details through environment variables. Their pricing depends on the provider and selected plan.
 
 [Store application and agent data on Vercel](https://vercel.com/docs/storage)
 
@@ -546,7 +546,7 @@ Marketplace integrations can provision these resources and provide connection de
 
 
 
-**Where to find them:** Dashboard â†’ Storage or Integrations / Marketplace, depending on the product.
+**Where to find them:** Dashboard -> Storage or Integrations / Marketplace, depending on the product.
 
 **Beginner example:** Use Postgres to store website registrations and Blob to store uploaded profile photographs.
 
