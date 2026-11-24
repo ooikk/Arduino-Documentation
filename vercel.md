@@ -452,7 +452,7 @@ There are two broad integration types:
 1. **Native integrations:** Install and provision a third-party product through Vercel.
 2. **Connectable accounts:** Connect an existing account from another service.
 
-**Where to find it:** Dashboard â†’ Integrations â†’ Browse Marketplace.
+**Where to find it:** Dashboard -> Integrations -> Browse Marketplace.
 
 **Beginner example:** Connect a database provider when your website needs to store user registrations.
 
