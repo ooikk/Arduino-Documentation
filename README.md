@@ -12,7 +12,7 @@
 [![logo-color](https://img.shields.io/badge/Index-More_Topics-DA6556?logo=github&logoColor=white&labelColor=E5D3AF)](https://github.com/ooikk/Arduino-Documentation/blob/main/Advance_Topics.md)
 [![logo-color](https://img.shields.io/badge/Index-C++_eLearning-12544F?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/C%2B%2B_Learning.md)
 [![logo-color](https://img.shields.io/badge/Index-Vercel-B2D959?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/vercel.md)
-[![logo-color](https://img.shields.io/badge/Index-Badges-DA6556?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/Gitlab.md)
+[![logo-color](https://img.shields.io/badge/Index-Gitlab-73A5CA?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/Gitlab.md)
 
 
 [![logo-color](https://img.shields.io/badge/Index-I2C-5996FF?logo=github&logoColor=white&labelColor=2373F4)](https://github.com/ooikk/Arduino-Documentation/blob/main/I2C.md)
