@@ -4,7 +4,7 @@ A practical, step-by-step guide for beginners · Based on official GitLab docume
 
 [GitLab Announces the General Availability of GitLab Duo](https://images.openai.com/static-rsc-4/EoxXf6ChMqDLbbcNuU68IT7w-8u40o6oM1l6JMr57DWSKruIfv6ZYVqR-35Bq8A3viqXxCBW8bjD_FQeyhmdgo0ZCVdHdGkhoFsGVZf0rHy8TkW3kJaJqatC5Et0t6_CAOlbriclgeBguq7OuJ3fIqo4fSZmJ8SqD6-1C9CLBnI?purpose=inline)
 
-[globenewswire.com](https://www.globenewswire.com/dc/news-release/2024/04/18/2865808/0/en/GitLab-Announces-the-General-Availability-of-GitLab-Duo-Chat.html?utm_source=chatgpt.com)
+[globenewswire.com](https://www.globenewswire.com/dc/news-release/2024/04/18/2865808/0/en/GitLab-Announces-the-General-Availability-of-GitLab-Duo-Chat.html)
 
 ## Introduction
 
@@ -32,14 +32,14 @@ By the end of this guide, you will be able to:
 
 Official websites:
 
-- [GitLab main website](https://about.gitlab.com/?utm_source=chatgpt.com)
-- [GitLab documentation](https://docs.gitlab.com/?utm_source=chatgpt.com)
-- [GitLab platform overview](https://about.gitlab.com/platform/?utm_source=chatgpt.com)
-- [GitLab.com](https://gitlab.com/?utm_source=chatgpt.com)
+- [GitLab main website](https://about.gitlab.com/)
+- [GitLab documentation](https://docs.gitlab.com/)
+- [GitLab platform overview](https://about.gitlab.com/platform/)
+- [GitLab.com](https://gitlab.com/)
 
-# **PART 1 — WHAT IS GITLAB AND WHY USE IT?**
+# PART 1 — WHAT IS GITLAB AND WHY USE IT?
 
-## **1.1 What is GitLab?**
+## 1.1 What is GitLab?
 
 GitLab is a platform for managing software development projects.
 
@@ -71,11 +71,11 @@ With GitLab, you can organise these activities within one project.
 
 [GitLab's Security Officer on an Easier Path to App Security - The New Stack](https://images.openai.com/static-rsc-4/TDyD0Sw2bDfhPpDYAtpbINDPJ6YrLZi56TFzAz4d6So24txZV8nW1ItlcrmNAD6aih7lNmdyppdlrgmQu0uCjXfa2-NDjJ3XeHBYlP2dQ_3i6RqqWna50gsDYFYU3BbeWhyEm-ugPtsJtoACk2ftOb-rLX6AMciHv7RjwYckTeA?purpose=inline)
 
-[thenewstack.io](https://thenewstack.io/gitlabs-security-officer-on-an-easier-path-to-app-security/?utm_source=chatgpt.com)
+[thenewstack.io](https://thenewstack.io/gitlabs-security-officer-on-an-easier-path-to-app-security/)
 
 GitLab describes this approach as an integrated DevSecOps platform: development, operations, and security activities are connected throughout the software lifecycle.
 
-## **1.2 Git vs GitHub vs GitLab**
+## 1.2 Git vs GitHub vs GitLab
 
 It is important to understand that Git, GitHub, and GitLab are not the same thing.
 
@@ -95,7 +95,7 @@ It is important to understand that Git, GitHub, and GitLab are not the same thin
 
 Popular for open-source collaboration, repositories, GitHub Actions, and its developer ecosystem.
 
-[Official website](https://github.com/?utm_source=chatgpt.com)
+[Official website](https://github.com/)
 
 [GitLab 19.2 Brings Governed Agentic Automation to Clear the Backlog AI Coding Creates](https://images.openai.com/static-rsc-4/spFPvtQoz6H4Kv_JPvFvsnUQx561jFO2rC8TeQ5z74A7L7JnIA_QZiok5eSfBFGnp8NU5LHFQrr4-Yci_mClLuagSBq7gO2k58fRPAKbifMp5pbTnaOctJm7h63yd_uFxd-S6iNCNMa5OJUZDcSngbbQRZv3Awp9RtJaWpRDKXY?purpose=inline)
 
@@ -103,9 +103,9 @@ Popular for open-source collaboration, repositories, GitHub Actions, and its dev
 
 Provides integrated project planning, source control, CI/CD, security, and deployment capabilities.
 
-[Official website](https://gitlab.com/?utm_source=chatgpt.com)
+[Official website](https://gitlab.com/)
 
-### **Why choose GitLab?**
+### Why choose GitLab?
 
 GitLab is particularly attractive when you want to connect the entire development workflow.
 
@@ -124,7 +124,7 @@ This workflow can be managed within GitLab without having to combine multiple un
 
 GitLab and GitHub are both capable platforms. Neither is universally better; the choice depends on your development workflow, integrations, hosting requirements, and subscription needs.
 
-## **1.3 Who should use GitLab?**
+## 1.3 Who should use GitLab?
 
 | User                   | How GitLab helps                      | Example                                |
 | ---------------------- | ------------------------------------- | -------------------------------------- |
@@ -137,7 +137,7 @@ GitLab and GitHub are both capable platforms. Neither is universally better; the
 
 For learning and personal development, GitLab Free provides a useful starting point.
 
-## **1.4 Important GitLab concepts**
+## 1.4 Important GitLab concepts
 
 Before using GitLab, understand these terms.
 
@@ -157,13 +157,13 @@ Before using GitLab, understand these terms.
 | Artifact           | A file produced by a job and saved for later use                              | Compiled firmware binary           |
 | DevSecOps          | Integrating development, operations, and security into the software lifecycle | Test, scan, and deploy software    |
 
-### **Group vs Project vs Repository**
+### Group vs Project vs Repository
 
 These three concepts are frequently confused.
 
 [Overview of GitLab Group and Project Structure | Courseware as Code Workshop](https://images.openai.com/static-rsc-4/HBT9A0TRU9cJvv8AOW6BvarW7S5NJXrTogb-uFwCaXSCF3GvxBMETqxszUJkTBVV5_F2I9iwUr-f4yZ64YWLb_VQEaEeAmh08YULQSVAqVDObDFERFeWWXhNd_dyBFjJQKBHXFdF2HrRHF1SvLcymCvfOGrPAjg7vR0r2qZafzo?purpose=inline)
 
-[devops-education.gitlab.io](https://devops-education.gitlab.io/cwac-workshop/course/gitlab_overview/?utm_source=chatgpt.com)
+[devops-education.gitlab.io](https://devops-education.gitlab.io/cwac-workshop/course/gitlab_overview/)
 
 Think of the structure as follows:
 
@@ -190,9 +190,9 @@ A GitLab project also contains Issues, Merge Requests, CI/CD settings, and other
 
 A namespace is the URL and organisational identity under which the project exists. It can be a personal namespace or a group namespace.
 
-Official documentation: [GitLab namespaces](https://docs.gitlab.com/user/namespace/?utm_source=chatgpt.com).
+Official documentation: [GitLab namespaces](https://docs.gitlab.com/user/namespace/).
 
-## **1.5 Understanding the DevSecOps platform**
+## 1.5 Understanding the DevSecOps platform
 
 DevSecOps combines three disciplines:
 
@@ -208,7 +208,7 @@ For example, instead of waiting until a product is finished to check for securit
 
 [GitLab's Security Officer on an Easier Path to App Security - The New Stack](https://images.openai.com/static-rsc-4/TDyD0Sw2bDfhPpDYAtpbINDPJ6YrLZi56TFzAz4d6So24txZV8nW1ItlcrmNAD6aih7lNmdyppdlrgmQu0uCjXfa2-NDjJ3XeHBYlP2dQ_3i6RqqWna50gsDYFYU3BbeWhyEm-ugPtsJtoACk2ftOb-rLX6AMciHv7RjwYckTeA?purpose=inline)
 
-[thenewstack.io](https://thenewstack.io/gitlabs-security-officer-on-an-easier-path-to-app-security/?utm_source=chatgpt.com)
+[thenewstack.io](https://thenewstack.io/gitlabs-security-officer-on-an-easier-path-to-app-security/)
 
 A simplified workflow:
 
@@ -226,17 +226,17 @@ A simplified workflow:
 
 This is the central idea behind GitLab's integrated DevSecOps platform.
 
-Official reference: [GitLab Platform](https://about.gitlab.com/platform/?utm_source=chatgpt.com).
+Official reference: [GitLab Platform](https://about.gitlab.com/platform/).
 
-# **PART 2 — QUICK TOUR OF GITLAB FEATURES**
+# PART 2 — QUICK TOUR OF GITLAB FEATURES
 
-## **2.1 Understanding the GitLab dashboard**
+## 2.1 Understanding the GitLab dashboard
 
 [Inside the vision for GitLab’s new platform navigation - Self-managed - GitLab Forum](https://images.openai.com/static-rsc-4/C2QPPjYQlA7RU88zalBgv390mNq_J0Qtdu6NcVNOXzUCixgYn_y8tnLmcRplA66p83th7NTl0xmBLfCHC4-LNn-rsxXOmfUHi5L93nEq_SUL7RPkvciF95xZ5PeOT4ieWCrj9-aNSCjNfh4pzWgYKcIPbWiXKJr4yujHXxc2MD8?purpose=inline)
 
-[forum.gitlab.com](https://forum.gitlab.com/t/inside-the-vision-for-gitlab-s-new-platform-navigation/92851?utm_source=chatgpt.com)
+[forum.gitlab.com](https://forum.gitlab.com/t/inside-the-vision-for-gitlab-s-new-platform-navigation/92851)
 
-After logging into [GitLab.com](https://gitlab.com/?utm_source=chatgpt.com), you arrive at the GitLab interface.
+After logging into [GitLab.com](https://gitlab.com/), you arrive at the GitLab interface.
 
 The main interface contains:
 
@@ -252,7 +252,7 @@ The sidebar changes depending on whether you are viewing your personal dashboard
 
 **Important:** GitLab occasionally changes its interface. The navigation names below refer to the current feature organisation; some items may be hidden inside expandable menus.
 
-## **2.2 Dashboard, Groups, and Projects**
+## 2.2 Dashboard, Groups, and Projects
 
 **Dashboard**
 
@@ -292,9 +292,9 @@ Where to find it:
 
 Example: Create a project called `ESP32-Secure-OTA` to manage firmware source code, issues, and CI/CD workflows.
 
-Official documentation: [Projects](https://docs.gitlab.com/user/project/?utm_source=chatgpt.com).
+Official documentation: [Projects](https://docs.gitlab.com/user/project/).
 
-## **2.3 Issues, Issue Boards, Labels, Milestones, and Epics**
+## 2.3 Issues, Issue Boards, Labels, Milestones, and Epics
 
 [GitLab - selfhost.cloud](https://images.openai.com/static-rsc-4/ya2WE2FtAiwf4c4wNHzp0Il1-rrBeddvkKymTmZXkF1WgvJ1aTb6u2kvWQ1noA05OwbKZsj2ZqHFIUh_SCI21SH0mqaRoTqq8DVj2whdMWXDb7KmPUs2hmANOtrd91h9KBN1eHSWiOK0HjFlbvisjk5-QA-7MNlMgGGD6jlMoyU?purpose=inline)
 
@@ -306,7 +306,7 @@ Official documentation: [Projects](https://docs.gitlab.com/user/project/?utm_sou
 
 These features help organise development work.
 
-### **Issues**
+### Issues
 
 An Issue is a record of a task, bug, improvement, or feature request.
 
@@ -332,7 +332,7 @@ Tasks:
 
 Use an Issue whenever you need to track a piece of work.
 
-### **Issue Boards**
+### Issue Boards
 
 An Issue Board displays tasks as cards in columns, similar to a Kanban board.
 
@@ -360,7 +360,7 @@ Use it when you want to see which tasks are waiting, in progress, or completed.
 
 GitLab Free supports Issue Boards, with one group Issue Board; some advanced board configuration is paid-tier functionality.
 
-### **Labels**
+### Labels
 
 Labels are tags attached to Issues and Merge Requests.
 
@@ -377,7 +377,7 @@ Where to find it: Manage → Labels, or from an Issue.
 
 Use labels to filter and categorise development tasks.
 
-### **Milestones**
+### Milestones
 
 A Milestone groups issues and Merge Requests around a target date or development objective.
 
@@ -397,7 +397,7 @@ Issues:
 
 Where to find it: Plan → Milestones.
 
-### **Epics**
+### Epics
 
 An Epic is a higher-level work item that groups related work across multiple projects.
 
@@ -414,13 +414,13 @@ Epic: ESP32 IoT Platform
 
 Where to find it: Group-level Plan → Work items or Epics, depending on the interface.
 
-Epics and their advanced planning capabilities have subscription-tier restrictions. Check [GitLab work item documentation](https://docs.gitlab.com/user/work_items/?utm_source=chatgpt.com) for the current availability.
+Epics and their advanced planning capabilities have subscription-tier restrictions. Check [GitLab work item documentation](https://docs.gitlab.com/user/work_items/) for the current availability.
 
-## **2.4 Merge Requests, Code Review, Approvals, and Conflicts**
+## 2.4 Merge Requests, Code Review, Approvals, and Conflicts
 
 [DevSecOps統合プラットフォーム | GitLab](https://images.openai.com/static-rsc-4/CfKeGkCouVnY3uruczwm9iHvl72LL5ZR_XfarbX76CgtF8gb_DEBfa513YGXnVA0Zv5yol6hd9yjgb_BkKWd5vEBDkwQP-EKjzNN8vdoGWYd8DoC5ukIxA9MurOv28FEiT6VjhMsVJstqDzyxGxNel0f3r97NdzR1ydJXJ5pkGU?purpose=inline)
 
-[dts-insight.co.jp](https://www.dts-insight.co.jp/sp/gitlab/index.html?utm_source=chatgpt.com)
+[dts-insight.co.jp](https://www.dts-insight.co.jp/sp/gitlab/index.html)
 
 A Merge Request (MR) is one of GitLab's most important collaboration features.
 
@@ -449,7 +449,7 @@ The reviewer can:
 
 **Where to find it:** Project → Code → Merge requests.
 
-### **Code review**
+### Code review
 
 Code review means another developer examines your changes before they are incorporated into the main codebase.
 
@@ -463,7 +463,7 @@ int temperature = readTemperature();
 
 A reviewer might ask whether sensor reading failures are handled correctly.
 
-### **Approvals**
+### Approvals
 
 Approvals provide an additional review mechanism.
 
@@ -471,7 +471,7 @@ GitLab Free allows eligible users with at least the Developer role to approve Me
 
 Premium and Ultimate provide more flexible required approval rules.
 
-### **Resolving conflicts**
+### Resolving conflicts
 
 A merge conflict occurs when two developers modify the same part of a file and Git cannot automatically combine their changes.
 
@@ -493,13 +493,13 @@ Git needs a human to decide which value is correct.
 
 Conflicts can be resolved locally or through GitLab's Merge Request interface when supported.
 
-Official documentation: [Merge Requests](https://docs.gitlab.com/user/project/merge_requests/?utm_source=chatgpt.com).
+Official documentation: [Merge Requests](https://docs.gitlab.com/user/project/merge_requests/).
 
-## **2.5 CI/CD: Pipelines, Jobs, Schedules, Variables, and Runners**
+## 2.5 CI/CD: Pipelines, Jobs, Schedules, Variables, and Runners
 
 [Building Your First GitLab Pipeline: A Step-by-Step Tutorial🚀🚀🚀 - DEV Community](https://images.openai.com/static-rsc-4/0zDUgZpSjhaPuBdLIt7cRQDPX7C3ANpzl5wOBPqkNgiNgeKG86CykFCGNMJr6kHfGIyi2A1Pz_DKOH7WvuOHzEZGezyhMmVw9D279MejIyNRSr05nL-Ew3k2xJ_AImdQd_ZU2cWztMUW7CNosnocpk9A3G7_oV-SJtc80Yh9DCI?purpose=inline)
 
-[dev.to](https://dev.to/ankitdevcode/building-your-first-gitlab-pipeline-a-step-by-step-tutorial-563i?utm_source=chatgpt.com)
+[dev.to](https://dev.to/ankitdevcode/building-your-first-gitlab-pipeline-a-step-by-step-tutorial-563i)
 
 CI/CD is one of GitLab's most powerful features.
 
@@ -507,7 +507,7 @@ CI/CD is one of GitLab's most powerful features.
 
 **Continuous Delivery/Deployment (CD)** means preparing or automatically deploying software after it passes the required checks.
 
-### **Pipeline**
+### Pipeline
 
 A pipeline is the complete automated workflow.
 
@@ -531,7 +531,7 @@ Developer pushes code
 
 Where to find it: Build → Pipelines.
 
-### **Jobs**
+### Jobs
 
 A job is one individual task in a pipeline.
 
@@ -546,7 +546,7 @@ Pipeline
 
 Where to find it: Build → Jobs or through the pipeline details.
 
-### **Schedules**
+### Schedules
 
 Pipeline schedules allow you to execute pipelines automatically at specified times.
 
@@ -556,7 +556,7 @@ Run a firmware verification pipeline every night at 2:00 AM.
 
 Where to find it: Build → Pipeline schedules.
 
-### **Variables**
+### Variables
 
 Variables store configuration values used by CI/CD jobs.
 
@@ -572,7 +572,7 @@ Sensitive information such as access tokens should be stored as protected or mas
 
 Where to find it: Settings → CI/CD → Variables.
 
-### **Runners**
+### Runners
 
 A Runner executes the jobs defined in your pipeline.
 
@@ -594,19 +594,19 @@ For an ESP32 project, a pipeline could:
 
 Official documentation:
 
-- [CI/CD overview](https://docs.gitlab.com/ci/?utm_source=chatgpt.com)
-- [Pipelines](https://docs.gitlab.com/ci/pipelines/?utm_source=chatgpt.com)
-- [Runners](https://docs.gitlab.com/ci/runners/?utm_source=chatgpt.com)
+- [CI/CD overview](https://docs.gitlab.com/ci/)
+- [Pipelines](https://docs.gitlab.com/ci/pipelines/)
+- [Runners](https://docs.gitlab.com/ci/runners/)
 
-## **2.6 Source Code: Repository, Branches, Tags, and Commits**
+## 2.6 Source Code: Repository, Branches, Tags, and Commits
 
-[softwareadvice.com.au](https://www.softwareadvice.com.au/software/28004/gitlab?utm_source=chatgpt.com)
+[softwareadvice.com.au](https://www.softwareadvice.com.au/software/28004/gitlab)
 
 This is where your actual source code is stored.
 
 Where to find it: Project → Code.
 
-### **Repository**
+### Repository
 
 Displays your project files and directories.
 
@@ -622,13 +622,13 @@ ESP32-Sensor/
     └── platformio.ini
 ```
 
-### **Branches**
+### Branches
 
 Branches allow developers to work on different features without directly modifying the main branch.
 
 Where to find it: Code → Branches.
 
-### **Tags**
+### Tags
 
 Tags identify particular commits, usually to mark releases.
 
@@ -642,7 +642,7 @@ v2.0.0
 
 Where to find it: Code → Tags.
 
-### **Commits**
+### Commits
 
 A commit records a set of changes.
 
@@ -658,7 +658,7 @@ Files changed: 3
 
 Where to find it: Code → Commits.
 
-## **2.7 Container Registry and Package Registry**
+## 2.7 Container Registry and Package Registry
 
 [How to use GitLab Container Registry - Knowledge Base of NFDI4Ing](https://images.openai.com/static-rsc-4/iLgdv3RX1CKKk-HoSiIcUAac6uiCtF_tYZPFybdNSzKTgTChHt7gN54EwRPcn__5kspUpcwXhCqYIeUUy7-36tHVj3VM0kujnvGQA_Q94-ngICt2RstDgfiZXkx8gjKjPWJu3i0oZ1p_12m5g1-WqpzPBMtCyprCuHOmkDwLu6c?purpose=inline)
 
@@ -670,7 +670,7 @@ Where to find it: Code → Commits.
 
 These registries store software outputs that can be distributed and reused.
 
-### **Container Registry**
+### Container Registry
 
 A container is a packaged application together with its required runtime environment.
 
@@ -686,7 +686,7 @@ Use it when you want to store a reusable software build environment or Docker im
 
 Where to find it: Deploy → Container Registry.
 
-### **Package Registry**
+### Package Registry
 
 A Package Registry stores software packages in supported package formats.
 
@@ -717,11 +717,11 @@ This is useful for firmware distribution and OTA workflows.
 
 Official documentation:
 
-- [Container Registry](https://docs.gitlab.com/user/packages/container_registry/?utm_source=chatgpt.com)
-- [Package Registry](https://docs.gitlab.com/user/packages/package_registry/?utm_source=chatgpt.com)
-- [Generic Packages](https://docs.gitlab.com/user/packages/generic_packages/?utm_source=chatgpt.com)
+- [Container Registry](https://docs.gitlab.com/user/packages/container_registry/)
+- [Package Registry](https://docs.gitlab.com/user/packages/package_registry/)
+- [Generic Packages](https://docs.gitlab.com/user/packages/generic_packages/)
 
-## **2.8 Wiki, Snippets, and Web IDE**
+## 2.8 Wiki, Snippets, and Web IDE
 
 [Blog - Using diagrams with GitLab](https://images.openai.com/static-rsc-4/T-nK1WzNU4BzDyesCG7jEThAi2KoIjHroJaBr_sCVS4GP5TIGlTwV9zVMjxzcVkff-FBySwUyMlFqZ1JeUvnwDRZMP18Qg3CpiKl0B8A8XSRr1Z83qTWU7osVrZSMX4N1Y9_P6v08OM2JinhdXksh2yoJzXaikd2V_rjYKf9y24?purpose=inline)
 
@@ -731,7 +731,7 @@ Official documentation:
 
 5
 
-### **Wiki**
+### Wiki
 
 A Wiki is a documentation area for your project.
 
@@ -750,7 +750,7 @@ Where to find it: Plan → Wiki.
 
 Use it to document installation instructions or hardware connections.
 
-### **Snippets**
+### Snippets
 
 Snippets allow you to share small pieces of code or text.
 
@@ -762,7 +762,7 @@ Where to find it: Your GitLab profile or project Snippets, depending on the snip
 
 Use it to share reusable code without creating a complete project.
 
-### **Web IDE**
+### Web IDE
 
 The Web IDE allows you to edit repository files directly through your browser.
 
@@ -774,21 +774,21 @@ For serious embedded development, continue using your local development environm
 
 Official documentation:
 
-- [Wiki](https://docs.gitlab.com/user/project/wiki/?utm_source=chatgpt.com)
-- [Snippets](https://docs.gitlab.com/user/snippets/?utm_source=chatgpt.com)
-- [Web IDE](https://docs.gitlab.com/user/project/web_ide/?utm_source=chatgpt.com)
+- [Wiki](https://docs.gitlab.com/user/project/wiki/)
+- [Snippets](https://docs.gitlab.com/user/snippets/)
+- [Web IDE](https://docs.gitlab.com/user/project/web_ide/)
 
-## **2.9 Security and Compliance**
+## 2.9 Security and Compliance
 
 [Vulnerability risk prioritization made simple with GitLab](https://images.openai.com/static-rsc-4/OjHsuT8I9K1WocS389jQDCKVM9A1i7EgAI7xvKkDdohJrMUC1oDb8vFUWBcq2NIf9nh8dmx0pWnKRU6Cl4d3H6RO4bi6_M9URbpatHi23laHykpm1ZiGUIeD5giyRTWq6dQNlzSEHLdauqpnjSgVUc8d8gZNNHMFDpiGck6td9U?purpose=inline)
 
-[about.gitlab.com](https://about.gitlab.com/blog/vulnerability-risk-prioritization-made-simple-with-gitlab/?utm_source=chatgpt.com)
+[about.gitlab.com](https://about.gitlab.com/blog/vulnerability-risk-prioritization-made-simple-with-gitlab/)
 
 GitLab integrates security checks into the development process.
 
 Three useful features are:
 
-### **Dependency Scanning**
+### Dependency Scanning
 
 A dependency is an external library or software component used by your application.
 
@@ -800,7 +800,7 @@ Dependency Scanning checks supported dependencies for known security vulnerabili
 
 Use it when you want to identify vulnerable third-party software.
 
-### **Secret Detection**
+### Secret Detection
 
 Secret Detection looks for sensitive information accidentally committed to your repository.
 
@@ -819,7 +819,7 @@ GitLab provides pipeline secret detection on Free, Premium, and Ultimate tiers. 
 
 **Important:** Detection is not a guarantee that every secret will be found. Never commit credentials in the first place.
 
-### **Code Quality**
+### Code Quality
 
 Code Quality checks source code for maintainability problems and coding issues.
 
@@ -831,7 +831,7 @@ It can help developers identify:
 
 Availability depends on the specific feature and subscription tier. Some advanced security and reporting functionality is restricted to paid tiers.
 
-### **Where to find security features**
+### Where to find security features
 
 Project sidebar → Secure, or the relevant Security and Compliance sections.
 
@@ -839,18 +839,18 @@ The exact menu and available reports depend on your GitLab version, subscription
 
 Official documentation:
 
-- [Application Security](https://docs.gitlab.com/user/application_security/?utm_source=chatgpt.com)
-- [Dependency Scanning](https://docs.gitlab.com/user/application_security/dependency_scanning/?utm_source=chatgpt.com)
-- [Secret Detection](https://docs.gitlab.com/user/application_security/secret_detection/?utm_source=chatgpt.com)
-- [Code Quality](https://docs.gitlab.com/ci/testing/code_quality/?utm_source=chatgpt.com)
+- [Application Security](https://docs.gitlab.com/user/application_security/)
+- [Dependency Scanning](https://docs.gitlab.com/user/application_security/dependency_scanning/)
+- [Secret Detection](https://docs.gitlab.com/user/application_security/secret_detection/)
+- [Code Quality](https://docs.gitlab.com/ci/testing/code_quality/)
 
-## **2.10 Settings: Members, Access Levels, Protected Branches, and Integrations**
+## 2.10 Settings: Members, Access Levels, Protected Branches, and Integrations
 
 [Gitlab - Parcours DevOPS](https://images.openai.com/static-rsc-4/_9fRYQ0Xe8AqsHma3zBcfmk097-j7ZAIJufGFmuRbnXGrl66IzrdHt7h7LksTm4I_lTXswJvz8PLGJdUZeBoKSXSN-Wu515mHjomXxFqeWFSy9HqaGdphCX2vyXMs-v1CvUwsO7S4qNwT0EwYjZU-SErOFNtYbEqVdolWcFxoWk?purpose=inline)
 
-[parcours-devops.gitlab-pages.imt-atlantique.fr](https://parcours-devops.gitlab-pages.imt-atlantique.fr/gitlab/gitlab/?utm_source=chatgpt.com)
+[parcours-devops.gitlab-pages.imt-atlantique.fr](https://parcours-devops.gitlab-pages.imt-atlantique.fr/gitlab/gitlab/)
 
-### **Members and access levels**
+### Members and access levels
 
 You can invite other developers to your project or group.
 
@@ -869,7 +869,7 @@ Some roles and capabilities vary by project type and subscription.
 
 Where to find it: Manage → Members or Project information → Members, depending on the interface.
 
-### **Protected branches**
+### Protected branches
 
 A protected branch restricts who can push directly to or merge into an important branch.
 
@@ -890,7 +890,7 @@ Developers work on feature branches and submit Merge Requests to `main`.
 
 Where to find it: Settings → Repository → Branch rules or Protected branches.
 
-### **Integrations**
+### Integrations
 
 Integrations connect GitLab to external services.
 
@@ -905,9 +905,9 @@ A webhook is an automated notification sent from GitLab to another application w
 
 Where to find it: Settings → Integrations.
 
-Official documentation: [GitLab project settings](https://docs.gitlab.com/user/project/settings/?utm_source=chatgpt.com).
+Official documentation: [GitLab project settings](https://docs.gitlab.com/user/project/settings/).
 
-## **2.11 GitLab Free vs Paid: What should beginners know?**
+## 2.11 GitLab Free vs Paid: What should beginners know?
 
 GitLab has Free, Premium, and Ultimate subscription tiers.
 
@@ -919,19 +919,19 @@ However, Free has limits.
 
 **Repository and LFS storage**
 
-# **10 GiB**
+# 10 GiB
 
 Per project in a Free namespace.
 
 **Private top-level namespace members**
 
-# **5**
+# 5
 
 For newly created private top-level namespaces; membership is counted across the namespace.
 
 **Top-level groups**
 
-# **3**
+# 3
 
 For Free accounts created after 27 January 2026. Personal namespaces are excluded.
 
@@ -953,7 +953,7 @@ Other important considerations:
 | Advanced approval rules          | Paid tiers                           |
 | Advanced security and compliance | Some capabilities require Ultimate   |
 
-### **CI/CD compute minutes**
+### CI/CD compute minutes
 
 GitLab-hosted runners consume compute minutes allocated to your namespace.
 
@@ -967,7 +967,7 @@ Check your actual allowance under:
 
 Do not assume that all CI/CD execution is unlimited just because pipelines are available on Free.
 
-### **Storage**
+### Storage
 
 GitLab Free provides 10 GiB per project for repository and Git LFS storage.
 
@@ -977,12 +977,12 @@ Container Registry, Package Registry, and build artifacts are not included in th
 
 Official references:
 
-- [GitLab Free user and group limits](https://docs.gitlab.com/user/free_user_limit/?utm_source=chatgpt.com)
-- [GitLab storage limits](https://docs.gitlab.com/user/storage_usage_quotas/?utm_source=chatgpt.com)
-- [GitLab compute minutes](https://docs.gitlab.com/ci/pipelines/compute_minutes/?utm_source=chatgpt.com)
-- [GitLab pricing](https://about.gitlab.com/pricing/?utm_source=chatgpt.com)
+- [GitLab Free user and group limits](https://docs.gitlab.com/user/free_user_limit/)
+- [GitLab storage limits](https://docs.gitlab.com/user/storage_usage_quotas/)
+- [GitLab compute minutes](https://docs.gitlab.com/ci/pipelines/compute_minutes/)
+- [GitLab pricing](https://about.gitlab.com/pricing/)
 
-# **PART 3 — STEP-BY-STEP SETUP INSTRUCTIONS**
+# PART 3 — STEP-BY-STEP SETUP INSTRUCTIONS
 
 We will create a GitLab project called `ESP32-Learning-Lab`.
 
@@ -996,13 +996,13 @@ The example uses:
 
 You can substitute your own project name.
 
-## **3.1 Step 1 — Create a GitLab account**
+## 3.1 Step 1 — Create a GitLab account
 
 [Presentándose y Entendiendo GGG (GuayaHack, Git, GitLab) — HackerSpace y Grupo de estudio](https://images.openai.com/static-rsc-4/buPBk8WWqeovuf87V9iBwQj80Ddw7heBzwrrR-VkmXdAJ2pq29O7tYGd-BC0GiUzw2XbREWKpK2b2jM4drcyieLolzEdUkNsqxIxJuXvoHxd_IHMb_0hWLdQQOuj9AIRg7L3p18ueoTj0LUKpvQXmsHLQEe7uBALWlyCLUGQRRk?purpose=inline)
 
-[guayahack.co](https://guayahack.co/reto/on-boarding-git-gitlab/?utm_source=chatgpt.com)
+[guayahack.co](https://guayahack.co/reto/on-boarding-git-gitlab/)
 
-1. Open [https://gitlab.com](https://gitlab.com?utm_source=chatgpt.com).
+1. Open [https://gitlab.com](https://gitlab.com).
 2. Select **Register**.
 3. Enter your email address.
 4. Create a username.
@@ -1024,9 +1024,9 @@ https://gitlab.com/your-username
 
 Keep your username simple because it will appear in repository URLs.
 
-## **3.2 Step 2 — Set up your profile and authentication**
+## 3.2 Step 2 — Set up your profile and authentication
 
-### **A. Configure your profile**
+### A. Configure your profile
 
 1. Select your profile avatar.
 2. Open **Edit profile** or Preferences.
@@ -1035,7 +1035,7 @@ Keep your username simple because it will appear in repository URLs.
 5. Set your preferred language and other preferences.
 6. Save your changes.
 
-### **B. Choose HTTPS or SSH authentication**
+### B. Choose HTTPS or SSH authentication
 
 GitLab supports two common ways of authenticating Git operations.
 
@@ -1136,12 +1136,12 @@ You should receive a welcome message identifying your GitLab username.
 
 Official instructions:
 
-- [GitLab SSH keys](https://docs.gitlab.com/user/ssh/?utm_source=chatgpt.com)
-- [Personal Access Tokens](https://docs.gitlab.com/user/profile/personal_access_tokens/?utm_source=chatgpt.com)
+- [GitLab SSH keys](https://docs.gitlab.com/user/ssh/)
+- [Personal Access Tokens](https://docs.gitlab.com/user/profile/personal_access_tokens/)
 
-## **3.3 Step 3 — Create your first Group and Project**
+## 3.3 Step 3 — Create your first Group and Project
 
-### **A. Create a Group**
+### A. Create a Group
 
 A Group organises multiple related projects and their members.
 
@@ -1165,11 +1165,11 @@ esp32-learning
 
 [Creating projects on GitLab](https://images.openai.com/static-rsc-4/WwnxzkMRBG1-P3m2CwZUsHX1Hz-HeUz2nLC1jeObW4NKX4fM5GbUjjxJmULVlD3flAnt5AD2ejm5uhie0Dx1tjj8sJkdmJu3A3P8EcdQyGZtXnn0oys-g-i-mW2sg6e40xpEZnKVISySsE0eIC7DQb0aUyvwg8MrSBj7gm_SJ70?purpose=inline)
 
-[tutorial.gitlabpages.inria.fr](https://tutorial.gitlabpages.inria.fr/git/02-creating-projects/?utm_source=chatgpt.com)
+[tutorial.gitlabpages.inria.fr](https://tutorial.gitlabpages.inria.fr/git/02-creating-projects/)
 
 You should now see your group overview page.
 
-### **B. Create a Project**
+### B. Create a Project
 
 1. From the group page, select **New project**.
 2. Select **Create blank project**.
@@ -1187,11 +1187,11 @@ Project slug: esp32-learning-lab
 
 [Gitlab - Parcours DevOPS](https://images.openai.com/static-rsc-4/J6ap_k0LzRk3Q04KooJTjuhIc9Xe1Is9J7POxSNKz1k36vo92fVmAaq-81cejAPNj1QVqH5qr2jQFakeg_t3OcBr-AePySBC79dshgafZSZy8055w51zXx8VjuPbDMePx17NhusbBPw8Lq-xYLXzTjUUqm2RfiDnNOGTeXy99wo?purpose=inline)
 
-[parcours-devops.gitlab-pages.imt-atlantique.fr](https://parcours-devops.gitlab-pages.imt-atlantique.fr/gitlab/gitlab/?utm_source=chatgpt.com)
+[parcours-devops.gitlab-pages.imt-atlantique.fr](https://parcours-devops.gitlab-pages.imt-atlantique.fr/gitlab/gitlab/)
 
 You should see the project overview.
 
-### **Understanding Group, Project, and Namespace**
+### Understanding Group, Project, and Namespace
 
 | Item      | Purpose                                          | Example              |
 | --------- | ------------------------------------------------ | -------------------- |
@@ -1221,7 +1221,7 @@ ESP32-Learning
            └── Secure-OTA
 ```
 
-## **3.4 Step 4 — Choose project visibility**
+## 3.4 Step 4 — Choose project visibility
 
 GitLab provides three main visibility levels.
 
@@ -1233,9 +1233,9 @@ GitLab provides three main visibility levels.
 
 [Make prive repo public - How to Use GitLab - GitLab Forum](https://images.openai.com/static-rsc-4/p4G5vRq_TCBhZgbPmoXcVgDM619nhxlGZnsVD-iuZGsPGFINY89eS6jPPVpjUujtyDwOpnQBk4VCZyRcRew8R0pI_9MQCXhiWy0MQOFsbF21jAJUqyNy6bIrJ6CoFI9m3mPaF0oXFifTsP9jydq3ULlWvwR1nPSjZqLLCEzXNco?purpose=inline)
 
-[forum.gitlab.com](https://forum.gitlab.com/t/make-prive-repo-public/17965?utm_source=chatgpt.com)
+[forum.gitlab.com](https://forum.gitlab.com/t/make-prive-repo-public/17965)
 
-### **Private**
+### Private
 
 Choose Private if:
 
@@ -1243,13 +1243,13 @@ Choose Private if:
 - You are developing proprietary software.
 - You only want invited members to access the project.
 
-### **Internal**
+### Internal
 
 Internal visibility is mainly relevant to GitLab Self-Managed environments where authenticated users can access internal projects.
 
 On GitLab.com, Internal visibility is not available in the same way as on Self-Managed installations.
 
-### **Public**
+### Public
 
 Choose Public if you want anyone to view and clone your repository.
 
@@ -1257,7 +1257,7 @@ Choose Public if you want anyone to view and clone your repository.
 
 Important: Making a project private does not automatically protect credentials that have already been committed into its Git history.
 
-## **3.5 Step 5 — Clone the project to your computer**
+## 3.5 Step 5 — Clone the project to your computer
 
 Cloning means downloading a Git repository and its history to your local computer.
 
@@ -1268,7 +1268,7 @@ Open your project in GitLab.
 
 [Erste Schritte mit GitLab: So importierst du deine Projekte in GitLab](https://images.openai.com/static-rsc-4/_2p4ISshKAW7aFRMU7kHV2ese0NB4rYuiCgzU_Q0t2M33JcVg_DKcdbyHBtSng8KpMlHDJAczr5TT9Y4YarNp1gfYgisejCDD4ynZIV1ZT5jatW_wEw8x6Wn2-Xwu-VRR58u6Rl3mjAUNWcmRvFnha8voQ_PrMppZPEuhcPaHS8?purpose=inline)
 
-[about.gitlab.com](https://about.gitlab.com/de-de/blog/getting-started-with-gitlab-how-to-import-your-projects-to-gitlab/?utm_source=chatgpt.com)
+[about.gitlab.com](https://about.gitlab.com/de-de/blog/getting-started-with-gitlab-how-to-import-your-projects-to-gitlab/)
 
 Example HTTPS URL:
 
@@ -1323,7 +1323,7 @@ nothing to commit, working tree clean
 
 The exact output depends on whether you initialized the project with a README.
 
-## **3.6 Step 6 — Add files, commit, and push your first change**
+## 3.6 Step 6 — Add files, commit, and push your first change
 
 Create a README file if you have not already created one.
 
@@ -1379,7 +1379,7 @@ git push -u origin main
 
 Expected output will indicate that your commit was uploaded and the remote branch was updated.
 
-### **If the push fails**
+### If the push fails
 
 | Error                         | Possible reason                    | Solution                          |
 | ----------------------------- | ---------------------------------- | --------------------------------- |
@@ -1399,17 +1399,17 @@ git push -u origin main
 
 If Git reports conflicts, resolve them before continuing.
 
-## **3.7 Step 7 — Check your project in GitLab**
+## 3.7 Step 7 — Check your project in GitLab
 
 Return to your project:
 
-[https://gitlab.com/esp32-learning/esp32-learning-lab](https://gitlab.com/esp32-learning/esp32-learning-lab?utm_source=chatgpt.com)
+[https://gitlab.com/esp32-learning/esp32-learning-lab](https://gitlab.com/esp32-learning/esp32-learning-lab)
 
 You should now see:
 
 [Introduction to GitLab: Adding Files to a Project Repository](https://images.openai.com/static-rsc-4/0LYh_yCAXGsuV8PtDzSjrMe_OecPMWHzlQbbd3ljnYiWL7T3R7yrBkS18WUJty0qT1E1HPB6bhrTM_lV_7nbVhLZJyUItFT20J4OwV0Rg4O89GhrMhaSWLGoDn9--wagRm25o1xAVh4kg8MYI-wXykO6v_AyJrFLGMhPZt_bPFc?purpose=inline)
 
-[carpentries-incubator.github.io](https://carpentries-incubator.github.io/gitlab-novice/03-fill-repository.html?utm_source=chatgpt.com)
+[carpentries-incubator.github.io](https://carpentries-incubator.github.io/gitlab-novice/03-fill-repository.html)
 
 1. Your project name.
 2. Your README content.
@@ -1428,13 +1428,13 @@ To verify your changes:
 
 Congratulations! Your first local Git repository is now connected to GitLab.
 
-## **3.8 Step 8 — Create your first branch and Merge Request**
+## 3.8 Step 8 — Create your first branch and Merge Request
 
 Now we will practise the standard development workflow.
 
 The objective is to add a new file without directly modifying `main`.
 
-### **A. Create a branch**
+### A. Create a branch
 
 In PowerShell:
 
@@ -1448,7 +1448,7 @@ Expected output:
 Switched to a new branch 'feature/add-project-info'
 ```
 
-### **B. Create a new file**
+### B. Create a new file
 
 ```
 @"
@@ -1459,7 +1459,7 @@ to manage ESP32 software development.
 "@ | Set-Content PROJECT_INFO.md
 ```
 
-### **C. Commit the change**
+### C. Commit the change
 
 ```
 git add PROJECT_INFO.md
@@ -1467,7 +1467,7 @@ git add PROJECT_INFO.md
 git commit -m "Add project information"
 ```
 
-### **D. Push the branch**
+### D. Push the branch
 
 ```
 git push -u origin feature/add-project-info
@@ -1475,11 +1475,11 @@ git push -u origin feature/add-project-info
 
 Your branch is now available in GitLab.
 
-### **E. Create a Merge Request**
+### E. Create a Merge Request
 
 [Reviewing and combine versions (merge/pull request, merging) — TeachBooks Manual](https://images.openai.com/static-rsc-4/J8HYcFfS300KIKqlL7XOqTeRSWBxqiic5Z2orpin0HNgBmEXYVji39b6BA9BNORqGHL7wgJ5DfXME6nYbQmJi1fG6wx6TA9yEdYNsSU8KC6p59DeZ-ERu2pz86z7T0fkTr5gUKUzS1WgPnOcyS_NjfjjjnP6zkIOFQKA64HWgd4?purpose=inline)
 
-[teachbooks.io](https://teachbooks.io/manual/workflows/merge_request.html?utm_source=chatgpt.com)
+[teachbooks.io](https://teachbooks.io/manual/workflows/merge_request.html)
 
 1. Open your GitLab project.
 2. Select **Code → Merge requests**.
@@ -1506,7 +1506,7 @@ Add project information
 8. Enter a description.
 9. Select **Create merge request**.
 
-### **F. Review and merge**
+### F. Review and merge
 
 GitLab displays the proposed changes.
 
@@ -1519,7 +1519,7 @@ If you are the only developer, you can review your own work for this beginner ex
 
 For a team, another developer should review the changes.
 
-### **G. Confirm the result**
+### G. Confirm the result
 
 After merging:
 
@@ -1536,13 +1536,13 @@ Get-ChildItem
 
 The file `PROJECT_INFO.md` should exist on your main branch.
 
-## **3.9 Setup checklist**
+## 3.9 Setup checklist
 
 Use this checklist to confirm that your GitLab environment is ready.
 
 **GitLab setup progress**
 
-# **0%**
+# 0%
 
 Create a GitLab account
 
@@ -1570,7 +1570,7 @@ Review and merge the changes
 
 Reset checklist
 
-# **PART 4 — HANDS-ON TUTORIALS: BUILD FOUR GITLAB PROJECTS**
+# PART 4 — HANDS-ON TUTORIALS: BUILD FOUR GITLAB PROJECTS
 
 This section contains four practical exercises.
 
@@ -1589,11 +1589,11 @@ The tutorials build on each other:
 
    Publish a website using GitLab Pages.
 
-## **Tutorial A — Create a project from scratch and push existing code**
+## Tutorial A — Create a project from scratch and push existing code
 
 **Objective:** Create a new GitLab project, upload existing local source code, and configure a README.
 
-### **Step A1 — Create a project**
+### Step A1 — Create a project
 
 1. Sign in to GitLab.
 2. Select **New project**.
@@ -1610,7 +1610,7 @@ Initialize repository with README: No
 
 We leave the README option unchecked because we will create it locally.
 
-### **Step A2 — Create your local project**
+### Step A2 — Create your local project
 
 Open Windows PowerShell:
 
@@ -1684,7 +1684,7 @@ This project demonstrates Git repository management.
 '@ | Set-Content README.md
 ```
 
-### **Step A3 — Test the Python program**
+### Step A3 — Test the Python program
 
 Run:
 
@@ -1698,9 +1698,9 @@ Expected output:
 Hello from GitLab!
 ```
 
-If `python` is not recognised, install Python from [python.org](https://www.python.org/downloads/?utm_source=chatgpt.com) and ensure Python is added to PATH.
+If `python` is not recognised, install Python from [python.org](https://www.python.org/downloads/) and ensure Python is added to PATH.
 
-### **Step A4 — Initialise Git**
+### Step A4 — Initialise Git
 
 ```
 git init
@@ -1724,7 +1724,7 @@ Create your first commit:
 git commit -m "Initial project creation"
 ```
 
-### **Step A5 — Connect to GitLab**
+### Step A5 — Connect to GitLab
 
 Copy the HTTPS URL from your GitLab project.
 
@@ -1748,7 +1748,7 @@ git push -u origin main
 
 If you use SSH, replace the HTTPS URL with the SSH URL.
 
-### **Step A6 — Verify in GitLab**
+### Step A6 — Verify in GitLab
 
 Open your project.
 
@@ -1758,7 +1758,7 @@ You should see:
 
 [Formation Git/GitLab – Session 2 : GitLab et dépôt distant](https://images.openai.com/static-rsc-4/ocicIN1eES5yFLti9Aa3e27Z4JdoRLHJzw07QuhuhBPBW5jWP1rCOcHeHXNrSo-3o1lrCCglm5pNGm6UVhhtp0kFT8YAUUk4PiZ5beIKg5IzLitwSYm5OEsZE8hmYDG8uoLiB9b8rgNja0aeABDxhBdDYNoYJY2C-8-IDy7ZqMY?purpose=inline)
 
-[formation-git-gitlab-nab.pages-forge.inrae.fr](https://formation-git-gitlab-nab.pages-forge.inrae.fr/support-de-formation-git-gitlab/archive/02_gitlab_depot_distant/?utm_source=chatgpt.com)
+[formation-git-gitlab-nab.pages-forge.inrae.fr](https://formation-git-gitlab-nab.pages-forge.inrae.fr/support-de-formation-git-gitlab/archive/02_gitlab_depot_distant/)
 
 ```
 GitLab-Tutorial-A/
@@ -1777,13 +1777,13 @@ Tutorial A complete
 
 You have created a GitLab project and uploaded existing local code.
 
-## **Tutorial B — Work like a team using Issues, Branches, and Merge Requests**
+## Tutorial B — Work like a team using Issues, Branches, and Merge Requests
 
 **Objective:** Simulate a team development workflow.
 
 We will create an Issue requesting a new function, develop the feature on a branch, and merge the changes into `main`.
 
-### **Step B1 — Create an Issue**
+### Step B1 — Create an Issue
 
 Open your `GitLab-Tutorial-A` project.
 
@@ -1805,7 +1805,7 @@ Acceptance criteria:
 - Display the development environment.
 ```
 
-5\. Select **Create issue**.
+5. Select **Create issue**.
 
 You should see a new Issue, for example:
 
@@ -1819,7 +1819,7 @@ Status: Open
 
 The number may differ.
 
-### **Step B2 — Create a branch from the Issue**
+### Step B2 — Create a branch from the Issue
 
 This is a useful GitLab feature because it connects the development branch directly to the Issue.
 
@@ -1833,15 +1833,15 @@ This is a useful GitLab feature because it connects the development branch direc
 1-add-version-information
 ```
 
-6\. Select **Create branch**.
+6. Select **Create branch**.
 
 The exact branch name may be generated using your Issue number and title.
 
 GitLab links the branch to the Issue.
 
-Official instructions: [Create a branch from an Issue](https://docs.gitlab.com/user/project/repository/branches/?utm_source=chatgpt.com).
+Official instructions: [Create a branch from an Issue](https://docs.gitlab.com/user/project/repository/branches/).
 
-### **Step B3 — Switch to the new branch locally**
+### Step B3 — Switch to the new branch locally
 
 In PowerShell:
 
@@ -1874,7 +1874,7 @@ Expected output:
   main
 ```
 
-### **Step B4 — Modify the Python program**
+### Step B4 — Modify the Python program
 
 Open `main.py` and replace its content with:
 
@@ -1897,7 +1897,7 @@ Version: 1.1.0
 Environment: Development
 ```
 
-### **Step B5 — Commit and push**
+### Step B5 — Commit and push
 
 ```
 git add main.py
@@ -1909,7 +1909,7 @@ git push origin 1-add-version-information
 
 The changes are now stored in your GitLab feature branch.
 
-### **Step B6 — Open a Merge Request**
+### Step B6 — Open a Merge Request
 
 1. Open the project.
 2. Select **Code → Merge requests**.
@@ -1938,15 +1938,15 @@ for the application.
 Closes #1
 ```
 
-7\. Select **Create merge request**.
+7. Select **Create merge request**.
 
 The `Closes #1` keyword instructs GitLab to close the associated Issue when the Merge Request is merged into the default branch, provided automatic issue closing is enabled and the project configuration supports it.
 
-### **Step B7 — Review the changes**
+### Step B7 — Review the changes
 
 [Speed up code reviews: Let AI handle the feedback implementation](https://images.openai.com/static-rsc-4/ZtlDGAjYhoNEZ2OZw-fXtJ5PVMBFJXS6jy3tQQQF5uXxlprHaqs1rSrZMt03qUDh9jWNHrq-N4uAEy7Z7SQxhRzbxR9YbGAWiJ2U45PkU1sf0mwi5rjDPSdmfggpaw2CNW9loSB1Joh-d6dPouOhIeIHhewekJb-EPYGq902vWs?purpose=inline)
 
-[about.gitlab.com](https://about.gitlab.com/blog/speed-up-code-reviews-let-ai-handle-the-feedback-implementation/?utm_source=chatgpt.com)
+[about.gitlab.com](https://about.gitlab.com/blog/speed-up-code-reviews-let-ai-handle-the-feedback-implementation/)
 
 Select the **Changes** tab.
 
@@ -1968,13 +1968,13 @@ For a real team:
 
 For this Free-tier exercise, approvals are optional and do not enforce a merge restriction.
 
-### **Step B8 — Merge**
+### Step B8 — Merge
 
 Select **Merge** when the Merge Request is ready.
 
 After successful merging, the feature is incorporated into `main`.
 
-### **Step B9 — Update your local main branch**
+### Step B9 — Update your local main branch
 
 In PowerShell:
 
@@ -2021,7 +2021,7 @@ Merge into main
 Issue Closed
 ```
 
-## **Tutorial C — Build your first CI/CD pipeline**
+## Tutorial C — Build your first CI/CD pipeline
 
 Important concept
 
@@ -2031,11 +2031,11 @@ We will use a simple JavaScript project running on Node.js.
 
 You do not need to install Node.js on your computer to run the GitLab pipeline. GitLab's hosted runner will use a Node.js container image.
 
-### **Step C1 — Understand the CI/CD workflow**
+### Step C1 — Understand the CI/CD workflow
 
 [CI/CD pipelines | GitLab Docs](https://images.openai.com/static-rsc-4/kxyNiG8QIOyE0B6Z8WizHPewG6P7Vla2LVoddAv8WytiLZTEKXNK3cEw8tq_qjovgfEkv2GDCZnR4OoOVJgRk2b8y0wW_pwpCpLYBwyd4FmsOr4r3PmC1JYnw0v7mQ0Zt741MSjnqB_3hZrkf6rse4oL8F0MBAUbhgNNYT3xcK8?purpose=inline)
 
-[docs.gitlab.com](https://docs.gitlab.com/ci/pipelines/?utm_source=chatgpt.com)
+[docs.gitlab.com](https://docs.gitlab.com/ci/pipelines/)
 
 Our pipeline will have two stages:
 
@@ -2070,7 +2070,7 @@ Developer pushes code
    Pipeline Passed
 ```
 
-### **Step C2 — Create a new GitLab project**
+### Step C2 — Create a new GitLab project
 
 Create a blank project:
 
@@ -2090,7 +2090,7 @@ git clone https://gitlab.com/your-username/gitlab-tutorial-ci.git
 cd gitlab-tutorial-ci
 ```
 
-### **Step C3 — Create the project structure**
+### Step C3 — Create the project structure
 
 Our folder structure:
 
@@ -2115,7 +2115,7 @@ New-Item -ItemType Directory -Path src
 New-Item -ItemType Directory -Path test
 ```
 
-### **Step C4 — Create the JavaScript application**
+### Step C4 — Create the JavaScript application
 
 Create `src/calculator.js`:
 
@@ -2134,7 +2134,7 @@ module.exports = {
 };
 ```
 
-### **Step C5 — Create the test program**
+### Step C5 — Create the test program
 
 Create `test/calculator.test.js`:
 
@@ -2152,7 +2152,7 @@ console.log("All tests passed!");
 
 This test checks whether the calculator functions return the expected results.
 
-### **Step C6 — Create package.json**
+### Step C6 — Create package.json
 
 Create `package.json`:
 
@@ -2174,7 +2174,7 @@ The `test` command runs the test program.
 
 We are using Node.js built-in functionality, so no additional npm packages are required.
 
-### **Step C7 — Test locally (optional)**
+### Step C7 — Test locally (optional)
 
 If Node.js is installed locally, check its version:
 
@@ -2200,7 +2200,7 @@ Expected test output:
 All tests passed!
 ```
 
-### **Step C8 — Create .gitlab-ci.yml**
+### Step C8 — Create .gitlab-ci.yml
 
 This is the most important file in this tutorial.
 
@@ -2278,7 +2278,7 @@ Defines the second job.
 
 It runs only after the lint stage succeeds.
 
-### **Step C9 — Commit and push**
+### Step C9 — Commit and push
 
 In PowerShell:
 
@@ -2292,11 +2292,11 @@ git push -u origin main
 
 The push automatically triggers a pipeline.
 
-### **Step C10 — View the pipeline in GitLab**
+### Step C10 — View the pipeline in GitLab
 
 [GitLab CI/CD Tutorial: From Basic To Advanced  | Octopus Deploy](https://images.openai.com/static-rsc-4/LQxHSSzi_R99vyu3Pttyg9QuB03i55urJkxYc-sJX0q2cHM2KRqKuieTev-tE6fRYlniowS5W3y_YtVa8FSBNs4FBDlWWRClOx4RG6b6c_t3OWq1ZN4lY6t_1NDOmBQhY66pBLKIjkd66FtWf_SHdGTPSLDhYo0qBtkaE6kyips?purpose=inline)
 
-[octopus.com](https://octopus.com/devops/gitlab/gitlab-cicd-tutorial/?utm_source=chatgpt.com)
+[octopus.com](https://octopus.com/devops/gitlab/gitlab-cicd-tutorial/)
 
 1. Open your project.
 2. Select **Build → Pipelines**.
@@ -2333,7 +2333,7 @@ Job succeeded.
 
 Pipeline passed
 
-### **Step C11 — Experiment: Make the pipeline fail**
+### Step C11 — Experiment: Make the pipeline fail
 
 A good way to understand CI/CD is to deliberately introduce an error.
 
@@ -2381,7 +2381,7 @@ git push
 
 The pipeline should pass.
 
-### **Step C12 — Understand additional CI/CD features**
+### Step C12 — Understand additional CI/CD features
 
 Once the basic pipeline works, explore these capabilities:
 
@@ -2419,9 +2419,9 @@ Publish Firmware Package
 
 This is a practical starting point for automating embedded software development.
 
-Official reference: [GitLab CI/CD YAML syntax](https://docs.gitlab.com/ci/yaml/?utm_source=chatgpt.com).
+Official reference: [GitLab CI/CD YAML syntax](https://docs.gitlab.com/ci/yaml/).
 
-## **Tutorial D — Deploy a static website using GitLab Pages**
+## Tutorial D — Deploy a static website using GitLab Pages
 
 **Objective:** Publish a simple HTML website on the internet using GitLab Pages.
 
@@ -2444,7 +2444,7 @@ For example, you could publish:
 - A project portfolio.
 - A static educational website.
 
-### **Step D1 — Create a new project**
+### Step D1 — Create a new project
 
 Create a blank GitLab project:
 
@@ -2464,7 +2464,7 @@ git clone https://gitlab.com/your-username/gitlab-tutorial-pages.git
 cd gitlab-tutorial-pages
 ```
 
-### **Step D2 — Create the website structure**
+### Step D2 — Create the website structure
 
 We will create a simple HTML website.
 
@@ -2478,7 +2478,7 @@ gitlab-tutorial-pages/
 
 Notice that we do not need to create a `public` folder locally. GitLab's CI/CD job will create it.
 
-### **Step D3 — Create index.html**
+### Step D3 — Create index.html
 
 Create `index.html`:
 
@@ -2523,7 +2523,7 @@ Create `index.html`:
 </html>
 ```
 
-### **Step D4 — Create style.css**
+### Step D4 — Create style.css
 
 ```
 body {
@@ -2554,7 +2554,7 @@ footer {
 }
 ```
 
-### **Step D5 — Create the GitLab Pages pipeline**
+### Step D5 — Create the GitLab Pages pipeline
 
 Create `.gitlab-ci.yml`:
 
@@ -2589,9 +2589,9 @@ GitLab Pages publishes the website files from the `public` directory.
 
 This configuration uses the Pages job syntax documented by GitLab. In GitLab 17.10 and later, the default Pages publish directory is automatically included in job artifacts when not explicitly overridden.
 
-Official reference: [Create a Pages website from scratch](https://docs.gitlab.com/user/project/pages/getting_started/pages_from_scratch/?utm_source=chatgpt.com).
+Official reference: [Create a Pages website from scratch](https://docs.gitlab.com/user/project/pages/getting_started/pages_from_scratch/).
 
-### **Step D6 — Commit and push the website**
+### Step D6 — Commit and push the website
 
 In PowerShell:
 
@@ -2605,7 +2605,7 @@ git push -u origin main
 
 The push triggers the deployment pipeline.
 
-### **Step D7 — Check the pipeline**
+### Step D7 — Check the pipeline
 
 1. Open your GitLab project.
 2. Select **Build → Pipelines**.
@@ -2625,11 +2625,11 @@ Job: create-pages
 Status: Passed
 ```
 
-### **Step D8 — Find your website URL**
+### Step D8 — Find your website URL
 
 [【Gitlab CI/CD】005 Pages 部署静态网站](https://images.openai.com/static-rsc-4/nBl744xsNhAkyi9a1gDZbSNBF5A8ZuU6bRO1kvonOnk-e7NfN_hOlXNBGTmnOBlhokl8ISF7bC3nYsIaNg-YXopzZ3GucJqv64pO_Jdjg3lVJLRKlJxVC7YVeKpzW2zNFdytwpKmORmI-lGv96L2kDnrdo9RzZEbc1AEHnbaxqA?purpose=inline)
 
-[blog.dkvirus.com](https://blog.dkvirus.com/gitlab/gitlab_pages/?utm_source=chatgpt.com)
+[blog.dkvirus.com](https://blog.dkvirus.com/gitlab/gitlab_pages/)
 
 1. Open the project.
 2. Select **Deploy → Pages**.
@@ -2646,11 +2646,11 @@ You should see:
 
 [Creating a simple website with HTML, CSS, and JavaScript for complete beginners](https://images.openai.com/static-rsc-4/RMhTP0fssYEs94WNCp3CdqgamxkLuAaEv14WZJx_YqhU5Kzwdwd3QmwuTV_u8J8jnDB7DXM6ZLibOl26zYxze8P4SQYWRojQgvuSlYA6oIVUKe0kdiWHOj9-R8hCqCKMF-qq3FGDZA2_YkYHCFVjJOySfYIOkOodb3E2x4DBI5A?purpose=inline)
 
-[iq.opengenus.org](https://iq.opengenus.org/creating-a-simple-website-with-html-css-and-javascript/?utm_source=chatgpt.com)
+[iq.opengenus.org](https://iq.opengenus.org/creating-a-simple-website-with-html-css-and-javascript/)
 
 Website deployed
 
-### **Step D9 — Make a change and redeploy**
+### Step D9 — Make a change and redeploy
 
 Modify `index.html`.
 
@@ -2680,7 +2680,7 @@ After the deployment succeeds, refresh your website.
 
 You should see your updated content.
 
-### **Step D10 — Important GitLab Pages considerations**
+### Step D10 — Important GitLab Pages considerations
 
 - GitLab Pages supports static websites.
 - Your Pages job needs a successful CI/CD deployment.
@@ -2692,13 +2692,13 @@ You should see your updated content.
 
 For more information:
 
-- [GitLab Pages introduction](https://docs.gitlab.com/user/project/pages/?utm_source=chatgpt.com)
-- [Pages settings](https://docs.gitlab.com/user/project/pages/introduction/?utm_source=chatgpt.com)
-- [Pages troubleshooting](https://docs.gitlab.com/user/project/pages/?utm_source=chatgpt.com)
+- [GitLab Pages introduction](https://docs.gitlab.com/user/project/pages/)
+- [Pages settings](https://docs.gitlab.com/user/project/pages/introduction/)
+- [Pages troubleshooting](https://docs.gitlab.com/user/project/pages/)
 
-# **PART 5 — NEXT STEPS AND TROUBLESHOOTING**
+# PART 5 — NEXT STEPS AND TROUBLESHOOTING
 
-## **5.1 Common GitLab errors and how to fix them**
+## 5.1 Common GitLab errors and how to fix them
 
 The following table covers common problems you may encounter during the four tutorials.
 
@@ -2711,7 +2711,7 @@ The following table covers common problems you may encounter during the four tut
 | Cannot push to protected branch | Your role or branch rules do not permit direct pushes                      | Create a feature branch and submit a Merge Request                                                      |
 | GitLab Pages 404                | Incorrect output directory, missing `index.html`, or incomplete deployment | Check the Pages job, confirm the `public` directory and successful deployment, then check the Pages URL |
 
-### **Troubleshooting 1 — SSH permission denied**
+### Troubleshooting 1 — SSH permission denied
 
 Check that your SSH key is loaded:
 
@@ -2738,7 +2738,7 @@ If the connection still fails:
 - Check whether your network blocks SSH connections.
 - Try HTTPS as an alternative.
 
-### **Troubleshooting 2 — Pipeline failed**
+### Troubleshooting 2 — Pipeline failed
 
 Open:
 
@@ -2765,9 +2765,9 @@ GitLab provides a CI Lint tool to validate pipeline configuration.
 
 Open:
 
-[GitLab CI Lint](https://docs.gitlab.com/ci/yaml/lint/?utm_source=chatgpt.com).
+[GitLab CI Lint](https://docs.gitlab.com/ci/yaml/lint/).
 
-### **Troubleshooting 3 — Merge conflict**
+### Troubleshooting 3 — Merge conflict
 
 First, switch to your feature branch:
 
@@ -2823,7 +2823,7 @@ git push
 
 Return to the Merge Request and check whether the conflict has been resolved.
 
-### **Troubleshooting 4 — Cannot push to a protected branch**
+### Troubleshooting 4 — Cannot push to a protected branch
 
 For example:
 
@@ -2855,7 +2855,7 @@ If you are the project Maintainer, you can review the branch protection settings
 
 **Settings → Repository → Branch rules.**
 
-### **Troubleshooting 5 — GitLab Pages returns 404**
+### Troubleshooting 5 — GitLab Pages returns 404
 
 Check the following in order:
 
@@ -2877,9 +2877,9 @@ public/
 
 If the files are missing, inspect the `create-pages` job log.
 
-Official reference: [GitLab Pages troubleshooting](https://docs.gitlab.com/user/project/pages/?utm_source=chatgpt.com).
+Official reference: [GitLab Pages troubleshooting](https://docs.gitlab.com/user/project/pages/).
 
-## **5.2 A 30-minute GitLab practice plan**
+## 5.2 A 30-minute GitLab practice plan
 
 The following exercise is designed to help a beginner understand the complete GitLab workflow in approximately 30 minutes.
 
@@ -2887,7 +2887,7 @@ The following exercise is designed to help a beginner understand the complete Gi
 
 Beginner
 
-# **30 min**
+# 30 min
 
 One small project, one Issue, one Merge Request, and one pipeline.
 
@@ -2932,7 +2932,7 @@ At the end of the 30 minutes, you should understand the most important GitLab co
 
 You do not need to master every GitLab feature immediately. Focus on understanding this workflow first.
 
-## **5.3 Recommended next steps**
+## 5.3 Recommended next steps
 
 After completing the four tutorials, I recommend exploring these areas in the following order.
 
@@ -2949,7 +2949,7 @@ After completing the four tutorials, I recommend exploring these areas in the fo
 | 9        | Pipeline schedules    | Automate nightly builds and testing        |
 | 10       | GitLab API            | Automate project and repository operations |
 
-### **A practical ESP32 development example**
+### A practical ESP32 development example
 
 Once you understand the basics, you can use GitLab to manage an ESP32 development project.
 
@@ -2957,7 +2957,7 @@ For example:
 
 [Hello👋, welcome to ESP-Claw! | ESP-Claw Docs](https://images.openai.com/static-rsc-4/W-hAtMaBDYLonVQLeE1NdMsvDf6l7tUUt4HWhdBbAhc8IgJqhhBcf_LjhQ9Cv1oP3jXx4KPgLhm3I65l5OfnMlc4JuweGqPoFysYYbXT1a_4Iwwrmpj43JjgQ4oZ1hrQ80S8su4oF_gYNdSYulaWrG97Q90St6AIY4zcli-k3xM?purpose=inline)
 
-[esp-claw.com](https://esp-claw.com/en/tutorial/?utm_source=chatgpt.com)
+[esp-claw.com](https://esp-claw.com/en/tutorial/)
 
 A possible project structure:
 
@@ -3023,66 +3023,66 @@ This is a useful direction for a more advanced embedded development workflow.
 
 Note that GitLab's generic pipeline example does not automatically compile Arduino or ESP-IDF firmware. You would need to configure the appropriate toolchain, build environment, and hardware-independent tests.
 
-## **5.4 Official GitLab documentation — Recommended reading**
+## 5.4 Official GitLab documentation — Recommended reading
 
 The following links take you directly to the relevant official GitLab documentation pages. They are organised by subject so you can continue learning without having to search through the entire documentation website.
 
-### **A. Getting started and project management**
+### A. Getting started and project management
 
 | Topic                      | Official documentation                                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| GitLab user guide          | [Getting started with GitLab](https://docs.gitlab.com/user/?utm_source=chatgpt.com)                           |
-| Create and manage projects | [Projects](https://docs.gitlab.com/user/project/?utm_source=chatgpt.com)                                      |
-| Groups and namespaces      | [Namespaces](https://docs.gitlab.com/user/namespace/?utm_source=chatgpt.com)                                  |
-| SSH authentication         | [SSH Keys](https://docs.gitlab.com/user/ssh/?utm_source=chatgpt.com)                                          |
-| Personal Access Tokens     | [Personal Access Tokens](https://docs.gitlab.com/user/profile/personal_access_tokens/?utm_source=chatgpt.com) |
+| GitLab user guide          | [Getting started with GitLab](https://docs.gitlab.com/user/)                           |
+| Create and manage projects | [Projects](https://docs.gitlab.com/user/project/)                                      |
+| Groups and namespaces      | [Namespaces](https://docs.gitlab.com/user/namespace/)                                  |
+| SSH authentication         | [SSH Keys](https://docs.gitlab.com/user/ssh/)                                          |
+| Personal Access Tokens     | [Personal Access Tokens](https://docs.gitlab.com/user/profile/personal_access_tokens/) |
 
-### **B. Planning and collaboration**
+### B. Planning and collaboration
 
 | Topic                 | Official documentation                                                                                           |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Issues and work items | [Work Items](https://docs.gitlab.com/user/work_items/?utm_source=chatgpt.com)                                    |
-| Issue Boards          | [Issue Boards](https://docs.gitlab.com/user/project/issue_board/?utm_source=chatgpt.com)                         |
-| Merge Requests        | [Merge Requests](https://docs.gitlab.com/user/project/merge_requests/?utm_source=chatgpt.com)                    |
-| Branch management     | [Branches](https://docs.gitlab.com/user/project/repository/branches/?utm_source=chatgpt.com)                     |
-| Protected branches    | [Protected Branches](https://docs.gitlab.com/user/project/repository/branches/protected/?utm_source=chatgpt.com) |
-| Code review approvals | [Merge Request Approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/?utm_source=chatgpt.com) |
+| Issues and work items | [Work Items](https://docs.gitlab.com/user/work_items/)                                    |
+| Issue Boards          | [Issue Boards](https://docs.gitlab.com/user/project/issue_board/)                         |
+| Merge Requests        | [Merge Requests](https://docs.gitlab.com/user/project/merge_requests/)                    |
+| Branch management     | [Branches](https://docs.gitlab.com/user/project/repository/branches/)                     |
+| Protected branches    | [Protected Branches](https://docs.gitlab.com/user/project/repository/branches/protected/) |
+| Code review approvals | [Merge Request Approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/) |
 
-### **C. CI/CD and automation**
+### C. CI/CD and automation
 
 | Topic                | Official documentation                                                                       |
 | -------------------- | -------------------------------------------------------------------------------------------- |
-| CI/CD introduction   | [CI/CD](https://docs.gitlab.com/ci/?utm_source=chatgpt.com)                                  |
-| YAML configuration   | [CI/CD YAML Reference](https://docs.gitlab.com/ci/yaml/?utm_source=chatgpt.com)              |
-| Pipeline management  | [Pipelines](https://docs.gitlab.com/ci/pipelines/?utm_source=chatgpt.com)                    |
-| Runner configuration | [Runners](https://docs.gitlab.com/ci/runners/?utm_source=chatgpt.com)                        |
-| CI/CD variables      | [Variables](https://docs.gitlab.com/ci/variables/?utm_source=chatgpt.com)                    |
-| Pipeline schedules   | [Pipeline Schedules](https://docs.gitlab.com/ci/pipelines/schedules/?utm_source=chatgpt.com) |
-| Job artifacts        | [Job Artifacts](https://docs.gitlab.com/ci/jobs/job_artifacts/?utm_source=chatgpt.com)       |
-| CI Lint              | [CI/CD YAML Validation](https://docs.gitlab.com/ci/yaml/lint/?utm_source=chatgpt.com)        |
+| CI/CD introduction   | [CI/CD](https://docs.gitlab.com/ci/)                                  |
+| YAML configuration   | [CI/CD YAML Reference](https://docs.gitlab.com/ci/yaml/)              |
+| Pipeline management  | [Pipelines](https://docs.gitlab.com/ci/pipelines/)                    |
+| Runner configuration | [Runners](https://docs.gitlab.com/ci/runners/)                        |
+| CI/CD variables      | [Variables](https://docs.gitlab.com/ci/variables/)                    |
+| Pipeline schedules   | [Pipeline Schedules](https://docs.gitlab.com/ci/pipelines/schedules/) |
+| Job artifacts        | [Job Artifacts](https://docs.gitlab.com/ci/jobs/job_artifacts/)       |
+| CI Lint              | [CI/CD YAML Validation](https://docs.gitlab.com/ci/yaml/lint/)        |
 
-### **D. Package management and deployment**
+### D. Package management and deployment
 
 | Topic              | Official documentation                                                                                                          |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Package Registry   | [Package Registry](https://docs.gitlab.com/user/packages/package_registry/?utm_source=chatgpt.com)                              |
-| Generic Packages   | [Generic Packages](https://docs.gitlab.com/user/packages/generic_packages/?utm_source=chatgpt.com)                              |
-| Container Registry | [Container Registry](https://docs.gitlab.com/user/packages/container_registry/?utm_source=chatgpt.com)                          |
-| GitLab Pages       | [GitLab Pages](https://docs.gitlab.com/user/project/pages/?utm_source=chatgpt.com)                                              |
-| Pages from scratch | [Create a Pages website](https://docs.gitlab.com/user/project/pages/getting_started/pages_from_scratch/?utm_source=chatgpt.com) |
+| Package Registry   | [Package Registry](https://docs.gitlab.com/user/packages/package_registry/)                              |
+| Generic Packages   | [Generic Packages](https://docs.gitlab.com/user/packages/generic_packages/)                              |
+| Container Registry | [Container Registry](https://docs.gitlab.com/user/packages/container_registry/)                          |
+| GitLab Pages       | [GitLab Pages](https://docs.gitlab.com/user/project/pages/)                                              |
+| Pages from scratch | [Create a Pages website](https://docs.gitlab.com/user/project/pages/getting_started/pages_from_scratch/) |
 
-### **E. Security and subscription information**
+### E. Security and subscription information
 
 | Topic                   | Official documentation                                                                                               |
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Application security    | [Application Security](https://docs.gitlab.com/user/application_security/?utm_source=chatgpt.com)                    |
-| Dependency scanning     | [Dependency Scanning](https://docs.gitlab.com/user/application_security/dependency_scanning/?utm_source=chatgpt.com) |
-| Secret detection        | [Secret Detection](https://docs.gitlab.com/user/application_security/secret_detection/?utm_source=chatgpt.com)       |
-| Code quality            | [Code Quality](https://docs.gitlab.com/ci/testing/code_quality/?utm_source=chatgpt.com)                              |
-| Free-tier limits        | [Free User and Group Limits](https://docs.gitlab.com/user/free_user_limit/?utm_source=chatgpt.com)                   |
-| Storage limits          | [Storage Usage](https://docs.gitlab.com/user/storage_usage_quotas/?utm_source=chatgpt.com)                           |
-| CI/CD compute limits    | [Compute Minutes](https://docs.gitlab.com/ci/pipelines/compute_minutes/?utm_source=chatgpt.com)                      |
-| Subscription comparison | [GitLab Pricing](https://about.gitlab.com/pricing/?utm_source=chatgpt.com)                                           |
+| Application security    | [Application Security](https://docs.gitlab.com/user/application_security/)                    |
+| Dependency scanning     | [Dependency Scanning](https://docs.gitlab.com/user/application_security/dependency_scanning/) |
+| Secret detection        | [Secret Detection](https://docs.gitlab.com/user/application_security/secret_detection/)       |
+| Code quality            | [Code Quality](https://docs.gitlab.com/ci/testing/code_quality/)                              |
+| Free-tier limits        | [Free User and Group Limits](https://docs.gitlab.com/user/free_user_limit/)                   |
+| Storage limits          | [Storage Usage](https://docs.gitlab.com/user/storage_usage_quotas/)                           |
+| CI/CD compute limits    | [Compute Minutes](https://docs.gitlab.com/ci/pipelines/compute_minutes/)                      |
+| Subscription comparison | [GitLab Pricing](https://about.gitlab.com/pricing/)                                           |
 
 The Free-tier limits and feature availability described in this guide are based on GitLab's published documentation. Check the relevant pages before making purchasing or team-size decisions, as GitLab can change subscription limits and entitlements.&#x20;
 
@@ -3092,9 +3092,9 @@ GitLab Docs+5
 
 
 
-## **5.5 Final summary — What you should know after completing this guide**
+## 5.5 Final summary — What you should know after completing this guide
 
-## **Your GitLab learning journey**
+## Your GitLab learning journey
 
 1. **GitLab fundamentals**
 
