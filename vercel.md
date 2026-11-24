@@ -685,11 +685,12 @@ Vercel's Git integration supports GitHub, GitLab, Bitbucket and Azure DevOps Pip
 
 ## **3.4 Import your first project from Git**
 
-[Next.jsã«ã¦ä½œæˆã—ãŸç”»é¢ã‚’Vercelã«ãƒ›ã‚¹ãƒ†ã‚£ãƒ³ã‚°ã•ã›ã¦ã¿ãŸ - ã‚µãƒ¼ãƒãƒ¼ãƒ¯ãƒ¼ã‚¯ã‚¹ã‚¨ãƒ³ã‚¸ãƒ‹ã‚¢ãƒ–ãƒ­ã‚°](https://images.openai.com/static-rsc-4/ILej5HfXO1HW7civKHkgS5M9pjCi0dm8JWd0RFQ--RL_4D_jCieJPo-ntlIvCkFYbORT2VVZb8kg-0p05C9WDxpIFli6a-WrUukc1_Lu6vuq4wghV5QD6DEeGcHHxYxQ9hEVYyLa3tThppvsotngpA69bch9dCsPikftOBEj5Ho?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/430640e0-561b-4d22-ac60-517a2a20d7e0" />
 
-[blog.serverworks.co.jp](https://blog.serverworks.co.jp/2024/07/03/152259?utm_source=chatgpt.com)
 
-1. In Vercel, click **Add New â†’ Project**.
+[blog.serverworks.co.jp](https://blog.serverworks.co.jp/2024/07/03/152259)
+
+1. In Vercel, click **Add New -> Project**.
 2. Locate your Git repository.
 3. Click **Import**.
 4. Enter a project name.
@@ -735,11 +736,11 @@ For example:
 
 ```
 my-project/
-â”œâ”€â”€ README.md
-â””â”€â”€ website/
-    â”œâ”€â”€ package.json
-    â”œâ”€â”€ index.html
-    â””â”€â”€ src/
+├── README.md
+└── website/
+    ├── package.json
+    ├── index.html
+    └── src/
 ```
 
 If your application is inside `website`, the Root Directory should be:
@@ -784,10 +785,9 @@ npm install
 
 Vercel automatically detects common framework settings and install commands.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Configuring a Build](https://vercel.com/docs/builds/configure-a-build?)
 
-vercel.com+1
-
+[Builds](https://vercel.com/docs/builds?)
 
 
 ## **3.6 Configure environment variables**
@@ -817,17 +817,16 @@ For a beginner, you can usually select Production, Preview and Development if th
 
 **If a variable is missing later:** Check the variable name, selected environment and whether you redeployed after adding it.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Environment variables](https://vercel.com/docs/environment-variables)
 
-vercel.com+1
-
-
+[Settings](https://vercel.com/academy/vercel-foundations/vercel-settings)
 
 ## **3.7 Click Deploy**
 
-[Product Tour](https://images.openai.com/static-rsc-4/2Tz0NSZ88Hs5PAy5-Wgp8G7o7VLjoB4Rvkqk082tb8md97oUP6Uz7AsfgJLHb_6MtBjIi01kdZZN22rv5Tb_g8iyc_sVRtXp-necIapUpZSEJ6k16D13o1lq1Ut1y0J_Hjn6FzcxcLz3bua7yMglLizDY82fXueFhTPspix_XPQ?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/101ffc5f-5f4a-4672-afd1-0f9e7eabec45" />
 
-[vercel.com](https://vercel.com/product-tour?utm_source=chatgpt.com)
+
+[vercel.com](https://vercel.com/product-tour?)
 
 Click **Deploy**.
 
@@ -915,9 +914,9 @@ Vercel detects the new commit and automatically starts another deployment.
 
 The Git integration supports automatic deployments for branch pushes and production branch updates.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Deploying Git Repositories with Vercel](https://vercel.com/docs/git)
 
-vercel.com+1
+[Builds](https://vercel.com/docs/builds)
 
 
 
@@ -937,7 +936,7 @@ Use this checklist to verify that everything is ready.
 - Images, CSS, JavaScript and navigation work.
 - A test Git commit triggers another deployment.
 
-# **Part 4 â€” Tutorials: Deploy four different projects**
+# **Part 4 -- Tutorials: Deploy four different projects**
 
 The four tutorials below cover different ways to publish a website.
 
@@ -948,11 +947,12 @@ The four tutorials below cover different ways to publish a website.
 | C        | Vite + React          | GitHub import     | Yes                         |
 | D        | Any supported project | Vercel CLI        | No Git integration required |
 
-## **Tutorial A â€” Deploy a Next.js application from GitHub**
+## **Tutorial A -- Deploy a Next.js application from GitHub**
 
-[Project Dashboard](https://images.openai.com/static-rsc-4/Qk8R46b8qpkTqD_ZTomcUlv6W97_DdWnflRNgUsAJHYCtkzCqM-tJDR1HESUIYaxkHeTQeHdzUsveQrl4eHhyM0-T1lrgueTnw9EeeT9f5hASE7NJtgtwd-joLOnu5Q_eN11Nar7J5AJ0uEp91Piqr6bs3KZuEewEbV2sN5VtwQ?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/586c8d4f-83f6-47ea-a49d-d83e434103cb" />
 
-[vercel.com](https://vercel.com/docs/projects/project-dashboard?utm_source=chatgpt.com)
+
+[vercel.com](https://vercel.com/docs/projects/project-dashboard?)
 
 Next.js is a React framework used to build websites and full-stack applications.
 
@@ -1015,18 +1015,18 @@ A typical generated project looks like this:
 
 ```
 my-nextjs-site/
-â”œâ”€â”€ app/
-â”‚   â”œâ”€â”€ favicon.ico
-â”‚   â”œâ”€â”€ globals.css
-â”‚   â”œâ”€â”€ layout.tsx
-â”‚   â””â”€â”€ page.tsx
-â”œâ”€â”€ public/
-â”œâ”€â”€ node_modules/
-â”œâ”€â”€ package.json
-â”œâ”€â”€ package-lock.json
-â”œâ”€â”€ next.config.ts
-â”œâ”€â”€ tsconfig.json
-â””â”€â”€ README.md
+├── app/
+│   ├── favicon.ico
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── public/
+├── node_modules/
+├── package.json
+├── package-lock.json
+├── next.config.ts
+├── tsconfig.json
+└── README.md
 ```
 
 Important files:
@@ -1042,7 +1042,7 @@ Important files:
 
 ### **Step 4: Create a GitHub repository**
 
-1. Open [GitHub: Create a new repository](https://github.com/new?utm_source=chatgpt.com).
+1. Open [GitHub: Create a new repository](https://github.com/new).
 2. Name it `my-nextjs-site`.
 3. Choose Public or Private as appropriate.
 4. Do not initialize it with an additional README if your local project already has one.
@@ -1067,7 +1067,7 @@ Your folder is now stored in GitHub.
 
 ### **Step 6: Import the project into Vercel**
 
-1. Open [Vercel New Project](https://vercel.com/new?utm_source=chatgpt.com).
+1. Open [Vercel New Project](https://vercel.com/new).
 2. Sign in with GitHub if necessary.
 3. Find `my-nextjs-site`.
 4. Click Import.
@@ -1101,23 +1101,21 @@ Tutorial A complete
 
 You have successfully deployed your first Next.js website.
 
-## **Tutorial B â€” Deploy a static HTML, CSS and JavaScript website without Git**
+## **Tutorial B -- Deploy a static HTML, CSS and JavaScript website without Git**
 
-[Introducing Vercel Drop - Vercel](https://images.openai.com/static-rsc-4/1sOXKvVp9tdCbOUKuROGOvQ1CvMK8Wpp67y7OzqWNsW0-M64DnxKVNo6HrlGatu5KazRLhyZkEJ1aqNtz5wvw9oNn9-fxZRhwCJUTngm0SNJ8QnPZo25Y7NiDCKoR5MZLn2yO653XEbm_DVZIyVA-M__wg0s14HQ2G6rqI7nb5k?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/c7d788be-7f44-4c74-b633-39f8775d29c8" />
 
-[vercel.com](https://vercel.com/changelog/vercel-drop?utm_source=chatgpt.com)
+[vercel.com](https://vercel.com/changelog/vercel-drop)
 
 Vercel Drop allows you to deploy a file, folder or ZIP archive by dragging it into your browser.
 
 This is ideal for simple websites that do not need Git integration.
 
-Official entry point: [Vercel Drop](https://vercel.com/drop?utm_source=chatgpt.com).&#x20;
+Official entry point: [Vercel Drop](https://vercel.com/drop).&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[4 ways to put a website on Vercel without Git or a CLI](https://vercel.com/i/deploy-to-vercel-without-git)
 
-Vercel+1
-
-
+[Introducing Vercel Drop](https://vercel.com/changelog/vercel-drop?)
 
 ### **Step 1: Create your website folder**
 
@@ -1131,9 +1129,9 @@ Inside it, create:
 
 ```
 my-static-site/
-â”œâ”€â”€ index.html
-â”œâ”€â”€ style.css
-â””â”€â”€ script.js
+├── index.html
+├── style.css
+└── script.js
 ```
 
 ### **Step 2: Create index.html**
@@ -1209,7 +1207,7 @@ Click the button. An alert should appear.
 
 ### **Step 6: Deploy using Vercel Drop**
 
-1. Open [Vercel Drop](https://vercel.com/drop?utm_source=chatgpt.com).
+1. Open [Vercel Drop](https://vercel.com/drop).
 2. Sign in to your Vercel account if prompted.
 3. Drag the complete `my-static-site` folder into the browser drop area.
 4. Select your Vercel team.
@@ -1220,11 +1218,9 @@ You can also upload a ZIP archive containing the website files.
 
 For a static site, Vercel can serve the files without a framework build step. Make sure `index.html` is at the root of the uploaded site folder.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Introducing Vercel Drop](https://vercel.com/changelog/vercel-drop?)
 
-Vercel+1
-
-
+[Builds](https://vercel.com/docs/builds)
 
 ### **Step 7: Verify**
 
@@ -1242,11 +1238,12 @@ Tutorial B complete
 
 **Important:** A Vercel Drop deployment does not automatically redeploy when you edit your local files. You must upload the updated project again, or connect the project to Git for automatic deployments.
 
-## **Tutorial C â€” Deploy a Vite + React application**
+## **Tutorial C -- Deploy a Vite + React application**
 
-[Building Feature-Rich React Apps with WebViewer and Vite | Apryse](https://images.openai.com/static-rsc-4/bOj9J57f5gHFwz6bc1F8n5s2z7i7dp8Q8dDwr9Z18kuRJ0gIvLCItpTRaQVaXbJqP_FlVJNLS9lNdTORjoJrfl1e5kNGUsReFxZoF7wuPMtcZle5KEqTkQB8IuP7SQocgR5aZ1Ps-ZHxqNcJ-LazSkG3_XKsZv_mvPuW7B0pSjo?purpose=inline)
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/4810f2ab-bd5c-425c-a16c-0491d83048d6" />
 
-[apryse.com](https://apryse.com/blog/pdf-editor-using-vite-and-react?utm_source=chatgpt.com)
+
+[apryse.com](https://apryse.com/blog/pdf-editor-using-vite-and-react?)
 
 Vite is a frontend development and build tool. React is a JavaScript library for building user interfaces.
 
@@ -1304,17 +1301,17 @@ Ctrl + C
 
 ```
 my-react-site/
-â”œâ”€â”€ public/
-â”œâ”€â”€ src/
-â”‚   â”œâ”€â”€ assets/
-â”‚   â”œâ”€â”€ App.css
-â”‚   â”œâ”€â”€ App.jsx
-â”‚   â”œâ”€â”€ index.css
-â”‚   â””â”€â”€ main.jsx
-â”œâ”€â”€ index.html
-â”œâ”€â”€ package.json
-â”œâ”€â”€ package-lock.json
-â””â”€â”€ vite.config.js
+├── public/
+├── src/
+│   ├── assets/
+│   ├── App.css
+│   ├── App.jsx
+│   ├── index.css
+│   └── main.jsx
+├── index.html
+├── package.json
+├── package-lock.json
+└── vite.config.js
 ```
 
 Important files:
@@ -1367,7 +1364,7 @@ Replace `YOUR_USERNAME` with your GitHub username.
 
 ### **Step 6: Import into Vercel**
 
-1. Open [Vercel New Project](https://vercel.com/new?utm_source=chatgpt.com).
+1. Open [Vercel New Project](https://vercel.com/new?).
 2. Import `my-react-site`.
 3. Check the build settings.
 
@@ -1383,13 +1380,14 @@ Expected settings:
 
 Vercel normally detects these settings automatically.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Configuring a Build](https://vercel.com/docs/builds/configure-a-build)
 
-vercel.com+1
+[Builds](https://vercel.com/docs/builds)
 
 
 
-4\. Click Deploy.
+
+4. Click Deploy.
 
 ### **Step 7: Verify the website**
 
@@ -1405,9 +1403,11 @@ Confirm that the React starter page appears.
 
 Tutorial C complete
 
-## **Tutorial D â€” Deploy using the Vercel CLI**
+## **Tutorial D -- Deploy using the Vercel CLI**
 
-[vercel.com](https://vercel.com/blog/advanced-project-settings?utm_source=chatgpt.com)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/440520bc-954a-430f-b83e-1ac8e6022977" />
+
+[vercel.com](https://vercel.com/blog/advanced-project-settings)
 
 The Vercel CLI is a command-line tool that lets you deploy and manage projects directly from your computer.
 
@@ -1417,7 +1417,7 @@ This is useful when you want to automate deployments or work without using the d
 
 Download and install Node.js from:
 
-[Node.js official website](https://nodejs.org/?utm_source=chatgpt.com).
+[Node.js official website](https://nodejs.org/).
 
 Verify the installation:
 
@@ -1444,7 +1444,7 @@ vercel --version
 
 You should see the installed Vercel CLI version.
 
-Official instructions: [Vercel CLI documentation](https://vercel.com/docs/cli?utm_source=chatgpt.com).
+Official instructions: [Vercel CLI documentation](https://vercel.com/docs/cli?).
 
 ### **Step 3: Log in**
 
@@ -1464,9 +1464,9 @@ For example:
 
 ```
 my-static-site/
-â”œâ”€â”€ index.html
-â”œâ”€â”€ style.css
-â””â”€â”€ script.js
+├── index.html
+├── style.css
+└── script.js
 ```
 
 Open a terminal in this directory.
@@ -1537,15 +1537,15 @@ The difference between these two commands is important:
 
 The CLI uses Preview by default unless you specify `--prod`.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[vercel deploy](https://vercel.com/docs/cli/deploy)
 
-vercel.com+2
+[Builds](https://vercel.com/docs/builds)
 
-
+[Deploying a project from the CLI](https://vercel.com/docs/projects/deploy-from-cli)
 
 Tutorial D complete
 
-# **Part 5 â€” Next steps and troubleshooting**
+# **Part 5 -- Next steps and troubleshooting**
 
 ## **5.1 Common deployment errors**
 
@@ -1578,11 +1578,11 @@ For a Vite application, check:
 
 ```
 my-react-site/
-â”œâ”€â”€ index.html
-â”œâ”€â”€ src/
-â””â”€â”€ dist/
-    â”œâ”€â”€ index.html
-    â””â”€â”€ assets/
+├── index.html
+├── src/
+└── dist/
+    ├── index.html
+    └── assets/
 ```
 
 Make sure Vercel is configured to serve:
@@ -1621,7 +1621,7 @@ Check:
 4. Has DNS propagation completed?
 5. Is the domain assigned to the intended production deployment?
 
-**Problem 5:&#x20;**`npm run build`**&#x20;is not found**
+**Problem 5: npm run build is not found**
 
 Open `package.json`.
 
@@ -1641,10 +1641,11 @@ If the `build` script is missing, add the correct script for your framework.
 
 Vercel's build configuration documentation explains how to customize framework detection, build commands and output directories.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Configuring a Build](https://vercel.com/docs/builds/configure-a-build)
 
-vercel.com+2
+[Builds](https://vercel.com/docs/builds?)
 
+[Adding & Configuring a Custom Domain](https://vercel.com/docs/domains/working-with-domains/add-a-domain)
 
 
 ## **5.2 A 10-minute practice plan: Your first three deployments**
@@ -1655,32 +1656,32 @@ The objective is to experience three different ways to publish a website.
 
 This is a practice target assuming your Vercel account, Node.js installation and sample files or repository are already prepared. First-time account setup or dependency installation can take longer.
 
-**Deployment 1 â€” Static website**
+**Deployment 1 -- Static website**
 
-Minutes 0â€“3
+Minutes 0-3
 
 Use Vercel Drop without Git.
 
-1. Open [Vercel Drop](https://vercel.com/drop?utm_source=chatgpt.com).
+1. Open [Vercel Drop](https://vercel.com/drop).
 2. Drag a folder containing `index.html`.
 3. Click Deploy.
 4. Open the generated website URL.
 
-**Deployment 2 â€” GitHub website**
+**Deployment 2 -- GitHub website**
 
-Minutes 3â€“7
+Minutes 3-7
 
 Import an existing GitHub repository.
 
-1. Open [New Vercel Project](https://vercel.com/new?utm_source=chatgpt.com).
+1. Open [New Vercel Project](https://vercel.com/new).
 2. Import your GitHub repository.
 3. Accept the detected settings.
 4. Click Deploy.
 5. Open the generated URL.
 
-**Deployment 3 â€” CLI deployment**
+**Deployment 3 -- CLI deployment**
 
-Minutes 7â€“10
+Minutes 7-10
 
 Deploy a local static website using the CLI.
 
@@ -1720,49 +1721,49 @@ These are useful links to bookmark.
 
 **Getting started**
 
-- [Vercel official website](https://vercel.com?utm_source=chatgpt.com)
-- [Vercel documentation](https://vercel.com/docs?utm_source=chatgpt.com)
-- [Getting started with Vercel](https://vercel.com/docs/getting-started-with-vercel?utm_source=chatgpt.com)
-- [Vercel dashboard](https://vercel.com/dashboard?utm_source=chatgpt.com)
+- [Vercel official website](https://vercel.com)
+- [Vercel documentation](https://vercel.com/docs)
+- [Getting started with Vercel](https://vercel.com/docs/getting-started-with-vercel)
+- [Vercel dashboard](https://vercel.com/dashboard)
 
   [image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
 
   **Deployment and Git**
-- [Deployments documentation](https://vercel.com/docs/deployments?utm_source=chatgpt.com)
-- [Git integration](https://vercel.com/docs/git?utm_source=chatgpt.com)
-- [Production and Preview environments](https://vercel.com/docs/deployments/environments?utm_source=chatgpt.com)
-- [Build configuration](https://vercel.com/docs/builds/configure-a-build?utm_source=chatgpt.com)
-- [Vercel Drop](https://vercel.com/drop?utm_source=chatgpt.com)
+- [Deployments documentation](https://vercel.com/docs/deployments)
+- [Git integration](https://vercel.com/docs/git)
+- [Production and Preview environments](https://vercel.com/docs/deployments/environments)
+- [Build configuration](https://vercel.com/docs/builds/configure-a-build)
+- [Vercel Drop](https://vercel.com/drop)
 
   [image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
 
   **Domains and configuration**
-- [Domains documentation](https://vercel.com/docs/domains?utm_source=chatgpt.com)
-- [Environment variables](https://vercel.com/docs/environment-variables?utm_source=chatgpt.com)
-- [Project configuration](https://vercel.com/docs/project-configuration?utm_source=chatgpt.com)
+- [Domains documentation](https://vercel.com/docs/domains)
+- [Environment variables](https://vercel.com/docs/environment-variables)
+- [Project configuration](https://vercel.com/docs/project-configuration)
 
   [image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
 
   **Backend and storage**
-- [Vercel Functions](https://vercel.com/docs/functions?utm_source=chatgpt.com)
-- [Edge runtime](https://vercel.com/docs/functions/runtimes/edge?utm_source=chatgpt.com)
-- [Cron Jobs](https://vercel.com/docs/cron-jobs?utm_source=chatgpt.com)
-- [Storage](https://vercel.com/docs/storage?utm_source=chatgpt.com)
-- [Marketplace](https://vercel.com/marketplace?utm_source=chatgpt.com)
+- [Vercel Functions](https://vercel.com/docs/functions)
+- [Edge runtime](https://vercel.com/docs/functions/runtimes/edge)
+- [Cron Jobs](https://vercel.com/docs/cron-jobs)
+- [Storage](https://vercel.com/docs/storage)
+- [Marketplace](https://vercel.com/marketplace)
 
   [image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
 
   **Monitoring and pricing**
-- [Web Analytics](https://vercel.com/docs/analytics?utm_source=chatgpt.com)
-- [Speed Insights](https://vercel.com/docs/speed-insights?utm_source=chatgpt.com)
-- [Platform limits](https://vercel.com/docs/limits?utm_source=chatgpt.com)
-- [Pricing](https://vercel.com/pricing?utm_source=chatgpt.com)
+- [Web Analytics](https://vercel.com/docs/analytics)
+- [Speed Insights](https://vercel.com/docs/speed-insights)
+- [Platform limits](https://vercel.com/docs/limits)
+- [Pricing](https://vercel.com/pricing)
 
   [image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
 
   **Command-line tools**
-- [Vercel CLI](https://vercel.com/docs/cli?utm_source=chatgpt.com)
-- [Deploy using CLI](https://vercel.com/docs/projects/deploy-from-cli?utm_source=chatgpt.com)
+- [Vercel CLI](https://vercel.com/docs/cli)
+- [Deploy using CLI](https://vercel.com/docs/projects/deploy-from-cli)
 
 ## **Final recommendation**
 
