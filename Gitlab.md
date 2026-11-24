@@ -2,7 +2,8 @@
 
 A practical, step-by-step guide for beginners · Based on official GitLab documentation · November 2026
 
-[GitLab Announces the General Availability of GitLab Duo](https://images.openai.com/static-rsc-4/EoxXf6ChMqDLbbcNuU68IT7w-8u40o6oM1l6JMr57DWSKruIfv6ZYVqR-35Bq8A3viqXxCBW8bjD_FQeyhmdgo0ZCVdHdGkhoFsGVZf0rHy8TkW3kJaJqatC5Et0t6_CAOlbriclgeBguq7OuJ3fIqo4fSZmJ8SqD6-1C9CLBnI?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/f877246c-e49d-4a04-b12d-49faccdbb720" />
+
 
 [globenewswire.com](https://www.globenewswire.com/dc/news-release/2024/04/18/2865808/0/en/GitLab-Announces-the-General-Availability-of-GitLab-Duo-Chat.html)
 
@@ -69,7 +70,8 @@ Without GitLab, you might use:
 
 With GitLab, you can organise these activities within one project.
 
-[GitLab's Security Officer on an Easier Path to App Security - The New Stack](https://images.openai.com/static-rsc-4/TDyD0Sw2bDfhPpDYAtpbINDPJ6YrLZi56TFzAz4d6So24txZV8nW1ItlcrmNAD6aih7lNmdyppdlrgmQu0uCjXfa2-NDjJ3XeHBYlP2dQ_3i6RqqWna50gsDYFYU3BbeWhyEm-ugPtsJtoACk2ftOb-rLX6AMciHv7RjwYckTeA?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1a48c204-cbeb-452f-89d6-35079f1a2e24" />
+
 
 [thenewstack.io](https://thenewstack.io/gitlabs-security-officer-on-an-easier-path-to-app-security/)
 
@@ -89,17 +91,23 @@ It is important to understand that Git, GitHub, and GitLab are not the same thin
 
 **GitHub** and **GitLab** provide online services built around Git.
 
-[GitHub常用指令 | lhldudu's blog](https://images.openai.com/static-rsc-4/ErI3L4O8SJCOb0vigkdXGsIsjI_GAtx9KU9MVpKmIPrmO-4HY-grsYnOnHWAMVy3AoHsWyGySqDHPlhbb8_jn3R3-dVWGxOzTAHgAwdYKWyl5kx35YF4IZfnlk7hS4JCTYU0tU-DhFUnvaJB71mkhCDnuGRC4EqEtGQHGLCTmEc?purpose=inline)
+
+
 
 **GitHub**
 
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9ba2a42a-d7a5-46c9-8d7d-024dc4703c92" />
 Popular for open-source collaboration, repositories, GitHub Actions, and its developer ecosystem.
+
 
 [Official website](https://github.com/)
 
-[GitLab 19.2 Brings Governed Agentic Automation to Clear the Backlog AI Coding Creates](https://images.openai.com/static-rsc-4/spFPvtQoz6H4Kv_JPvFvsnUQx561jFO2rC8TeQ5z74A7L7JnIA_QZiok5eSfBFGnp8NU5LHFQrr4-Yci_mClLuagSBq7gO2k58fRPAKbifMp5pbTnaOctJm7h63yd_uFxd-S6iNCNMa5OJUZDcSngbbQRZv3Awp9RtJaWpRDKXY?purpose=inline)
+
+
 
 **GitLab**
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/f855c667-c85e-4597-931e-27b34cbb76d0" />
 
 Provides integrated project planning, source control, CI/CD, security, and deployment capabilities.
 
@@ -161,7 +169,8 @@ Before using GitLab, understand these terms.
 
 These three concepts are frequently confused.
 
-[Overview of GitLab Group and Project Structure | Courseware as Code Workshop](https://images.openai.com/static-rsc-4/HBT9A0TRU9cJvv8AOW6BvarW7S5NJXrTogb-uFwCaXSCF3GvxBMETqxszUJkTBVV5_F2I9iwUr-f4yZ64YWLb_VQEaEeAmh08YULQSVAqVDObDFERFeWWXhNd_dyBFjJQKBHXFdF2HrRHF1SvLcymCvfOGrPAjg7vR0r2qZafzo?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/7cbd046d-25ce-4699-883a-428a5066de8c" />
+
 
 [devops-education.gitlab.io](https://devops-education.gitlab.io/cwac-workshop/course/gitlab_overview/)
 
@@ -206,7 +215,8 @@ DevSecOps integrates them into the development process.
 
 For example, instead of waiting until a product is finished to check for security problems, GitLab can run security checks as part of the CI/CD pipeline.
 
-[GitLab's Security Officer on an Easier Path to App Security - The New Stack](https://images.openai.com/static-rsc-4/TDyD0Sw2bDfhPpDYAtpbINDPJ6YrLZi56TFzAz4d6So24txZV8nW1ItlcrmNAD6aih7lNmdyppdlrgmQu0uCjXfa2-NDjJ3XeHBYlP2dQ_3i6RqqWna50gsDYFYU3BbeWhyEm-ugPtsJtoACk2ftOb-rLX6AMciHv7RjwYckTeA?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/8f7e5031-7c66-4ac3-9f47-7d2d28c5270e" />
+
 
 [thenewstack.io](https://thenewstack.io/gitlabs-security-officer-on-an-easier-path-to-app-security/)
 
@@ -232,7 +242,8 @@ Official reference: [GitLab Platform](https://about.gitlab.com/platform/).
 
 ## 2.1 Understanding the GitLab dashboard
 
-[Inside the vision for GitLab’s new platform navigation - Self-managed - GitLab Forum](https://images.openai.com/static-rsc-4/C2QPPjYQlA7RU88zalBgv390mNq_J0Qtdu6NcVNOXzUCixgYn_y8tnLmcRplA66p83th7NTl0xmBLfCHC4-LNn-rsxXOmfUHi5L93nEq_SUL7RPkvciF95xZ5PeOT4ieWCrj9-aNSCjNfh4pzWgYKcIPbWiXKJr4yujHXxc2MD8?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/2169ecb2-6f5d-4de9-84dd-18b040df3788" />
+
 
 [forum.gitlab.com](https://forum.gitlab.com/t/inside-the-vision-for-gitlab-s-new-platform-navigation/92851)
 
@@ -296,13 +307,13 @@ Official documentation: [Projects](https://docs.gitlab.com/user/project/).
 
 ## 2.3 Issues, Issue Boards, Labels, Milestones, and Epics
 
-[GitLab - selfhost.cloud](https://images.openai.com/static-rsc-4/ya2WE2FtAiwf4c4wNHzp0Il1-rrBeddvkKymTmZXkF1WgvJ1aTb6u2kvWQ1noA05OwbKZsj2ZqHFIUh_SCI21SH0mqaRoTqq8DVj2whdMWXDb7KmPUs2hmANOtrd91h9KBN1eHSWiOK0HjFlbvisjk5-QA-7MNlMgGGD6jlMoyU?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/62544090-7a3a-470a-827b-ded0aaf7f52a" />
 
-[GitLab vs. GitHub: Which is Better in 2026?](https://images.openai.com/static-rsc-4/kZipLqr4K7KKO3Rsln4jRKbVXvceepEwAnvKG7PtPt4Vw5riWFlv1TSQWuG7PYOublFeetz0lAFcAhP4cHTz-H38IUeT5UetSJw4uOcqhuLZGlsgD5WCwUsv4oudSCrosAtoIafh60NGosa6o5IAz4R7gS4FVsudilMbCoAU-cs?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/d7bfc8d3-efcf-4ec4-9393-bcc55efb2465" />
 
-[Index · Milestones · Project · User · Help · GitLab](https://images.openai.com/static-rsc-4/BdPmmif1Y-CpMGwDMzL-tglgYHqPKyPrMh7iwosnG4SkTQjl_77wZxy_mFDVLTyu56mPY4j6KNpJOsnf5E5gQr-mfQa4lXqWwmlMRiLHmx3BXRGxsiYUwqANSdE36z0pd0wXY5WuzljV9NHMTD71HlsvlS5qidjx_liMhqkljng?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/42e71452-246b-4cef-b099-f0d45106fe6d" />
 
-8
+
 
 These features help organise development work.
 
@@ -340,20 +351,20 @@ Kanban is a method of organising work according to its progress.
 
 Example:
 
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/36dbfeee-9dbe-4e2e-ad5d-0910b875cba0" />
+
+
 **ESP32 development board**
-
+```
 To Do
-
 Add sensor support
 
 Doing
-
 Implement Wi-Fi
 
 Done
-
 Configure GPIO
-
+```
 Where to find it: Plan → Issue boards.
 
 Use it when you want to see which tasks are waiting, in progress, or completed.
@@ -418,7 +429,8 @@ Epics and their advanced planning capabilities have subscription-tier restrictio
 
 ## 2.4 Merge Requests, Code Review, Approvals, and Conflicts
 
-[DevSecOps統合プラットフォーム | GitLab](https://images.openai.com/static-rsc-4/CfKeGkCouVnY3uruczwm9iHvl72LL5ZR_XfarbX76CgtF8gb_DEBfa513YGXnVA0Zv5yol6hd9yjgb_BkKWd5vEBDkwQP-EKjzNN8vdoGWYd8DoC5ukIxA9MurOv28FEiT6VjhMsVJstqDzyxGxNel0f3r97NdzR1ydJXJ5pkGU?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e4578195-b19e-4625-986d-ab4e8918a20f" />
+
 
 [dts-insight.co.jp](https://www.dts-insight.co.jp/sp/gitlab/index.html)
 
@@ -497,7 +509,8 @@ Official documentation: [Merge Requests](https://docs.gitlab.com/user/project/me
 
 ## 2.5 CI/CD: Pipelines, Jobs, Schedules, Variables, and Runners
 
-[Building Your First GitLab Pipeline: A Step-by-Step Tutorial🚀🚀🚀 - DEV Community](https://images.openai.com/static-rsc-4/0zDUgZpSjhaPuBdLIt7cRQDPX7C3ANpzl5wOBPqkNgiNgeKG86CykFCGNMJr6kHfGIyi2A1Pz_DKOH7WvuOHzEZGezyhMmVw9D279MejIyNRSr05nL-Ew3k2xJ_AImdQd_ZU2cWztMUW7CNosnocpk9A3G7_oV-SJtc80Yh9DCI?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/1e987ffc-aed0-403c-b458-a2939c99712b" />
+
 
 [dev.to](https://dev.to/ankitdevcode/building-your-first-gitlab-pipeline-a-step-by-step-tutorial-563i)
 
@@ -600,6 +613,9 @@ Official documentation:
 
 ## 2.6 Source Code: Repository, Branches, Tags, and Commits
 
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/c8d4a992-472c-4f49-8a1c-9be590855a6a" />
+
+
 [softwareadvice.com.au](https://www.softwareadvice.com.au/software/28004/gitlab)
 
 This is where your actual source code is stored.
@@ -660,13 +676,12 @@ Where to find it: Code → Commits.
 
 ## 2.7 Container Registry and Package Registry
 
-[How to use GitLab Container Registry - Knowledge Base of NFDI4Ing](https://images.openai.com/static-rsc-4/iLgdv3RX1CKKk-HoSiIcUAac6uiCtF_tYZPFybdNSzKTgTChHt7gN54EwRPcn__5kspUpcwXhCqYIeUUy7-36tHVj3VM0kujnvGQA_Q94-ngICt2RstDgfiZXkx8gjKjPWJu3i0oZ1p_12m5g1-WqpzPBMtCyprCuHOmkDwLu6c?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/307ba7fb-fbe2-410f-8ea6-599333ea270a" />
 
-[Gitlab Package Registryを利用してプライベートNPMパッケージを運用する](https://images.openai.com/static-rsc-4/aH39aHCXmshCaY2COuUu3XL-bpa3WLV5dWUX6e2CgBfTEDeq_5leqiv1_JVSw07cBuDS-0hq4bdaojlqur1UX16SuuQuNDYidiiorl6hi_Pm8mRqSA8bk803fpmMVqhu-ezDBELKe71817geFFB2rABxiXRXkqj7JXZP9sJg8rw?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/236f3a6e-c5e2-4387-a51e-d6c7a714de6f" />
 
-[reveal-md](https://images.openai.com/static-rsc-4/QYp7VFPgLdIlKHrvw4Zt9McbhWA59Hjcts2RxxWimhKOYjdeLwQ99j692N0fDFAaYbVWFR0svVUU09Z_xPULGCQzTgqTU8z8gZD43Jd16GXsMaf8tXKIFk-MhbahnAjJRdfNiXzBTAd8_qP-X-zmzSeDT6pGkSpZxdalyJcylaw?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/8f90079e-6103-4de2-9f0f-68967f5a46b0" />
 
-7
 
 These registries store software outputs that can be distributed and reused.
 
@@ -723,13 +738,10 @@ Official documentation:
 
 ## 2.8 Wiki, Snippets, and Web IDE
 
-[Blog - Using diagrams with GitLab](https://images.openai.com/static-rsc-4/T-nK1WzNU4BzDyesCG7jEThAi2KoIjHroJaBr_sCVS4GP5TIGlTwV9zVMjxzcVkff-FBySwUyMlFqZ1JeUvnwDRZMP18Qg3CpiKl0B8A8XSRr1Z83qTWU7osVrZSMX4N1Y9_P6v08OM2JinhdXksh2yoJzXaikd2V_rjYKf9y24?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/78a17f95-89d6-4b62-9eba-0e395732bec5" />
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/fef6315a-29c0-4722-bcd5-76842287d51d" />
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/8bb1461c-29fa-4060-8e45-36905876b5ad" />
 
-[Snippets · User · Help · GitLab](https://images.openai.com/static-rsc-4/HGrRYu7H23TTrqKMdlGJXmcGwAvb4q665WduoxL5B9_tUwL9bC6M2kr3QCYJ7oQrw-SCMqJva20lau_WLsSQtPFwryyzsJJLI-cVtILBxwNbkWWq1LP1h_LsS4uHoZ5JgWD0MUOCHGkzuAHSHFwWGLbhZ--tF-p2sjMRsUzDb88?purpose=inline)
-
-[GitLab 13.0 released with Gitaly Clusters, Epic Hierarchy on Roadmaps, and Auto Deploy to ECS | GitLab](https://images.openai.com/static-rsc-4/C_0uAXOA6MDub0N2pfZ4gwf-bXR4iT0cPyDCUKYpM8fxR3rm1f0lojlRlF23m2Ls1fkTG47E7FDVbMOnBThLwpate5OU3Mut-ta5fiQY5E5EmOkLKkcFhL5EwH3owK9Oi--0F4dHY-168u4tPcIQ8xGD0_pzNIUxGSRHWG58DNk?purpose=inline)
-
-5
 
 ### Wiki
 
@@ -780,7 +792,8 @@ Official documentation:
 
 ## 2.9 Security and Compliance
 
-[Vulnerability risk prioritization made simple with GitLab](https://images.openai.com/static-rsc-4/OjHsuT8I9K1WocS389jQDCKVM9A1i7EgAI7xvKkDdohJrMUC1oDb8vFUWBcq2NIf9nh8dmx0pWnKRU6Cl4d3H6RO4bi6_M9URbpatHi23laHykpm1ZiGUIeD5giyRTWq6dQNlzSEHLdauqpnjSgVUc8d8gZNNHMFDpiGck6td9U?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/8a3230e9-2bec-417f-bc06-85ea9461fc97" />
+
 
 [about.gitlab.com](https://about.gitlab.com/blog/vulnerability-risk-prioritization-made-simple-with-gitlab/)
 
@@ -846,7 +859,8 @@ Official documentation:
 
 ## 2.10 Settings: Members, Access Levels, Protected Branches, and Integrations
 
-[Gitlab - Parcours DevOPS](https://images.openai.com/static-rsc-4/_9fRYQ0Xe8AqsHma3zBcfmk097-j7ZAIJufGFmuRbnXGrl66IzrdHt7h7LksTm4I_lTXswJvz8PLGJdUZeBoKSXSN-Wu515mHjomXxFqeWFSy9HqaGdphCX2vyXMs-v1CvUwsO7S4qNwT0EwYjZU-SErOFNtYbEqVdolWcFxoWk?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/51d77615-bccd-479f-89b4-c67266f7c213" />
+
 
 [parcours-devops.gitlab-pages.imt-atlantique.fr](https://parcours-devops.gitlab-pages.imt-atlantique.fr/gitlab/gitlab/)
 
@@ -915,24 +929,17 @@ The Free tier is sufficient for learning Git, managing personal repositories, cr
 
 However, Free has limits.
 
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ac96d8f7-ba9b-46aa-b581-3aa6ad4da65e" />
+
 **GitLab.com Free — important limits**
 
-**Repository and LFS storage**
-
-# 10 GiB
-
+**Repository and LFS storage** : 10 GiB
 Per project in a Free namespace.
 
-**Private top-level namespace members**
-
-# 5
-
+**Private top-level namespace members** : 5
 For newly created private top-level namespaces; membership is counted across the namespace.
 
-**Top-level groups**
-
-# 3
-
+**Top-level groups** : 3
 For Free accounts created after 27 January 2026. Personal namespaces are excluded.
 
 Other important considerations:
@@ -998,7 +1005,8 @@ You can substitute your own project name.
 
 ## 3.1 Step 1 — Create a GitLab account
 
-[Presentándose y Entendiendo GGG (GuayaHack, Git, GitLab) — HackerSpace y Grupo de estudio](https://images.openai.com/static-rsc-4/buPBk8WWqeovuf87V9iBwQj80Ddw7heBzwrrR-VkmXdAJ2pq29O7tYGd-BC0GiUzw2XbREWKpK2b2jM4drcyieLolzEdUkNsqxIxJuXvoHxd_IHMb_0hWLdQQOuj9AIRg7L3p18ueoTj0LUKpvQXmsHLQEe7uBALWlyCLUGQRRk?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/c972e86a-d982-470b-9f9e-f530975433e3" />
+
 
 [guayahack.co](https://guayahack.co/reto/on-boarding-git-gitlab/)
 
@@ -1132,7 +1140,7 @@ ssh -T git@gitlab.com
 
 You should receive a welcome message identifying your GitLab username.
 
-**Never upload or share&#x20;**`id_ed25519`**&#x20;(the private key). Only upload&#x20;**`id_ed25519.pub`**&#x20;(the public key).**
+**Never upload or share `id_ed25519` (the private key). Only upload `id_ed25519.pub` (the public key).**
 
 Official instructions:
 
@@ -1154,7 +1162,7 @@ A Group organises multiple related projects and their members.
 ESP32-Learning
 ```
 
-5\. Set the group URL:
+5. Set the group URL:
 
 ```
 esp32-learning
@@ -1163,7 +1171,8 @@ esp32-learning
 6. Choose the visibility level.
 7. Select **Create group**.
 
-[Creating projects on GitLab](https://images.openai.com/static-rsc-4/WwnxzkMRBG1-P3m2CwZUsHX1Hz-HeUz2nLC1jeObW4NKX4fM5GbUjjxJmULVlD3flAnt5AD2ejm5uhie0Dx1tjj8sJkdmJu3A3P8EcdQyGZtXnn0oys-g-i-mW2sg6e40xpEZnKVISySsE0eIC7DQb0aUyvwg8MrSBj7gm_SJ70?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/30c6cca2-b156-4eb7-86ef-9057d53d8694" />
+
 
 [tutorial.gitlabpages.inria.fr](https://tutorial.gitlabpages.inria.fr/git/02-creating-projects/)
 
@@ -1185,7 +1194,8 @@ Project slug: esp32-learning-lab
 6. Optionally select **Initialize repository with a README**.
 7. Select **Create project**.
 
-[Gitlab - Parcours DevOPS](https://images.openai.com/static-rsc-4/J6ap_k0LzRk3Q04KooJTjuhIc9Xe1Is9J7POxSNKz1k36vo92fVmAaq-81cejAPNj1QVqH5qr2jQFakeg_t3OcBr-AePySBC79dshgafZSZy8055w51zXx8VjuPbDMePx17NhusbBPw8Lq-xYLXzTjUUqm2RfiDnNOGTeXy99wo?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/18cd2ee9-f965-4965-a447-fc1d324893ee" />
+
 
 [parcours-devops.gitlab-pages.imt-atlantique.fr](https://parcours-devops.gitlab-pages.imt-atlantique.fr/gitlab/gitlab/)
 
@@ -1231,7 +1241,7 @@ GitLab provides three main visibility levels.
 | Internal   | Authenticated users of the GitLab instance | Sharing within an organisation     |
 | Public     | Anyone, including unauthenticated visitors | Open-source projects               |
 
-[Make prive repo public - How to Use GitLab - GitLab Forum](https://images.openai.com/static-rsc-4/p4G5vRq_TCBhZgbPmoXcVgDM619nhxlGZnsVD-iuZGsPGFINY89eS6jPPVpjUujtyDwOpnQBk4VCZyRcRew8R0pI_9MQCXhiWy0MQOFsbF21jAJUqyNy6bIrJ6CoFI9m3mPaF0oXFifTsP9jydq3ULlWvwR1nPSjZqLLCEzXNco?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/c17b542e-f8bc-41fe-9800-1130070cf5d2" />
 
 [forum.gitlab.com](https://forum.gitlab.com/t/make-prive-repo-public/17965)
 
@@ -1266,7 +1276,8 @@ Open your project in GitLab.
 1. Select the **Code** dropdown.
 2. Copy either the HTTPS or SSH repository URL.
 
-[Erste Schritte mit GitLab: So importierst du deine Projekte in GitLab](https://images.openai.com/static-rsc-4/_2p4ISshKAW7aFRMU7kHV2ese0NB4rYuiCgzU_Q0t2M33JcVg_DKcdbyHBtSng8KpMlHDJAczr5TT9Y4YarNp1gfYgisejCDD4ynZIV1ZT5jatW_wEw8x6Wn2-Xwu-VRR58u6Rl3mjAUNWcmRvFnha8voQ_PrMppZPEuhcPaHS8?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/76f7388f-83c5-4853-8478-7a15fbac16a8" />
+
 
 [about.gitlab.com](https://about.gitlab.com/de-de/blog/getting-started-with-gitlab-how-to-import-your-projects-to-gitlab/)
 
@@ -1407,7 +1418,8 @@ Return to your project:
 
 You should now see:
 
-[Introduction to GitLab: Adding Files to a Project Repository](https://images.openai.com/static-rsc-4/0LYh_yCAXGsuV8PtDzSjrMe_OecPMWHzlQbbd3ljnYiWL7T3R7yrBkS18WUJty0qT1E1HPB6bhrTM_lV_7nbVhLZJyUItFT20J4OwV0Rg4O89GhrMhaSWLGoDn9--wagRm25o1xAVh4kg8MYI-wXykO6v_AyJrFLGMhPZt_bPFc?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/2f7afae1-177c-4d20-b61c-db745fbc2b90" />
+
 
 [carpentries-incubator.github.io](https://carpentries-incubator.github.io/gitlab-novice/03-fill-repository.html)
 
@@ -1477,7 +1489,8 @@ Your branch is now available in GitLab.
 
 ### E. Create a Merge Request
 
-[Reviewing and combine versions (merge/pull request, merging) — TeachBooks Manual](https://images.openai.com/static-rsc-4/J8HYcFfS300KIKqlL7XOqTeRSWBxqiic5Z2orpin0HNgBmEXYVji39b6BA9BNORqGHL7wgJ5DfXME6nYbQmJi1fG6wx6TA9yEdYNsSU8KC6p59DeZ-ERu2pz86z7T0fkTr5gUKUzS1WgPnOcyS_NjfjjjnP6zkIOFQKA64HWgd4?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/079449f6-36b1-4775-b468-5a0f36063cdb" />
+
 
 [teachbooks.io](https://teachbooks.io/manual/workflows/merge_request.html)
 
@@ -1540,10 +1553,9 @@ The file `PROJECT_INFO.md` should exist on your main branch.
 
 Use this checklist to confirm that your GitLab environment is ready.
 
-**GitLab setup progress**
+**GitLab setup progress** 
 
-# 0%
-
+```
 Create a GitLab account
 
 Set up your username and profile
@@ -1568,7 +1580,7 @@ Open your first Merge Request
 
 Review and merge the changes
 
-Reset checklist
+```
 
 # PART 4 — HANDS-ON TUTORIALS: BUILD FOUR GITLAB PROJECTS
 
@@ -1606,7 +1618,7 @@ Visibility: Private
 Initialize repository with README: No
 ```
 
-5\. Select **Create project**.
+5. Select **Create project**.
 
 We leave the README option unchecked because we will create it locally.
 
@@ -1756,7 +1768,8 @@ Select **Code → Repository**.
 
 You should see:
 
-[Formation Git/GitLab – Session 2 : GitLab et dépôt distant](https://images.openai.com/static-rsc-4/ocicIN1eES5yFLti9Aa3e27Z4JdoRLHJzw07QuhuhBPBW5jWP1rCOcHeHXNrSo-3o1lrCCglm5pNGm6UVhhtp0kFT8YAUUk4PiZ5beIKg5IzLitwSYm5OEsZE8hmYDG8uoLiB9b8rgNja0aeABDxhBdDYNoYJY2C-8-IDy7ZqMY?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/56ab66c6-c1d7-4e8d-b91b-5b866a0a8fec" />
+
 
 [formation-git-gitlab-nab.pages-forge.inrae.fr](https://formation-git-gitlab-nab.pages-forge.inrae.fr/support-de-formation-git-gitlab/archive/02_gitlab_depot_distant/)
 
@@ -1944,7 +1957,8 @@ The `Closes #1` keyword instructs GitLab to close the associated Issue when the 
 
 ### Step B7 — Review the changes
 
-[Speed up code reviews: Let AI handle the feedback implementation](https://images.openai.com/static-rsc-4/ZtlDGAjYhoNEZ2OZw-fXtJ5PVMBFJXS6jy3tQQQF5uXxlprHaqs1rSrZMt03qUDh9jWNHrq-N4uAEy7Z7SQxhRzbxR9YbGAWiJ2U45PkU1sf0mwi5rjDPSdmfggpaw2CNW9loSB1Joh-d6dPouOhIeIHhewekJb-EPYGq902vWs?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/48ab6dcc-51d5-4b1e-9c90-c1c5607e7686" />
+
 
 [about.gitlab.com](https://about.gitlab.com/blog/speed-up-code-reviews-let-ai-handle-the-feedback-implementation/)
 
@@ -2033,7 +2047,8 @@ You do not need to install Node.js on your computer to run the GitLab pipeline. 
 
 ### Step C1 — Understand the CI/CD workflow
 
-[CI/CD pipelines | GitLab Docs](https://images.openai.com/static-rsc-4/kxyNiG8QIOyE0B6Z8WizHPewG6P7Vla2LVoddAv8WytiLZTEKXNK3cEw8tq_qjovgfEkv2GDCZnR4OoOVJgRk2b8y0wW_pwpCpLYBwyd4FmsOr4r3PmC1JYnw0v7mQ0Zt741MSjnqB_3hZrkf6rse4oL8F0MBAUbhgNNYT3xcK8?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/7c8262bb-2350-4bf1-b949-df40e5069b85" />
+
 
 [docs.gitlab.com](https://docs.gitlab.com/ci/pipelines/)
 
@@ -2294,7 +2309,8 @@ The push automatically triggers a pipeline.
 
 ### Step C10 — View the pipeline in GitLab
 
-[GitLab CI/CD Tutorial: From Basic To Advanced  | Octopus Deploy](https://images.openai.com/static-rsc-4/LQxHSSzi_R99vyu3Pttyg9QuB03i55urJkxYc-sJX0q2cHM2KRqKuieTev-tE6fRYlniowS5W3y_YtVa8FSBNs4FBDlWWRClOx4RG6b6c_t3OWq1ZN4lY6t_1NDOmBQhY66pBLKIjkd66FtWf_SHdGTPSLDhYo0qBtkaE6kyips?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/3c37f65d-8708-4de0-abac-6b31db7250ab" />
+
 
 [octopus.com](https://octopus.com/devops/gitlab/gitlab-cicd-tutorial/)
 
@@ -2627,7 +2643,8 @@ Status: Passed
 
 ### Step D8 — Find your website URL
 
-[【Gitlab CI/CD】005 Pages 部署静态网站](https://images.openai.com/static-rsc-4/nBl744xsNhAkyi9a1gDZbSNBF5A8ZuU6bRO1kvonOnk-e7NfN_hOlXNBGTmnOBlhokl8ISF7bC3nYsIaNg-YXopzZ3GucJqv64pO_Jdjg3lVJLRKlJxVC7YVeKpzW2zNFdytwpKmORmI-lGv96L2kDnrdo9RzZEbc1AEHnbaxqA?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a26f0fc1-25c9-4e37-9a4e-522ec194d676" />
+
 
 [blog.dkvirus.com](https://blog.dkvirus.com/gitlab/gitlab_pages/)
 
@@ -2644,7 +2661,8 @@ Open the URL in a browser.
 
 You should see:
 
-[Creating a simple website with HTML, CSS, and JavaScript for complete beginners](https://images.openai.com/static-rsc-4/RMhTP0fssYEs94WNCp3CdqgamxkLuAaEv14WZJx_YqhU5Kzwdwd3QmwuTV_u8J8jnDB7DXM6ZLibOl26zYxze8P4SQYWRojQgvuSlYA6oIVUKe0kdiWHOj9-R8hCqCKMF-qq3FGDZA2_YkYHCFVjJOySfYIOkOodb3E2x4DBI5A?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/5b46ea90-ee63-4c99-b1bd-0ca4e495ec8a" />
+
 
 [iq.opengenus.org](https://iq.opengenus.org/creating-a-simple-website-with-html-css-and-javascript/)
 
@@ -2955,7 +2973,8 @@ Once you understand the basics, you can use GitLab to manage an ESP32 developmen
 
 For example:
 
-[Hello👋, welcome to ESP-Claw! | ESP-Claw Docs](https://images.openai.com/static-rsc-4/W-hAtMaBDYLonVQLeE1NdMsvDf6l7tUUt4HWhdBbAhc8IgJqhhBcf_LjhQ9Cv1oP3jXx4KPgLhm3I65l5OfnMlc4JuweGqPoFysYYbXT1a_4Iwwrmpj43JjgQ4oZ1hrQ80S8su4oF_gYNdSYulaWrG97Q90St6AIY4zcli-k3xM?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/0c7bcfa7-7854-43fe-b28b-967ee6ca310b" />
+
 
 [esp-claw.com](https://esp-claw.com/en/tutorial/)
 
