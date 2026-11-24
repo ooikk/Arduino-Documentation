@@ -621,7 +621,7 @@ For professional and commercial projects, review the Pro plan and its usage-base
 
 Official pricing: [Vercel pricing](https://vercel.com/pricing).
 
-# **Part 3 â€” Step-by-step setup instructions**
+# **Part 3 -- Step-by-step setup instructions**
 
 This section uses GitHub as the example. The same general workflow applies to GitLab and Bitbucket.
 
