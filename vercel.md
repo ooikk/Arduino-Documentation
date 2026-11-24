@@ -15,17 +15,18 @@ By the end, you should be able to:
 
 **Official starting points:**
 
-- [Vercel website](https://vercel.com?utm_source=chatgpt.com)
-- [Vercel documentation](https://vercel.com/docs?utm_source=chatgpt.com)
-- [Vercel features](https://vercel.com/features?utm_source=chatgpt.com)
+- [Vercel website](https://vercel.com)
+- [Vercel documentation](https://vercel.com/docs)
+- [Vercel features](https://vercel.com/features)
 
-# **Part 1 â€” What is Vercel and why use it?**
+# **Part 1 -- What is Vercel and why use it?**
 
 ## **1.1 What is Vercel?**
 
-[Dashboard redesign - Vercel](https://images.openai.com/static-rsc-4/-UFC7afjcSUPEN4M9Dgc5DuitIu0gbo58-gvhM4u7wl1oOBbcpRtNOHRs3iPqpLiqHen1DTFwNBnD6R2svWT3rXCOgyJ3f_AMjPYivmmDk5_ALXMLCN_LCFIsvVPoUcMDB3nhK-6w2bk0sB8nAiRTlxjIs7MRIdft-3jdFaiwIA?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a010c657-5e31-4ddd-8974-e0280db2651d" />
 
-[vercel.com](https://vercel.com/blog/dashboard-redesign?utm_source=chatgpt.com)
+
+[vercel.com](https://vercel.com/blog/dashboard-redesign)
 
 **Vercel is a cloud platform for building, deploying and hosting websites and web applications.**
 
@@ -36,6 +37,10 @@ Normally, after writing a website, you need somewhere to host it. You might rent
 Vercel handles much of this infrastructure for you.
 
 A typical workflow looks like this:
+
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/89af9b34-d2ad-45f6-af78-8058f39b0db0" />
+
 
 **1. Your computer**
 
@@ -81,10 +86,9 @@ Vercel simplifies several tasks that traditionally require server administration
 
 Vercel's CDN is a globally distributed network that caches and routes content close to visitors. It is automatically included with deployments.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Vercel CDN overview](https://vercel.com/docs/cdn)
 
-vercel.com+1
-
+[How Vercel CDN Works](https://vercel.com/docs/how-vercel-cdn-works)
 
 
 ## **1.3 Vercel compared with traditional hosting**
@@ -102,10 +106,11 @@ vercel.com+1
 
 Vercel is not a replacement for every type of server hosting. If you need a continuously running custom server, specialized networking or a persistent WebSocket server, you may need another hosting solution. Vercel Functions do not act as WebSocket servers.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
 
-vercel.com+1
 
+[Limits](https://vercel.com/docs/limits?)
+
+[Run server-side code with Vercel Functions](https://vercel.com/docs/functions)
 
 
 ## **1.4 Who should use Vercel?**
@@ -169,9 +174,9 @@ This lets you test changes without immediately affecting the production website.
 
 Vercel can create preview deployments for Git branch pushes and pull requests.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Environments](https://vercel.com/docs/deployments/environments)
 
-vercel.com+1
+[Deploying Git Repositories with Vercel](https://vercel.com/docs/git)
 
 
 
@@ -187,9 +192,9 @@ Once connected:
 
 You do not have to manually upload files every time you make a change.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Deploying Git Repositories with Vercel](https://vercel.com/docs/git)
 
-vercel.com+1
+[Builds](https://vercel.com/docs/builds)
 
 
 
@@ -201,11 +206,10 @@ For example, a visitor in Singapore does not necessarily need to retrieve every 
 
 Vercel automatically routes deployment traffic through its CDN.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
 
-vercel.com+1
+[Vercel CDN overview](https://vercel.com/docs/cdn)
 
-
+[Global network and regions](https://vercel.com/docs/regions)
 
 ### **F. Serverless Functions**
 
@@ -227,23 +231,24 @@ Edge Functions run code closer to the visitor, helping reduce response latency f
 
 They are useful for request handling, redirects, lightweight personalization and similar operations. They have different runtime capabilities and limits from Node.js-based Vercel Functions.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Edge Functions (Deprecated)](https://vercel.com/docs/functions/runtimes/edge/edge-functions.rsc?)
 
-vercel.com+1
+[Run server-side code with Vercel Functions](https://vercel.com/docs/functions?)
 
 
 
-# **Part 2 â€” Quick tour of Vercel's features**
+# **Part 2 -- Quick tour of Vercel's features**
 
 ## **2.1 Dashboard and Projects overview**
 
-[Vercel | Works With Supabase](https://images.openai.com/static-rsc-4/zA7ZQo1CtK0ikgtQnH5kxZmXUilrccjA48dr0K6fU-3iD8UTGla_yMRzDFANuYXebRzsGnvP62jsikqowoTt2yp5AB-G6V8I9jkFCqIMZICZkYsuL_MUGjhHQOE-62WKHV0a3q9_xrmw996lxBLWQB5RiDjXzlYIwck0KcfR7s0?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/726d6e7a-e95a-4cc9-9d68-239ce8719ff0" />
 
-[supabase.com](https://supabase.com/partners/integrations/vercel?utm_source=chatgpt.com)
+
+[supabase.com](https://supabase.com/partners/integrations/vercel?)
 
 The dashboard is your main control centre.
 
-Open [Vercel Dashboard](https://vercel.com/dashboard?utm_source=chatgpt.com) after signing in.
+Open [Vercel Dashboard](https://vercel.com/dashboard) after signing in.
 
 A **Project** represents a website or application deployed on Vercel.
 
@@ -260,17 +265,16 @@ A project can contain:
 
 **Beginner example:** Create a project called `my-first-website` and use its dashboard to monitor your first deployment.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
-
-vercel.com
+[Projects overview](https://vercel.com/docs/projects?)
 
 
 
 ## **2.2 Deployments list, build logs and rollback**
 
-[Project Dashboard](https://images.openai.com/static-rsc-4/h0N5eN_kWAs_2HBgMMYErgzIWsQnbURCy4VGxqRf72iRYpU6JsiDCxkCSqgZrPu4-GoMycqQqtTj3a4-dwJnrpb8R8xl1TLC02dyqhedT6pNagrbK7CYqSeN8WpuRg9J9OYyviMFDrF4VKnFCs5mZWlDla_NYd1Hn8WMeMaur_Q?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9e34097d-65fd-4e82-a5c7-aa9fe3d3ae90" />
 
-[vercel.com](https://vercel.com/docs/projects/project-dashboard?utm_source=chatgpt.com)
+
+[vercel.com](https://vercel.com/docs/projects/project-dashboard)
 
 The Deployments section shows the history of your published website versions.
 
@@ -301,9 +305,9 @@ For example, suppose you publish version 2.0 but discover that a page is broken.
 
 On Hobby, Instant Rollback is limited to the immediately previous production deployment. Pro and Enterprise offer broader rollback choices.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Performing an Instant Rollback on a Deployment](https://vercel.com/docs/instant-rollback?)
 
-vercel.com+1
+[Managing Deployments](https://vercel.com/docs/deployments/managing-deployments)
 
 
 
@@ -311,9 +315,10 @@ vercel.com+1
 
 ## **2.3 Preview Deployments**
 
-[ë°”ì´ë¸Œì½”ë”ë¥¼ ìœ„í•œ Gitì˜ ëª¨ë“  ê²ƒ #5](https://images.openai.com/static-rsc-4/-8wDpa_Z2OpJ1IkpAtYQ1F6KNpt-UnwdCpntXZBnWCPTs2yA2zIJb1EhW4xpC9-XIjMpx397zRVVizCo-3KdCmiV8pZTn50QDC5g0Yf4aiIOlivPUOLfRWGSRh6DZGMGQWrQ-xLDOXn9UhIl9tFkmIawPlpur3RolwBq9kFnNuw?purpose=inline)
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e38eebb5-2821-43c5-b3a9-c08a7d1df7bc" />
 
-[maily.so](https://maily.so/danduck/posts/8do7k730rgq?utm_source=chatgpt.com)
+
+[maily.so](https://maily.so/danduck/posts/8do7k730rgq)
 
 Preview deployments let you test a website before publishing changes to production.
 
@@ -341,17 +346,17 @@ The exact URL is generated by Vercel.
 
 **Beginner example:** Ask a colleague to check your new homepage before it goes live.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Environments](https://vercel.com/docs/deployments/environments?)
 
-vercel.com+1
-
+[Deploying Git Repositories with Vercel](https://vercel.com/docs/git)
 
 
 ## **2.4 Domains: custom domain, DNS and HTTPS**
 
-[Connecter un domaine Ã  Vercel : Guide | Socium Web](https://images.openai.com/static-rsc-4/EkAFJaH0xX6UQt5WoI_9loHUDMEOCfRsH_rlodoC3yteUMxBmB7oiqvaz9yGi4Apb2TshiPbPVKz7zKpvcNqPfvmFz2HFKtCSOhlUyuw-2Hv0QSkB6kM-BrOAfCjWDojTdLmaAa2DLspB9kUC3sZR9BvINDVdyxTJDwmNoUvyis?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/18bcbfbb-24f7-4275-993c-03f5572d7595" />
 
-[sociumweb.com](https://www.sociumweb.com/blog/vercel/configurer-domaine-vercel?utm_source=chatgpt.com)
+
+[sociumweb.com](https://www.sociumweb.com/blog/vercel/configurer-domaine-vercel)
 
 Every deployment receives a Vercel URL, normally ending in:
 
@@ -365,7 +370,7 @@ You can also use your own domain, such as:
 www.example.com
 ```
 
-**Where to find it:** Project â†’ Settings â†’ Domains.
+**Where to find it:** Project -> Settings -> Domains.
 
 Basic steps:
 
@@ -384,10 +389,11 @@ HTTPS encrypts the connection between the browser and your website. Vercel manag
 
 Hobby currently allows up to 50 custom domains per project.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Adding & Configuring a Custom Domain](https://vercel.com/docs/domains/working-with-domains/add-a-domain)
 
-vercel.com+2
+[Deploying & Redirecting Domains](https://vercel.com/docs/domains/working-with-domains/deploying-and-redirecting)
 
+[Vercel Hobby Plan](https://vercel.com/docs/plans/hobby?)
 
 
 ## **2.5 Environment Variables**
@@ -403,7 +409,7 @@ DATABASE_URL=your-database-connection
 
 This is useful because you should not normally put passwords, API keys or database credentials directly into JavaScript files or Git repositories.
 
-**Where to find it:** Project â†’ Settings â†’ Environment Variables.
+**Where to find it:** Project -> Settings -> Environment Variables.
 
 Vercel provides three standard environments:
 
@@ -419,17 +425,17 @@ You can assign different values to each environment.
 
 Important: after changing an environment variable, redeploy the project for the new value to take effect. Also, do not expose secrets through frontend variables such as `NEXT_PUBLIC_` or `VITE_` variables; those are included in browser-delivered code.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Environment variables](https://vercel.com/docs/environment-variables)
 
-vercel.com+1
+[Settings](https://vercel.com/academy/vercel-foundations/vercel-settings)
 
 
 
 ## **2.6 Integrations and Marketplace**
 
-[Reworked Integrations and Integrations Marketplace - Vercel](https://images.openai.com/static-rsc-4/1Qj1fHSrC4v6tLy20LVUipKglesWDiumTazJdKssdeepei6vBS5ALQDdPdi4Ul42_KRcUBUEhqY6_QEFDyv6xYlOl0Ql2aIvLjqmNRf3YWpwbz-kZuaO4J9qGe8g7ilCkPEv1NP8Tp-vcosQdZLPaL30o5ukFXIfbdA0aBgDyko?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/04898f68-dc9f-494b-b27d-aceb89906876" />
 
-[vercel.com](https://vercel.com/changelog/reworked-integrations-and-integrations-marketplace?utm_source=chatgpt.com)
+[vercel.com](https://vercel.com/changelog/reworked-integrations-and-integrations-marketplace)
 
 The Marketplace connects Vercel with other services.
 
@@ -452,17 +458,17 @@ There are two broad integration types:
 
 Marketplace availability does not mean every integration is free. Check the provider's pricing before installing a paid product.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Install an Integration](https://vercel.com/docs/integrations/install-an-integration)
 
-vercel.com+1
+[Vercel Integrations](https://vercel.com/docs/integrations)
 
 
 
 ## **2.7 Analytics and Speed Insights**
 
-[Project Dashboard](https://images.openai.com/static-rsc-4/2cEJ_vTB1KJKu8C4_BDTMbp2vb6Uk5uiWKeFr-e-NxGYuvnEffsnGLa3Nd7iL2QcINHv7UBFUKuW_6_Qi35hceyLlMzswcxVOgAHrHb4W7H824M4nPi5WLEu8uOnK1LpAO4exTtpq60xfkVaBQW9QL7Vk81BlqDqiuzbkWiJ0wk?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a4eabe48-0eda-48d7-bb09-42c6d7f61189" />
 
-[vercel.com](https://vercel.com/docs/projects/project-dashboard?utm_source=chatgpt.com)
+[vercel.com](https://vercel.com/docs/projects/project-dashboard)
 
 Vercel provides two useful monitoring features.
 
@@ -483,10 +489,11 @@ Hobby allowances include:
 
 Speed Insights is available on all plans, but its included usage and paid usage differ.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Pricing for Web Analytics](https://vercel.com/docs/analytics/limits-and-pricing?)
 
-vercel.com+2
+[Limits and Pricing for Speed Insights](https://vercel.com/docs/speed-insights/limits-and-pricing?)
 
+[Speed Insights Overview](https://vercel.com/docs/speed-insights?)
 
 
 ## **2.8 Edge Functions, Serverless Functions and Cron Jobs**
@@ -505,9 +512,13 @@ A Cron Job is a scheduled task. For example, you could configure a function to r
 
 Vercel currently supports up to 100 Cron Jobs per project on all plans, subject to the relevant function and usage limits.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Run server-side code with Vercel Functions](https://vercel.com/docs/functions)
 
-vercel.com+3
+[Edge Functions (Deprecated)](https://vercel.com/docs/functions/runtimes/edge/edge-functions.rsc?)
+
+[Cron jobs now support 100 per project on every plan](https://vercel.com/changelog/cron-jobs-now-support-100-per-project-on-every-plan)
+
+[Limits](https://vercel.com/docs/limits?)
 
 
 
@@ -529,9 +540,9 @@ Important distinction:
 
 Marketplace integrations can provision these resources and provide connection details through environment variables. Their pricing depends on the provider and selected plan.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Store application and agent data on Vercel](https://vercel.com/docs/storage)
 
-vercel.com+1
+[Storage on Vercel Marketplace](https://vercel.com/docs/marketplace-storage)
 
 
 
@@ -540,6 +551,10 @@ vercel.com+1
 **Beginner example:** Use Postgres to store website registrations and Blob to store uploaded profile photographs.
 
 ## **2.10 Team collaboration, comments and access control**
+
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9d722e5d-b5d7-43c0-8de5-fa3debf36227" />
+
 
 [vercel.com](https://vercel.com/customers/delivering-ai-analysis-faster-with-the-vercel-workflow?utm_source=chatgpt.com)
 
@@ -561,19 +576,18 @@ For example, a reviewer can open a preview deployment, click a section of the pa
 
 Comments are available on all plans. Team members can comment on previews by default; inviting external participants to view and comment is available on Pro and Enterprise.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Comments Overview](https://vercel.com/docs/comments)
 
-vercel.com+1
-
+[Vercel Toolbar](https://vercel.com/docs/vercel-toolbar)
 
 
 For access control, Vercel also provides team roles and permissions. Advanced team collaboration and role-based access controls depend on the plan.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
+[Vercel Hobby Plan](https://vercel.com/docs/plans/hobby?)
 
-vercel.com+1
+[Scale your app, control your costs](https://vercel.com/pricing)
 
-
+[Limits](https://vercel.com/docs/limits)
 
 ## **2.11 Vercel pricing: what can beginners use for free?**
 
@@ -599,15 +613,13 @@ Some important Hobby allowances documented by Vercel include:
 
 These are usage allowances, not guarantees that every feature or third-party integration is free. If you exceed Hobby usage limits, access to the relevant resource may be paused until the allowance resets.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
 
-vercel.com+1
 
 
 
 For professional and commercial projects, review the Pro plan and its usage-based charges.
 
-Official pricing: [Vercel pricing](https://vercel.com/pricing?utm_source=chatgpt.com).
+Official pricing: [Vercel pricing](https://vercel.com/pricing).
 
 # **Part 3 â€” Step-by-step setup instructions**
 
@@ -626,11 +638,12 @@ You do not need to rent a server or configure a web server.
 
 ## **3.2 Create a Vercel account**
 
-[ã€åˆå¿ƒè€…å‘ã‘ã€‘Vercelã®ã‚¢ã‚«ã‚¦ãƒ³ãƒˆã‚’GitHubã¨é€£æºã™ã‚‹æ‰‹é †ã ã‘ã‚’è§£èª¬!ï½œAIã‚’ä½¿ãˆã‚‹å½¢ã«æ•´ãˆã‚‹@ã‚ªãƒˆãƒ¼ãƒ¯ãƒ³](https://images.openai.com/static-rsc-4/L3TUsXoJyhoiaGpHsxEPirZlsStRm2mXpbRMtRQ5RrCjZEAMJEy7WrTK7NYX-ixz2cknNPvLGpn8Cg5-GsLVTxzSh6KMR_0TGnMqTaLhRjQ4CzESK2qpBfiFCNNlmM-lTph_QBv2vFNXZ0wLD5dLgbXClZCgIGwIBrDrFChJP4w?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b342f949-b50e-4914-ba23-2d8676d162b1" />
 
-[note.com](https://note.com/oto_wan_ai/n/nee63af74641b?utm_source=chatgpt.com)
 
-1. Open [Vercel Sign Up](https://vercel.com/signup?utm_source=chatgpt.com).
+[note.com](https://note.com/oto_wan_ai/n/nee63af74641b)
+
+1. Open [Vercel Sign Up](https://vercel.com/signup).
 2. Choose GitHub, GitLab or Bitbucket as your sign-in method.
 3. Authorize Vercel when your Git provider asks for permission.
 4. Complete the account setup.
@@ -666,9 +679,7 @@ You can normally choose whether to grant access to all repositories or selected 
 
 Vercel's Git integration supports GitHub, GitLab, Bitbucket and Azure DevOps Pipelines.&#x20;
 
-[image](https://www.google.com/s2/favicons?domain=https://vercel.com\&sz=32)
-
-vercel.com
+[Deploying Git Repositories with Vercel](https://vercel.com/docs/git)
 
 
 
