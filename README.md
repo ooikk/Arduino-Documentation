@@ -14,7 +14,6 @@
 [![logo-color](https://img.shields.io/badge/Index-Vercel-B2D959?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/vercel.md)
 [![logo-color](https://img.shields.io/badge/Index-Gitlab-73A5CA?logo=github&logoColor=white&labelColor=5B7E3C)](https://github.com/ooikk/Arduino-Documentation/blob/main/Gitlab.md)
 
-
 [![logo-color](https://img.shields.io/badge/Index-I2C-5996FF?logo=github&logoColor=white&labelColor=2373F4)](https://github.com/ooikk/Arduino-Documentation/blob/main/I2C.md)
 [![logo-color](https://img.shields.io/badge/Index-I2S-3874FF?logo=github&logoColor=white&labelColor=578EF5)](https://github.com/ooikk/Arduino-Documentation/blob/main/I2S.md)
 [![logo-color](https://img.shields.io/badge/Index-SPI-1B4EF5?logo=github&logoColor=white&labelColor=65D0F4)](https://github.com/ooikk/Arduino-Documentation/blob/main/SPI.md)
