@@ -285,7 +285,7 @@ Typical deployment statuses include:
 - Error: Deployment failed.
 - Canceled: Deployment was stopped.
 
-**Where to find it:** Project â†’ Deployments.
+**Where to find it:** Project -> Deployments.
 
 Select a deployment to inspect its details and build logs.
 
