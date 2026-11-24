@@ -97,13 +97,12 @@ It is important to understand that Git, GitHub, and GitLab are not the same thin
 **GitHub**
 
 <img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9ba2a42a-d7a5-46c9-8d7d-024dc4703c92" />
+
+
 Popular for open-source collaboration, repositories, GitHub Actions, and its developer ecosystem.
 
 
 [Official website](https://github.com/)
-
-
-
 
 **GitLab**
 
