@@ -1,6 +1,6 @@
 # **Vercel Beginner's Guide: From Your First Website to Deployment**
 
-A practical, step-by-step guide for beginners · Based on Vercel's official documentation · November 2026
+>A practical, step-by-step guide for beginners · Based on Vercel's official documentation · November 2026
 
 This guide assumes you know basic HTML, CSS, JavaScript and Git, but have never deployed a website or managed web hosting.
 
