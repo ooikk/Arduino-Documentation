@@ -261,7 +261,7 @@ A project can contain:
 - Analytics and performance information.
 - Project-specific settings.
 
-**Where to find it:** Dashboard â†’ select a project.
+**Where to find it:** Dashboard -> select a project.
 
 **Beginner example:** Create a project called `my-first-website` and use its dashboard to monitor your first deployment.&#x20;
 
