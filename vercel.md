@@ -1,4 +1,4 @@
-# **Vercel Beginner's Guide: From Your First Website to Deployment**
+# Vercel Beginner's Guide: From Your First Website to Deployment
 
 >A practical, step-by-step guide for beginners · Based on Vercel's official documentation · November 2026
 
@@ -19,9 +19,9 @@ By the end, you should be able to:
 - [Vercel documentation](https://vercel.com/docs)
 - [Vercel features](https://vercel.com/features)
 
-# **Part 1 -- What is Vercel and why use it?**
+# Part 1 -- What is Vercel and why use it?
 
-## **1.1 What is Vercel?**
+## 1.1 What is Vercel?
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a010c657-5e31-4ddd-8974-e0280db2651d" />
 
@@ -68,7 +68,7 @@ You can share this URL with anyone who has internet access, subject to your depl
 
 Vercel supports frameworks including Next.js, React, Vue, Angular, Svelte and many others, as well as ordinary static HTML websites.
 
-## **1.2 What problems does Vercel solve?**
+## 1.2 What problems does Vercel solve?
 
 Vercel simplifies several tasks that traditionally require server administration.
 
@@ -91,7 +91,7 @@ Vercel's CDN is a globally distributed network that caches and routes content cl
 [How Vercel CDN Works](https://vercel.com/docs/how-vercel-cdn-works)
 
 
-## **1.3 Vercel compared with traditional hosting**
+## 1.3 Vercel compared with traditional hosting
 
 | Item            | Traditional shared hosting / VPS                                     | Vercel                                                                     |
 | --------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------- |
@@ -113,7 +113,7 @@ Vercel is not a replacement for every type of server hosting. If you need a cont
 [Run server-side code with Vercel Functions](https://vercel.com/docs/functions)
 
 
-## **1.4 Who should use Vercel?**
+## 1.4 Who should use Vercel?
 
 | Developer / project                                        | Suitability                                     |
 | ---------------------------------------------------------- | ----------------------------------------------- |
@@ -128,9 +128,9 @@ Vercel is not a replacement for every type of server hosting. If you need a cont
 
 For a beginner, Vercel is particularly useful because you can start with a simple HTML website and later move to React or Next.js without changing hosting platforms.
 
-## **1.5 Important concepts explained simply**
+## 1.5 Important concepts explained simply
 
-### **A. Deployment**
+### A. Deployment
 
 A **deployment** is a published version of your website.
 
@@ -143,7 +143,7 @@ For example:
 
 Each time you publish a new version, Vercel creates another deployment.
 
-### **B. Production deployment**
+### B. Production deployment
 
 Production is the live version intended for your actual visitors.
 
@@ -155,7 +155,7 @@ https://my-website.vercel.app
 
 When you push changes to your configured production branch, commonly `main`, Vercel can automatically publish the updated version.
 
-### **C. Preview deployment**
+### C. Preview deployment
 
 A preview deployment is a temporary or alternative published version for testing before making changes live.
 
@@ -180,7 +180,7 @@ Vercel can create preview deployments for Git branch pushes and pull requests.&#
 
 
 
-### **D. Git integration**
+### D. Git integration
 
 Git integration connects your GitHub, GitLab or Bitbucket repository to Vercel.
 
@@ -198,7 +198,7 @@ You do not have to manually upload files every time you make a change.&#x20;
 
 
 
-### **E. Edge Network**
+### E. Edge Network
 
 An **Edge Network** is a geographically distributed network of servers that helps deliver website content quickly.
 
@@ -211,7 +211,7 @@ Vercel automatically routes deployment traffic through its CDN.&#x20;
 
 [Global network and regions](https://vercel.com/docs/regions)
 
-### **F. Serverless Functions**
+### F. Serverless Functions
 
 A Serverless Function is backend code that runs when requested, without you managing the underlying server.
 
@@ -225,7 +225,7 @@ When a visitor requests that URL, Vercel runs the associated backend function an
 
 You write the function; Vercel manages the infrastructure that executes it.
 
-### **G. Edge Functions**
+### G. Edge Functions
 
 Edge Functions run code closer to the visitor, helping reduce response latency for suitable tasks.
 
@@ -237,9 +237,9 @@ They are useful for request handling, redirects, lightweight personalization and
 
 
 
-# **Part 2 -- Quick tour of Vercel's features**
+# Part 2 -- Quick tour of Vercel's features
 
-## **2.1 Dashboard and Projects overview**
+## 2.1 Dashboard and Projects overview
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/726d6e7a-e95a-4cc9-9d68-239ce8719ff0" />
 
@@ -269,7 +269,7 @@ A project can contain:
 
 
 
-## **2.2 Deployments list, build logs and rollback**
+## 2.2 Deployments list, build logs and rollback
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9e34097d-65fd-4e82-a5c7-aa9fe3d3ae90" />
 
@@ -297,7 +297,7 @@ Build logs show what happened during the build, including:
 - Build errors.
 - Deployment completion.
 
-### **What is rollback?**
+### What is rollback
 
 Rollback means returning the production website to a previous deployment.
 
@@ -313,7 +313,7 @@ On Hobby, Instant Rollback is limited to the immediately previous production dep
 
 **Beginner example:** You accidentally delete an important section of your website. Use rollback to restore the previous working production version.
 
-## **2.3 Preview Deployments**
+## 2.3 Preview Deployments
 
 <img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e38eebb5-2821-43c5-b3a9-c08a7d1df7bc" />
 
@@ -351,7 +351,7 @@ The exact URL is generated by Vercel.
 [Deploying Git Repositories with Vercel](https://vercel.com/docs/git)
 
 
-## **2.4 Domains: custom domain, DNS and HTTPS**
+## 2.4 Domains: custom domain, DNS and HTTPS
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/18bcbfbb-24f7-4275-993c-03f5572d7595" />
 
@@ -396,7 +396,7 @@ Hobby currently allows up to 50 custom domains per project.&#x20;
 [Vercel Hobby Plan](https://vercel.com/docs/plans/hobby?)
 
 
-## **2.5 Environment Variables**
+## 2.5 Environment Variables
 
 Environment variables store configuration values separately from your source code.
 
@@ -431,7 +431,7 @@ Important: after changing an environment variable, redeploy the project for the 
 
 
 
-## **2.6 Integrations and Marketplace**
+## 2.6 Integrations and Marketplace
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/04898f68-dc9f-494b-b27d-aceb89906876" />
 
@@ -464,7 +464,7 @@ Marketplace availability does not mean every integration is free. Check the prov
 
 
 
-## **2.7 Analytics and Speed Insights**
+## 2.7 Analytics and Speed Insights
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/a4eabe48-0eda-48d7-bb09-42c6d7f61189" />
 
@@ -496,7 +496,7 @@ Speed Insights is available on all plans, but its included usage and paid usage 
 [Speed Insights Overview](https://vercel.com/docs/speed-insights?)
 
 
-## **2.8 Edge Functions, Serverless Functions and Cron Jobs**
+## 2.8 Edge Functions, Serverless Functions and Cron Jobs
 
 These features let you do more than serve static files.
 
@@ -522,7 +522,7 @@ Vercel currently supports up to 100 Cron Jobs per project on all plans, subject 
 
 
 
-## **2.9 Storage: Postgres, KV, Blob and Edge Config**
+## 2.9 Storage: Postgres, KV, Blob and Edge Config
 
 Storage is where your application keeps data beyond the lifetime of a single request.
 
@@ -550,7 +550,7 @@ Marketplace integrations can provision these resources and provide connection de
 
 **Beginner example:** Use Postgres to store website registrations and Blob to store uploaded profile photographs.
 
-## **2.10 Team collaboration, comments and access control**
+## 2.10 Team collaboration, comments and access control
 
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/9d722e5d-b5d7-43c0-8de5-fa3debf36227" />
@@ -589,7 +589,7 @@ For access control, Vercel also provides team roles and permissions. Advanced te
 
 [Limits](https://vercel.com/docs/limits)
 
-## **2.11 Vercel pricing: what can beginners use for free?**
+## 2.11 Vercel pricing: what can beginners use for free
 
 Vercel's Hobby plan is free and intended for personal, non-commercial projects.
 
@@ -621,11 +621,11 @@ For professional and commercial projects, review the Pro plan and its usage-base
 
 Official pricing: [Vercel pricing](https://vercel.com/pricing).
 
-# **Part 3 -- Step-by-step setup instructions**
+# Part 3 -- Step-by-step setup instructions
 
 This section uses GitHub as the example. The same general workflow applies to GitLab and Bitbucket.
 
-## **3.1 Before you begin**
+## 3.1 Before you begin
 
 You need:
 
@@ -636,7 +636,7 @@ You need:
 
 You do not need to rent a server or configure a web server.
 
-## **3.2 Create a Vercel account**
+## 3.2 Create a Vercel account
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/b342f949-b50e-4914-ba23-2d8676d162b1" />
 
@@ -657,7 +657,7 @@ You do not need to rent a server or configure a web server.
 - Check whether your browser blocks pop-ups or third-party sign-in.
 - Try signing in again using the same provider.
 
-## **3.3 Connect your Git provider and grant permissions**
+## 3.3 Connect your Git provider and grant permissions
 
 When you sign up using GitHub, Vercel asks to connect to your GitHub account.
 
@@ -683,7 +683,7 @@ Vercel's Git integration supports GitHub, GitLab, Bitbucket and Azure DevOps Pip
 
 
 
-## **3.4 Import your first project from Git**
+## 3.4 Import your first project from Git
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/430640e0-561b-4d22-ac60-517a2a20d7e0" />
 
@@ -701,7 +701,7 @@ Vercel's Git integration supports GitHub, GitLab, Bitbucket and Azure DevOps Pip
 
 **If your repository does not appear:** Return to the Git provider permissions from the previous step.
 
-## **3.5 Understand the import settings**
+## 3.5 Understand the import settings
 
 This is one of the most important steps.
 
@@ -715,7 +715,7 @@ Vercel tries to detect your framework and configure the build automatically. You
 | Output Directory | Folder containing the generated website files | Usually automatic                            |
 | Install Command  | Command that installs dependencies            | Usually automatic                            |
 
-### **What does each setting mean?**
+### What does each setting mean?
 
 **Framework Preset**
 
@@ -790,7 +790,7 @@ Vercel automatically detects common framework settings and install commands.&#x2
 [Builds](https://vercel.com/docs/builds?)
 
 
-## **3.6 Configure environment variables**
+## 3.6 Configure environment variables
 
 If your project uses an API key, database connection or other configuration, add it before deploying.
 
@@ -821,7 +821,7 @@ For a beginner, you can usually select Production, Preview and Development if th
 
 [Settings](https://vercel.com/academy/vercel-foundations/vercel-settings)
 
-## **3.7 Click Deploy**
+## 3.7 Click Deploy
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/101ffc5f-5f4a-4672-afd1-0f9e7eabec45" />
 
@@ -860,7 +860,7 @@ Common causes include:
 - JavaScript or TypeScript errors.
 - Missing environment variables.
 
-## **3.8 Open the live URL**
+## 3.8 Open the live URL
 
 When the deployment succeeds:
 
@@ -878,7 +878,7 @@ https://your-project-name.vercel.app
 
 **What you should see:** Your website running on a public URL.
 
-## **3.9 Make a change and trigger automatic redeployment**
+## 3.9 Make a change and trigger automatic redeployment
 
 This is where Git integration becomes particularly useful.
 
@@ -920,7 +920,7 @@ The Git integration supports automatic deployments for branch pushes and product
 
 
 
-## **3.10 First-deployment setup checklist**
+## 3.10 First-deployment setup checklist
 
 Use this checklist to verify that everything is ready.
 
@@ -936,7 +936,7 @@ Use this checklist to verify that everything is ready.
 - Images, CSS, JavaScript and navigation work.
 - A test Git commit triggers another deployment.
 
-# **Part 4 -- Tutorials: Deploy four different projects**
+# Part 4 -- Tutorials: Deploy four different projects
 
 The four tutorials below cover different ways to publish a website.
 
@@ -947,7 +947,7 @@ The four tutorials below cover different ways to publish a website.
 | C        | Vite + React          | GitHub import     | Yes                         |
 | D        | Any supported project | Vercel CLI        | No Git integration required |
 
-## **Tutorial A -- Deploy a Next.js application from GitHub**
+## Tutorial A -- Deploy a Next.js application from GitHub
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/586c8d4f-83f6-47ea-a49d-d83e434103cb" />
 
@@ -956,7 +956,7 @@ The four tutorials below cover different ways to publish a website.
 
 Next.js is a React framework used to build websites and full-stack applications.
 
-### **Step 1: Create a Next.js application**
+### Step 1: Create a Next.js application
 
 You need Node.js and npm installed.
 
@@ -978,7 +978,7 @@ Move into the project folder:
 cd my-nextjs-site
 ```
 
-### **Step 2: Start the application locally**
+### Step 2: Start the application locally
 
 Run:
 
@@ -1009,7 +1009,7 @@ Stop the development server with:
 Ctrl + C
 ```
 
-### **Step 3: Understand the folder structure**
+### Step 3: Understand the folder structure
 
 A typical generated project looks like this:
 
@@ -1040,7 +1040,7 @@ Important files:
 | `package.json`    | Dependencies and scripts |
 | `next.config.ts`  | Next.js configuration    |
 
-### **Step 4: Create a GitHub repository**
+### Step 4: Create a GitHub repository
 
 1. Open [GitHub: Create a new repository](https://github.com/new).
 2. Name it `my-nextjs-site`.
@@ -1048,7 +1048,7 @@ Important files:
 4. Do not initialize it with an additional README if your local project already has one.
 5. Click Create repository.
 
-### **Step 5: Push the project to GitHub**
+### Step 5: Push the project to GitHub
 
 In your project folder:
 
@@ -1065,7 +1065,7 @@ Replace `YOUR_USERNAME` with your GitHub username.
 
 Your folder is now stored in GitHub.
 
-### **Step 6: Import the project into Vercel**
+### Step 6: Import the project into Vercel
 
 1. Open [Vercel New Project](https://vercel.com/new).
 2. Sign in with GitHub if necessary.
@@ -1085,7 +1085,7 @@ Expected settings:
 
 6\. Click Deploy.
 
-### **Step 7: Verify the deployment**
+### Step 7: Verify the deployment
 
 Wait for the build to finish.
 
@@ -1101,7 +1101,7 @@ Tutorial A complete
 
 You have successfully deployed your first Next.js website.
 
-## **Tutorial B -- Deploy a static HTML, CSS and JavaScript website without Git**
+## Tutorial B -- Deploy a static HTML, CSS and JavaScript website without Git
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/c7d788be-7f44-4c74-b633-39f8775d29c8" />
 
@@ -1117,7 +1117,7 @@ Official entry point: [Vercel Drop](https://vercel.com/drop).&#x20;
 
 [Introducing Vercel Drop](https://vercel.com/changelog/vercel-drop?)
 
-### **Step 1: Create your website folder**
+### Step 1: Create your website folder
 
 Create a folder named:
 
@@ -1134,7 +1134,7 @@ my-static-site/
 └── script.js
 ```
 
-### **Step 2: Create index.html**
+### Step 2: Create index.html
 
 ```
 <!DOCTYPE html>
@@ -1161,7 +1161,7 @@ my-static-site/
 </html>
 ```
 
-### **Step 3: Create style.css**
+### Step 3: Create style.css
 
 ```
 body {
@@ -1185,7 +1185,7 @@ button {
 }
 ```
 
-### **Step 4: Create script.js**
+### Step 4: Create script.js
 
 ```
 function showMessage() {
@@ -1193,7 +1193,7 @@ function showMessage() {
 }
 ```
 
-### **Step 5: Test locally**
+### Step 5: Test locally
 
 Open `index.html` in your browser.
 
@@ -1205,7 +1205,7 @@ You should see:
 
 Click the button. An alert should appear.
 
-### **Step 6: Deploy using Vercel Drop**
+### Step 6: Deploy using Vercel Drop
 
 1. Open [Vercel Drop](https://vercel.com/drop).
 2. Sign in to your Vercel account if prompted.
@@ -1222,7 +1222,7 @@ For a static site, Vercel can serve the files without a framework build step. Ma
 
 [Builds](https://vercel.com/docs/builds)
 
-### **Step 7: Verify**
+### Step 7: Verify
 
 Vercel will provide a URL resembling:
 
@@ -1238,7 +1238,7 @@ Tutorial B complete
 
 **Important:** A Vercel Drop deployment does not automatically redeploy when you edit your local files. You must upload the updated project again, or connect the project to Git for automatic deployments.
 
-## **Tutorial C -- Deploy a Vite + React application**
+## Tutorial C -- Deploy a Vite + React application
 
 <img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/4810f2ab-bd5c-425c-a16c-0491d83048d6" />
 
@@ -1249,7 +1249,7 @@ Vite is a frontend development and build tool. React is a JavaScript library for
 
 This tutorial creates a small React application and deploys it through GitHub.
 
-### **Step 1: Create the project**
+### Step 1: Create the project
 
 Run:
 
@@ -1269,7 +1269,7 @@ Install dependencies:
 npm install
 ```
 
-### **Step 2: Run the application locally**
+### Step 2: Run the application locally
 
 ```
 npm run dev
@@ -1297,7 +1297,7 @@ Stop the server:
 Ctrl + C
 ```
 
-### **Step 3: Understand the folder structure**
+### Step 3: Understand the folder structure
 
 ```
 my-react-site/
@@ -1325,7 +1325,7 @@ Important files:
 | `package.json`   | Dependencies and scripts     |
 | `vite.config.js` | Vite configuration           |
 
-### **Step 4: Build the application**
+### Step 4: Build the application
 
 Run:
 
@@ -1341,7 +1341,7 @@ dist/
 
 The `dist` folder contains the files Vercel will serve.
 
-### **Step 5: Upload the project to GitHub**
+### Step 5: Upload the project to GitHub
 
 Create a GitHub repository named:
 
@@ -1362,7 +1362,7 @@ git push -u origin main
 
 Replace `YOUR_USERNAME` with your GitHub username.
 
-### **Step 6: Import into Vercel**
+### Step 6: Import into Vercel
 
 1. Open [Vercel New Project](https://vercel.com/new?).
 2. Import `my-react-site`.
@@ -1389,7 +1389,7 @@ Vercel normally detects these settings automatically.&#x20;
 
 4. Click Deploy.
 
-### **Step 7: Verify the website**
+### Step 7: Verify the website
 
 After deployment, click Visit.
 
@@ -1403,7 +1403,7 @@ Confirm that the React starter page appears.
 
 Tutorial C complete
 
-## **Tutorial D -- Deploy using the Vercel CLI**
+## Tutorial D -- Deploy using the Vercel CLI
 
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/440520bc-954a-430f-b83e-1ac8e6022977" />
 
@@ -1413,7 +1413,7 @@ The Vercel CLI is a command-line tool that lets you deploy and manage projects d
 
 This is useful when you want to automate deployments or work without using the dashboard for every deployment.
 
-### **Step 1: Install Node.js**
+### Step 1: Install Node.js
 
 Download and install Node.js from:
 
@@ -1428,7 +1428,7 @@ npm --version
 
 You should see version numbers for both commands.
 
-### **Step 2: Install Vercel CLI**
+### Step 2: Install Vercel CLI
 
 Run:
 
@@ -1446,7 +1446,7 @@ You should see the installed Vercel CLI version.
 
 Official instructions: [Vercel CLI documentation](https://vercel.com/docs/cli?).
 
-### **Step 3: Log in**
+### Step 3: Log in
 
 Run:
 
@@ -1456,7 +1456,7 @@ vercel login
 
 Follow the login prompts. Depending on the authentication flow, you may be asked to verify your email or complete browser authentication.
 
-### **Step 4: Prepare a project**
+### Step 4: Prepare a project
 
 You can use the static website created in Tutorial B.
 
@@ -1471,7 +1471,7 @@ my-static-site/
 
 Open a terminal in this directory.
 
-### **Step 5: Deploy a Preview**
+### Step 5: Deploy a Preview
 
 Run:
 
@@ -1510,7 +1510,7 @@ https://my-static-site-xxxx.vercel.app
 
 The exact prompts and output may vary by CLI version and project configuration.
 
-### **Step 6: Deploy to Production**
+### Step 6: Deploy to Production
 
 After verifying your preview deployment, run:
 
@@ -1522,7 +1522,7 @@ This creates a production deployment.
 
 Expected output includes a production deployment URL and a Ready status.
 
-### **Step 7: Verify**
+### Step 7: Verify
 
 Open the production URL printed by the CLI.
 
@@ -1545,9 +1545,9 @@ The CLI uses Preview by default unless you specify `--prod`.&#x20;
 
 Tutorial D complete
 
-# **Part 5 -- Next steps and troubleshooting**
+# Part 5 -- Next steps and troubleshooting
 
-## **5.1 Common deployment errors**
+## 5.1 Common deployment errors
 
 These are some of the problems beginners encounter when deploying their first websites.
 
@@ -1559,9 +1559,9 @@ These are some of the problems beginners encounter when deploying their first we
 | **Domain not working**           | Incorrect DNS records or DNS propagation still in progress            | Go to Settings â†’ Domains and follow Vercel's DNS configuration instructions.                            |
 | **Build command not found**      | Incorrect command or missing `package.json` script                    | Check `package.json`, confirm dependencies are installed and correct the Build Command.                 |
 
-### **More troubleshooting examples**
+### More troubleshooting examples
 
-**Problem 1: Build failed with&#x20;**`npm run build`
+**Problem 1: Build failed with `npm run build`**
 
 Open your local terminal and test:
 
@@ -1648,7 +1648,7 @@ Vercel's build configuration documentation explains how to customize framework d
 [Adding & Configuring a Custom Domain](https://vercel.com/docs/domains/working-with-domains/add-a-domain)
 
 
-## **5.2 A 10-minute practice plan: Your first three deployments**
+## 5.2 A 10-minute practice plan: Your first three deployments
 
 The objective is to experience three different ways to publish a website.
 
@@ -1697,7 +1697,7 @@ At the end of the exercise, you should understand three deployment approaches:
 - Git-based automatic deployment.
 - Command-line deployment.
 
-## **5.3 What should you learn next?**
+## 5.3 What should you learn next?
 
 Once you can deploy a basic website, I recommend learning these topics in order:
 
@@ -1713,7 +1713,7 @@ Once you can deploy a basic website, I recommend learning these topics in order:
 | Advanced       | Edge Functions                | Run request-handling code closer to visitors    |
 | Advanced       | CLI and deployment automation | Integrate deployment into development workflows |
 
-## **5.4 Official Vercel documentation and learning resources**
+## 5.4 Official Vercel documentation and learning resources
 
 These are useful links to bookmark.
 
@@ -1765,7 +1765,7 @@ These are useful links to bookmark.
 - [Vercel CLI](https://vercel.com/docs/cli)
 - [Deploy using CLI](https://vercel.com/docs/projects/deploy-from-cli)
 
-## **Final recommendation**
+## Final recommendation
 
 If you are completely new to Vercel, learn it in this order:
 
