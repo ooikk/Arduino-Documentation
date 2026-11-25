@@ -137,9 +137,8 @@ The ESP32 scans the rows one by one.
 
 The ESP32 detects:
 
-\[
-R2 = LOW,\quad C2 = LOW
-\]
+R2 = LOW, C2 = LOW
+
 
 Therefore, the pressed key is at row 2, column 2.
 
