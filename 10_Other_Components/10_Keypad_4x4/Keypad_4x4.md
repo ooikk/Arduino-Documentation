@@ -225,7 +225,18 @@ The actual implementation can be examined in the library's `scanKeys()` function
 
 ## 3. Understanding the Keypad.h Library
 
-[Interfacing 4x4 Matrix Keypad with Arduino Uno](https://images.openai.com/static-rsc-4/5Lxp2U8CETtQdISQh3maX7qDwf-uL-kp8yJ3_T8sjeom6Ke4HX2cqLQ3FyyH8893pQY2n_qoUS_Sb4Z_CanRsLfLXThKW0xtKN3XgRM7Fl2LyeTYOcMHZlCnQMj2RGVyU7m3aTH6ORNcFWLd2krw6r8tIvOvsLqRAAPfBE9P1Yo?purpose=inline)
+Authors: Mark Stanley and Alexander Brevig
+
+https://playground.arduino.cc/Code/Keypad/
+
+https://github.com/Chris--A/Keypad
+
+
+<img width="267" height="360" alt="image" src="https://github.com/user-attachments/assets/73a97e95-5279-4f98-93df-6949fa2df949" />
+
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/4b5691d8-be3c-49d7-968a-aafcbe898f53" />
+
 
 **Arduino Keypad Library**
 
