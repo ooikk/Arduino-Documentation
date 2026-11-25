@@ -18,7 +18,7 @@ It has 16 keys arranged in four rows and four columns. Instead of requiring 16 G
 
 [GetUSCart - 10pcs 4x4 Matrix Array Membrane Switch Keypad Keyboard](https://images.openai.com/static-rsc-4/nxWpzCS6Ua8CPo4C5coCnuHaTWxaW7uDpAdpd7VOSBJyaEZnHk6BuWOAJL-2hN2uU0qhidyv8pS-sy_VHZxmMc4jHG-VwAdH9Z-lzrubS8CBPb69D0aUqXK4fEbND8__16wuNKfHLfm7cw1g3ABnZs_iRKaUwBVx1WsEHPZjQ0M?purpose=inline)
 
-[getuscart.com](https://www.getuscart.com/10pcs-4x4-matrix-array-membrane-switch-keypad-keyboard-16-key-matrix-array-membrane-switch-8pin-keypad-keyboard-microcontroller?utm_source=chatgpt.com)
+[getuscart.com](https://www.getuscart.com/10pcs-4x4-matrix-array-membrane-switch-keypad-keyboard-16-key-matrix-array-membrane-switch-8pin-keypad-keyboard-microcontroller)
 
 Your keypad consists of three main parts:
 
@@ -54,7 +54,7 @@ For example:
 
 [Keypad - Fads to Obsessions](https://images.openai.com/static-rsc-4/YRtRZx55CYikEA-zBrltgCvch8SrbjKQEbF_qY0mZckf05Q8RVzAQh5Oudm4rkk0Y2jrKgu6Tab_sUWjZ1Lv0I7EewfM22rMM8LpqFq9-ZiMosYMv0q90oZJhg6xPqGM01mM6eo27A0Of2QFc1sgpkfhkNqh0Ix0TSegAfEeWEc?purpose=inline)
 
-[fadstoobsessions.com](https://fadstoobsessions.com/Learning-Electronics/Nano-Microcontroller/keypad.php?utm_source=chatgpt.com)
+[fadstoobsessions.com](https://fadstoobsessions.com/Learning-Electronics/Nano-Microcontroller/keypad.php)
 
 The keypad is essentially a collection of 16 switches arranged in a matrix.
 
@@ -258,7 +258,7 @@ In Arduino IDE 2.x:
 
 The maintained Arduino Library Manager-compatible repository is:
 
-[Chris--A/Keypad – Official library repository](https://github.com/Chris--A/Keypad?utm_source=chatgpt.com)
+[Chris--A/Keypad – Official library repository](https://github.com/Chris--A/Keypad)
 
 | File | Purpose |
 |---|---|
@@ -330,7 +330,7 @@ The default setting is 10 milliseconds.
 
 The following API list is based on the public declarations in the `Keypad.h` header of the Chris--A library. It covers the public `Keypad` methods, constructor, GPIO abstraction methods and inherited key information.
 
-[Keypad.h – Public API declarations](https://github.com/Chris--A/Keypad/blob/master/src/Keypad.h?utm_source=chatgpt.com)
+[Keypad.h – Public API declarations](https://github.com/Chris--A/Keypad/blob/master/src/Keypad.h)
 
 ### 4.1 Constructor
 
@@ -686,7 +686,7 @@ These are example assignments, subject to the actual board pinout and other peri
 
 This example avoids the GPIOs already used by your ILI9488 and MFRC522 configurations.
 
-[ESP32-S3-DevKitC-1 – ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html?utm_source=chatgpt.com)
+[ESP32-S3-DevKitC-1 – ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html)
 
 Electrical precautions:
 
@@ -890,10 +890,10 @@ For normal human-operated keypads, 10–20 ms is a reasonable starting point. Ad
 
 ## 9. References
 
-- [Chris--A/Keypad – GitHub repository](https://github.com/Chris--A/Keypad?utm_source=chatgpt.com)
-- [Keypad.h – Public API declarations](https://github.com/Chris--A/Keypad/blob/master/src/Keypad.h?utm_source=chatgpt.com)
-- [Keypad.cpp – Scanning and state-machine implementation](https://github.com/Chris--A/Keypad/blob/master/src/Keypad.cpp?utm_source=chatgpt.com)
-- [Keypad library example programs](https://github.com/Chris--A/Keypad/tree/master/examples?utm_source=chatgpt.com)
+- [Chris--A/Keypad – GitHub repository](https://github.com/Chris--A/Keypad)
+- [Keypad.h – Public API declarations](https://github.com/Chris--A/Keypad/blob/master/src/Keypad.h)
+- [Keypad.cpp – Scanning and state-machine implementation](https://github.com/Chris--A/Keypad/blob/master/src/Keypad.cpp)
+- [Keypad library example programs](https://github.com/Chris--A/Keypad/tree/master/examples)
 
 The API reference above describes the standard Chris--A library, not every third-party library that happens to use the filename `Keypad.h`.
 
