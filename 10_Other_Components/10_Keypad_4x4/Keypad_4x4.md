@@ -175,7 +175,7 @@ Detected position: `R2`, `C2` → Key `5`.
 Once the software knows the row and column, it uses a lookup table to identify the character.
 
 ```cpp
-char keys = {
+char keys[4][4] = {
   {'1', '2', '3', 'A'},
   {'4', '5', '6', 'B'},
   {'7', '8', '9', 'C'},
@@ -192,7 +192,7 @@ char key = keys[row][col];
 For row index 1 and column index 1:
 
 ```cpp
-char key = keys;  // Returns '5'[1]
+char key = keys[1][1];  // Returns '5'
 ```
 
 Notice that software array indexes start at zero, whereas the physical row and column numbers start at one.
