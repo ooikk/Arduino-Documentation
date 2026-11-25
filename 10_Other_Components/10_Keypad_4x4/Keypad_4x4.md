@@ -827,6 +827,118 @@ keypad.addEventListener(keypadEvent);
 
 Continue calling `keypad.getKey()` in `loop()` to keep the scanning process running.
 
+#### Keypad Event Callbacks and Continuous Scanning
+
+Yes. You must keep calling `keypad.getKey()` in your `loop()` to trigger the `addEventListener()` callback.
+
+The `addEventListener()` function only registers the callback function. It does not independently scan the keypad or run in the background.
+
+##### 1. How It Works
+
+There are two separate operations.
+
+###### Step 1: Register the Callback
+
+```cpp
+void keypadEvent(KeypadEvent key) {
+
+    switch (keypad.getState()) {
+
+        case PRESSED:
+            Serial.println("Key Pressed");
+            break;
+
+        case HOLD:
+            Serial.println("Key Holding");
+            break;
+
+        case RELEASED:
+            Serial.println("Key Released");
+            break;
+    }
+}
+
+void setup() {
+    Serial.begin(115200);
+
+    keypad.addEventListener(keypadEvent);
+}
+```
+
+###### Step 2: Keep Scanning the Keypad
+
+```cpp
+void loop() {
+
+    char key = keypad.getKey();
+
+}
+```
+
+When `getKey()` scans the keypad and detects a key-state change, the library invokes your registered callback.
+
+##### 2. Execution Sequence
+
+```text
+setup()
+└── Register keypadEvent() using addEventListener()
+
+loop()
+└── Call keypad.getKey()
+    └── Library scans GPIO
+        └── Detect row and column changes
+            └── keypadEvent() called
+                └── Report PRESSED / HOLD / RELEASED
+
+Return to loop() and continue scanning.
+```
+
+##### 3. Can I Use getKeys() Instead?
+
+Yes. You can use either:
+
+```cpp
+void loop() {
+    keypad.getKey();
+}
+```
+
+or:
+
+```cpp
+void loop() {
+    keypad.getKeys();
+}
+```
+
+Both perform keypad scanning and update key states. The second is particularly useful when you want to track multiple simultaneous keypresses.
+
+##### 4. Important Consideration for ESP32 FreeRTOS
+
+If you implement keypad scanning in a dedicated FreeRTOS task, you can do:
+
+```cpp
+void keypadTask(void *pvParameters) {
+
+    while (1) {
+
+        keypad.getKey();
+
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
+```
+
+The callback executes in the context of the task that calls `getKey()`, not in an independent interrupt or background task.
+
+Therefore, keep the callback short. If it needs to communicate with another FreeRTOS task, use a queue or task notification.
+
+##### Key Takeaway
+
+- `addEventListener()` registers what to do when a key event occurs.
+- `getKey()` or `getKeys()` performs the scanning that detects the event and invokes the callback.
+
+
 ### 6.3 Example: Password Entry
 
 One practical application is an electronic password lock.
