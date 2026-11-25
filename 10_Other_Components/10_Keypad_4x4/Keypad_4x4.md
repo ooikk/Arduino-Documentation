@@ -19,8 +19,6 @@ It has 16 keys arranged in four rows and four columns. Instead of requiring 16 G
 <img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e573e4ea-5016-41ea-a79a-ed5f42ee49b6" />
 
 
-[getuscart.com](https://www.getuscart.com/10pcs-4x4-matrix-array-membrane-switch-keypad-keyboard-16-key-matrix-array-membrane-switch-8pin-keypad-keyboard-microcontroller)
-
 Your keypad consists of three main parts:
 
 - **Keypad membrane:** The front panel containing 16 buttons.
@@ -30,6 +28,9 @@ Your keypad consists of three main parts:
 ### 1.1 Key Arrangement
 
 The keypad has the following layout:
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/7cd71c34-f0ef-4724-b2b4-2f555ededb63" />
+
 
 | Row | Column 1 | Column 2 | Column 3 | Column 4 |
 |---|---|---|---|---|
