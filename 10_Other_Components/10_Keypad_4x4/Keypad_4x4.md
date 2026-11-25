@@ -552,17 +552,9 @@ int findInList(int keyCode);
 
 Finds an active key using its numeric position code.
 
-The library calculates the code as:
+The library calculates the code as: $$KeyCode=(row \times numCols)+column$$
 
-\[
-KeyCode = (row \times numCols) + column
-\]
-
-For key `5`, using zero-based indexing:
-
-\[
-KeyCode = (1 \times 4) + 1 = 5
-\]
+For key `5`, using zero-based indexing: $$KeyCode=(1 \times 4)+1=5$$
 
 ```cpp
 int index = keypad.findInList(5);
@@ -696,6 +688,9 @@ For an ESP32-S3 DevKitC-1, one possible assignment is:
 These are example assignments, subject to the actual board pinout and other peripherals connected to your board.
 
 This example avoids the GPIOs already used by your ILI9488 and MFRC522 configurations.
+
+<img width="50%" height="auto" alt="image" src="https://github.com/user-attachments/assets/ebec1f3e-5bc4-4da5-a040-639d3101a8a6" />
+
 
 [ESP32-S3-DevKitC-1 – ESP-IDF Programming Guide](https://docs.espressif.com/projects/esp-idf/en/v4.4/esp32s3/hw-reference/esp32s3/user-guide-devkitc-1.html)
 
