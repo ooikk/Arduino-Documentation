@@ -829,7 +829,7 @@ Continue calling `keypad.getKey()` in `loop()` to keep the scanning process runn
 
 #### Keypad Event Callbacks and Continuous Scanning
 
-Yes. You must keep calling `keypad.getKey()` in your `loop()` to trigger the `addEventListener()` callback.
+You must keep calling `keypad.getKey()` in your `loop()` to trigger the `addEventListener()` callback.
 
 The `addEventListener()` function only registers the callback function. It does not independently scan the keypad or run in the background.
 
