@@ -63,9 +63,9 @@ The keypad is essentially a collection of 16 switches arranged in a matrix.
 
 The number of GPIO connections is:
 
-\[
-N_{\text{GPIO}} = N_{\text{rows}} + N_{\text{columns}}
-\]
+𝑁_"GPIO" =𝑁_"rows" +𝑁_"columns" 
+
+
 
 For a 4×4 keypad:
 
