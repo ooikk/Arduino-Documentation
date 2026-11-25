@@ -54,7 +54,8 @@ For example:
 - Pressing `A` connects `R1` to `C4`.
 - Pressing `0` connects `R4` to `C2`.
 
-[Keypad - Fads to Obsessions](https://images.openai.com/static-rsc-4/YRtRZx55CYikEA-zBrltgCvch8SrbjKQEbF_qY0mZckf05Q8RVzAQh5Oudm4rkk0Y2jrKgu6Tab_sUWjZ1Lv0I7EewfM22rMM8LpqFq9-ZiMosYMv0q90oZJhg6xPqGM01mM6eo27A0Of2QFc1sgpkfhkNqh0Ix0TSegAfEeWEc?purpose=inline)
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/54bfa853-b714-4693-b134-6d51281a7824" />
+
 
 [fadstoobsessions.com](https://fadstoobsessions.com/Learning-Electronics/Nano-Microcontroller/keypad.php)
 
