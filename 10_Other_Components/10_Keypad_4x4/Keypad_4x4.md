@@ -61,17 +61,10 @@ For example:
 
 The keypad is essentially a collection of 16 switches arranged in a matrix.
 
-The number of GPIO connections is:
-
-$$N_{GPIO} = N_{rows} + N_{columns}$$
+The number of GPIO connections is: $$N_{GPIO} = N_{rows} + N_{columns}$$
 
 
-
-For a 4×4 keypad:
-
-\[
-N_{\text{GPIO}} = 4 + 4 = 8
-\]
+For a 4×4 keypad: $$N_{\text{GPIO}}=4+4=8$$
 
 | Keypad Arrangement | Keys | GPIO Required |
 |---|---:|---:|
