@@ -673,16 +673,19 @@ The connector order is not guaranteed to be the same across manufacturers. The p
 
 For an ESP32-S3 DevKitC-1, one possible assignment is:
 
+<img width="623" height="509" alt="image" src="https://github.com/user-attachments/assets/7579ddeb-3554-41d9-9689-e4a238e8e2d5" />
+
+
 | Keypad Signal | ESP32-S3 GPIO |
 |---|---|
-| R1 | GPIO 1 |
-| R2 | GPIO 2 |
-| R3 | GPIO 14 |
-| R4 | GPIO 15 |
-| C1 | GPIO 16 |
-| C2 | GPIO 17 |
-| C3 | GPIO 18 |
-| C4 | GPIO 21 |
+| R1 | GPIO 15 |
+| R2 | GPIO 16 |
+| R3 | GPIO 17 |
+| R4 | GPIO 18 |
+| C1 | GPIO 19 |
+| C2 | GPIO 20 |
+| C3 | GPIO 21 |
+| C4 | GPIO 47 |
 
 These are example assignments, subject to the actual board pinout and other peripherals connected to your board.
 
@@ -705,14 +708,14 @@ Electrical precautions:
 ```text
 ESP32-S3 to 4×4 Keypad
 
-ESP32-S3 GPIO 1  → Keypad R1
-ESP32-S3 GPIO 2  → Keypad R2
-ESP32-S3 GPIO 14 → Keypad R3
-ESP32-S3 GPIO 15 → Keypad R4
-ESP32-S3 GPIO 16 → Keypad C1
-ESP32-S3 GPIO 17 → Keypad C2
-ESP32-S3 GPIO 18 → Keypad C3
-ESP32-S3 GPIO 21 → Keypad C4
+ESP32-S3 GPIO 15  → Keypad R1
+ESP32-S3 GPIO 16  → Keypad R2
+ESP32-S3 GPIO 17 → Keypad R3
+ESP32-S3 GPIO 18 → Keypad R4
+ESP32-S3 GPIO 19 → Keypad C1
+ESP32-S3 GPIO 20 → Keypad C2
+ESP32-S3 GPIO 21 → Keypad C3
+ESP32-S3 GPIO 47 → Keypad C4
 ```
 
 Connect each GPIO to its corresponding keypad signal. No VCC or GND connection is needed for the passive keypad.
@@ -739,8 +742,8 @@ char keys[ROWS][COLS] = {
 };
 
 // ESP32-S3 GPIO assignments
-byte rowPins[ROWS] = {1, 2, 14, 15};
-byte colPins[COLS] = {16, 17, 18, 21};
+byte rowPins[ROWS] = {15, 16, 17, 18};
+byte colPins[COLS] = {19, 20, 21, 47};
 
 // Create keypad object
 Keypad keypad = Keypad(
