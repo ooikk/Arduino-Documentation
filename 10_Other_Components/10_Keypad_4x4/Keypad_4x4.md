@@ -137,7 +137,7 @@ The ESP32 scans the rows one by one.
 
 The ESP32 detects:
 
-R2 = LOW, C2 = LOW
+`R2` = LOW, `C2` = LOW
 
 
 Therefore, the pressed key is at row 2, column 2.
@@ -154,7 +154,12 @@ Therefore, the pressed key is at row 2, column 2.
 - Read the four columns.
 - All columns remain HIGH.
 
+The complete scanning sequence is illustrated below.
+
+
 ### Example: Key 5 Is Pressed
+
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e894f9b8-6d32-461c-8935-422037bf4451" />
 
 | Active Row | Result | C1 | C2 | C3 | C4 |
 |---|---|---|---|---|---|
@@ -163,7 +168,7 @@ Therefore, the pressed key is at row 2, column 2.
 | R3 active | Not detected | HIGH | HIGH | HIGH | HIGH |
 | R4 active | Not detected | HIGH | HIGH | HIGH | HIGH |
 
-Detected position: `R2, C2` → Key `5`.
+Detected position: `R2`, `C2` → Key `5`.
 
 ### 2.3 Converting Row and Column Into a Key Value
 
