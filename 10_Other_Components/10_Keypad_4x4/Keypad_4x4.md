@@ -235,7 +235,7 @@ https://github.com/Chris--A/Keypad
 <img width="267" height="360" alt="image" src="https://github.com/user-attachments/assets/73a97e95-5279-4f98-93df-6949fa2df949" />
 
 
-<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/4b5691d8-be3c-49d7-968a-aafcbe898f53" />
+<img width="30%" height="auto" alt="image" src="https://github.com/user-attachments/assets/4b5691d8-be3c-49d7-968a-aafcbe898f53" />
 
 
 **Arduino Keypad Library**
