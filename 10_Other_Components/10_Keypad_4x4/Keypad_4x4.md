@@ -225,7 +225,6 @@ The actual implementation can be examined in the library's `scanKeys()` function
 
 ## 3. Understanding the Keypad.h Library
 
-Authors: Mark Stanley and Alexander Brevig
 
 https://playground.arduino.cc/Code/Keypad/
 
