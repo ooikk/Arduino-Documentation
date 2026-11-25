@@ -16,7 +16,8 @@ It has 16 keys arranged in four rows and four columns. Instead of requiring 16 G
 
 ## 1. Understanding the Hardware
 
-[GetUSCart - 10pcs 4x4 Matrix Array Membrane Switch Keypad Keyboard](https://images.openai.com/static-rsc-4/nxWpzCS6Ua8CPo4C5coCnuHaTWxaW7uDpAdpd7VOSBJyaEZnHk6BuWOAJL-2hN2uU0qhidyv8pS-sy_VHZxmMc4jHG-VwAdH9Z-lzrubS8CBPb69D0aUqXK4fEbND8__16wuNKfHLfm7cw1g3ABnZs_iRKaUwBVx1WsEHPZjQ0M?purpose=inline)
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/e573e4ea-5016-41ea-a79a-ed5f42ee49b6" />
+
 
 [getuscart.com](https://www.getuscart.com/10pcs-4x4-matrix-array-membrane-switch-keypad-keyboard-16-key-matrix-array-membrane-switch-8pin-keypad-keyboard-microcontroller)
 
