@@ -1038,6 +1038,8 @@ This gives learners an understanding of both the hardware-level operation and th
 
 ---
 
+# 4×4 matrix keypad with FreeRTOS
+
 Below is a complete ESP32-S3 Arduino sketch demonstrating how to integrate the 4×4 matrix keypad with FreeRTOS, using a dedicated keypad scanning task and a FreeRTOS queue to communicate key events to another task.
 
 The design separates keypad scanning from application processing. This is particularly useful when your ESP32-S3 application also runs Wi-Fi, BLE, sensor acquisition or other FreeRTOS tasks.
