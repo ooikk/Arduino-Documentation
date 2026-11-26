@@ -1,4 +1,4 @@
-# ESP32_S3 Partition
+# ESP32 S3 Partition
 
 In Arduino IDE, a **Partition Scheme**, also called a **Partition Table**, determines how the physical flash memory on the ESP32-S3 is divided into logical sections.
 
