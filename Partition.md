@@ -22,7 +22,7 @@ ESP32-S3 boards commonly include 4 MB, 8 MB, or 16 MB of flash memory. However, 
 
 If the wrong partition scheme is selected, several problems may occur.
 
-### `Sketch too big` Error
+### Sketch too big Error
 
 Your application, such as one using ESP RainMaker, may be larger than the space allocated to the application partition.
 
