@@ -1052,6 +1052,9 @@ We will create three execution contexts:
 
 ### Keypad Hardware
 
+<img width="60%" height="auto" alt="image" src="https://github.com/user-attachments/assets/0dd17ed5-f9d0-4761-83d6-344b52f29b7e" />
+
+
 ```text
 4 × 4 membrane keypad
         │
@@ -1495,93 +1498,4 @@ For your ESP32 learning lab, I recommend extending this example in three stages:
 **Further improvement:** In a larger ESP32-S3 project, you can have the `ApplicationTask` interpret keypad input as commands and send those commands to separate motor-control, display or communication tasks. This demonstrates a practical event-driven FreeRTOS architecture without coupling the keypad driver to application logic.
 
 
-```svg
-<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1120" viewBox="0 0 1000 1120" role="img" aria-labelledby="title desc">
-  <title id="title">ESP32 FreeRTOS 4x4 Keypad Event Flow</title>
-  <desc id="desc">A flow diagram showing keypad hardware scanned by a FreeRTOS task, a callback sending key events to a queue, and an application task receiving and processing them.</desc>
-  <defs>
-    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
-      <path d="M1,1 L11,6 L1,11 Z" fill="#475569"/>
-    </marker>
-    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%">
-      <feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#0f172a" flood-opacity=".10"/>
-    </filter>
-    <style>
-      .heading { font: 700 30px Arial, Helvetica, sans-serif; fill: #0f172a; }
-      .title { font: 700 23px Arial, Helvetica, sans-serif; fill: #0f172a; }
-      .body { font: 17px Arial, Helvetica, sans-serif; fill: #334155; }
-      .small { font: 15px Arial, Helvetica, sans-serif; fill: #64748b; }
-      .node { stroke-width: 2; rx: 18; filter: url(#shadow); }
-      .arrow { fill: none; stroke: #475569; stroke-width: 3; marker-end: url(#arrow); }
-    </style>
-  </defs>
 
-  <rect width="1000" height="1120" fill="#f8fafc"/>
-  <text x="500" y="62" text-anchor="middle" class="heading">ESP32-S3 FreeRTOS Keypad Event Flow</text>
-  <text x="500" y="94" text-anchor="middle" class="small">Dedicated scanning task · Callback · Queue-based application processing</text>
-
-  <!-- Keypad hardware -->
-  <rect x="180" y="130" width="640" height="145" class="node" fill="#eaf3ff" stroke="#3b82f6"/>
-  <g transform="translate(225 157)">
-    <rect x="0" y="0" width="108" height="92" rx="10" fill="#1e293b"/>
-    <g fill="#60a5fa" stroke="#dbeafe" stroke-width="2">
-      <rect x="10" y="10" width="18" height="15" rx="3"/><rect x="45" y="10" width="18" height="15" rx="3"/><rect x="80" y="10" width="18" height="15" rx="3"/>
-      <rect x="10" y="38" width="18" height="15" rx="3"/><rect x="45" y="38" width="18" height="15" rx="3"/><rect x="80" y="38" width="18" height="15" rx="3"/>
-      <rect x="10" y="66" width="18" height="15" rx="3"/><rect x="45" y="66" width="18" height="15" rx="3"/><rect x="80" y="66" width="18" height="15" rx="3"/>
-    </g>
-    <g fill="#f87171" stroke="#fee2e2" stroke-width="2">
-      <rect x="80" y="10" width="18" height="15" rx="3"/>
-      <rect x="80" y="38" width="18" height="15" rx="3"/>
-      <rect x="80" y="66" width="18" height="15" rx="3"/>
-    </g>
-  </g>
-  <text x="390" y="190" class="title">Keypad Hardware</text>
-  <text x="390" y="225" class="body">4 × 4 membrane keypad</text>
-
-  <!-- Arrow 1 -->
-  <path d="M500 275 V330" class="arrow"/>
-
-  <!-- Keypad task -->
-  <rect x="180" y="340" width="640" height="155" class="node" fill="#eef2ff" stroke="#6366f1"/>
-  <circle cx="245" cy="417" r="37" fill="#6366f1" opacity=".14"/>
-  <path d="M227 405 h36 M227 417 h36 M227 429 h36" stroke="#4f46e5" stroke-width="4" stroke-linecap="round"/>
-  <text x="310" y="393" class="title">KeypadTask</text>
-  <text x="310" y="427" class="body">FreeRTOS Task · Scan every 10 ms</text>
-  <text x="310" y="461" class="body" font-weight="700">keypad.getKeys()</text>
-
-  <!-- Arrow 2 -->
-  <path d="M500 495 V550" class="arrow"/>
-
-  <!-- Callback -->
-  <rect x="180" y="560" width="640" height="175" class="node" fill="#fff7ed" stroke="#f59e0b"/>
-  <circle cx="245" cy="647" r="37" fill="#f59e0b" opacity=".16"/>
-  <path d="M226 635 h38 M226 647 h26 M226 659 h32" stroke="#b45309" stroke-width="4" stroke-linecap="round"/>
-  <text x="310" y="612" class="title">KeypadEventCallback()</text>
-  <text x="310" y="649" class="body">Detect PRESSED / HOLD / RELEASED</text>
-  <text x="310" y="686" class="body" font-weight="700">Send event using xQueueSend()</text>
-
-  <!-- Arrow 3 -->
-  <path d="M500 735 V790" class="arrow"/>
-
-  <!-- Queue -->
-  <rect x="180" y="800" width="640" height="125" class="node" fill="#ecfdf5" stroke="#10b981"/>
-  <g transform="translate(222 831)" fill="none" stroke="#059669" stroke-width="4">
-    <rect x="0" y="0" width="75" height="60" rx="7"/>
-    <path d="M10 15 H65 M10 30 H65 M10 45 H65"/>
-    <path d="M18 8 v44 M38 8 v44 M58 8 v44" opacity=".35"/>
-  </g>
-  <text x="330" y="850" class="title">FreeRTOS Queue</text>
-  <text x="330" y="885" class="body">Buffers keypad events between tasks</text>
-
-  <!-- Arrow 4 -->
-  <path d="M500 925 V980" class="arrow"/>
-
-  <!-- Application task -->
-  <rect x="180" y="990" width="640" height="130" class="node" fill="#f0fdf4" stroke="#16a34a"/>
-  <circle cx="245" cy="1045" r="30" fill="#16a34a" opacity=".14"/>
-  <path d="M230 1045 l10 10 21 -24" fill="none" stroke="#15803d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="310" y="1035" class="title">ApplicationTask</text>
-  <text x="310" y="1070" class="body">Receives events using xQueueReceive()</text>
-    <text x="310" y="1105" class="body">Processes keypresses independently</text>
-</svg>
-```
