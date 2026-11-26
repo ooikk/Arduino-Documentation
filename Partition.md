@@ -438,6 +438,18 @@ app1,       app,  ota_1,   0x310000, 3M,
 spiffs,     data, spiffs,  0x610000, 9.9M,
 ```
 
+Another example:
+```csv
+# Name,   Type, SubType, Offset,  Size, Flags
+nvs,      data, nvs,     0x9000,  0x5000,
+otadata,  data, ota,     0xe000,  0x2000,
+app0,     app,  ota_0,   0x10000, 0x300000,
+app1,     app,  ota_1,   0x310000,0x300000,
+spiffs,     data, spiffs,     0x610000,0x9E0000,
+coredump, data, coredump,0xFF0000,0x10000,
+# to create/use ffat, see https://github.com/marcmerlin/esp32_fatfsimage
+```
+
 The exact values must be adjusted so that all partitions fit within the physical flash.
 
 ## 12. Example Large-Application Layout
