@@ -69,6 +69,9 @@ See the [ESP-IDF GPIO documentation](https://docs.espressif.com/projects/esp-idf
 | `47` | Digital | Preferred if free on the board. | 3.3 V on N16R8. Confirm that your board exposes it and has no other connection. |
 | `48` | Digital | Usable with conditions. | 3.3 V on N16R8. Drives the addressable RGB LED on the initial DevKitC-1 revision; check your board. |
 
+<img width="70%" height="auto" alt="image" src="https://github.com/user-attachments/assets/95fef933-61fb-4672-a940-b2a9b7acb008" />
+
+
 Espressif documents the N16R8 PSRAM connection, strapping behaviour, USB/JTAG assignments, UART0 pins, and approximately 60 µs power-up glitches for the pins noted above.
 
 The glitch warning matters most for:
