@@ -1035,3 +1035,461 @@ One final hardware note: the eight ribbon pins on your particular keypad should 
 - Build a four-state key state machine
 
 This gives learners an understanding of both the hardware-level operation and the software abstraction provided by Arduino libraries.
+
+---
+
+Below is a complete ESP32-S3 Arduino sketch demonstrating how to integrate the 4×4 matrix keypad with FreeRTOS, using a dedicated keypad scanning task and a FreeRTOS queue to communicate key events to another task.
+
+The design separates keypad scanning from application processing. This is particularly useful when your ESP32-S3 application also runs Wi-Fi, BLE, sensor acquisition or other FreeRTOS tasks.
+
+## 1. RTOS task architecture
+
+We will create three execution contexts:
+
+- **KeypadTask**: Scans the keypad every 10 ms and detects key events.
+- **KeypadEventCallback()**: Executes when a key changes state and sends the event to a FreeRTOS queue.
+- **ApplicationTask**: Receives queued events and processes them independently.
+
+### Keypad Hardware
+
+```text
+4 × 4 membrane keypad
+        │
+        ▼
+    KeypadTask
+FreeRTOS Task · Scan every 10 ms
+        │
+        ▼
+keypad.getKeys()
+        │
+        ▼
+KeypadEventCallback()
+Detect PRESSED / HOLD / RELEASED
+        │
+        ▼
+Send event using xQueueSend()
+        │
+        ▼
+   FreeRTOS Queue
+Buffers keypad events between tasks
+        │
+        ▼
+  ApplicationTask
+Receives events using xQueueReceive()
+Processes keypresses independently
+```
+
+The important point is that the callback executes inside the context of `KeypadTask`. It is not an interrupt service routine (ISR).
+
+## 2. Complete ESP32-S3 FreeRTOS sketch
+
+### Complete example
+
+```text
+Arduino IDE + ESP32 Arduino Core 3.x + Keypad.h
+```
+
+The sketch uses the same GPIO assignments introduced earlier.
+
+```cpp
+#include <Arduino.h>
+#include <Keypad.h>
+
+// =====================================================
+// 1. KEYPAD CONFIGURATION
+// =====================================================
+
+#define ROWS 4
+#define COLS 4
+
+char keys[ROWS][COLS] = {
+  {'1', '2', '3', 'A'},
+  {'4', '5', '6', 'B'},
+  {'7', '8', '9', 'C'},
+  {'*', '0', '#', 'D'}
+};
+
+// ESP32-S3 GPIO assignments
+byte rowPins[ROWS] = {1, 2, 14, 15};
+byte colPins[COLS] = {16, 17, 18, 21};
+
+Keypad keypad = Keypad(
+  makeKeymap(keys),
+  rowPins,
+  colPins,
+  ROWS,
+  COLS
+);
+
+// =====================================================
+// 2. FREERTOS CONFIGURATION
+// =====================================================
+
+#define KEYPAD_SCAN_INTERVAL  10
+#define QUEUE_LENGTH          10
+
+// Keypad event message
+struct KeypadMessage {
+  char key;
+  KeyState state;
+};
+
+// FreeRTOS queue handle
+QueueHandle_t keypadQueue = NULL;
+
+// Task handles
+TaskHandle_t keypadTaskHandle = NULL;
+TaskHandle_t appTaskHandle = NULL;
+
+// =====================================================
+// 3. KEYPAD EVENT CALLBACK
+// =====================================================
+
+void keypadEvent(KeypadEvent key) {
+
+  // Obtain current state of the key
+  KeypadMessage msg;
+
+  msg.key = key;
+  msg.state = keypad.getState();
+
+  // Send event to FreeRTOS queue
+  // Do not block the keypad scanning task
+  if (xQueueSend(keypadQueue, &msg, 0) != pdPASS) {
+
+    // Queue full - event was dropped
+    // Avoid Serial printing inside callback
+  }
+}
+
+// =====================================================
+// 4. KEYPAD SCANNING TASK
+// =====================================================
+
+void keypadTask(void *pvParameters) {
+
+  TickType_t lastWakeTime = xTaskGetTickCount();
+
+  const TickType_t scanPeriod =
+      pdMS_TO_TICKS(KEYPAD_SCAN_INTERVAL);
+
+  Serial.println("Keypad Task Started");
+
+  while (1) {
+
+    // Scan keypad and update key states.
+    // Registered callback is invoked for key events.
+    keypad.getKeys();
+
+    // Maintain a periodic 10 ms scanning interval
+    vTaskDelayUntil(&lastWakeTime, scanPeriod);
+  }
+}
+
+// =====================================================
+// 5. APPLICATION TASK
+// =====================================================
+
+void applicationTask(void *pvParameters) {
+
+  KeypadMessage receivedMsg;
+
+  Serial.println("Application Task Started");
+
+  while (1) {
+
+    // Wait for keypad event.
+    // Blocks this task until an event arrives.
+    if (xQueueReceive(
+          keypadQueue,
+          &receivedMsg,
+          portMAX_DELAY) == pdPASS) {
+
+      switch (receivedMsg.state) {
+
+        case PRESSED:
+
+          Serial.print("Key PRESSED: ");
+          Serial.println(receivedMsg.key);
+          break;
+
+        case HOLD:
+
+          Serial.print("Key HOLD: ");
+          Serial.println(receivedMsg.key);
+          break;
+
+        case RELEASED:
+
+          Serial.print("Key RELEASED: ");
+          Serial.println(receivedMsg.key);
+          break;
+
+        case IDLE:
+          break;
+      }
+    }
+  }
+}
+
+// =====================================================
+// 6. SETUP
+// =====================================================
+
+void setup() {
+
+  Serial.begin(115200);
+
+  delay(500);
+
+  Serial.println();
+  Serial.println("ESP32-S3 FreeRTOS Keypad Demo");
+
+  // Configure keypad timing
+  keypad.setDebounceTime(20);
+  keypad.setHoldTime(1000);
+
+  // Create FreeRTOS queue
+  keypadQueue = xQueueCreate(
+    QUEUE_LENGTH,
+    sizeof(KeypadMessage)
+  );
+
+  if (keypadQueue == NULL) {
+
+    Serial.println("Queue creation failed!");
+    while (1) {
+      delay(1000);
+    }
+  }
+
+  // Register keypad event callback
+  keypad.addEventListener(keypadEvent);
+
+  // Create keypad scanning task
+  BaseType_t result1 = xTaskCreate(
+    keypadTask,
+    "KeypadTask",
+    4096,
+    NULL,
+    2,
+    &keypadTaskHandle
+  );
+
+  // Create application processing task
+  BaseType_t result2 = xTaskCreate(
+    applicationTask,
+    "ApplicationTask",
+    4096,
+    NULL,
+    1,
+    &appTaskHandle
+  );
+
+  if (result1 != pdPASS || result2 != pdPASS) {
+
+    Serial.println("Task creation failed!");
+    while (1) {
+      delay(1000);
+    }
+  }
+
+  Serial.println("FreeRTOS tasks created successfully");
+}
+
+// =====================================================
+// 7. MAIN LOOP
+// =====================================================
+
+void loop() {
+
+  // Application processing is handled by FreeRTOS tasks.
+  vTaskDelay(pdMS_TO_TICKS(1000));
+}
+```
+
+## 3. Understanding the important RTOS functions
+
+There are several important FreeRTOS APIs in this example.
+
+| FreeRTOS API | Purpose |
+|---|---|
+| `xTaskCreate()` | Creates a FreeRTOS task |
+| `vTaskDelayUntil()` | Runs keypad scanning at a periodic interval |
+| `xQueueCreate()` | Creates an event queue |
+| `xQueueSend()` | Sends keypad events to the queue |
+| `xQueueReceive()` | Receives events from the queue |
+| `pdMS_TO_TICKS()` | Converts milliseconds to RTOS ticks |
+| `xTaskGetTickCount()` | Gets the current RTOS tick count |
+
+### 3.1 Why use `vTaskDelayUntil()`?
+
+Compare these two approaches:
+
+**Approach A:**
+
+```cpp
+while (1) {
+    keypad.getKeys();
+    vTaskDelay(pdMS_TO_TICKS(10));
+}
+```
+
+**Approach B:**
+
+```cpp
+TickType_t lastWakeTime = xTaskGetTickCount();
+
+while (1) {
+    keypad.getKeys();
+
+    vTaskDelayUntil(
+        &lastWakeTime,
+        pdMS_TO_TICKS(10)
+    );
+}
+```
+
+**Approach B is preferable for periodic scanning.**
+
+`vTaskDelay()` delays for 10 ms after the scanning operation finishes. Consequently, the actual scanning period includes the execution time.
+
+`vTaskDelayUntil()` schedules the next wake-up based on the previous scheduled wake-up time, giving a more consistent scanning interval.
+
+### 3.2 Why use a FreeRTOS queue?
+
+Consider the following callback:
+
+```cpp
+void keypadEvent(KeypadEvent key) {
+
+    KeypadMessage msg;
+
+    msg.key = key;
+    msg.state = keypad.getState();
+
+    xQueueSend(keypadQueue, &msg, 0);
+}
+```
+
+The callback does not perform the actual application processing.
+
+It simply sends two pieces of information:
+
+- Key character
+- Key state
+
+The `ApplicationTask` receives the message independently.
+
+This has several advantages:
+
+- Keypad scanning is not delayed by application processing.
+- Application processing can take longer without blocking keypad scanning.
+- Events are buffered in the queue.
+- Tasks are loosely coupled.
+
+### 3.3 Why use `portMAX_DELAY`?
+
+```cpp
+xQueueReceive(
+    keypadQueue,
+    &receivedMsg,
+    portMAX_DELAY
+);
+```
+
+This tells the `ApplicationTask` to wait indefinitely until a message arrives.
+
+It does not continuously poll the queue.
+
+While waiting, the task enters the **Blocked** state, allowing the ESP32 scheduler to run other tasks.
+
+## 4. Expected Serial Monitor output
+
+Set the Serial Monitor to **115200 baud**.
+
+For example, press `5`, hold it for more than one second, and release it.
+
+```text
+ESP32-S3 FreeRTOS Keypad Demo
+
+Keypad Task Started
+Application Task Started
+FreeRTOS tasks created successfully
+
+Key PRESSED: 5
+Key HOLD: 5
+Key RELEASED: 5
+
+Key PRESSED: A
+Key RELEASED: A
+
+Key PRESSED: 1
+Key RELEASED: 1
+```
+
+The expected state transitions are:
+
+| Key action | Expected events |
+|---|---|
+| Short keypress | `PRESSED` → `RELEASED` |
+| Long keypress (more than 1 second) | `PRESSED` → `HOLD` → `RELEASED` |
+
+## 5. Important considerations for your ESP32-S3 projects
+
+There are four things worth highlighting.
+
+### 1. Callback execution context
+
+The callback executes in `KeypadTask`, because that task calls `keypad.getKeys()`.
+
+Do not perform lengthy operations inside the callback, such as:
+
+- Wi-Fi communication
+- HTTP requests
+- File uploads
+- Display updates
+- Long calculations
+
+Send an event to the queue instead.
+
+### 2. Queue overflow
+
+The example uses:
+
+```cpp
+xQueueSend(keypadQueue, &msg, 0);
+```
+
+The zero means the keypad task never waits for queue space.
+
+If the queue is full, the event is discarded. For a simple keypad this is usually acceptable, but a production application should monitor queue overflow.
+
+### 3. Multiple keys
+
+The example is designed primarily for one key at a time. The `getState()` interface reports the state of the first key in the library's active-key list, so simultaneous keypresses require additional care when associating individual characters with their states.
+
+### 4. Task priority
+
+The example uses:
+
+| Task | Priority |
+|---|---:|
+| `KeypadTask` | 2 |
+| `ApplicationTask` | 1 |
+
+The keypad scanning task has a slightly higher priority so that scanning is not unnecessarily delayed by application processing.
+
+These priorities are illustrative. They should be adjusted according to the requirements of the complete application.
+
+## 6. Suggested learning exercises
+
+For your ESP32 learning lab, I recommend extending this example in three stages:
+
+| Exercise | Learning objective |
+|---|---|
+| Level 1 | Scan keypad in a dedicated FreeRTOS task |
+| Level 2 | Send keypress events to another task using a queue |
+| Level 3 | Implement password entry, queue timeout and event processing |
+
+**Further improvement:** In a larger ESP32-S3 project, you can have the `ApplicationTask` interpret keypad input as commands and send those commands to separate motor-control, display or communication tasks. This demonstrates a practical event-driven FreeRTOS architecture without coupling the keypad driver to application logic.
