@@ -1499,5 +1499,12 @@ For your ESP32 learning lab, I recommend extending this example in three stages:
 
 **Further improvement:** In a larger ESP32-S3 project, you can have the `ApplicationTask` interpret keypad input as commands and send those commands to separate motor-control, display or communication tasks. This demonstrates a practical event-driven FreeRTOS architecture without coupling the keypad driver to application logic.
 
+---
 
+# References
 
+https://www.oceanlabz.in/esp32-4x4-keypad-with-arduino-ide/
+
+https://deepbluembedded.com/esp32-keypad-lcd-example-arduino/
+
+https://www.circuitschools.com/password-based-solenoid-door-lock-system-using-arduino-and-keypad/
